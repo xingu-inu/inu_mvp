@@ -1,6 +1,29 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// CSP nonce-based configuration
+// Development: allow unsafe-inline/unsafe-eval for HMR and React DevTools
+// Production: nonce-based with strict-dynamic for Next.js inline scripts
+const isDev = process.env.NODE_ENV === 'development'
+
+function buildCspHeader(nonce: string): string {
+  return [
+    "default-src 'self'",
+    isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    isDev
+      ? "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
+      : `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com`,
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' blob: data: https://*.supabase.co",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://us.i.posthog.com https://us-assets.i.posthog.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ')
+}
+
 // Protected routes - require authentication
 const protectedPaths = [
   '/home',
@@ -22,6 +45,14 @@ const publicApiPaths = ['/api/health', '/api/auth/callback']
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Generate nonce for CSP
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  const cspHeader = buildCspHeader(nonce)
+
+  // Add nonce to request headers so layout.tsx can read it via headers()
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-nonce', nonce)
+
   // Skip middleware for static files, _next, and PostHog ingest proxy
   if (
     pathname.startsWith('/_next') ||
@@ -29,16 +60,20 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith('/ingest') ||
     pathname.includes('.') // static files like .ico, .png, etc.
   ) {
-    return NextResponse.next()
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    response.headers.set('Content-Security-Policy', cspHeader)
+    return response
   }
 
   // Allow public API routes
   if (publicApiPaths.some((path) => pathname.startsWith(path))) {
-    return NextResponse.next()
+    const response = NextResponse.next({ request: { headers: requestHeaders } })
+    response.headers.set('Content-Security-Policy', cspHeader)
+    return response
   }
 
   // Create Supabase client
-  let supabaseResponse = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,7 +85,7 @@ export async function proxy(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -165,6 +200,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  supabaseResponse.headers.set('Content-Security-Policy', cspHeader)
   return supabaseResponse
 }
 

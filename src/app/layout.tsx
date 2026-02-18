@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import Script from 'next/script'
 import { Providers } from '@/components/providers'
 import { SkipLink } from '@/components/a11y'
@@ -9,15 +10,17 @@ export const metadata: Metadata = {
   description: 'Create your life roadmap and manage goals within your time',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const nonce = (await headers()).get('x-nonce') ?? ''
+
   return (
     <html lang="ko" suppressHydrationWarning>
       <head>
-        <Script src="/scripts/theme-init.js" strategy="beforeInteractive" />
+        <Script src="/scripts/theme-init.js" strategy="beforeInteractive" nonce={nonce} />
       </head>
       <body className="font-sans antialiased">
         <SkipLink />
