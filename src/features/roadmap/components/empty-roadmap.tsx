@@ -1,7 +1,8 @@
 'use client'
 
-import { Target, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Mascot } from '@/components/common/mascot'
 
 interface EmptyRoadmapProps {
   onAddGoal?: () => void
@@ -11,8 +12,8 @@ export function EmptyRoadmap({ onAddGoal }: EmptyRoadmapProps) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
       {/* Icon */}
-      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-bg-secondary)]">
-        <Target className="h-8 w-8 text-[var(--color-text-tertiary)]" />
+      <div className="mb-6">
+        <Mascot mood="curious" size="lg" />
       </div>
 
       {/* Text */}

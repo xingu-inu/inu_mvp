@@ -142,7 +142,7 @@ const TaskRow = memo(function TaskRow({
     })
 
     items.push({
-      label: '목표 이동',
+      label: '이동',
       icon: <ArrowRightLeft className="h-4 w-4" />,
       onClick: () => setShowMovePopover(true),
     })
@@ -167,16 +167,16 @@ const TaskRow = memo(function TaskRow({
       )}
     >
       <div
-        className={cn('flex flex-1 flex-col px-2.5 py-1.5', onToggle && 'cursor-pointer')}
+        className={cn('flex flex-1 flex-col px-2.5 py-2', onToggle && 'cursor-pointer')}
         onClick={onToggle}
       >
         {/* Line 1: name + streak */}
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <RepeatIcon className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
+            <RepeatIcon className="h-4 w-4 shrink-0 text-[var(--color-text-tertiary)]" />
             <span
               className={cn(
-                'flex-1 truncate text-xs font-medium',
+                'flex-1 truncate text-sm font-medium',
                 task.status === 'completed' && 'line-through'
               )}
             >
@@ -184,20 +184,20 @@ const TaskRow = memo(function TaskRow({
             </span>
           </div>
           {task.streak_count > 0 && (
-            <span className="shrink-0 text-[10px] text-[var(--color-streak)]">
+            <span className="shrink-0 text-xs text-[var(--color-streak)]">
               🔥 {task.streak_count}
             </span>
           )}
         </div>
         {/* Line 2: metadata */}
-        <p className="mt-0.5 truncate pl-5 text-[10px] text-[var(--color-text-secondary)]">
+        <p className="mt-0.5 truncate pl-5 text-xs text-[var(--color-text-secondary)]">
           {metaLabel}
         </p>
         {/* Line 3: cross-linked areas (conditional) */}
         {linkedAreas && linkedAreas.length > 0 && (
           <div className="mt-0.5 flex items-center gap-1 pl-5">
             <Link className="h-2.5 w-2.5 shrink-0 text-[var(--color-text-tertiary)]" />
-            <p className="truncate text-[10px] text-[var(--color-text-tertiary)]">
+            <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">
               {linkedAreas.map((a) => `${a.emoji} ${a.name}`).join(' · ')}
             </p>
           </div>
@@ -585,29 +585,29 @@ const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
       style={{ borderLeftColor: sourceAreaColor || 'var(--color-border)' }}
       onClick={onNavigate}
     >
-      <div className="flex flex-1 flex-col px-2.5 py-1.5">
+      <div className="flex flex-1 flex-col px-2.5 py-2">
         {/* Line 1: link icon + name + streak */}
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <Link className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)]" />
-            <RepeatIcon className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)]" />
-            <span className="flex-1 truncate text-xs font-medium">{task.name}</span>
+            <Link className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
+            <RepeatIcon className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
+            <span className="flex-1 truncate text-sm font-medium">{task.name}</span>
           </div>
           {task.streak_count > 0 && (
-            <span className="shrink-0 text-[10px] text-[var(--color-streak)]">
+            <span className="shrink-0 text-xs text-[var(--color-streak)]">
               🔥 {task.streak_count}
             </span>
           )}
         </div>
         {/* Line 2: metadata */}
         {metaLabel && (
-          <p className="mt-0.5 truncate pl-[30px] text-[10px] text-[var(--color-text-secondary)]">
+          <p className="mt-0.5 truncate pl-[30px] text-xs text-[var(--color-text-secondary)]">
             {metaLabel}
           </p>
         )}
         {/* Line 3: source goal */}
         <div className="mt-0.5 flex items-center gap-1 pl-[30px]">
-          <p className="truncate text-[10px] text-[var(--color-text-tertiary)]">
+          <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">
             ← {sourceAreaEmoji} {sourceGoalName}
           </p>
         </div>
@@ -1110,7 +1110,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                     >
                                       <span
                                         className={cn(
-                                          'block truncate text-xs font-medium',
+                                          'block truncate text-sm font-semibold',
                                           group.is_completed &&
                                             'text-[var(--color-text-tertiary)] line-through'
                                         )}
@@ -1118,13 +1118,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                         {group.name}
                                       </span>
                                       {group.why && (
-                                        <span className="block truncate text-[11px] text-[var(--color-text-tertiary)] italic">
+                                        <span className="block truncate text-xs text-[var(--color-text-tertiary)] italic">
                                           {group.why}
                                         </span>
                                       )}
                                     </button>
                                     <div className="flex items-center gap-1.5 pr-2">
-                                      <span className="rounded-full bg-[var(--color-bg-canvas)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+                                      <span className="rounded-full bg-[var(--color-bg-canvas)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--color-text-secondary)]">
                                         {containerTaskIds.length}
                                       </span>
                                       <button

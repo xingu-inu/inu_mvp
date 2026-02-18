@@ -112,7 +112,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
 
       {/* Name + optional subtitle */}
       <div className="min-w-0 flex-1">
-        <span className={cn('block truncate text-sm font-medium', getNameStyles(node))}>
+        <span className={cn('block truncate', getNameStyles(node))}>
           {node.name}
         </span>
         {node.type === 'direction' && node.why && (
@@ -337,16 +337,19 @@ function getCardStyles(node: VisualTreeNode): string {
 function getNameStyles(node: VisualTreeNode): string {
   switch (node.type) {
     case 'direction':
-      return 'text-[var(--color-text-on-primary)]'
+      return 'text-base font-bold text-[var(--color-text-on-primary)]'
     case 'area':
-      return 'text-[var(--color-text-primary)]'
+      return 'text-[15px] font-semibold text-[var(--color-text-primary)]'
     case 'goal':
-      return 'text-[var(--color-text-primary)]'
+      return 'text-sm font-medium text-[var(--color-text-primary)]'
     case 'group':
-      return cn(node.meta?.isCompleted && 'text-[var(--color-text-tertiary)] line-through')
+      return cn(
+        'text-[13px] font-medium',
+        node.meta?.isCompleted && 'text-[var(--color-text-tertiary)] line-through'
+      )
     case 'task':
       return cn(
-        'text-[var(--color-text-secondary)]',
+        'text-[13px] text-[var(--color-text-secondary)]',
         node.meta?.isDone && 'line-through text-[var(--color-text-tertiary)]',
         node.meta?.isPaused && 'text-[var(--color-text-tertiary)]',
         node.meta?.isCompletedTask && 'line-through text-[var(--color-text-tertiary)]'

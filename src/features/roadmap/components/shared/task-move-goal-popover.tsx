@@ -17,10 +17,7 @@ interface TaskMoveGoalPopoverProps {
   children: React.ReactNode
 }
 
-interface GoalsByArea {
-  area: Area
-  goals: Goal[]
-}
+type Step = 'area' | 'goal' | 'group'
 
 export const TaskMoveGoalPopover = memo(function TaskMoveGoalPopover({
   taskId,
@@ -33,37 +30,47 @@ export const TaskMoveGoalPopover = memo(function TaskMoveGoalPopover({
   const { data: areas = [] } = useAreas()
   const moveTask = useMoveTaskToGoal()
 
+  const [step, setStep] = useState<Step>('area')
+  const [selectedArea, setSelectedArea] = useState<Area | null>(null)
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null)
 
-  const groupedGoals: GoalsByArea[] = useMemo(() => {
-    const eligibleGoals = goals.filter(
-      (g) => g.id !== currentGoalId && (g.status === 'active' || g.status === 'maintenance')
-    )
+  // Eligible goals: active/maintenance, excluding current goal
+  const eligibleGoals = useMemo(
+    () =>
+      goals.filter(
+        (g) => g.id !== currentGoalId && (g.status === 'active' || g.status === 'maintenance')
+      ),
+    [goals, currentGoalId]
+  )
 
-    const grouped = new Map<string, Goal[]>()
-    for (const goal of eligibleGoals) {
-      const existing = grouped.get(goal.area_id) ?? []
-      existing.push(goal)
-      grouped.set(goal.area_id, existing)
-    }
+  // All areas sorted by sort_order (show all, even without eligible goals)
+  const sortedAreas = useMemo(
+    () => [...areas].sort((a, b) => a.sort_order.localeCompare(b.sort_order)),
+    [areas]
+  )
 
-    const result: GoalsByArea[] = []
-    for (const area of areas) {
-      const areaGoals = grouped.get(area.id)
-      if (areaGoals && areaGoals.length > 0) {
-        result.push({ area, goals: areaGoals })
-      }
-    }
+  // Goals for selected area
+  const goalsForArea = useMemo(() => {
+    if (!selectedArea) return []
+    return eligibleGoals.filter((g) => g.area_id === selectedArea.id)
+  }, [eligibleGoals, selectedArea])
 
-    return result
-  }, [goals, areas, currentGoalId])
-
+  // Active groups for selected goal
   const activeGroups: Group[] = useMemo(() => {
     if (!selectedGoal) return []
     return (selectedGoal.groups ?? [])
       .filter((g) => !g.is_completed)
       .sort((a, b) => a.sort_order.localeCompare(b.sort_order))
   }, [selectedGoal])
+
+  // Goal count per area (for display)
+  const goalCountByArea = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const g of eligibleGoals) {
+      map.set(g.area_id, (map.get(g.area_id) ?? 0) + 1)
+    }
+    return map
+  }, [eligibleGoals])
 
   const executeMoveTask = (targetGoalId: string, targetGroupId: string | null) => {
     const goalName = goals.find((g) => g.id === targetGoalId)?.name ?? ''
@@ -78,11 +85,17 @@ export const TaskMoveGoalPopover = memo(function TaskMoveGoalPopover({
     )
   }
 
+  const handleAreaClick = (area: Area) => {
+    setSelectedArea(area)
+    setStep('goal')
+  }
+
   const handleGoalClick = (targetGoal: Goal) => {
     const hasActiveGroups = (targetGoal.groups ?? []).some((g) => !g.is_completed)
 
     if (hasActiveGroups) {
       setSelectedGoal(targetGoal)
+      setStep('group')
     } else {
       executeMoveTask(targetGoal.id, null)
     }
@@ -93,8 +106,20 @@ export const TaskMoveGoalPopover = memo(function TaskMoveGoalPopover({
     executeMoveTask(selectedGoal.id, groupId)
   }
 
+  const handleBack = () => {
+    if (step === 'group') {
+      setSelectedGoal(null)
+      setStep('goal')
+    } else if (step === 'goal') {
+      setSelectedArea(null)
+      setStep('area')
+    }
+  }
+
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
+      setStep('area')
+      setSelectedArea(null)
       setSelectedGoal(null)
     }
     onOpenChange(nextOpen)
@@ -111,45 +136,75 @@ export const TaskMoveGoalPopover = memo(function TaskMoveGoalPopover({
         onFocusOutside={(e) => e.preventDefault()}
       >
         <div className="space-y-2">
-          {selectedGoal === null ? (
+          {step === 'area' && (
             <>
-              {/* Step 1: Goal selection */}
-              <p className="text-xs font-medium text-[var(--color-text-primary)]">
-                다른 목표로 이동
-              </p>
-              <div className="max-h-60 space-y-2 overflow-y-auto">
-                {groupedGoals.length === 0 ? (
+              <p className="text-xs font-medium text-[var(--color-text-primary)]">이동</p>
+              <div className="max-h-60 space-y-0.5 overflow-y-auto">
+                {sortedAreas.length === 0 ? (
+                  <p className="py-2 text-center text-xs text-[var(--color-text-tertiary)]">
+                    영역이 없어요
+                  </p>
+                ) : (
+                  sortedAreas.map((area) => {
+                    const count = goalCountByArea.get(area.id) ?? 0
+                    return (
+                      <button
+                        key={area.id}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+                        onClick={() => handleAreaClick(area)}
+                      >
+                        <span>
+                          {area.emoji} {area.name}
+                        </span>
+                        <span className="text-[10px] text-[var(--color-text-tertiary)]">
+                          {count}
+                        </span>
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </>
+          )}
+
+          {step === 'goal' && selectedArea && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleBack}
+                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
+                >
+                  <ArrowLeft className="size-3.5" />
+                </button>
+                <p className="truncate text-xs font-medium text-[var(--color-text-primary)]">
+                  {selectedArea.emoji} {selectedArea.name}
+                </p>
+              </div>
+              <div className="max-h-60 space-y-0.5 overflow-y-auto">
+                {goalsForArea.length === 0 ? (
                   <p className="py-2 text-center text-xs text-[var(--color-text-tertiary)]">
                     이동할 수 있는 목표가 없어요
                   </p>
                 ) : (
-                  groupedGoals.map(({ area, goals: areaGoals }) => (
-                    <div key={area.id} className="space-y-0.5">
-                      <span className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                        {area.emoji} {area.name}
-                      </span>
-                      <div className="space-y-0.5">
-                        {areaGoals.map((goal) => (
-                          <button
-                            key={goal.id}
-                            className="w-full cursor-pointer rounded-lg px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
-                            onClick={() => handleGoalClick(goal)}
-                          >
-                            {goal.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  goalsForArea.map((goal) => (
+                    <button
+                      key={goal.id}
+                      className="w-full cursor-pointer rounded-lg px-2 py-1.5 text-left text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+                      onClick={() => handleGoalClick(goal)}
+                    >
+                      {goal.name}
+                    </button>
                   ))
                 )}
               </div>
             </>
-          ) : (
+          )}
+
+          {step === 'group' && selectedGoal && (
             <>
-              {/* Step 2: Group selection */}
               <div className="flex items-center gap-1.5">
                 <button
-                  onClick={() => setSelectedGoal(null)}
+                  onClick={handleBack}
                   className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
                 >
                   <ArrowLeft className="size-3.5" />

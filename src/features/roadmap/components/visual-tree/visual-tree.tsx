@@ -160,7 +160,7 @@ function buildVisualTreeData(
                   sourceTaskId: task.id,
                   targetGoalId: relatedGoalId,
                   targetNodeId: targetGroupId ?? relatedGoalId,
-                  areaColor: area.color ?? '#888',
+                  areaColor: area.color ?? '#8a8078',
                 })
               }
             }
@@ -204,7 +204,7 @@ function buildVisualTreeData(
                 sourceTaskId: task.id,
                 targetGoalId: relatedGoalId,
                 targetNodeId: targetGroupId ?? relatedGoalId,
-                areaColor: area.color ?? '#888',
+                areaColor: area.color ?? '#8a8078',
               })
             }
           }

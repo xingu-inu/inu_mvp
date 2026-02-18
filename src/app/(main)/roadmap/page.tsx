@@ -1,49 +1,41 @@
-'use client'
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
+import getQueryClient from '@/lib/query/get-query-client'
+import { queryKeys } from '@/lib/query/keys'
+import { STALE_TIMES } from '@/lib/query/stale-times'
+import { unwrapListResponse } from '@/lib/api'
+import { getGoals } from '@/actions/goal.actions'
+import { getAreas } from '@/actions/area.actions'
+import { getDirection } from '@/actions/direction.actions'
+import RoadmapContent from './roadmap-content'
 
-import { Suspense } from 'react'
-import { PageContainer } from '@/components/layout'
-import {
-  RoadmapHeader,
-  GoalList,
-  GoalListSkeleton,
-  VisualTreeWrapper,
-  VisualTreeSkeleton,
-} from '@/features/roadmap'
-import {
-  NewVersionWizard,
-  VersionHistoryPanel,
-  RestoreConfirmDialog,
-  DeleteVersionDialog,
-} from '@/features/roadmap/components/version'
+export default async function RoadmapPage() {
+  const queryClient = getQueryClient()
 
-export default function RoadmapPage() {
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.goals.all,
+      queryFn: () => getGoals().then(unwrapListResponse),
+      staleTime: STALE_TIMES.GOAL,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.areas.all,
+      queryFn: () => getAreas().then(unwrapListResponse),
+      staleTime: STALE_TIMES.AREA,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.direction.all,
+      queryFn: async () => {
+        const response = await getDirection()
+        if (!response.success) throw new Error(response.error.message)
+        return response.data
+      },
+      staleTime: STALE_TIMES.DIRECTION,
+    }),
+  ])
+
   return (
-    <>
-      {/* Desktop: Visual Tree — outside PageContainer so it fills viewport exactly */}
-      <div className="hidden h-full bg-[var(--color-bg-primary)] lg:flex lg:flex-col">
-        <div className="shrink-0 px-8 pt-6 pb-4">
-          <RoadmapHeader />
-        </div>
-        <Suspense fallback={<VisualTreeSkeleton />}>
-          <VisualTreeWrapper />
-        </Suspense>
-      </div>
-
-      {/* Mobile: Single Column */}
-      <PageContainer className="pb-24 lg:hidden">
-        <div className="space-y-6">
-          <RoadmapHeader />
-          <Suspense fallback={<GoalListSkeleton />}>
-            <GoalList isMobile />
-          </Suspense>
-        </div>
-      </PageContainer>
-
-      {/* Version Management Modals */}
-      <NewVersionWizard />
-      <VersionHistoryPanel />
-      <RestoreConfirmDialog />
-      <DeleteVersionDialog />
-    </>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <RoadmapContent />
+    </HydrationBoundary>
   )
 }

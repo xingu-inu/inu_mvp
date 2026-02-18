@@ -1,6 +1,7 @@
 'use client'
 
 import { memo, useState, forwardRef } from 'react'
+import { AiChatButton } from '@/components/common/ai-chat-button'
 import { ChevronDown, ChevronRight, Trash2, Edit2, Target } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OverflowMenu } from '@/features/roadmap/components/shared/overflow-menu'
@@ -98,6 +99,18 @@ export const GoalAccordionItem = memo(
             )}
             {goal.target_date && <DDayBadge targetDate={goal.target_date} />}
             {totalStreak > 0 && <StreakBadge count={totalStreak} />}
+
+            {/* AI Chat */}
+            <AiChatButton
+              context={{
+                type: 'goal',
+                entityId: goal.id,
+                entityName: goal.name,
+                goalId: goal.id,
+                areaName: area.name,
+              }}
+              variant="icon"
+            />
 
             {/* ··· overflow menu */}
             <OverflowMenu

@@ -100,7 +100,7 @@ function buildTreeData(direction: Direction | null, areas: Area[], goals: Goal[]
                     sourceTaskId: task.id,
                     targetGoalId: relatedGoalId,
                     targetNodeId: targetGroupId ?? relatedGoalId,
-                    areaColor: areaColorMap.get(goal.area_id) ?? '#888',
+                    areaColor: areaColorMap.get(goal.area_id) ?? '#8a8078',
                   })
                 }
               }
@@ -138,7 +138,7 @@ function buildTreeData(direction: Direction | null, areas: Area[], goals: Goal[]
                   sourceTaskId: task.id,
                   targetGoalId: relatedGoalId,
                   targetNodeId: targetGroupId ?? relatedGoalId,
-                  areaColor: areaColorMap.get(goal.area_id) ?? '#888',
+                  areaColor: areaColorMap.get(goal.area_id) ?? '#8a8078',
                 })
               }
             }
@@ -505,7 +505,7 @@ function getNodeStyles(node: TreeNode) {
     case 'direction':
       return {
         container: 'py-4 pr-4 bg-[var(--color-bg-secondary)]',
-        name: 'text-base font-semibold text-[var(--color-text-primary)]',
+        name: 'text-lg font-bold text-[var(--color-text-primary)]',
       }
     case 'status-group':
       return {
@@ -514,25 +514,25 @@ function getNodeStyles(node: TreeNode) {
       }
     case 'area':
       return {
-        container: 'py-2.5 pr-4 hover:bg-[var(--color-bg-secondary)]',
-        name: 'text-sm font-medium text-[var(--color-text-primary)]',
+        container: 'py-3 pr-4 hover:bg-[var(--color-bg-secondary)]',
+        name: 'text-base font-semibold text-[var(--color-text-primary)]',
       }
     case 'goal':
       return {
-        container: 'py-2 pr-4 hover:bg-[var(--color-bg-secondary)]',
-        name: 'text-sm text-[var(--color-text-primary)]',
+        container: 'py-2.5 pr-4 hover:bg-[var(--color-bg-secondary)]',
+        name: 'text-[15px] font-medium text-[var(--color-text-primary)]',
       }
     case 'group':
       return {
-        container: 'py-1.5 pr-4',
+        container: 'py-2 pr-4',
         name: cn(
-          'text-sm',
+          'text-sm font-medium',
           node.meta?.isCompleted && 'text-[var(--color-text-tertiary)] line-through'
         ),
       }
     case 'task':
       return {
-        container: 'py-1.5 pr-4',
+        container: 'py-2 pr-4',
         name: cn(
           'text-sm text-[var(--color-text-secondary)]',
           node.meta?.isDone && 'text-[var(--color-text-tertiary)] line-through'

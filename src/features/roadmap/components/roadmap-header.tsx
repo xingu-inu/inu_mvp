@@ -14,7 +14,7 @@ export function RoadmapHeader() {
   return (
     <div className="space-y-4">
       {/* Title Row */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-0">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold">로드맵</h1>

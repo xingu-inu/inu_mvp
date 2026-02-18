@@ -16,7 +16,9 @@ function clampZoom(value: number): number {
 }
 
 export function VisualTreeWrapper() {
-  const { setPanelMode, treeLayout, setTreeLayout } = useRoadmapStore()
+  const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
+  const treeLayout = useRoadmapStore((s) => s.treeLayout)
+  const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [isPanning, setIsPanning] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
