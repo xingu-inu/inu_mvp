@@ -2,7 +2,8 @@ import Link from 'next/link'
 
 export function LandingFooter() {
   return (
-    <footer className="border-t border-[var(--color-border)] py-8">
+    <footer className="py-12">
+      <div className="mx-auto mb-8 h-px max-w-7xl bg-gradient-to-r from-transparent via-[var(--color-border)] to-transparent" />
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="text-center md:text-left">

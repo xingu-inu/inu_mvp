@@ -1,3 +1,6 @@
+export { LandingLayout } from './landing-layout'
 export { LandingHeader } from './landing-header'
 export { LandingHero } from './landing-hero'
+export { LandingSections } from './landing-sections'
 export { LandingFooter } from './landing-footer'
+export { ScrollFadeIn } from './scroll-fade-in'
