@@ -49,7 +49,7 @@ export function MagicLinkForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-3">
       <div>
         <Label htmlFor="magic-email" error={!!errors.email} className="sr-only">
           이메일

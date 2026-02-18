@@ -43,7 +43,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <p className="text-sm text-[var(--color-text-secondary)]">
         가입하신 이메일을 입력하시면 비밀번호 재설정 링크를 보내드려요
       </p>
