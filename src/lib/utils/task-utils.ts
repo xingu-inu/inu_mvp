@@ -2,6 +2,38 @@ import type { TimeSlot, RepeatType, TaskStatus, HomeTask as EntityHomeTask } fro
 import type { HomeTask as ActionHomeTask } from '@/actions/home.actions'
 import { TIME_SLOT_CONFIG, TIME_SLOT_ORDER } from '@/lib/constants/time-slots'
 
+/**
+ * Format duration in minutes to a compact string.
+ * e.g. 30 → "30m", 60 → "1h", 90 → "1.5h", 120 → "2h"
+ */
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const hours = minutes / 60
+  if (Number.isInteger(hours)) return `${hours}h`
+  return `${hours.toFixed(1).replace(/\.0$/, '')}h`
+}
+
+/**
+ * Format repeat type to a compact Korean label for calendar display.
+ */
+export function formatRepeatType(type: RepeatType): string | null {
+  switch (type) {
+    case 'daily':
+      return '매일'
+    case 'weekdays':
+      return '평일'
+    case 'weekends':
+      return '주말'
+    case 'weekly':
+      return '매주'
+    case 'custom':
+      return '반복'
+    case 'once':
+    default:
+      return null
+  }
+}
+
 // Re-export a unified HomeTask type
 export type HomeTask = EntityHomeTask
 
@@ -30,6 +62,7 @@ export function mapApiTaskToEntity(task: ActionHomeTask): EntityHomeTask {
     related_area_ids: task.relatedAreaIds ?? [],
     related_goal_ids: task.relatedGoalIds ?? [],
     cross_link_group_map: {},
+    google_event_id: null,
     total_completed: task.totalCompleted ?? 0,
     created_at: '',
     updated_at: '',
@@ -84,7 +117,6 @@ export function mapApiTaskToEntity(task: ActionHomeTask): EntityHomeTask {
     paused_at: null,
     status_change_reason: null,
     status_change_note: null,
-    isOverdue: task.isOverdue ?? false,
     scheduledDate: task.scheduledDate ?? null,
     taskStatus: (task.taskStatus as TaskStatus) ?? 'active',
     directionVersion: task.directionVersion ?? null,

@@ -71,13 +71,19 @@ export const chatRepository = {
   async createConversation(
     supabase: TypedSupabaseClient,
     userId: string,
-    title?: string
+    title?: string,
+    relatedGoalId?: string,
+    relatedTaskId?: string
   ): Promise<ChatConversation> {
+    const insertData: Record<string, unknown> = {
+      user_id: userId,
+      title: title ?? '새 대화',
+    }
+    if (relatedGoalId) insertData.related_goal_id = relatedGoalId
+    if (relatedTaskId) insertData.related_task_id = relatedTaskId
+
     const { data, error } = await from(supabase, 'chat_conversations')
-      .insert({
-        user_id: userId,
-        title: title ?? '새 대화',
-      })
+      .insert(insertData)
       .select()
       .single()
 

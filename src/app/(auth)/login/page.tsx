@@ -1,44 +1,41 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
-import { Card } from '@/components/ui'
 import { LoginForm, OAuthButtons } from '@/features/auth/components'
 
 export default function LoginPage() {
   return (
-    <Card variant="dive" padding="lg">
-      <div className="mb-6 text-center">
-        <h1 className="mb-2 text-2xl font-bold text-[var(--color-water-accent)]">inu</h1>
-        <p className="text-[var(--color-water-light)]/80">로그인하고 목표를 관리하세요</p>
+    <div className="glass-3 rounded-2xl p-8 shadow-lg">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <Image src="/logo.png" alt="inu" width={48} height={48} className="mb-2" />
+        <h1 className="mb-1 font-serif text-2xl font-bold text-[var(--color-text-primary)]">inu</h1>
+        <p className="text-sm text-[var(--color-text-secondary)]">로그인하고 목표를 관리하세요</p>
       </div>
 
-      <div className="auth-form-dive">
-        <LoginForm />
-      </div>
+      <LoginForm />
 
       <div className="my-6 flex items-center gap-4">
-        <div className="h-px flex-1 bg-white/10" />
-        <span className="text-sm text-[var(--color-water-light)]/40">또는</span>
-        <div className="h-px flex-1 bg-white/10" />
+        <div className="h-px flex-1 bg-[var(--color-border)]" />
+        <span className="text-sm text-[var(--color-text-tertiary)]">또는</span>
+        <div className="h-px flex-1 bg-[var(--color-border)]" />
       </div>
 
-      <div className="auth-form-dive">
-        <OAuthButtons />
-      </div>
+      <OAuthButtons />
 
       <div className="mt-6 space-y-2 text-center text-sm">
         <Link
           href="/forgot-password"
-          className="block text-[var(--color-water-light)]/60 hover:text-[var(--color-water-light)]"
+          className="block text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
         >
           비밀번호를 잊으셨나요?
         </Link>
-        <p className="text-[var(--color-water-light)]/80">
+        <p className="text-[var(--color-text-secondary)]">
           계정이 없으신가요?{' '}
-          <Link href="/signup" className="text-[var(--color-water-accent)] hover:underline">
+          <Link href="/signup" className="text-[var(--color-primary-500)] hover:underline">
             회원가입
           </Link>
         </p>
       </div>
-    </Card>
+    </div>
   )
 }

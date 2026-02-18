@@ -52,7 +52,12 @@ export async function proxy(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              httpOnly: options?.httpOnly ?? true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: (options?.sameSite as 'lax' | 'strict' | 'none') ?? 'lax',
+            })
           )
         },
       },
@@ -77,22 +82,6 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Admin route protection — require is_admin flag
-  const isAdminPath = pathname.startsWith('/admin')
-  if (user && isAdminPath) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (!profile?.is_admin) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/home'
-      return NextResponse.redirect(url)
-    }
-  }
-
   // Not logged in + trying to access onboarding → redirect to login
   if (!user && isOnboardingPath) {
     const url = request.nextUrl.clone()
@@ -100,32 +89,39 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // Logged in + on auth pages → redirect to today (or onboarding if not completed)
-  if (user && isAuthPath) {
-    // Check onboarding status
-    const { data: profile } = await supabase
+  // ── Single profile query for all logged-in branches ──
+  const isAdminPath = pathname.startsWith('/admin')
+  const needsProfile =
+    user && (isAdminPath || isAuthPath || requiresOnboarding || isOnboardingPath || pathname === '/')
+
+  let profile: { onboarding_completed: boolean; is_admin: boolean } | null = null
+  if (needsProfile) {
+    const { data } = await supabase
       .from('profiles')
-      .select('onboarding_completed')
+      .select('onboarding_completed, is_admin')
       .eq('id', user.id)
       .single()
+    profile = data
+  }
 
-    const url = request.nextUrl.clone()
-    if (!profile?.onboarding_completed) {
-      url.pathname = '/onboarding'
-    } else {
+  // Admin route protection — require is_admin flag
+  if (user && isAdminPath) {
+    if (!profile?.is_admin) {
+      const url = request.nextUrl.clone()
       url.pathname = '/home'
+      return NextResponse.redirect(url)
     }
+  }
+
+  // Logged in + on auth pages → redirect to today (or onboarding if not completed)
+  if (user && isAuthPath) {
+    const url = request.nextUrl.clone()
+    url.pathname = profile?.onboarding_completed ? '/home' : '/onboarding'
     return NextResponse.redirect(url)
   }
 
   // Logged in + on protected route that requires onboarding → check onboarding status
   if (user && requiresOnboarding) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .single()
-
     if (!profile?.onboarding_completed) {
       const url = request.nextUrl.clone()
       url.pathname = '/onboarding'
@@ -135,12 +131,6 @@ export async function proxy(request: NextRequest) {
 
   // Logged in + onboarding completed + on onboarding page → redirect to today
   if (user && isOnboardingPath) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', user.id)
-      .single()
-
     if (profile?.onboarding_completed) {
       const url = request.nextUrl.clone()
       url.pathname = '/home'
@@ -148,20 +138,10 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Root path redirect
-  if (pathname === '/') {
+  // Root path redirect (logged-in users only; unauthenticated users see landing page)
+  if (pathname === '/' && user) {
     const url = request.nextUrl.clone()
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
-
-      url.pathname = profile?.onboarding_completed ? '/home' : '/onboarding'
-    } else {
-      url.pathname = '/login'
-    }
+    url.pathname = profile?.onboarding_completed ? '/home' : '/onboarding'
     return NextResponse.redirect(url)
   }
 

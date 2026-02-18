@@ -30,6 +30,7 @@ import { useDirection, useUpdateDirection } from '@/queries/use-direction'
 import { signOut } from '@/actions/auth.actions'
 import { submitFeedback } from '@/actions/feedback.actions'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { GoogleCalendarConnect } from '@/features/profile/components/google-calendar-connect'
 
 type ModalView = 'main' | 'notifications' | 'privacy' | 'feedback'
 
@@ -289,6 +290,12 @@ function MainView({
         </Link>
       )}
 
+      {/* Connected Services */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-[var(--color-text-secondary)]">연동 서비스</p>
+        <GoogleCalendarConnect />
+      </div>
+
       {/* Settings Links */}
       <div className="space-y-1">
         <p className="mb-2 text-sm font-medium text-[var(--color-text-secondary)]">설정</p>
@@ -454,7 +461,7 @@ function NotificationSettingsView() {
       <ToggleRow label="주간 리뷰 알림" description="매주 일요일 저녁 리마인드" defaultChecked />
       <ToggleRow
         label="AI 인사이트"
-        description="AI 코치의 새 인사이트 알림"
+        description="이누의 새 인사이트 알림"
         defaultChecked={false}
       />
     </div>

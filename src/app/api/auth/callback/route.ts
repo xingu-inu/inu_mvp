@@ -20,11 +20,16 @@ const ALLOWED_REDIRECT_PREFIXES = [
  * Only allows paths matching the whitelist prefixes.
  */
 function sanitizeRedirectPath(path: string): string {
-  let decoded: string
-  try {
-    decoded = decodeURIComponent(path)
-  } catch {
-    return '/home'
+  // Iteratively decode to prevent double-encoding bypass (%252F%252F → %2F%2F → //)
+  let decoded = path
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(decoded)
+      if (next === decoded) break
+      decoded = next
+    } catch {
+      return '/home'
+    }
   }
 
   if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('://')) {

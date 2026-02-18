@@ -30,7 +30,6 @@ export interface HomeTask {
   startDate: string | null
   endDate: string | null
   taskStatus: string
-  isOverdue: boolean
   directionVersion: number | null
   goal: {
     id: string

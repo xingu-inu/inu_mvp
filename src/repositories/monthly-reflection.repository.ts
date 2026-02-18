@@ -49,6 +49,8 @@ export const monthlyReflectionRepository = {
         user_id: userId,
         month_start: input.month_start,
         summary: input.summary ?? null,
+        highlight: input.highlight ?? null,
+        challenge: input.challenge ?? null,
       })
       .select()
       .single()
@@ -98,6 +100,8 @@ export const monthlyReflectionRepository = {
           user_id: userId,
           month_start: input.month_start,
           summary: input.summary ?? null,
+          highlight: input.highlight ?? null,
+          challenge: input.challenge ?? null,
           updated_at: now(),
         },
         { onConflict: 'user_id,month_start' }

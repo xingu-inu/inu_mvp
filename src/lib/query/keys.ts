@@ -93,8 +93,15 @@ export const queryKeys = {
   // ============================================
   aiMessages: {
     all: ['ai-messages'] as const,
-    unread: () => [...queryKeys.aiMessages.all, 'unread'] as const,
-    unreadCount: () => [...queryKeys.aiMessages.all, 'unread-count'] as const,
+  },
+
+  // ============================================
+  // Google Calendar
+  // ============================================
+  googleCalendar: {
+    all: ['google-calendar'] as const,
+    connection: () => ['google-calendar', 'connection'] as const,
+    events: (weekStart: string) => ['google-calendar', 'events', weekStart] as const,
   },
 
   // ============================================
@@ -125,6 +132,10 @@ export const queryKeys = {
     monthlyReflection: (monthStart: string) =>
       ['review', 'monthly-reflection', monthStart] as const,
     weeklyReflection: (weekStart: string) => ['review', 'weekly-reflection', weekStart] as const,
+    goalReflection: (goalId: string, start: string, end: string) =>
+      ['review', 'goal-reflection', goalId, start, end] as const,
+    goalReflections: (start: string, end: string) =>
+      ['review', 'goal-reflections', start, end] as const,
     activityLog: (directionId?: string) => ['review', 'activity-log', directionId] as const,
     areaActivityLog: (areaId: string, directionId?: string) =>
       ['review', 'area-activity-log', areaId, directionId] as const,

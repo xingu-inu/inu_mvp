@@ -46,6 +46,7 @@ export function LoginForm() {
           id="email"
           type="email"
           placeholder="email@example.com"
+          autoComplete="email"
           error={errors.email?.message}
           {...register('email')}
         />
@@ -60,6 +61,7 @@ export function LoginForm() {
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="비밀번호를 입력하세요"
+            autoComplete="current-password"
             error={errors.password?.message}
             className="pr-10"
             {...register('password')}

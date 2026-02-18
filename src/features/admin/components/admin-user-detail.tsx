@@ -7,7 +7,6 @@ import { ko } from 'date-fns/locale'
 import {
   ArrowLeft,
   Mail,
-  Globe,
   Calendar,
   Target,
   ListChecks,
@@ -73,6 +72,7 @@ export function AdminUserDetail({ paramsPromise }: AdminUserDetailProps) {
         <div className="flex items-start gap-5">
           {/* Avatar */}
           {user.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={user.avatar_url}
               alt=""

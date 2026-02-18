@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button, Card, Confetti } from '@/components/ui'
+import { Mascot } from '@/components/common/mascot'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import { useCompleteOnboarding } from '../hooks/use-complete-onboarding'
 
@@ -118,16 +119,16 @@ export function CompletionScreen() {
       <Confetti trigger={isCompleted} />
 
       <motion.div
-        className="mb-6 text-6xl"
+        className="mb-6"
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 20 }}
       >
-        🎉
+        <Mascot mood="celebrating" size="xl" />
       </motion.div>
 
       <motion.h2
-        className="mb-8 text-2xl font-bold text-[var(--color-text-primary)]"
+        className="mb-8 font-serif text-2xl font-bold text-[var(--color-text-primary)]"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}

@@ -36,11 +36,11 @@ export function WelcomeStep() {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 200, damping: 20 }}
         >
-          <Image src="/logo.svg" alt="inu" width={80} height={80} />
+          <Image src="/logo.png" alt="inu" width={80} height={80} />
         </motion.div>
 
         <motion.p
-          className="mb-10 text-lg text-[var(--color-text-secondary)]"
+          className="mb-10 font-serif text-lg text-[var(--color-text-secondary)]"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}

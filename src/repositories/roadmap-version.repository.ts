@@ -16,7 +16,7 @@ import type {
 type UntypedRpc = (
   fn: string,
   params: Record<string, unknown>
-) => Promise<{ data: any; error: any }>
+) => Promise<{ data: unknown; error: unknown }>
 
 export const roadmapVersionRepository = {
   /**

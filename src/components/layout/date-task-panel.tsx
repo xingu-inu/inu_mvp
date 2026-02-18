@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { format, isToday, isFuture, startOfDay, isBefore, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -13,12 +14,18 @@ import {
   calculateTaskStats,
 } from '@/lib/utils/task-utils'
 import { TaskList } from '@/features/home/components/task-list'
-import { UpcomingTasksSection } from '@/features/home/components/upcoming-tasks-section'
-import { ProgressSummary } from '@/features/home/components/progress-summary'
+
 import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
-import { PriorityRankModal } from '@/features/home/components/priority-rank-modal'
 import { TaskDetailPanel } from '@/features/home/components/panel-modes/task-detail-panel'
 import { HomeGoalView } from '@/features/home/components/panel-modes/home-goal-view'
+
+const PriorityRankModal = dynamic(
+  () =>
+    import('@/features/home/components/priority-rank-modal').then((m) => ({
+      default: m.PriorityRankModal,
+    })),
+  { ssr: false }
+)
 import { GoalBrowsePanel } from '@/features/roadmap/components/panel-modes'
 import { GroupEditForm, GroupCreateForm } from '@/features/roadmap'
 import { useRoadmapStore, selectPanelMode } from '@/stores/roadmap.store'
@@ -41,7 +48,7 @@ function PanelSkeleton() {
 /** Full daily panel — tasks, check-in, reflection */
 function HomeDailyPanel() {
   const selectedDate = usePanelDateStore((s) => s.selectedDate)
-  const { panelMode } = useHomeStore()
+  const panelMode = useHomeStore((s) => s.panelMode)
 
   // Delegate to sub-panels for task-detail and goal-view modes
   if (panelMode === 'task-detail') {
@@ -113,7 +120,6 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
           <PanelSkeleton />
         ) : (
           <>
-            {tasks.length > 0 && <ProgressSummary tasks={tasks} />}
 
             {showReflection && reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
@@ -124,7 +130,6 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
               selectedDate={selectedDate}
               enableAiSuggest={!isOldDirectionDate}
             />
-            <UpcomingTasksSection currentDate={selectedDate} />
             {showReflection && !reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
             )}

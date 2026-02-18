@@ -252,9 +252,25 @@ export type UpdateReflectionSchema = z.infer<typeof updateReflectionSchema>
 export const monthlyReflectionSchema = z.object({
   month_start: dateSchema,
   summary: z.string().max(200).optional(),
+  highlight: z.string().max(200).optional(),
+  challenge: z.string().max(200).optional(),
 })
 
 export type MonthlyReflectionSchema = z.infer<typeof monthlyReflectionSchema>
+
+// ============================================
+// Goal Reflection Schemas
+// ============================================
+export const goalReflectionSchema = z.object({
+  goal_id: uuidSchema,
+  period_start: dateSchema,
+  period_end: dateSchema,
+  summary: z.string().max(2000).optional(),
+  progress_feeling: z.enum(['terrible', 'bad', 'neutral', 'good', 'great']).optional(),
+  next_focus: z.string().max(1000).optional(),
+})
+
+export type GoalReflectionSchema = z.infer<typeof goalReflectionSchema>
 
 // ============================================
 // Weekly Reflection Schemas
@@ -282,14 +298,32 @@ export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>
 // Auth Schemas
 // ============================================
 export const loginSchema = z.object({
-  email: z.string().email('올바른 이메일 형식을 입력해주세요'),
+  email: z.string().max(254).email('올바른 이메일 형식을 입력해주세요'),
   password: z.string().min(1, '비밀번호를 입력해주세요'),
 })
 
+/**
+ * Password strength: min 8 chars + at least 2 of 3 categories
+ * (letter, number, special character)
+ */
+const passwordSchema = z
+  .string()
+  .min(8, '비밀번호는 8자 이상이어야 합니다')
+  .max(128, '비밀번호는 128자 이하여야 합니다')
+  .refine(
+    (pw) => {
+      const hasLetter = /[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣]/.test(pw)
+      const hasNumber = /\d/.test(pw)
+      const hasSpecial = /[^a-zA-Z0-9ㄱ-ㅎㅏ-ㅣ가-힣\s]/.test(pw)
+      return [hasLetter, hasNumber, hasSpecial].filter(Boolean).length >= 2
+    },
+    { message: '영문, 숫자, 특수문자 중 2종류 이상 포함해주세요' }
+  )
+
 export const signupSchema = z
   .object({
-    email: z.string().email('올바른 이메일 형식을 입력해주세요'),
-    password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다'),
+    email: z.string().max(254).email('올바른 이메일 형식을 입력해주세요'),
+    password: passwordSchema,
     confirmPassword: z.string(),
     agreeToTerms: z.boolean(),
   })
@@ -303,11 +337,11 @@ export const signupSchema = z
   })
 
 export const magicLinkSchema = z.object({
-  email: z.string().email('올바른 이메일 형식을 입력해주세요'),
+  email: z.string().max(254).email('올바른 이메일 형식을 입력해주세요'),
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('올바른 이메일 형식을 입력해주세요'),
+  email: z.string().max(254).email('올바른 이메일 형식을 입력해주세요'),
 })
 
 export type LoginSchema = z.infer<typeof loginSchema>

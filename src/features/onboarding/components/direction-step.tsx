@@ -27,7 +27,7 @@ function ShimmerSkeleton() {
 function TypedDirection({ text }: { text: string }) {
   const words = text.split(' ')
   return (
-    <p className="text-center text-lg leading-relaxed font-medium text-[var(--color-text-primary)]">
+    <p className="font-serif text-center text-lg leading-relaxed font-medium text-[var(--color-text-primary)]">
       &ldquo;
       {words.map((word, i) => (
         <motion.span

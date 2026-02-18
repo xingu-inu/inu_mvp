@@ -22,7 +22,7 @@ export function DesktopTopBar() {
       <header className="glass-3 sticky top-0 z-20 hidden h-14 items-center px-6 shadow-sm lg:flex">
         {/* Left: Logo */}
         <Link href="/home" className="mr-8 flex items-center">
-          <Image src="/logo.svg" alt="inu" width={28} height={28} />
+          <Image src="/logo.png" alt="inu" width={28} height={28} />
         </Link>
 
         {/* Center: Segment Control */}

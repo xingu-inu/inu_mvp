@@ -53,7 +53,7 @@ export function TopBar({
           </button>
         ) : variant === 'main' ? (
           <Link href="/home" className="flex items-center">
-            <Image src="/logo.svg" alt="inu" width={28} height={28} />
+            <Image src="/logo.png" alt="inu" width={28} height={28} />
           </Link>
         ) : (
           <div className="w-10" />

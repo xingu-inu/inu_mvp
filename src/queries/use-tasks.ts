@@ -169,6 +169,7 @@ export function useCreateTask() {
         related_area_ids: input.related_area_ids ?? [],
         related_goal_ids: input.related_goal_ids ?? [],
         cross_link_group_map: {},
+        google_event_id: null,
         created_at: now,
         updated_at: now,
       }
@@ -259,7 +260,6 @@ export function useCreateTask() {
         startDate: input.start_date ?? null,
         endDate: input.end_date ?? null,
         taskStatus: 'active',
-        isOverdue: false,
         directionVersion: null,
         goal: optimisticGoal,
         group: null,

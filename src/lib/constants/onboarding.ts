@@ -50,11 +50,11 @@ export interface DefaultAreaOption {
 }
 
 export const DEFAULT_AREAS: DefaultAreaOption[] = [
-  { name: '건강', type: 'health', emoji: '💪', color: '#22c55e' },
-  { name: '커리어', type: 'career', emoji: '📈', color: '#3b82f6' },
-  { name: '재정', type: 'finance', emoji: '💰', color: '#f59e0b' },
-  { name: '관계', type: 'relationships', emoji: '❤️', color: '#ec4899' },
-  { name: '취미', type: 'hobbies', emoji: '🎨', color: '#8b5cf6' },
+  { name: '건강', type: 'health', emoji: '💪', color: '#6b9e7d' },
+  { name: '커리어', type: 'career', emoji: '📈', color: '#6978a8' },
+  { name: '재정', type: 'finance', emoji: '💰', color: '#b89650' },
+  { name: '관계', type: 'relationships', emoji: '❤️', color: '#c07878' },
+  { name: '취미', type: 'hobbies', emoji: '🎨', color: '#5e9e9e' },
 ]
 
 // ============================================
@@ -62,25 +62,25 @@ export const DEFAULT_AREAS: DefaultAreaOption[] = [
 // ============================================
 export const AREA_PRESETS_EXTENDED: DefaultAreaOption[] = [
   ...DEFAULT_AREAS,
-  { name: '마음', type: 'mental', emoji: '🧘', color: '#06b6d4' },
-  { name: '학습', type: 'learning', emoji: '📚', color: '#f97316' },
-  { name: '일상', type: 'daily', emoji: '☀️', color: '#64748b' },
+  { name: '마음', type: 'mental', emoji: '🧘', color: '#9e7ec0' },
+  { name: '학습', type: 'learning', emoji: '📚', color: '#5e82a8' },
+  { name: '일상', type: 'daily', emoji: '☀️', color: '#8e8070' },
 ]
 
 /** Default fallback color for areas (Indigo 500) */
-export const DEFAULT_AREA_COLOR = '#6366f1'
+export const DEFAULT_AREA_COLOR = '#8a7a65'
 
 export const AREA_COLOR_PRESETS = [
-  '#22c55e',
-  '#3b82f6',
-  '#f59e0b',
-  '#ec4899',
-  '#8b5cf6',
-  '#06b6d4',
-  '#f97316',
-  '#64748b',
-  '#e11d48',
-  '#14b8a6',
+  '#6b9e7d',
+  '#6978a8',
+  '#b89650',
+  '#c07878',
+  '#5e9e9e',
+  '#9e7ec0',
+  '#5e82a8',
+  '#8e8070',
+  '#a86868',
+  '#6ea88e',
 ] as const
 
 // ============================================

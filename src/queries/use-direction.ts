@@ -150,6 +150,7 @@ export function useDirectionHistory() {
       if (!response.success) throw new Error(response.error.message)
       return response.data
     },
+    staleTime: STALE_TIMES.DIRECTION,
   })
 }
 
@@ -165,6 +166,7 @@ export function useArchivedRoadmap(directionId: string | null) {
       return response.data
     },
     enabled: !!directionId,
+    staleTime: Infinity,
   })
 }
 

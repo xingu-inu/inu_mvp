@@ -1,36 +1,33 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
-import { Card } from '@/components/ui'
 import { SignupForm, OAuthButtons } from '@/features/auth/components'
 
 export default function SignupPage() {
   return (
-    <Card variant="dive" padding="lg">
-      <div className="mb-6 text-center">
-        <h1 className="mb-2 text-2xl font-bold text-[var(--color-water-accent)]">inu</h1>
-        <p className="text-[var(--color-water-light)]/80">새 계정을 만들어 시작하세요</p>
+    <div className="glass-3 rounded-2xl p-8 shadow-lg">
+      <div className="mb-6 flex flex-col items-center text-center">
+        <Image src="/logo.png" alt="inu" width={48} height={48} className="mb-2" />
+        <h1 className="mb-1 font-serif text-2xl font-bold text-[var(--color-text-primary)]">inu</h1>
+        <p className="text-sm text-[var(--color-text-secondary)]">새 계정을 만들어 시작하세요</p>
       </div>
 
-      <div className="auth-form-dive">
-        <SignupForm />
-      </div>
+      <SignupForm />
 
       <div className="my-6 flex items-center gap-4">
-        <div className="h-px flex-1 bg-white/10" />
-        <span className="text-sm text-[var(--color-water-light)]/40">또는</span>
-        <div className="h-px flex-1 bg-white/10" />
+        <div className="h-px flex-1 bg-[var(--color-border)]" />
+        <span className="text-sm text-[var(--color-text-tertiary)]">또는</span>
+        <div className="h-px flex-1 bg-[var(--color-border)]" />
       </div>
 
-      <div className="auth-form-dive">
-        <OAuthButtons />
-      </div>
+      <OAuthButtons />
 
-      <p className="mt-6 text-center text-sm text-[var(--color-water-light)]/80">
+      <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
         이미 계정이 있으신가요?{' '}
-        <Link href="/login" className="text-[var(--color-water-accent)] hover:underline">
+        <Link href="/login" className="text-[var(--color-primary-500)] hover:underline">
           로그인
         </Link>
       </p>
-    </Card>
+    </div>
   )
 }

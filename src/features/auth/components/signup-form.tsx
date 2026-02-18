@@ -49,10 +49,10 @@ export function SignupForm() {
     return (
       <div className="py-8 text-center">
         <div className="mb-4 text-5xl">📧</div>
-        <h2 className="mb-2 text-xl font-semibold text-[var(--color-water-light)]">
+        <h2 className="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
           이메일을 확인해주세요
         </h2>
-        <p className="text-[var(--color-water-light)]/80">
+        <p className="text-[var(--color-text-secondary)]">
           인증 링크를 발송했습니다.
           <br />
           이메일을 확인하고 링크를 클릭해주세요.
@@ -71,6 +71,7 @@ export function SignupForm() {
           id="email"
           type="email"
           placeholder="email@example.com"
+          autoComplete="email"
           error={errors.email?.message}
           {...register('email')}
         />
@@ -85,6 +86,7 @@ export function SignupForm() {
             id="password"
             type={showPassword ? 'text' : 'password'}
             placeholder="8자 이상"
+            autoComplete="new-password"
             error={errors.password?.message}
             className="pr-10"
             {...register('password')}
@@ -109,6 +111,7 @@ export function SignupForm() {
             id="confirmPassword"
             type={showConfirm ? 'text' : 'password'}
             placeholder="비밀번호를 다시 입력하세요"
+            autoComplete="new-password"
             error={errors.confirmPassword?.message}
             className="pr-10"
             {...register('confirmPassword')}

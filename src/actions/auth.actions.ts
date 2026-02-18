@@ -77,7 +77,7 @@ export const signInWithEmail = publicAction(
     revalidatePath('/', 'layout')
     return successResponse({ redirectTo: '/home' })
   },
-  { rateLimit: { limit: 10 } }
+  { rateLimit: { limit: 5 } }
 )
 
 /**
@@ -122,8 +122,12 @@ export const signUpWithEmail = publicAction(
     })
 
     if (error) {
+      // Return same success message for "already registered" to prevent
+      // account enumeration — attacker cannot distinguish existing vs new email
       if (error.message.includes('already registered')) {
-        return errorResponse(ErrorCode.AUTH_EMAIL_IN_USE)
+        return successResponse({
+          message: '인증 이메일을 발송했습니다. 이메일을 확인해주세요.',
+        })
       }
       throw error
     }

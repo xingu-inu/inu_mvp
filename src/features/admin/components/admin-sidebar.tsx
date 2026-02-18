@@ -26,7 +26,7 @@ export function AdminSidebar() {
     <aside className="flex w-60 flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-primary)]">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 px-6">
-        <Image src="/logo.svg" alt="inu" width={28} height={28} />
+        <Image src="/logo.png" alt="inu" width={28} height={28} />
         <span className="text-sm font-medium text-[var(--color-text-secondary)]">Admin</span>
       </div>
 
