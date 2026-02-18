@@ -1,102 +1,105 @@
 /* ========== Design Tokens ========== */
-/* inu Design System - OKLCH Color System */
+/* inu Design System - OKLCH Color System (Terra Cotta) */
 
 :root {
   /* ========== Colors (OKLCH) ========== */
 
-  /* Primary - Toss Blue */
-  --color-primary-50: oklch(97% 0.02 250);
-  --color-primary-100: oklch(94% 0.04 250);
-  --color-primary-200: oklch(88% 0.08 250);
-  --color-primary-300: oklch(78% 0.12 250);
-  --color-primary-400: oklch(65% 0.16 250);
-  --color-primary-500: oklch(55% 0.18 250); /* Main: #2186ff */
-  --color-primary-600: oklch(48% 0.16 250);
-  --color-primary-700: oklch(42% 0.14 250);
-  --color-primary-800: oklch(35% 0.1 250);
-  --color-primary-900: oklch(26% 0.08 250);
+  /* Primary - Terra Cotta */
+  --color-primary-50:  oklch(97% 0.02 35);
+  --color-primary-100: oklch(94% 0.04 35);
+  --color-primary-200: oklch(88% 0.09 35);
+  --color-primary-300: oklch(78% 0.13 35);
+  --color-primary-400: oklch(68% 0.17 35);
+  --color-primary-500: oklch(56% 0.16 35);
+  --color-primary-600: oklch(48% 0.14 35);
+  --color-primary-700: oklch(42% 0.12 35);
+  --color-primary-800: oklch(35% 0.09 35);
+  --color-primary-900: oklch(26% 0.07 35);
 
   /* Status Colors */
-  --color-done: oklch(65% 0.2 145); /* Green #22c55e */
-  --color-done-bg: oklch(95% 0.05 145);
-  --color-skip: oklch(55% 0.02 260); /* Gray #6b7280 */
-  --color-skip-bg: oklch(95% 0.01 260);
-  --color-miss: oklch(70% 0.15 25); /* Soft Red #f87171 */
-  --color-miss-bg: oklch(95% 0.03 25);
-  --color-streak: oklch(75% 0.18 70); /* Orange #f59e0b */
-  --color-streak-bg: oklch(95% 0.05 70);
-  --color-streak-high: oklch(65% 0.2 50); /* Deep orange for 14+ streaks */
-  --color-streak-high-bg: oklch(95% 0.06 60);
-  --color-streak-ring: oklch(90% 0.08 80); /* Amber ring for at-risk */
-  --color-ai: oklch(60% 0.2 290); /* Purple #8b5cf6 */
-  --color-ai-bg: oklch(95% 0.05 290);
-  --color-new-round: oklch(70% 0.15 250); /* Blue #60a5fa */
-  --color-new-round-bg: oklch(97% 0.02 250);
-  --color-new-round-text: oklch(45% 0.15 250);
-  --color-danger-hover-bg: oklch(96% 0.03 25);
-  --color-quick-badge-bg: oklch(96% 0.06 85);
-  --color-quick-badge-text: oklch(55% 0.15 60);
-  --color-paused: oklch(75% 0.15 70); /* Amber */
-  --color-paused-bg: oklch(96% 0.04 70);
-  --color-archived: oklch(65% 0.15 25); /* Soft red */
-  --color-archived-bg: oklch(95% 0.04 25);
-  --color-maintenance: oklch(60% 0.15 250); /* Blue */
-  --color-maintenance-bg: oklch(96% 0.04 250);
+  --color-done: oklch(62% 0.14 155);
+  --color-done-bg: oklch(95% 0.04 155);
+  --color-skip: oklch(55% 0.02 55);
+  --color-skip-bg: oklch(94% 0.01 60);
+  --color-miss: oklch(65% 0.12 20);
+  --color-miss-bg: oklch(95% 0.025 20);
+  --color-nudge: oklch(70% 0.14 55); /* Warm amber — overdue "gentle nudge" */
+  --color-nudge-bg: oklch(96% 0.03 55);
+  --color-streak: oklch(68% 0.20 65);
+  --color-streak-bg: oklch(95% 0.05 65);
+  --color-streak-high: oklch(60% 0.22 55);
+  --color-streak-high-bg: oklch(95% 0.06 55);
+  --color-streak-ring: oklch(85% 0.10 65);
+  --color-ai: oklch(55% 0.12 220);
+  --color-ai-bg: oklch(95% 0.03 220);
+  --color-new-round: oklch(68% 0.12 75);
+  --color-new-round-bg: oklch(96% 0.02 75);
+  --color-new-round-text: oklch(45% 0.12 70);
+  --color-danger-hover-bg: oklch(96% 0.025 20);
+  --color-quick-badge-bg: oklch(96% 0.05 35);
+  --color-quick-badge-text: oklch(52% 0.12 35);
+  --color-paused: oklch(72% 0.12 55);
+  --color-paused-bg: oklch(96% 0.03 55);
+  --color-archived: oklch(60% 0.10 20);
+  --color-archived-bg: oklch(95% 0.03 20);
+  --color-maintenance: oklch(58% 0.12 220);
+  --color-maintenance-bg: oklch(96% 0.03 220);
 
   /* On-primary: text/bg for elements on primary-500 colored backgrounds */
-  --color-text-on-primary: oklch(100% 0 0); /* White, theme-independent */
-  --color-bg-on-primary: oklch(100% 0 0 / 20%); /* Semi-transparent white overlay */
+  --color-text-on-primary: oklch(100% 0 0);
+  --color-bg-on-primary: oklch(100% 0 0 / 20%);
 
-  /* Area Colors (8 presets) */
-  --color-area-health: oklch(65% 0.18 160); /* Emerald */
-  --color-area-career: oklch(55% 0.2 270); /* Indigo */
-  --color-area-finance: oklch(75% 0.15 85); /* Gold */
-  --color-area-relationships: oklch(70% 0.18 10); /* Rose */
-  --color-area-hobbies: oklch(70% 0.15 200); /* Cyan */
-  --color-area-mental: oklch(70% 0.15 300); /* Lavender */
-  --color-area-learning: oklch(60% 0.18 240); /* Ocean */
-  --color-area-daily: oklch(55% 0.05 260); /* Slate */
+  /* Area Colors (8 presets - muted earth tones) */
+  --color-area-health: oklch(60% 0.12 160);
+  --color-area-career: oklch(55% 0.10 245);
+  --color-area-finance: oklch(68% 0.11 55);
+  --color-area-relationships: oklch(65% 0.12 15);
+  --color-area-hobbies: oklch(60% 0.10 190);
+  --color-area-mental: oklch(65% 0.10 300);
+  --color-area-learning: oklch(58% 0.10 225);
+  --color-area-daily: oklch(55% 0.04 55);
 
-  /* Underwater Theme Colors */
-  --color-water-deep: #1e2952; /* Twilight Deep - deep water */
-  --color-water-medium: #3d4a7a; /* Cosmic Purple - medium depth */
-  --color-water-calm: #5a6b9e; /* Dusk Blue - calm water */
-  --color-water-light: #f8f5f0; /* Dawn Light - light accents */
-  --color-water-accent: #f0c987; /* Sunrise Gold - accent/hope */
-  --color-water-glow: rgba(240, 201, 135, 0.3);
-  --color-water-bubble: rgba(255, 255, 255, 0.4);
-  --color-water-ray: rgba(248, 245, 240, 0.08);
+  /* Auth Theme Colors (Warm Earth) */
+  --color-water-deep: #3a2e1e;
+  --color-water-medium: #5c4a35;
+  --color-water-calm: #8a7a65;
+  --color-water-light: #f8f3ea;
+  --color-water-accent: #c87a5e;
+  --color-water-glow: rgba(200, 122, 94, 0.3);
+  --color-water-bubble: rgba(255, 248, 235, 0.4);
+  --color-water-ray: rgba(248, 243, 234, 0.08);
 
-  /* Surface Colors - Light Mode */
-  --color-bg-primary: oklch(100% 0 0);
-  --color-bg-secondary: oklch(98% 0.005 260);
-  --color-bg-tertiary: oklch(96% 0.01 260);
-  --color-bg-canvas: oklch(94.5% 0.012 260);
-  --color-border: oklch(92% 0.01 260);
-  --color-border-hover: oklch(85% 0.02 260);
+  /* Surface Colors - Light Mode (clean canvas, warmth via accent) */
+  --color-bg-primary: oklch(99% 0.002 60);
+  --color-bg-secondary: oklch(97.5% 0.005 55);
+  --color-bg-tertiary: oklch(96% 0.008 50);
+  --color-bg-canvas: oklch(94.5% 0.012 48);
+  --color-border: oklch(91% 0.008 50);
+  --color-border-hover: oklch(84% 0.015 45);
 
   /* Text Colors - Light Mode */
-  --color-text-primary: oklch(15% 0.01 260);
-  --color-text-secondary: oklch(40% 0.02 260);
-  --color-text-tertiary: oklch(55% 0.02 260);
-  --color-text-disabled: oklch(70% 0.01 260);
+  --color-text-primary: oklch(22% 0.010 42);
+  --color-text-secondary: oklch(45% 0.012 42);
+  --color-text-tertiary: oklch(58% 0.008 45);
+  --color-text-disabled: oklch(72% 0.005 45);
 
   /* ========== Typography ========== */
 
   /* Font Family */
   --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: 'Noto Serif KR', 'Noto Serif', Georgia, serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
   /* Font Size (1.25 modular scale) */
-  --text-xs: 0.75rem; /* 12px */
-  --text-sm: 0.875rem; /* 14px */
-  --text-base: 1rem; /* 16px */
-  --text-lg: 1.125rem; /* 18px */
-  --text-xl: 1.25rem; /* 20px */
-  --text-2xl: 1.5rem; /* 24px */
-  --text-3xl: 1.875rem; /* 30px */
-  --text-4xl: 2.25rem; /* 36px */
-  --text-5xl: 3rem; /* 48px */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
 
   /* Font Weight */
   --font-normal: 400;
@@ -112,35 +115,35 @@
 
   /* ========== Spacing (4px base) ========== */
   --space-0: 0;
-  --space-1: 0.25rem; /* 4px */
-  --space-2: 0.5rem; /* 8px */
-  --space-3: 0.75rem; /* 12px */
-  --space-4: 1rem; /* 16px */
-  --space-5: 1.25rem; /* 20px */
-  --space-6: 1.5rem; /* 24px */
-  --space-8: 2rem; /* 32px */
-  --space-10: 2.5rem; /* 40px */
-  --space-12: 3rem; /* 48px */
-  --space-16: 4rem; /* 64px */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
 
   /* ========== Border Radius ========== */
-  --radius-sm: 0.25rem; /* 4px */
-  --radius-md: 0.5rem; /* 8px */
-  --radius-lg: 0.75rem; /* 12px */
-  --radius-xl: 1rem; /* 16px */
-  --radius-2xl: 1.25rem; /* 20px */
-  --radius-3xl: 1.5rem; /* 24px */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.5rem;
   --radius-full: 9999px;
 
-  /* ========== Shadows ========== */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
-  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.2);
-  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* ========== Shadows (neutral warm) ========== */
+  --shadow-xs: 0 1px 2px rgba(40, 30, 20, 0.05);
+  --shadow-sm: 0 1px 3px rgba(40, 30, 20, 0.08);
+  --shadow-md: 0 4px 6px rgba(40, 30, 20, 0.07);
+  --shadow-lg: 0 10px 15px rgba(40, 30, 20, 0.08);
+  --shadow-xl: 0 20px 25px rgba(40, 30, 20, 0.08);
+  --shadow-2xl: 0 25px 50px rgba(40, 30, 20, 0.14);
+  --shadow-card: 0 4px 16px rgba(40, 30, 20, 0.05);
+  --shadow-card-hover: 0 8px 24px rgba(40, 30, 20, 0.08);
 
   /* ========== Z-Index ========== */
   --z-base: 0;
@@ -153,6 +156,29 @@
   --z-tooltip: 70;
   --z-toast: 80;
   --z-max: 9999;
+
+  /* ========== Calendar Chip ========== */
+  --chip-h: 32px;
+  --chip-radius: 8px;
+  --chip-px: 8px;
+  --chip-py: 3px;
+  --chip-border-left: 3px;
+  --chip-font-size: 12px;
+  --chip-line-height: 1.35;
+  --chip-tint-opacity: 12%;
+  --chip-time-font-size: 10px;
+  --chip-time-color: var(--color-text-disabled);
+  --chip-status-size: 5px;
+
+  /* Google event chip */
+  --color-google-event: oklch(60% 0.02 50);
+  --color-google-event-bg: oklch(95% 0.005 50);
+
+  /* Time-slot background tints (very subtle) */
+  --color-slot-dawn: oklch(97% 0.008 280);
+  --color-slot-morning: oklch(98.5% 0.012 85);
+  --color-slot-afternoon: oklch(98% 0.010 50);
+  --color-slot-evening: oklch(97.5% 0.010 260);
 
   /* ========== Animation ========== */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
@@ -171,52 +197,73 @@
 
 /* ========== Dark Mode ========== */
 [data-theme='dark'] {
-  --color-bg-primary: oklch(12% 0.01 260);
-  --color-bg-secondary: oklch(16% 0.015 260);
-  --color-bg-tertiary: oklch(20% 0.02 260);
-  --color-bg-canvas: oklch(14% 0.015 260);
-  --color-border: oklch(25% 0.02 260);
-  --color-border-hover: oklch(35% 0.02 260);
+  --color-bg-primary: oklch(14% 0.020 50);
+  --color-bg-secondary: oklch(18% 0.023 50);
+  --color-bg-tertiary: oklch(22% 0.025 50);
+  --color-bg-canvas: oklch(12% 0.018 50);
+  --color-border: oklch(28% 0.030 50);
+  --color-border-hover: oklch(37% 0.030 50);
 
-  --color-text-primary: oklch(95% 0.005 260);
-  --color-text-secondary: oklch(75% 0.01 260);
-  --color-text-tertiary: oklch(60% 0.01 260);
-  --color-text-disabled: oklch(45% 0.01 260);
+  --color-text-primary: oklch(93% 0.008 45);
+  --color-text-secondary: oklch(73% 0.012 43);
+  --color-text-tertiary: oklch(58% 0.01 42);
+  --color-text-disabled: oklch(43% 0.01 40);
 
-  --color-done-bg: oklch(25% 0.08 145);
-  --color-skip-bg: oklch(25% 0.02 260);
-  --color-miss-bg: oklch(25% 0.05 25);
-  --color-streak-bg: oklch(25% 0.08 70);
-  --color-streak-high-bg: oklch(28% 0.1 50);
-  --color-streak-ring: oklch(35% 0.1 80);
-  --color-ai-bg: oklch(25% 0.08 290);
-  --color-paused-bg: oklch(25% 0.06 70);
-  --color-archived-bg: oklch(25% 0.05 25);
-  --color-maintenance-bg: oklch(25% 0.06 250);
-  --color-new-round-bg: oklch(22% 0.06 250);
-  --color-new-round-text: oklch(75% 0.12 250);
-  --color-danger-hover-bg: oklch(22% 0.06 25);
-  --color-quick-badge-bg: oklch(25% 0.06 85);
-  --color-quick-badge-text: oklch(78% 0.12 60);
+  --color-done-bg: oklch(22% 0.06 155);
+  --color-skip-bg: oklch(22% 0.02 55);
+  --color-miss-bg: oklch(22% 0.04 20);
+  --color-nudge-bg: oklch(22% 0.05 55);
+  --color-streak-bg: oklch(22% 0.06 65);
+  --color-streak-high-bg: oklch(25% 0.08 55);
+  --color-streak-ring: oklch(32% 0.08 65);
+  --color-ai-bg: oklch(22% 0.06 220);
+  --color-paused-bg: oklch(22% 0.05 55);
+  --color-archived-bg: oklch(22% 0.04 20);
+  --color-maintenance-bg: oklch(22% 0.05 220);
+  --color-new-round-bg: oklch(20% 0.05 75);
+  --color-new-round-text: oklch(73% 0.10 75);
+  --color-danger-hover-bg: oklch(20% 0.05 20);
+  --color-quick-badge-bg: oklch(22% 0.05 35);
+  --color-quick-badge-text: oklch(75% 0.10 35);
+
+  /* Calendar chip - dark mode */
+  --chip-tint-opacity: 18%;
+  --chip-time-color: var(--color-text-disabled);
+  --color-google-event: oklch(55% 0.02 50);
+  --color-google-event-bg: oklch(22% 0.01 50);
+
+  /* Time-slot background tints - dark mode */
+  --color-slot-dawn: oklch(15% 0.008 280);
+  --color-slot-morning: oklch(16% 0.012 85);
+  --color-slot-afternoon: oklch(15.5% 0.010 50);
+  --color-slot-evening: oklch(15% 0.010 260);
 
   /* Shadow overrides for dark mode */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.2);
-  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(30, 20, 10, 0.35);
+  --shadow-md: 0 4px 6px rgba(30, 20, 10, 0.35);
+  --shadow-lg: 0 10px 15px rgba(30, 20, 10, 0.35);
+  --shadow-card: 0 4px 16px rgba(30, 20, 10, 0.25);
+  --shadow-card-hover: 0 8px 24px rgba(30, 20, 10, 0.35);
 
   /* Primary scale overrides for dark mode */
-  --color-primary-50: oklch(18% 0.04 250);
-  --color-primary-100: oklch(22% 0.06 250);
-  --color-primary-200: oklch(28% 0.08 250);
-  --color-primary-700: oklch(80% 0.1 250);
+  --color-primary-50: oklch(20% 0.04 35);
+  --color-primary-100: oklch(24% 0.06 35);
+  --color-primary-200: oklch(28% 0.08 35);
+  --color-primary-700: oklch(78% 0.13 35);
 
-  /* Underwater Theme - Dark Mode */
-  --color-water-deep: #0f1629;
-  --color-water-medium: #1e2952;
-  --color-water-calm: #3d4a7a;
-  --color-water-glow: rgba(240, 201, 135, 0.2);
-  --color-water-bubble: rgba(255, 255, 255, 0.2);
-  --color-water-ray: rgba(248, 245, 240, 0.04);
+  /* Auth Theme - Dark Mode */
+  --color-water-deep: #1e1812;
+  --color-water-medium: #3a2e1e;
+  --color-water-calm: #5c4a35;
+  --color-water-glow: rgba(200, 122, 94, 0.2);
+  --color-water-bubble: rgba(255, 248, 235, 0.2);
+  --color-water-ray: rgba(248, 243, 234, 0.04);
+}
+
+/* ========== Responsive Chip Scaling ========== */
+@media (min-width: 1280px) {
+  :root {
+    --chip-h: 34px;
+    --chip-font-size: 13px;
+  }
 }

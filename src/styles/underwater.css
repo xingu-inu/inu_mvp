@@ -1,5 +1,5 @@
-/* ========== Underwater Theme ========== */
-/* inu Design System - Seal Brand Identity */
+/* ========== Warm Earth Theme ========== */
+/* inu Design System - Brand Identity */
 
 /* ========== Keyframes ========== */
 
@@ -14,7 +14,7 @@
   }
 }
 
-/* Bubble float animation */
+/* Particle float animation */
 @keyframes bubble-float {
   0% {
     transform: translateY(100%) scale(0.8);
@@ -80,12 +80,12 @@
   animation: card-float 6s ease-in-out infinite;
 }
 
-/* ========== Underwater Background ========== */
+/* ========== Warm Earth Background ========== */
 
 .underwater-bg {
   background: linear-gradient(
     180deg,
-    #7a8bb8 0%,
+    #b8a890 0%,
     var(--color-water-calm) 50%,
     var(--color-water-medium) 100%
   );
@@ -103,29 +103,29 @@
   );
 }
 
-/* ========== Auth Form Dive Styles ========== */
+/* ========== Auth Form Styles ========== */
 
 .auth-form-dive label {
   color: var(--color-water-light);
 }
 
 .auth-form-dive input {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 248, 235, 0.1);
+  border-color: rgba(255, 248, 235, 0.2);
   color: var(--color-water-light);
 }
 
 .auth-form-dive input::placeholder {
-  color: rgba(248, 245, 240, 0.5);
+  color: rgba(248, 243, 234, 0.5);
 }
 
 .auth-form-dive input:focus {
   border-color: var(--color-water-accent);
-  box-shadow: 0 0 0 3px rgba(240, 201, 135, 0.2);
+  box-shadow: 0 0 0 3px rgba(200, 122, 94, 0.2);
 }
 
 .auth-form-dive button[type='submit'] {
-  background: linear-gradient(135deg, var(--color-water-accent) 0%, #d4a55a 100%);
+  background: linear-gradient(135deg, var(--color-water-accent) 0%, #a06048 100%);
   color: var(--color-water-deep);
 }
 
@@ -135,18 +135,18 @@
 
 /* OAuth/Secondary buttons - needs !important to override Tailwind */
 .auth-form-dive button.w-full[type='button'] {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 248, 235, 0.15) !important;
+  border: 1px solid rgba(255, 248, 235, 0.2) !important;
   color: var(--color-water-light) !important;
 }
 
 .auth-form-dive button.w-full[type='button']:hover {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 248, 235, 0.25) !important;
 }
 
 /* Password visibility toggle (small button inside input) */
 .auth-form-dive button[type='button']:not(.w-full) {
-  color: rgba(248, 245, 240, 0.6);
+  color: rgba(248, 243, 234, 0.6);
 }
 
 .auth-form-dive button[type='button']:not(.w-full):hover {
@@ -155,7 +155,7 @@
 
 /* Checkbox */
 .auth-form-dive [role='checkbox'] {
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 248, 235, 0.3);
 }
 
 .auth-form-dive [role='checkbox'][data-state='checked'] {
@@ -165,7 +165,7 @@
 
 /* Error messages */
 .auth-form-dive [data-error='true'] {
-  color: #f87171;
+  color: #e8887a;
 }
 
 /* ========== Reduced Motion ========== */

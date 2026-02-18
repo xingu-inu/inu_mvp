@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createGoogleEvent } from '@/lib/google-calendar'
 import { TIME_SLOT_CONFIG } from '@/lib/constants/time-slots'
+import type { HomeTask } from '@/actions/home.actions'
 import type { TimeSlot } from '@/types/entities'
 
 interface ExportResult {
@@ -38,14 +39,18 @@ export async function POST(request: Request): Promise<NextResponse<ExportResult 
     return NextResponse.json({ error: 'Google Calendar not connected' }, { status: 400 })
   }
 
-  // Fetch user's tasks for the given date
-  const { data: tasks, error: tasksError } = await supabase
-    .rpc('get_home_tasks', { target_date: date })
+  // Fetch user's tasks for the given date via RPC
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rawTasks, error: tasksError } = await (supabase.rpc as any)('get_today_tasks', {
+    p_user_id: user.id,
+    p_date: date,
+  })
 
-  if (tasksError || !tasks) {
+  if (tasksError || !rawTasks) {
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
   }
 
+  const tasks = rawTasks as unknown as HomeTask[]
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
   let exported = 0
@@ -54,38 +59,35 @@ export async function POST(request: Request): Promise<NextResponse<ExportResult 
 
   for (const task of tasks) {
     // Skip already-done tasks
-    if (task.check_in_status === 'done' || task.check_in_status === 'skip') {
+    if (task.todayCheckIn?.status === 'done' || task.todayCheckIn?.status === 'skip') {
       skipped++
       continue
     }
 
-    const summary = `[inu] ${task.task_name}`
-    const description = task.task_why || undefined
+    const summary = `[inu] ${task.name}`
+    const description = task.why || undefined
 
     let startDateTime: string
     let endDateTime: string
 
-    if (task.specific_time) {
-      // Use exact time
-      startDateTime = `${date}T${task.specific_time}:00`
-      const durationMs = (task.duration_minutes || 30) * 60_000
+    if (task.specificTime) {
+      startDateTime = `${date}T${task.specificTime}:00`
+      const durationMs = (task.durationMinutes || 30) * 60_000
       endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
-    } else if (task.time_slot && task.time_slot !== 'anytime') {
-      // Use slot midpoint
-      const config = TIME_SLOT_CONFIG[task.time_slot as TimeSlot]
+    } else if (task.timeSlot && task.timeSlot !== 'anytime') {
+      const config = TIME_SLOT_CONFIG[task.timeSlot as TimeSlot]
       if (config) {
         const midHour = Math.floor((config.hours[0] + config.hours[1]) / 2)
         startDateTime = `${date}T${String(midHour).padStart(2, '0')}:00:00`
-        const durationMs = (task.duration_minutes || 30) * 60_000
+        const durationMs = (task.durationMinutes || 30) * 60_000
         endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
       } else {
         skipped++
         continue
       }
     } else {
-      // Anytime → all-day not supported by createGoogleEvent yet, use 09:00 default
       startDateTime = `${date}T09:00:00`
-      const durationMs = (task.duration_minutes || 30) * 60_000
+      const durationMs = (task.durationMinutes || 30) * 60_000
       endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
     }
 

@@ -132,6 +132,7 @@ export interface Task extends BaseEntity {
   related_area_ids: string[]
   related_goal_ids: string[]
   cross_link_group_map: Record<string, string | null>
+  google_event_id: string | null
   // Relations
   goal?: Goal
   check_ins?: CheckIn[]
@@ -252,7 +253,6 @@ export interface HomeTask extends Omit<Task, 'goal' | 'group'> {
   } | null
   relatedAreas: RelatedArea[] | null
   relatedGoals: RelatedGoal[] | null
-  isOverdue: boolean
   scheduledDate: string | null
   taskStatus: TaskStatus
   directionVersion: number | null
@@ -483,15 +483,49 @@ export interface MonthlyReflection extends BaseEntity {
   user_id: string
   month_start: string // First day of month (YYYY-MM-DD)
   summary: string | null
+  highlight: string | null
+  challenge: string | null
 }
 
 export interface CreateMonthlyReflectionInput {
   month_start: string
   summary?: string
+  highlight?: string
+  challenge?: string
 }
 
 export interface UpdateMonthlyReflectionInput {
   summary?: string
+  highlight?: string
+  challenge?: string
+}
+
+// ============================================
+// Goal Reflection (Review - Goal 회고)
+// ============================================
+export interface GoalReflection extends BaseEntity {
+  user_id: string
+  goal_id: string
+  period_start: string
+  period_end: string
+  summary: string | null
+  progress_feeling: MoodLevel | null
+  next_focus: string | null
+}
+
+export interface CreateGoalReflectionInput {
+  goal_id: string
+  period_start: string
+  period_end: string
+  summary?: string
+  progress_feeling?: MoodLevel
+  next_focus?: string
+}
+
+export interface UpdateGoalReflectionInput {
+  summary?: string
+  progress_feeling?: MoodLevel
+  next_focus?: string
 }
 
 // ============================================
@@ -582,9 +616,20 @@ export interface AppNotification {
 // ============================================
 // Chat (AI Coach Conversations)
 // ============================================
+export interface ChatContext {
+  type: 'goal' | 'task'
+  entityId: string
+  entityName: string
+  goalId: string
+  goalName?: string
+  areaName?: string
+}
+
 export interface ChatConversation extends BaseEntity {
   user_id: string
   title: string
+  related_goal_id: string | null
+  related_task_id: string | null
 }
 
 export interface ChatMessage {

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 const PARTICLE_COUNT = 12
 const CONFETTI_COUNT = 50
-const CONFETTI_COLORS = ['#22c55e', '#f59e0b', '#2186ff', '#8b5cf6', '#f87171']
+const CONFETTI_COLORS = ['#6b9e7d', '#b89650', '#b05a3c', '#9e7ec0', '#c07878']
 
 export function ParticleBurst({ trigger }: { trigger: boolean }) {
   const [isActive, setIsActive] = useState(false)

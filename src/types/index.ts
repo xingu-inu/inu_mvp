@@ -51,6 +51,10 @@ export type {
   MonthlyReflection,
   CreateMonthlyReflectionInput,
   UpdateMonthlyReflectionInput,
+  // Goal Reflection
+  GoalReflection,
+  CreateGoalReflectionInput,
+  UpdateGoalReflectionInput,
   // Weekly Reflection
   WeeklyReflection,
   CreateWeeklyReflectionInput,
