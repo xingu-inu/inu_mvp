@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format, isToday, isAfter, startOfDay } from 'date-fns'
+import { format } from 'date-fns'
+import { AiChatButton } from '@/components/common/ai-chat-button'
 import { motion } from 'framer-motion'
 import {
   ArrowLeft,
@@ -53,7 +54,8 @@ import { getWhySuggestions } from '@/lib/utils/why-generator'
 import type { AreaType, CheckInStatus, TaskStatus, UpdateTaskInput } from '@/types/entities'
 
 export function TaskDetailPanel() {
-  const { selectedTaskId, clearPanelSelection } = useHomeStore()
+  const selectedTaskId = useHomeStore((s) => s.selectedTaskId)
+  const clearPanelSelection = useHomeStore((s) => s.clearPanelSelection)
   const { currentDate } = useHomeState()
   const { data: apiTasks = [] } = useHomeTasks(currentDate)
   const { data: directionData } = useDirection()
@@ -171,9 +173,7 @@ export function TaskDetailPanel() {
   }
 
   const status = task.todayCheckIn?.status
-  const isTodayDate = isToday(currentDate)
-  const isFuture = isAfter(startOfDay(currentDate), startOfDay(new Date()))
-  const isReadOnly = isFuture
+  const isReadOnly = false
   const direction = directionData?.statement ?? null
 
   const handleCheckIn = (newStatus: CheckInStatus) => {
@@ -476,20 +476,18 @@ export function TaskDetailPanel() {
                 건너뛰기
               </Button>
             </div>
-            {isTodayDate && (
-              <button
-                onClick={handlePostpone}
-                disabled={checkIn.isPending}
-                className={cn(
-                  'flex items-center gap-1 text-xs transition-colors',
-                  'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
-                  checkIn.isPending && 'cursor-not-allowed opacity-50'
-                )}
-              >
-                <ArrowRight className="h-3 w-3" />
-                내일로 미루기
-              </button>
-            )}
+            <button
+              onClick={handlePostpone}
+              disabled={checkIn.isPending}
+              className={cn(
+                'flex items-center gap-1 text-xs transition-colors',
+                'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+                checkIn.isPending && 'cursor-not-allowed opacity-50'
+              )}
+            >
+              <ArrowRight className="h-3 w-3" />
+              내일로 미루기
+            </button>
           </div>
         )}
 
@@ -542,6 +540,20 @@ export function TaskDetailPanel() {
               {aiComment}
             </p>
           </motion.div>
+        )}
+
+        {/* AI Chat Entry */}
+        {task.goal && (
+          <AiChatButton
+            context={{
+              type: 'task',
+              entityId: task.id,
+              entityName: task.name,
+              goalId: task.goal.id,
+              goalName: task.goal.name,
+              areaName: task.goal.area?.name,
+            }}
+          />
         )}
 
         {/* New Round Message */}

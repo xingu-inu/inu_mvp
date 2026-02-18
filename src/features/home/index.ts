@@ -1,7 +1,7 @@
 // Components
 export { HomeHeader } from './components/home-header'
 export { HomeViewToggle } from './components/home-view-toggle'
-export { ProgressSummary } from './components/progress-summary'
+
 export { TaskList } from './components/task-list'
 export { EmptyTasks } from './components/empty-tasks'
 export { InlineTaskInput } from './components/inline-task-input'

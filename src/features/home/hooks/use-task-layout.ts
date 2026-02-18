@@ -1,155 +1,140 @@
 import { useMemo } from 'react'
-import { HOUR_HEIGHT, TIME_SLOT_CONFIG } from '@/lib/constants/time-slots'
 import type { HomeTask, TimeSlot } from '@/types/entities'
+import type { GoogleCalendarEvent } from '@/types/google-calendar'
 
-export interface PositionedTask {
-  task: HomeTask
-  topPx: number
-  heightPx: number
-  leftPercent: number
-  widthPercent: number
-}
-
-interface DayLayout {
-  positioned: PositionedTask[]
+/** 4개 시간대 슬롯 + anytime 으로 분류된 task 레이아웃 */
+export interface SlotLayout {
+  dawn: HomeTask[]
+  morning: HomeTask[]
+  afternoon: HomeTask[]
+  evening: HomeTask[]
   anytime: HomeTask[]
 }
 
-const MIN_BLOCK_HEIGHT = 28
+/** Google Calendar 이벤트의 슬롯별 분류 */
+export interface SlotGoogleEvents {
+  dawn: GoogleCalendarEvent[]
+  morning: GoogleCalendarEvent[]
+  afternoon: GoogleCalendarEvent[]
+  evening: GoogleCalendarEvent[]
+  allDay: GoogleCalendarEvent[]
+}
 
 /**
  * Parse "HH:MM" string to total minutes from midnight.
  */
-function parseTime(time: string): number {
+export function parseTime(time: string): number {
   const [h, m] = time.split(':').map(Number)
   return (h || 0) * 60 + (m || 0)
 }
 
 /**
- * Compute vertical position for a single task.
+ * Sort comparator for tasks within a slot:
+ * 1. Tasks with specific_time first (ascending by time)
+ * 2. Tasks without specific_time last (ascending by sort_order)
  */
-function computeVertical(task: HomeTask): { topPx: number; heightPx: number } | null {
-  const slot = task.time_slot as TimeSlot
+function slotTaskComparator(a: HomeTask, b: HomeTask): number {
+  const aHasTime = !!a.specific_time
+  const bHasTime = !!b.specific_time
 
-  // anytime tasks are handled separately
-  if (slot === 'anytime' || !slot) return null
-
-  const config = TIME_SLOT_CONFIG[slot]
-  if (!config) return null
-
-  let topPx: number
-  let heightPx: number
-
-  if (task.specific_time) {
-    // Precise positioning based on specific_time
-    const startMinutes = parseTime(task.specific_time)
-    topPx = (startMinutes / 60) * HOUR_HEIGHT
-
-    if (task.duration_minutes > 0) {
-      heightPx = (task.duration_minutes / 60) * HOUR_HEIGHT
-    } else {
-      // Default to 1 hour if no duration
-      heightPx = HOUR_HEIGHT
-    }
-  } else {
-    // Position based on time slot range — always span the full slot
-    const [startHour, endHour] = config.hours
-    topPx = startHour * HOUR_HEIGHT
-    heightPx = (endHour - startHour) * HOUR_HEIGHT
+  if (aHasTime && bHasTime) {
+    return parseTime(a.specific_time!) - parseTime(b.specific_time!)
   }
+  if (aHasTime && !bHasTime) return -1
+  if (!aHasTime && bHasTime) return 1
 
-  return {
-    topPx,
-    heightPx: Math.max(heightPx, MIN_BLOCK_HEIGHT),
-  }
+  // Both without specific_time: sort by sort_order (fractional indexing)
+  const aOrder = a.sort_order ?? ''
+  const bOrder = b.sort_order ?? ''
+  return aOrder < bOrder ? -1 : aOrder > bOrder ? 1 : 0
 }
 
 /**
- * Resolve horizontal overlaps using a column-packing algorithm.
- * Tasks that overlap in time get placed side-by-side (Google Calendar style).
+ * Bucket tasks into time-slot groups and sort within each.
  */
-function resolveOverlaps(
-  tasks: Array<{ task: HomeTask; topPx: number; heightPx: number }>
-): PositionedTask[] {
-  if (tasks.length === 0) return []
+export function computeSlotLayout(tasks: HomeTask[]): SlotLayout {
+  const layout: SlotLayout = {
+    dawn: [],
+    morning: [],
+    afternoon: [],
+    evening: [],
+    anytime: [],
+  }
 
-  // Sort by top (ascending), then by height (descending) — longer events first
-  const sorted = [...tasks].sort((a, b) => a.topPx - b.topPx || b.heightPx - a.heightPx)
-
-  // Column assignment: each column is an array of tasks
-  const columns: Array<Array<(typeof sorted)[0]>> = []
-
-  for (const item of sorted) {
-    // Find first column where this task doesn't overlap
-    let placed = false
-    for (const col of columns) {
-      const lastInCol = col[col.length - 1]
-      const lastEnd = lastInCol.topPx + lastInCol.heightPx
-      if (item.topPx >= lastEnd) {
-        col.push(item)
-        placed = true
-        break
-      }
-    }
-
-    if (!placed) {
-      columns.push([item])
+  for (const task of tasks) {
+    const slot = task.time_slot as TimeSlot | null | undefined
+    if (slot && slot !== 'anytime' && slot in layout) {
+      layout[slot as keyof SlotLayout].push(task)
+    } else {
+      layout.anytime.push(task)
     }
   }
 
-  const totalColumns = columns.length
+  // Sort each slot
+  layout.dawn.sort(slotTaskComparator)
+  layout.morning.sort(slotTaskComparator)
+  layout.afternoon.sort(slotTaskComparator)
+  layout.evening.sort(slotTaskComparator)
+  layout.anytime.sort(slotTaskComparator)
 
-  // Build positioned tasks with column-based widths
-  const result: PositionedTask[] = []
-  for (let colIdx = 0; colIdx < columns.length; colIdx++) {
-    for (const item of columns[colIdx]) {
-      result.push({
-        task: item.task,
-        topPx: item.topPx,
-        heightPx: item.heightPx,
-        leftPercent: (colIdx / totalColumns) * 100,
-        widthPercent: (1 / totalColumns) * 100,
-      })
+  return layout
+}
+
+/**
+ * Bucket Google Calendar events into time-slot groups.
+ * Cross-slot events go to the start slot only.
+ * All-day events go to allDay.
+ */
+export function assignGoogleEventsToSlots(
+  events: GoogleCalendarEvent[]
+): SlotGoogleEvents {
+  const result: SlotGoogleEvents = {
+    dawn: [],
+    morning: [],
+    afternoon: [],
+    evening: [],
+    allDay: [],
+  }
+
+  for (const event of events) {
+    if (event.isAllDay) {
+      result.allDay.push(event)
+      continue
+    }
+
+    const startMin = event.startMinutes
+    if (startMin < 360) {
+      result.dawn.push(event)
+    } else if (startMin < 720) {
+      result.morning.push(event)
+    } else if (startMin < 1080) {
+      result.afternoon.push(event)
+    } else {
+      result.evening.push(event)
     }
   }
+
+  // Sort each slot by start time
+  const sortByStart = (a: GoogleCalendarEvent, b: GoogleCalendarEvent) =>
+    a.startMinutes - b.startMinutes
+  result.dawn.sort(sortByStart)
+  result.morning.sort(sortByStart)
+  result.afternoon.sort(sortByStart)
+  result.evening.sort(sortByStart)
 
   return result
 }
 
 /**
- * Compute positioned task layout for a single day.
+ * Hook: compute slot-based task layout for all days in a week.
  */
-function computeDayLayout(tasks: HomeTask[]): DayLayout {
-  const anytime: HomeTask[] = []
-  const timed: Array<{ task: HomeTask; topPx: number; heightPx: number }> = []
-
-  for (const task of tasks) {
-    if (task.time_slot === 'anytime' || !task.time_slot) {
-      anytime.push(task)
-      continue
-    }
-
-    const vertical = computeVertical(task)
-    if (vertical) {
-      timed.push({ task, ...vertical })
-    }
-  }
-
-  return {
-    positioned: resolveOverlaps(timed),
-    anytime,
-  }
-}
-
-/**
- * Hook: compute task layout for all days in a week.
- * Returns positioned tasks + anytime tasks per day.
- */
-export function useTaskLayout(tasksByDate: Record<string, HomeTask[]>): Record<string, DayLayout> {
+export function useTaskLayout(
+  tasksByDate: Record<string, HomeTask[]>
+): Record<string, SlotLayout> {
   return useMemo(() => {
-    const result: Record<string, DayLayout> = {}
+    const result: Record<string, SlotLayout> = {}
     for (const [dateStr, tasks] of Object.entries(tasksByDate)) {
-      result[dateStr] = computeDayLayout(tasks)
+      result[dateStr] = computeSlotLayout(tasks)
     }
     return result
   }, [tasksByDate])

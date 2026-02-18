@@ -26,12 +26,6 @@ interface HomeState {
   setPriorityRankResult: (result: AiPriorityRankResponse, date: string) => void
   clearPriorityRankResult: () => void
 
-  // Applied Priority (visual emphasis in task list)
-  appliedPriorityTiers: Record<string, number> | null
-  appliedPriorityDate: string | null
-  applyPriorityRank: (result: AiPriorityRankResponse) => void
-  clearAppliedPriority: () => void
-
   // Reset
   reset: () => void
 }
@@ -44,8 +38,6 @@ const initialState = {
   isPriorityRankOpen: false,
   priorityRankResult: null as AiPriorityRankResponse | null,
   priorityRankDate: null as string | null,
-  appliedPriorityTiers: null as Record<string, number> | null,
-  appliedPriorityDate: null as string | null,
 }
 
 export const useHomeStore = create<HomeState>()(
@@ -86,24 +78,6 @@ export const useHomeStore = create<HomeState>()(
 
       clearPriorityRankResult: () => set({ priorityRankResult: null, priorityRankDate: null }),
 
-      applyPriorityRank: (result) => {
-        const mapping: Record<string, number> = {}
-        for (const tier of result.tiers) {
-          for (const goal of tier.goals) {
-            for (const task of goal.tasks) {
-              mapping[task.taskId] = tier.tier
-            }
-          }
-        }
-        set({
-          appliedPriorityTiers: mapping,
-          appliedPriorityDate: new Date().toISOString(),
-          isPriorityRankOpen: false,
-        })
-      },
-
-      clearAppliedPriority: () => set({ appliedPriorityTiers: null, appliedPriorityDate: null }),
-
       reset: () => set(initialState),
     }),
     {
@@ -111,8 +85,6 @@ export const useHomeStore = create<HomeState>()(
       partialize: (state) => ({
         priorityRankResult: state.priorityRankResult,
         priorityRankDate: state.priorityRankDate,
-        appliedPriorityTiers: state.appliedPriorityTiers,
-        appliedPriorityDate: state.appliedPriorityDate,
       }),
     }
   )

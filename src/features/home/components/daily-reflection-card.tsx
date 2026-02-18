@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { format, isToday, isBefore, startOfDay } from 'date-fns'
+import { format, isToday } from 'date-fns'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PenLine, Check, ChevronDown, ChevronRight, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import { Mascot } from '@/components/common/mascot'
 import { MoodSelector } from './mood-selector'
 import { OverallReflectionTab } from './overall-reflection-tab'
 import { PerTaskReflectionTab } from './per-task-reflection-tab'
@@ -23,15 +24,11 @@ interface DailyReflectionCardProps {
 export function DailyReflectionCard({ tasks, date }: DailyReflectionCardProps) {
   const dateString = format(date, 'yyyy-MM-dd')
   const isViewingToday = isToday(date)
-  const isViewingPast = isBefore(startOfDay(date), startOfDay(new Date()))
+
 
   // React Query hooks
   const { data: reflection, isLoading } = useReflection(dateString)
 
-  // Future dates: don't show
-  if (!isViewingToday && !isViewingPast) {
-    return null
-  }
 
   if (isLoading) {
     return (
@@ -176,7 +173,7 @@ function ReflectionForm({
           onClick={toggleOpen}
           className="flex w-full items-center gap-3 rounded-xl bg-[var(--color-primary-500)] px-5 py-4 text-left text-white transition-all hover:bg-[var(--color-primary-600)] active:scale-[0.98]"
         >
-          <span className="text-lg">✍️</span>
+          <Mascot mood="checkin" size="xs" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold">오늘 하루 어땠나요?</p>
             <p className="text-xs opacity-80">회고를 남겨보세요</p>

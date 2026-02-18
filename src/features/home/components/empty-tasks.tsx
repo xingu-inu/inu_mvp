@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { Mascot } from '@/components/common/mascot'
 
 export function EmptyTasks() {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-      <div className="mb-6 text-6xl" aria-hidden="true">
-        🌴
+      <div className="mb-6">
+        <Mascot mood="empty" size="lg" />
       </div>
       <h3 className="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
         오늘 할 일이 없어요

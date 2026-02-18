@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
-import { AlertTriangle } from 'lucide-react'
-import { differenceInDays, parseISO } from 'date-fns'
+import { Flame } from 'lucide-react'
+import { format } from 'date-fns'
 import { CompactTaskRow } from './compact-task-row'
 import { EmptyTasks } from './empty-tasks'
 import { AreaTaskSection } from './area-task-section'
 import { SortableTaskList } from './sortable-task-list'
 import { InlineTaskInput } from './inline-task-input'
 import { DailySectionHeader } from './daily-section-header'
+import { PastDaySummary } from './past-day-summary'
 import { useHomeStore } from '@/stores/home.store'
 import { groupTasksByArea } from '@/lib/utils/task-utils'
 import { useActiveAreas } from '@/queries/use-areas'
@@ -76,11 +77,16 @@ export function TaskList({
     return tasks.filter((t) => !!t.todayCheckIn?.status)
   }, [tasks, filter])
 
-  const { overdueTasks, normalTasks } = useMemo(() => {
-    const overdue = filteredTasks.filter((t) => t.isOverdue)
-    const normal = filteredTasks.filter((t) => !t.isOverdue)
-    return { overdueTasks: overdue, normalTasks: normal }
-  }, [filteredTasks])
+  const streakAtRiskTasks = useMemo(() => {
+    if (new Date().getHours() < 18) return []
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    const selectedStr = format(selectedDate, 'yyyy-MM-dd')
+    if (todayStr !== selectedStr) return []
+    return tasks.filter(
+      (t) => !t.todayCheckIn?.status && t.streak_count >= 3
+    )
+  }, [tasks, selectedDate])
+
 
   const allAreasForGrouping = useMemo(
     () =>
@@ -97,8 +103,8 @@ export function TaskList({
   )
 
   const { areaGroups, dailyTasks } = useMemo(
-    () => groupTasksByArea(normalTasks, allAreasForGrouping),
-    [normalTasks, allAreasForGrouping]
+    () => groupTasksByArea(filteredTasks, allAreasForGrouping),
+    [filteredTasks, allAreasForGrouping]
   )
 
   // DnD enabled only when not read-only and filter is 'all' (to prevent sort order confusion)
@@ -111,15 +117,30 @@ export function TaskList({
 
   return (
     <div ref={listRef} className="space-y-4">
-      {/* Overdue tasks section */}
-      {overdueTasks.length > 0 && (
-        <OverdueSection
-          tasks={overdueTasks}
-          isReadOnly={isReadOnly}
-          selectedDate={selectedDate}
-          expandedTaskId={expandedTaskId}
-          onToggle={handleToggle}
-        />
+      {/* Day summary */}
+      <PastDaySummary tasks={tasks} selectedDate={selectedDate} />
+
+      {/* Streak at-risk nudge */}
+      {streakAtRiskTasks.length > 0 && (
+        <button
+          onClick={() => {
+            const firstTask = streakAtRiskTasks[0]
+            setExpandedTaskId(firstTask.id)
+            requestAnimationFrame(() => {
+              const el = listRef.current?.querySelector(`[data-task-id="${firstTask.id}"]`)
+              el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            })
+          }}
+          className="flex w-full items-center gap-2 rounded-lg bg-[var(--color-streak-bg)] px-3 py-2 text-left transition-colors hover:brightness-95"
+        >
+          <Flame className="h-4 w-4 flex-shrink-0 text-[var(--color-streak)]" />
+          <span className="text-sm font-medium text-[var(--color-streak)]">
+            🔥 {Math.max(...streakAtRiskTasks.map((t) => t.streak_count))}일 스트릭을 이어가세요
+          </span>
+          <span className="ml-auto text-xs text-[var(--color-text-tertiary)]">
+            지금 체크인
+          </span>
+        </button>
       )}
 
       {/* Filter pills */}
@@ -178,56 +199,6 @@ export function TaskList({
         </>
       )}
     </div>
-  )
-}
-
-/** Overdue tasks section -- displayed at the top with miss-color styling */
-function OverdueSection({
-  tasks,
-  isReadOnly,
-  selectedDate,
-  expandedTaskId,
-  onToggle,
-}: {
-  tasks: HomeTask[]
-  isReadOnly?: boolean
-  selectedDate: Date
-  expandedTaskId: string | null
-  onToggle: (taskId: string) => void
-}) {
-  return (
-    <section
-      aria-labelledby="overdue-tasks"
-      className="rounded-lg border border-[var(--color-miss)] bg-[var(--color-miss-bg)] px-3 py-2"
-    >
-      <div className="mb-1.5 flex items-center gap-1.5">
-        <AlertTriangle className="h-3.5 w-3.5 text-[var(--color-miss)]" />
-        <h2 id="overdue-tasks" className="text-sm font-medium text-[var(--color-miss)]">
-          지연된 할일
-        </h2>
-        <span className="font-mono text-xs text-[var(--color-miss)] tabular-nums">
-          {tasks.length}
-        </span>
-      </div>
-      <div className="space-y-0.5">
-        {tasks.map((task) => {
-          const daysOverdue = task.scheduledDate
-            ? differenceInDays(new Date(), parseISO(task.scheduledDate))
-            : 0
-          return (
-            <CompactTaskRow
-              key={task.id}
-              task={task}
-              isReadOnly={isReadOnly}
-              selectedDate={selectedDate}
-              overdueDays={daysOverdue > 0 ? daysOverdue : undefined}
-              isExpanded={expandedTaskId === task.id}
-              onToggle={onToggle}
-            />
-          )
-        })}
-      </div>
-    </section>
   )
 }
 

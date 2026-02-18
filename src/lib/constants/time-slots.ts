@@ -21,38 +21,41 @@ export const TIME_SLOT_CONFIG: Record<
 export const TIME_SLOT_ORDER: TimeSlot[] = ['dawn', 'morning', 'afternoon', 'evening', 'anytime']
 
 /**
- * Hourly grid constants (Google Calendar style)
+ * Display slots (anytime 제외, 그리드 렌더링용 4개 슬롯)
  */
-export const HOUR_HEIGHT = 56 // pixels per hour row
-export const GUTTER_WIDTH = 64 // pixels for time gutter column
-export const TOTAL_GRID_HEIGHT = HOUR_HEIGHT * 24 // 1344px
+export const DISPLAY_SLOTS = ['dawn', 'morning', 'afternoon', 'evening'] as const
+export type DisplaySlot = (typeof DISPLAY_SLOTS)[number]
 
-export const HOUR_LABELS = [
-  '00:00',
-  '01:00',
-  '02:00',
-  '03:00',
-  '04:00',
-  '05:00',
-  '06:00',
-  '07:00',
-  '08:00',
-  '09:00',
-  '10:00',
-  '11:00',
-  '12:00',
-  '13:00',
-  '14:00',
-  '15:00',
-  '16:00',
-  '17:00',
-  '18:00',
-  '19:00',
-  '20:00',
-  '21:00',
-  '22:00',
-  '23:00',
-] as const
+/**
+ * Get the current time slot based on the current hour.
+ */
+export function getCurrentSlot(): TimeSlot {
+  const hour = new Date().getHours()
+  if (hour < 6) return 'dawn'
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
+}
+
+/**
+ * Max visible items per slot in week grid (overflow → "+N more")
+ */
+export const SLOT_MAX_VISIBLE = 3
+
+/**
+ * Dawn slot collapsed height when empty (px)
+ */
+export const SLOT_DAWN_COLLAPSED_HEIGHT = 32
+
+/**
+ * Max visible items in anytime/all-day row per day
+ */
+export const ANYTIME_MAX_VISIBLE = 3
+
+/**
+ * Auto-collapse anytime row when any day exceeds this many items
+ */
+export const ANYTIME_COLLAPSE_THRESHOLD = 3
 
 /**
  * Duration options for task creation (in minutes)

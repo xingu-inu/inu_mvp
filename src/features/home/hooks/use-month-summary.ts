@@ -23,6 +23,8 @@ export interface MonthTaskPreview {
   name: string
   areaColor: string | null
   isDone: boolean
+  repeatType: string | null
+  durationMinutes: number
 }
 
 /** Per-day summary for the month heatmap. */
@@ -161,6 +163,8 @@ export function useMonthSummary(currentDate: Date) {
           name: task.name,
           areaColor: areaId ? (areaColorMap[areaId] ?? null) : null,
           isDone: doneTasksByDate[dateKey]?.has(task.id) ?? false,
+          repeatType: (task as { repeat_type?: string }).repeat_type ?? null,
+          durationMinutes: (task as { duration_minutes?: number }).duration_minutes ?? 0,
         }
       })
     }

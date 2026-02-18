@@ -1,138 +1,42 @@
-'use client'
+import { format, startOfWeek } from 'date-fns'
+import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
+import getQueryClient from '@/lib/query/get-query-client'
+import { queryKeys } from '@/lib/query/keys'
+import { STALE_TIMES } from '@/lib/query/stale-times'
+import { unwrapResponse, unwrapListResponse } from '@/lib/api'
+import { getWeekHomeTasks, getHomeTasks } from '@/actions/home.actions'
+import HomeContentPage from './home-content'
 
-import { Suspense } from 'react'
-import { isToday as isTodayFn, isFuture, startOfDay } from 'date-fns'
-import { cn } from '@/lib/utils'
-import { PageContainer } from '@/components/layout'
-import {
-  HomeHeader,
-  UnifiedCalendar,
-  TaskList,
-  DailyReflectionCard,
-  useHomeState,
-  useHomeKeyboard,
-} from '@/features/home'
-import { useHomeTasks, usePrefetchHomeTasks } from '@/queries/use-home'
-import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
-import { ProgressSummary } from '@/features/home/components/progress-summary'
-import { WeekViewGrid } from '@/features/home/components/week-view'
-import { AnnouncementBanner } from '@/features/home/components/announcement-banner'
-import { AiQuickActions } from '@/features/home/components/ai-quick-actions'
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>
+}) {
+  const { date } = await searchParams
+  const targetDate = date ? new Date(date) : new Date()
+  const weekStart = startOfWeek(targetDate, { weekStartsOn: 0 })
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd')
+  const weekEndStr = format(new Date(weekStart.getTime() + 6 * 86400000), 'yyyy-MM-dd')
+  const todayStr = format(targetDate, 'yyyy-MM-dd')
 
-export default function HomePage() {
-  return (
-    <PageContainer className="pb-24 lg:h-full lg:pb-0" fullWidth>
-      <Suspense fallback={<HomePageSkeleton />}>
-        <HomeContent />
-      </Suspense>
-    </PageContainer>
-  )
-}
+  const queryClient = getQueryClient()
 
-function HomeContent() {
-  const { currentDate, view } = useHomeState()
-  usePrefetchHomeTasks(currentDate)
-  useHomeKeyboard()
-
-  return (
-    <div
-      className={cn(
-        'space-y-6 px-4 py-6 lg:px-6',
-        view === 'week' && 'lg:flex lg:h-full lg:flex-col lg:gap-4 lg:space-y-0'
-      )}
-    >
-      <HomeHeader />
-      <AnnouncementBanner />
-
-      {view === 'week' && <WeekView />}
-      {view === 'month' && <MonthView />}
-    </div>
-  )
-}
-
-/** Week view: 7-day grid with time slot rows */
-function WeekView() {
-  return (
-    <div className="lg:min-h-0 lg:flex-1">
-      {/* Mobile only: task list ABOVE grid for immediate action access */}
-      <MobileTaskSection />
-      <WeekViewGrid />
-    </div>
-  )
-}
-
-/** Month view: full calendar + selected date's task list */
-function MonthView() {
-  return (
-    <>
-      {/* Mobile only: task list above calendar for immediate access */}
-      <MobileTaskSection />
-      <UnifiedCalendar />
-    </>
-  )
-}
-
-/** Task list section — visible on mobile only, desktop uses the right panel */
-function MobileTaskSection() {
-  const { currentDate } = useHomeState()
-  const { data: apiTasks = [], isLoading } = useHomeTasks(currentDate)
-  const tasks = mapApiTasksToEntities(apiTasks)
-  const viewingFuture = isFuture(startOfDay(currentDate))
-  const viewingToday = isTodayFn(currentDate)
+  await Promise.all([
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.tasks.homeWeek(weekStartStr),
+      queryFn: () => getWeekHomeTasks(weekStartStr, weekEndStr).then(unwrapResponse),
+      staleTime: STALE_TIMES.HOME_TASKS,
+    }),
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.tasks.home(todayStr),
+      queryFn: () => getHomeTasks(todayStr).then(unwrapListResponse),
+      staleTime: STALE_TIMES.HOME_TASKS,
+    }),
+  ])
 
   return (
-    <div className="space-y-4 lg:hidden">
-      {isLoading ? (
-        <TaskListSkeleton />
-      ) : (
-        <>
-          {/* Contextual greeting + progress for mobile */}
-          {viewingToday && tasks.length > 0 && (
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-              {getContextualGreeting(tasks)}
-            </p>
-          )}
-          {tasks.length > 0 && <ProgressSummary tasks={tasks} />}
-          <AiQuickActions tasks={tasks} selectedDate={currentDate} />
-          <TaskList tasks={tasks} selectedDate={currentDate} enableAiSuggest />
-          {!viewingFuture && <DailyReflectionCard tasks={tasks} date={currentDate} />}
-        </>
-      )}
-    </div>
-  )
-}
-
-function TaskListSkeleton() {
-  return (
-    <div className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-20 animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
-      ))}
-    </div>
-  )
-}
-
-function HomePageSkeleton() {
-  return (
-    <div className="space-y-6 px-4 py-6 lg:px-6">
-      {/* Header skeleton */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 animate-pulse rounded-lg bg-[var(--color-bg-secondary)]" />
-          <div className="h-10 w-10 animate-pulse rounded-lg bg-[var(--color-bg-secondary)]" />
-          <div className="h-7 w-28 animate-pulse rounded bg-[var(--color-bg-secondary)]" />
-        </div>
-      </div>
-
-      {/* Calendar skeleton */}
-      <div className="h-[60px] animate-pulse rounded-2xl bg-[var(--color-bg-secondary)]/50" />
-
-      {/* Task list skeleton */}
-      <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-20 animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
-        ))}
-      </div>
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <HomeContentPage />
+    </HydrationBoundary>
   )
 }

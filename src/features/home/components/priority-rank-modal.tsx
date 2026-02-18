@@ -11,7 +11,7 @@ import { useHomeStore } from '@/stores/home.store'
 import { isSameDay } from 'date-fns'
 import type { AiPriorityRankResponse } from '@/lib/ai/types'
 
-type PriorityRankStep = 'loading' | 'review' | 'done'
+type PriorityRankStep = 'loading' | 'review'
 
 export function PriorityRankModal() {
   const priorityContext = usePriorityRankContext()
@@ -20,7 +20,6 @@ export function PriorityRankModal() {
   const isPriorityRankOpen = useHomeStore((s) => s.isPriorityRankOpen)
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
   const selectTask = useHomeStore((s) => s.selectTask)
-  const applyPriorityRank = useHomeStore((s) => s.applyPriorityRank)
   const setPriorityRankResult = useHomeStore((s) => s.setPriorityRankResult)
 
   const [step, setStep] = useState<PriorityRankStep>('loading')
@@ -166,12 +165,6 @@ export function PriorityRankModal() {
     setIsPriorityRankOpen(false)
   }
 
-  const handleApply = () => {
-    if (!result) return
-    applyPriorityRank(result)
-    // applyPriorityRank closes modal via store
-  }
-
   const loadingMessage =
     elapsed < 3
       ? '스트릭, 목표, 시간대를 고려하는 중...'
@@ -235,20 +228,12 @@ export function PriorityRankModal() {
             <Button
               variant="secondary"
               size="sm"
-              className="flex-1 gap-1"
+              className="gap-1"
               onClick={triggerGenerate}
               disabled={aiSuggest.isPending}
             >
               <RefreshCw className="h-3.5 w-3.5" />
               다시 분석하기
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              className="flex-1 bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-primary-600)] text-white"
-              onClick={handleApply}
-            >
-              반영하기
             </Button>
           </ModalFooter>
         </ModalBody>

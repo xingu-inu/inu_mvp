@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useRef, memo } from 'react'
-import { format, addDays, isBefore, startOfDay } from 'date-fns'
+import { format, addDays, isSameDay } from 'date-fns'
 import {
   Check,
   SkipForward,
   Calendar1,
   Repeat,
-  CheckCircle,
   ChevronDown,
   Trash2,
   ArrowRight,
@@ -32,7 +31,6 @@ interface CompactTaskRowProps {
   task: HomeTask
   isReadOnly?: boolean
   selectedDate: Date
-  overdueDays?: number
   isExpanded?: boolean
   onToggle?: (taskId: string) => void
   priorityTier?: number
@@ -43,7 +41,6 @@ export const CompactTaskRow = memo(
     task,
     isReadOnly = false,
     selectedDate,
-    overdueDays,
     isExpanded = false,
     onToggle,
     priorityTier,
@@ -69,7 +66,6 @@ export const CompactTaskRow = memo(
     const canUndo = status && task.todayCheckIn?.id !== 'optimistic' && !effectiveReadOnly
 
     const isCompletedOnce = task.taskStatus === 'completed' && task.repeat_type === 'once'
-    const isPastDate = isBefore(startOfDay(selectedDate), startOfDay(new Date()))
 
     // Group/Goal 맥락 서브텍스트 + 스트릭 (inu "맥락 제공" 원칙)
     const contextText = [task.group?.name, task.goal?.name].filter(Boolean).join(' · ') || null
@@ -77,10 +73,29 @@ export const CompactTaskRow = memo(
     const showSubtitle = contextText || hasStreak
     const isStreakAtRisk = !status && task.streak_count >= 3 && new Date().getHours() >= 18
 
+    const isTimePassed = (() => {
+      if (status || effectiveReadOnly) return false
+      if (!isSameDay(selectedDate, new Date())) return false
+      if (task.time_slot === 'anytime') return false
+      const now = new Date().getHours()
+      const slotEndHours: Record<string, number> = {
+        dawn: 6,
+        morning: 12,
+        afternoon: 18,
+        evening: 24,
+      }
+      const endHour = slotEndHours[task.time_slot]
+      return endHour != null && now >= endHour
+    })()
+
     const handleCheckIn = (newStatus: CheckInStatus) => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
       checkIn.mutate(
-        { task_id: task.id, date: dateStr, status: newStatus },
+        {
+          task_id: task.id,
+          date: dateStr,
+          status: newStatus,
+        },
         {
           onSuccess: () => {
             if (newStatus === 'done') {
@@ -133,13 +148,13 @@ export const CompactTaskRow = memo(
           data-status={status || 'pending'}
           className={cn(
             'group/row relative flex items-center gap-2.5 rounded-lg px-3 py-2 transition-colors',
-            !status && !isExpanded && 'hover:bg-[var(--color-bg-secondary)]',
+            !status && !isExpanded && !isStreakAtRisk && 'hover:bg-[var(--color-bg-secondary)]',
             status === 'done' && 'bg-[var(--color-done-bg)]',
             status === 'skip' && 'bg-[var(--color-skip-bg)]',
             hasError && 'animate-shake',
             isReadOnly && 'opacity-70',
-            task.isOverdue && 'border-l-2 border-[var(--color-miss)]',
-            isExpanded && !status && 'bg-[var(--color-bg-secondary)]'
+            isExpanded && !status && 'bg-[var(--color-bg-secondary)]',
+            isStreakAtRisk && 'ring-1 ring-[var(--color-streak-ring)] bg-[var(--color-streak-bg)]/30'
           )}
         >
           {/* Particle Animation */}
@@ -201,14 +216,6 @@ export const CompactTaskRow = memo(
             </button>
           )}
 
-          {/* Completed once indicator */}
-          {isCompletedOnce && !status && (
-            <CheckCircle
-              className="h-4 w-4 flex-shrink-0 text-[var(--color-done)]"
-              aria-label="완료된 일회성 할일"
-            />
-          )}
-
           {/* Task name + context subtitle (clickable to toggle) */}
           <div
             className={cn(
@@ -228,12 +235,18 @@ export const CompactTaskRow = memo(
               {/* Once vs Repeat icon */}
               {task.repeat_type === 'once' ? (
                 <Calendar1
-                  className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-text-tertiary)]"
+                  className={cn(
+                    'h-3.5 w-3.5 flex-shrink-0',
+                    isTimePassed ? 'text-[var(--color-text-disabled)]' : 'text-[var(--color-text-tertiary)]'
+                  )}
                   aria-hidden="true"
                 />
               ) : (
                 <Repeat
-                  className="h-3.5 w-3.5 flex-shrink-0 text-[var(--color-text-tertiary)]"
+                  className={cn(
+                    'h-3.5 w-3.5 flex-shrink-0',
+                    isTimePassed ? 'text-[var(--color-text-disabled)]' : 'text-[var(--color-text-tertiary)]'
+                  )}
                   aria-hidden="true"
                 />
               )}
@@ -241,12 +254,6 @@ export const CompactTaskRow = memo(
               {priorityTier === 1 && (
                 <span className="flex-shrink-0 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-600 dark:bg-orange-900/50 dark:text-orange-300">
                   🔥
-                </span>
-              )}
-              {/* Overdue inline */}
-              {overdueDays != null && overdueDays > 0 && (
-                <span className="flex-shrink-0 text-xs font-semibold text-[var(--color-miss)]">
-                  D+{overdueDays}
                 </span>
               )}
             </span>
@@ -263,7 +270,7 @@ export const CompactTaskRow = memo(
                   <span
                     className={cn(
                       'text-[var(--color-streak)]',
-                      isStreakAtRisk && 'text-[var(--color-streak-high)]',
+                      isStreakAtRisk && 'animate-pulse text-[var(--color-streak-high)]',
                       particleKey > 0 && 'animate-streak-pop'
                     )}
                   >
@@ -290,7 +297,6 @@ export const CompactTaskRow = memo(
           {/* Postpone button (once tasks only, pending, today only) */}
           {!status &&
             !effectiveReadOnly &&
-            !isPastDate &&
             task.repeat_type === 'once' &&
             !isCompletedOnce && (
               <button
@@ -397,13 +403,11 @@ export const CompactTaskRow = memo(
       prevProps.task.todayCheckIn?.id === nextProps.task.todayCheckIn?.id &&
       prevProps.task.todayCheckIn?.status === nextProps.task.todayCheckIn?.status &&
       prevProps.task.streak_count === nextProps.task.streak_count &&
-      prevProps.task.isOverdue === nextProps.task.isOverdue &&
       prevProps.task.taskStatus === nextProps.task.taskStatus &&
       prevProps.task.group?.name === nextProps.task.group?.name &&
       prevProps.task.goal?.name === nextProps.task.goal?.name &&
       prevProps.task.directionVersion === nextProps.task.directionVersion &&
       prevProps.isReadOnly === nextProps.isReadOnly &&
-      prevProps.overdueDays === nextProps.overdueDays &&
       prevProps.selectedDate.getTime() === nextProps.selectedDate.getTime() &&
       prevProps.isExpanded === nextProps.isExpanded &&
       prevProps.priorityTier === nextProps.priorityTier

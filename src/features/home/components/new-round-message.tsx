@@ -1,5 +1,7 @@
 'use client'
 
+import { Mascot } from '@/components/common/mascot'
+
 interface NewRoundMessageProps {
   totalCompleted: number
   bestStreak: number
@@ -21,7 +23,7 @@ export function NewRoundMessage({ totalCompleted, bestStreak, streakCount }: New
   return (
     <div className="mt-2 rounded-lg bg-[var(--color-new-round-bg)] p-3 text-sm text-[var(--color-new-round-text)]">
       <p className="flex items-center gap-1.5">
-        <span>🌱</span>
+        <Mascot mood="encouraging" size="md" />
         <span className="font-medium">새로운 시작이에요!</span>
       </p>
       <p className="mt-1 text-[var(--color-text-secondary)]">

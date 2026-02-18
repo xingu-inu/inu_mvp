@@ -79,8 +79,8 @@ function AreaBar({ area, isFuture }: { area: AreaDayInfo; isFuture: boolean }) {
   return <div className="h-1.5 w-2.5 rounded-sm" style={{ backgroundColor: area.color, opacity }} />
 }
 
-/** Max tasks to show inline in a month cell */
-const MAX_VISIBLE_TASKS = 2
+/** Max tasks to show inline in a month cell (3rd hidden on mobile) */
+const MAX_VISIBLE_TASKS = 3
 
 /**
  * Compact task preview list for a month cell.
@@ -98,21 +98,33 @@ function TaskPreviewList({
 
   return (
     <div className="mt-0.5 flex w-full flex-col gap-px px-0.5">
-      {visible.map((task) => {
+      {visible.map((task, i) => {
         const done = isDone(task.id)
+        // 3rd task hidden on mobile, visible on desktop
+        const hiddenOnMobile = i === MAX_VISIBLE_TASKS - 1
         return (
           <div
             key={task.id}
-            className={cn('flex min-w-0 items-center gap-0.5', done && 'opacity-50')}
+            className={cn(
+              'flex min-w-0 items-center gap-0.5',
+              done && 'opacity-50',
+              hiddenOnMobile && 'hidden lg:flex'
+            )}
           >
             {/* Area color dot */}
             <span
-              className="h-1 w-1 shrink-0 rounded-full"
+              className="h-1 w-1 shrink-0 rounded-full lg:h-1.5 lg:w-1.5"
               style={{ backgroundColor: task.areaColor ?? 'var(--color-text-disabled)' }}
             />
+            {/* Repeat indicator on desktop */}
+            {task.repeatType && task.repeatType !== 'once' && (
+              <span className="hidden text-[7px] leading-none text-[var(--color-text-disabled)] lg:inline">
+                ↻
+              </span>
+            )}
             <span
               className={cn(
-                'truncate text-[9px] leading-tight text-[var(--color-text-secondary)]',
+                'truncate text-[9px] leading-tight text-[var(--color-text-secondary)] lg:text-[10px]',
                 done && 'line-through'
               )}
             >
@@ -196,7 +208,7 @@ export function UnifiedCalendar() {
               className={cn(
                 'flex flex-col items-center rounded-lg py-1.5 transition-all',
                 'hover:scale-[1.04] hover:bg-[var(--color-bg-tertiary)]',
-                'min-h-[72px] min-w-[44px]',
+                'min-h-[72px] min-w-[44px] lg:min-h-[88px]',
                 !isCurrentMonth && 'opacity-30',
                 isPerfect && 'bg-[var(--color-done)]/8',
                 isSelected && !isPerfect && 'bg-[var(--color-primary-50)]',
@@ -250,7 +262,12 @@ export function UnifiedCalendar() {
                           ))}
                         </div>
                       )}
-                      <span className="text-[9px] leading-none text-[var(--color-text-disabled)] tabular-nums">
+                      <span className={cn(
+                        'text-[9px] leading-none tabular-nums lg:text-[10px]',
+                        !dayIsFuture && daySummary.done === daySummary.total
+                          ? 'font-medium text-[var(--color-done)]'
+                          : 'text-[var(--color-text-disabled)]'
+                      )}>
                         {dayIsFuture ? daySummary.total : `${daySummary.done}/${daySummary.total}`}
                       </span>
                     </div>

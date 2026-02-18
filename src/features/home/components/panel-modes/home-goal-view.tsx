@@ -1,6 +1,7 @@
 'use client'
 
 import { ArrowLeft } from 'lucide-react'
+import { AiChatButton } from '@/components/common/ai-chat-button'
 import { Chip } from '@/components/ui/chip'
 import { DDayBadge } from '@/components/ui/badge'
 import { ProgressBar } from '@/components/ui/progress'
@@ -12,7 +13,9 @@ import { useGoal } from '@/queries/use-goals'
  * Shows goal info, group progress, and task list.
  */
 export function HomeGoalView() {
-  const { selectedGoalId, clearPanelSelection, selectTask } = useHomeStore()
+  const selectedGoalId = useHomeStore((s) => s.selectedGoalId)
+  const clearPanelSelection = useHomeStore((s) => s.clearPanelSelection)
+  const selectTask = useHomeStore((s) => s.selectTask)
   const { data: goal, isLoading } = useGoal(selectedGoalId ?? '')
 
   if (isLoading) {
@@ -62,6 +65,17 @@ export function HomeGoalView() {
 
         {/* Why */}
         {goal.why && <p className="text-sm text-[var(--color-text-secondary)]">💭 {goal.why}</p>}
+
+        {/* AI Chat Entry */}
+        <AiChatButton
+          context={{
+            type: 'goal',
+            entityId: goal.id,
+            entityName: goal.name,
+            goalId: goal.id,
+            areaName: goal.area?.name,
+          }}
+        />
 
         {/* Group progress */}
         {totalGroups > 0 && (
