@@ -4,26 +4,28 @@ import type {
   AiRoadmapDiagnosisRequest,
   AiTaskSuggestRequest,
   AiPriorityRankRequest,
+  AiReviewInsightRequest,
   AiGenerateRequest,
 } from './types'
+import { sanitizeUserText } from './sanitize'
 
 function buildContextBlock(context: AiContext): string {
   const parts: string[] = []
-  if (context.direction) parts.push(`나의 방향: "${context.direction}"`)
-  if (context.areaName) parts.push(`영역: ${context.areaName}`)
-  if (context.areaWhy) parts.push(`영역의 이유: ${context.areaWhy}`)
-  if (context.goalName) parts.push(`목표: ${context.goalName}`)
-  if (context.goalWhy) parts.push(`목표의 이유: ${context.goalWhy}`)
-  if (context.groupName) parts.push(`현재 그룹: ${context.groupName}`)
-  if (context.groupDescription) parts.push(`그룹 설명: ${context.groupDescription}`)
+  if (context.direction) parts.push(`나의 방향: "${sanitizeUserText(context.direction)}"`)
+  if (context.areaName) parts.push(`영역: ${sanitizeUserText(context.areaName)}`)
+  if (context.areaWhy) parts.push(`영역의 이유: ${sanitizeUserText(context.areaWhy)}`)
+  if (context.goalName) parts.push(`목표: ${sanitizeUserText(context.goalName)}`)
+  if (context.goalWhy) parts.push(`목표의 이유: ${sanitizeUserText(context.goalWhy)}`)
+  if (context.groupName) parts.push(`현재 그룹: ${sanitizeUserText(context.groupName)}`)
+  if (context.groupDescription) parts.push(`그룹 설명: ${sanitizeUserText(context.groupDescription)}`)
   if (context.existingGoals?.length) {
-    parts.push(`이미 있는 목표: ${context.existingGoals.join(', ')}`)
+    parts.push(`이미 있는 목표: ${context.existingGoals.map(sanitizeUserText).join(', ')}`)
   }
   if (context.existingGroups?.length) {
-    parts.push(`이미 있는 그룹: ${context.existingGroups.join(', ')}`)
+    parts.push(`이미 있는 그룹: ${context.existingGroups.map(sanitizeUserText).join(', ')}`)
   }
   if (context.existingTasks?.length) {
-    parts.push(`이미 있는 할 일: ${context.existingTasks.join(', ')}`)
+    parts.push(`이미 있는 할 일: ${context.existingTasks.map(sanitizeUserText).join(', ')}`)
   }
   return `<user_data>\n${parts.join('\n')}\n</user_data>`
 }
@@ -65,7 +67,7 @@ ${existingGoalsBlock}
 
 사용자 입력:
 <user_input>
-${request.input}
+${sanitizeUserText(request.input)}
 </user_input>
 
 JSON 형식으로 반환:
@@ -105,7 +107,7 @@ function buildDiagnosisContextBlock(request: AiRoadmapDiagnosisRequest): string 
   const parts: string[] = []
 
   if (context.direction) {
-    parts.push(`나의 방향: "${context.direction}"`)
+    parts.push(`나의 방향: "${sanitizeUserText(context.direction)}"`)
   }
 
   if (context.areas.length > 0) {
@@ -113,7 +115,7 @@ function buildDiagnosisContextBlock(request: AiRoadmapDiagnosisRequest): string 
       `영역 목록:\n${context.areas
         .map(
           (a) =>
-            `- ${a.emoji} ${a.name} (id: ${a.id}, type: ${a.type}${a.why ? `, why: "${a.why}"` : ', why: 없음'})`
+            `- ${a.emoji} ${sanitizeUserText(a.name)} (id: ${a.id}, type: ${a.type}${a.why ? `, why: "${sanitizeUserText(a.why)}"` : ', why: 없음'})`
         )
         .join('\n')}`
     )
@@ -124,7 +126,7 @@ function buildDiagnosisContextBlock(request: AiRoadmapDiagnosisRequest): string 
       `목표 목록:\n${context.goals
         .map(
           (g) =>
-            `- ${g.name} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${g.why}"` : ', why: 없음'}${g.targetDate ? `, 기한: ${g.targetDate}` : ''}, 그룹: ${g.groupCount}개, 할일: ${g.taskCount}개)`
+            `- ${sanitizeUserText(g.name)} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${sanitizeUserText(g.why)}"` : ', why: 없음'}${g.targetDate ? `, 기한: ${g.targetDate}` : ''}, 그룹: ${g.groupCount}개, 할일: ${g.taskCount}개)`
         )
         .join('\n')}`
     )
@@ -135,7 +137,7 @@ function buildDiagnosisContextBlock(request: AiRoadmapDiagnosisRequest): string 
       `할 일 목록:\n${context.tasks
         .map(
           (t) =>
-            `- ${t.name} (id: ${t.id}, goalId: ${t.goalId}, ${t.repeatType}, ${t.timeSlot}, ${t.durationMinutes}분${t.why ? `, why: "${t.why}"` : ', why: 없음'}, 스트릭: ${t.streakCount})`
+            `- ${sanitizeUserText(t.name)} (id: ${t.id}, goalId: ${t.goalId}, ${t.repeatType}, ${t.timeSlot}, ${t.durationMinutes}분${t.why ? `, why: "${sanitizeUserText(t.why)}"` : ', why: 없음'}, 스트릭: ${t.streakCount})`
         )
         .join('\n')}`
     )
@@ -271,7 +273,7 @@ function buildTaskSuggestPrompt(request: AiTaskSuggestRequest): string {
   const parts: string[] = []
 
   if (context.direction) {
-    parts.push(`나의 방향: "${context.direction}"`)
+    parts.push(`나의 방향: "${sanitizeUserText(context.direction)}"`)
   }
 
   if (context.areas.length > 0) {
@@ -279,7 +281,7 @@ function buildTaskSuggestPrompt(request: AiTaskSuggestRequest): string {
       `영역 목록:\n${context.areas
         .map(
           (a) =>
-            `- ${a.emoji} ${a.name} (id: ${a.id}, type: ${a.type}${a.why ? `, why: "${a.why}"` : ''})`
+            `- ${a.emoji} ${sanitizeUserText(a.name)} (id: ${a.id}, type: ${a.type}${a.why ? `, why: "${sanitizeUserText(a.why)}"` : ''})`
         )
         .join('\n')}`
     )
@@ -290,14 +292,14 @@ function buildTaskSuggestPrompt(request: AiTaskSuggestRequest): string {
       `목표 목록:\n${context.goals
         .map(
           (g) =>
-            `- ${g.areaEmoji} ${g.name} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${g.why}"` : ''})`
+            `- ${g.areaEmoji} ${sanitizeUserText(g.name)} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${sanitizeUserText(g.why)}"` : ''})`
         )
         .join('\n')}`
     )
   }
 
   if (context.existingTasks.length > 0) {
-    parts.push(`이미 있는 할 일:\n${context.existingTasks.map((t) => `- ${t.name}`).join('\n')}`)
+    parts.push(`이미 있는 할 일:\n${context.existingTasks.map((t) => `- ${sanitizeUserText(t.name)}`).join('\n')}`)
   }
 
   const contextBlock = `<user_data>\n${parts.join('\n\n')}\n</user_data>`
@@ -350,13 +352,13 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
   const parts: string[] = []
 
   if (context.direction) {
-    parts.push(`나의 방향: "${context.direction}"`)
+    parts.push(`나의 방향: "${sanitizeUserText(context.direction)}"`)
   }
 
   if (context.areas.length > 0) {
     parts.push(
       `영역 목록:\n${context.areas
-        .map((a) => `- ${a.emoji} ${a.name} (id: ${a.id}${a.why ? `, why: "${a.why}"` : ''})`)
+        .map((a) => `- ${a.emoji} ${sanitizeUserText(a.name)} (id: ${a.id}${a.why ? `, why: "${sanitizeUserText(a.why)}"` : ''})`)
         .join('\n')}`
     )
   }
@@ -366,7 +368,7 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
       `목표 목록:\n${context.goals
         .map(
           (g) =>
-            `- ${g.name} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${g.why}"` : ''}${g.targetDate ? `, 기한: ${g.targetDate}` : ''}, 할일: ${g.taskCount}개)`
+            `- ${sanitizeUserText(g.name)} (id: ${g.id}, areaId: ${g.areaId}, status: ${g.status}${g.why ? `, why: "${sanitizeUserText(g.why)}"` : ''}${g.targetDate ? `, 기한: ${g.targetDate}` : ''}, 할일: ${g.taskCount}개)`
         )
         .join('\n')}`
     )
@@ -377,7 +379,7 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
       `전체 활성 할 일 (${context.allActiveTasks.length}개):\n${context.allActiveTasks
         .map(
           (t) =>
-            `- ${t.name} (id: ${t.id}, goalId: ${t.goalId || 'null'}, ${t.areaEmoji || '📌'} ${t.goalName || '일상'}, ${t.repeatType}, ${t.timeSlot}, ${t.durationMinutes}분, 스트릭: ${t.streakCount}${t.why ? `, why: "${t.why}"` : ''})`
+            `- ${sanitizeUserText(t.name)} (id: ${t.id}, goalId: ${t.goalId || 'null'}, ${t.areaEmoji || '📌'} ${t.goalName ? sanitizeUserText(t.goalName) : '일상'}, ${t.repeatType}, ${t.timeSlot}, ${t.durationMinutes}분, 스트릭: ${t.streakCount}${t.why ? `, why: "${sanitizeUserText(t.why)}"` : ''})`
         )
         .join('\n')}`
     )
@@ -473,6 +475,48 @@ JSON 형식으로 반환:
 }`
 }
 
+function buildReviewInsightPrompt(request: AiReviewInsightRequest): string {
+  const ctx = request.context
+  const moodTrendStr = ctx.moodTrend.map((m) => `${m.date}: ${m.mood}`).join(', ')
+  const streakStr = ctx.topStreaks.map((s) => `${s.taskName}(${s.areaName}): ${s.count}일`).join(', ')
+  const areaStr = ctx.areaBalances.map((a) => `${a.areaName}: ${a.completionRate}%`).join(', ')
+
+  const reflectionStr = ctx.weeklyReflection
+    ? `\n사용자 회고: 자랑스러운 점="${ctx.weeklyReflection.highlight || '없음'}", 어려웠던 점="${ctx.weeklyReflection.challenge || '없음'}", 다음 다짐="${ctx.weeklyReflection.next_focus || '없음'}"`
+    : ''
+
+  return `당신은 inu 앱의 AI 어드바이저입니다. 사용자의 ${ctx.period === 'week' ? '주간' : '월간'} 실천 데이터를 분석해주세요.
+
+## 원칙
+- "no guilt" 철학: 절대 비난하지 않음. 못한 것보다 한 것에 집중
+- 데이터에 근거한 구체적 패턴만 언급 (빈말 금지)
+- 실천 가능한 작은 제안 위주
+- 따뜻하지만 현실적인 톤
+
+## 데이터
+- 기간: ${ctx.periodLabel}
+- 실천율: ${ctx.completionRate}% (${ctx.activeDays}/${ctx.totalDays}일 활동)
+- 평균 기분: ${ctx.avgMoodLabel}
+- 기분 추이: ${moodTrendStr || '기록 없음'}
+- 활성 스트릭: ${streakStr || '없음'}
+- 영역별 실천율: ${areaStr || '없음'}${reflectionStr}
+
+## 응답 형식 (JSON)
+{
+  "type": "review-insight",
+  "patterns": [
+    { "emoji": "📊", "text": "데이터에서 발견한 패턴 설명" }
+  ],
+  "coaching": [
+    { "emoji": "💡", "text": "다음 기간에 시도해볼 구체적 제안" }
+  ],
+  "encouragement": "마무리 격려 한 문장 (성장 마인드셋)"
+}
+
+patterns는 2-3개, coaching은 1-2개로 간결하게.
+데이터가 부족하면 억지로 패턴을 만들지 말고 "아직 데이터가 쌓이는 중이에요"라고 솔직하게.`
+}
+
 export function buildPrompt(request: AiGenerateRequest): string {
   if (request.type === 'brain-dump') {
     return buildBrainDumpPrompt(request)
@@ -488,6 +532,10 @@ export function buildPrompt(request: AiGenerateRequest): string {
 
   if (request.type === 'priority-rank') {
     return buildPriorityRankPrompt(request)
+  }
+
+  if (request.type === 'review-insight') {
+    return buildReviewInsightPrompt(request)
   }
 
   const contextBlock = buildContextBlock(request.context)

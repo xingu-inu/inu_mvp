@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { ChatContext } from '@/types/entities'
 
 interface AiChatState {
   // Panel 열림/닫힘
@@ -22,6 +23,11 @@ interface AiChatState {
 
   // 새 대화 시작
   startNewConversation: () => void
+
+  // 컨텍스트 (Goal/Task에서 진입 시)
+  context: ChatContext | null
+  openChatWithContext: (context: ChatContext) => void
+  clearContext: () => void
 }
 
 export const useAiChatStore = create<AiChatState>((set) => ({
@@ -35,10 +41,15 @@ export const useAiChatStore = create<AiChatState>((set) => ({
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
 
   activeConversationId: null,
-  setActiveConversation: (id) => set({ activeConversationId: id }),
+  setActiveConversation: (id) => set({ activeConversationId: id, context: null }),
 
   isLoading: false,
   setLoading: (loading) => set({ isLoading: loading }),
 
-  startNewConversation: () => set({ activeConversationId: null }),
+  startNewConversation: () => set({ activeConversationId: null, context: null }),
+
+  context: null,
+  openChatWithContext: (context) =>
+    set({ context, isOpen: true, activeConversationId: null }),
+  clearContext: () => set({ context: null }),
 }))

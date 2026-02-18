@@ -56,8 +56,16 @@ export function useCreateConversation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (title?: string) => {
-      const response = await createChatConversationAction(title)
+    mutationFn: async (params?: {
+      title?: string
+      relatedGoalId?: string
+      relatedTaskId?: string
+    }) => {
+      const response = await createChatConversationAction(
+        params?.title,
+        params?.relatedGoalId,
+        params?.relatedTaskId
+      )
       if (!response.success) throw new Error(response.error.message)
       return response.data
     },

@@ -38,8 +38,19 @@ export const getChatMessages = authAction(
  */
 export const createChatConversation = authAction(
   'createChatConversation',
-  async ({ supabase, user }, title?: string): Promise<ApiResponse<ChatConversation>> => {
-    const conversation = await chatRepository.createConversation(supabase, user.id, title)
+  async (
+    { supabase, user },
+    title?: string,
+    relatedGoalId?: string,
+    relatedTaskId?: string
+  ): Promise<ApiResponse<ChatConversation>> => {
+    const conversation = await chatRepository.createConversation(
+      supabase,
+      user.id,
+      title,
+      relatedGoalId,
+      relatedTaskId
+    )
     return successResponse(conversation)
   }
 )

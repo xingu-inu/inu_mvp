@@ -4,8 +4,6 @@ import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import {
   getAllMessages as getAllMessagesAction,
-  getUnreadMessages as getUnreadMessagesAction,
-  getUnreadCount as getUnreadCountAction,
   markAsRead as markAsReadAction,
   markAllAsRead as markAllAsReadAction,
 } from '@/actions'
@@ -16,28 +14,6 @@ import type { AIMessage } from '@/types/entities'
  */
 async function fetchAllMessages(): Promise<AIMessage[]> {
   const response = await getAllMessagesAction()
-  if (!response.success) {
-    throw new Error(response.error.message)
-  }
-  return response.data
-}
-
-/**
- * 읽지 않은 메시지 조회 wrapper
- */
-async function fetchUnreadMessages(): Promise<AIMessage[]> {
-  const response = await getUnreadMessagesAction()
-  if (!response.success) {
-    throw new Error(response.error.message)
-  }
-  return response.data
-}
-
-/**
- * 읽지 않은 메시지 수 조회 wrapper
- */
-async function fetchUnreadCount(): Promise<number> {
-  const response = await getUnreadCountAction()
   if (!response.success) {
     throw new Error(response.error.message)
   }
@@ -56,24 +32,26 @@ export function useAIMessages() {
 }
 
 /**
- * 읽지 않은 메시지 조회 hook
+ * 읽지 않은 메시지 조회 hook (useAIMessages에서 derive — 추가 서버 호출 없음)
  */
 export function useUnreadMessages() {
   return useQuery({
-    queryKey: queryKeys.aiMessages.unread(),
-    queryFn: fetchUnreadMessages,
+    queryKey: queryKeys.aiMessages.all,
+    queryFn: fetchAllMessages,
     staleTime: STALE_TIMES.AI_MESSAGES,
+    select: (messages) => messages.filter((m) => !m.is_read),
   })
 }
 
 /**
- * 읽지 않은 메시지 수 조회 hook
+ * 읽지 않은 메시지 수 조회 hook (useAIMessages에서 derive — 추가 서버 호출 없음)
  */
 export function useUnreadCount() {
   return useQuery({
-    queryKey: queryKeys.aiMessages.unreadCount(),
-    queryFn: fetchUnreadCount,
+    queryKey: queryKeys.aiMessages.all,
+    queryFn: fetchAllMessages,
     staleTime: STALE_TIMES.AI_MESSAGES,
+    select: (messages) => messages.filter((m) => !m.is_read).length,
   })
 }
 
@@ -94,40 +72,20 @@ export function useMarkAsRead() {
       await queryClient.cancelQueries({ queryKey: queryKeys.aiMessages.all })
 
       const previousAll = queryClient.getQueryData<AIMessage[]>(queryKeys.aiMessages.all)
-      const previousUnread = queryClient.getQueryData<AIMessage[]>(queryKeys.aiMessages.unread())
-      const previousCount = queryClient.getQueryData<number>(queryKeys.aiMessages.unreadCount())
 
-      // Optimistic update
+      // Optimistic: mark as read in the base cache (derived queries auto-update)
       if (previousAll) {
         queryClient.setQueryData<AIMessage[]>(
           queryKeys.aiMessages.all,
           previousAll.map((msg) => (msg.id === id ? { ...msg, is_read: true } : msg))
         )
       }
-      if (previousUnread) {
-        queryClient.setQueryData<AIMessage[]>(
-          queryKeys.aiMessages.unread(),
-          previousUnread.filter((msg) => msg.id !== id)
-        )
-      }
-      if (typeof previousCount === 'number') {
-        queryClient.setQueryData<number>(
-          queryKeys.aiMessages.unreadCount(),
-          Math.max(0, previousCount - 1)
-        )
-      }
 
-      return { previousAll, previousUnread, previousCount }
+      return { previousAll }
     },
     onError: (_err, _vars, context) => {
       if (context?.previousAll) {
         queryClient.setQueryData(queryKeys.aiMessages.all, context.previousAll)
-      }
-      if (context?.previousUnread) {
-        queryClient.setQueryData(queryKeys.aiMessages.unread(), context.previousUnread)
-      }
-      if (typeof context?.previousCount === 'number') {
-        queryClient.setQueryData(queryKeys.aiMessages.unreadCount(), context.previousCount)
       }
       toast.error('메시지 읽음 처리에 실패했습니다.')
     },
@@ -154,26 +112,20 @@ export function useMarkAllAsRead() {
       await queryClient.cancelQueries({ queryKey: queryKeys.aiMessages.all })
 
       const previousAll = queryClient.getQueryData<AIMessage[]>(queryKeys.aiMessages.all)
-      const previousCount = queryClient.getQueryData<number>(queryKeys.aiMessages.unreadCount())
 
-      // Optimistic: 모든 메시지를 읽음 처리
+      // Optimistic: mark all as read in the base cache
       if (previousAll) {
         queryClient.setQueryData<AIMessage[]>(
           queryKeys.aiMessages.all,
           previousAll.map((msg) => ({ ...msg, is_read: true }))
         )
       }
-      queryClient.setQueryData(queryKeys.aiMessages.unread(), [])
-      queryClient.setQueryData(queryKeys.aiMessages.unreadCount(), 0)
 
-      return { previousAll, previousCount }
+      return { previousAll }
     },
     onError: (_err, _vars, context) => {
       if (context?.previousAll) {
         queryClient.setQueryData(queryKeys.aiMessages.all, context.previousAll)
-      }
-      if (typeof context?.previousCount === 'number') {
-        queryClient.setQueryData(queryKeys.aiMessages.unreadCount(), context.previousCount)
       }
       toast.error('메시지 읽음 처리에 실패했습니다.')
     },

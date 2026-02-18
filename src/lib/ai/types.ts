@@ -325,6 +325,38 @@ export interface AiPriorityRankResponse {
   insight: string
 }
 
+// ── Review Insight Types (Review AI 분석) ──
+
+export interface AiReviewInsightContext {
+  period: 'week' | 'month'
+  periodLabel: string
+  completionRate: number
+  activeDays: number
+  totalDays: number
+  avgMoodLabel: string
+  moodTrend: Array<{ date: string; mood: string }>
+  topStreaks: Array<{ taskName: string; count: number; areaName: string }>
+  areaBalances: Array<{ areaName: string; completionRate: number }>
+  weeklyReflection?: { highlight?: string; challenge?: string; next_focus?: string }
+}
+
+export interface AiReviewInsightRequest {
+  type: 'review-insight'
+  context: AiReviewInsightContext
+}
+
+export interface AiReviewInsightPatternItem {
+  emoji: string
+  text: string
+}
+
+export interface AiReviewInsightResponse {
+  type: 'review-insight'
+  patterns: AiReviewInsightPatternItem[]
+  coaching: AiReviewInsightPatternItem[]
+  encouragement: string
+}
+
 export type AiGenerateRequest =
   | AiGoalBrainstormRequest
   | AiDecomposeRequest
@@ -334,6 +366,7 @@ export type AiGenerateRequest =
   | AiRoadmapDiagnosisRequest
   | AiTaskSuggestRequest
   | AiPriorityRankRequest
+  | AiReviewInsightRequest
 
 // ── Response Types ──
 
@@ -388,3 +421,4 @@ export type AiGenerateResponse =
   | AiRoadmapDiagnosisResponse
   | AiTaskSuggestResponse
   | AiPriorityRankResponse
+  | AiReviewInsightResponse

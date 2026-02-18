@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Send, Plus, PanelLeftClose, PanelLeftOpen, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, memo } from 'react'
+import { Send, Plus, PanelLeftClose, PanelLeftOpen, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { Mascot } from '@/components/common/mascot'
 import { useAiChatStore } from '@/stores/ai-chat.store'
 import {
   useChatConversations,
@@ -17,22 +18,34 @@ import {
 } from '@/queries/use-chat'
 import type { ChatMessage } from '@/types/entities'
 
-const QUICK_ACTIONS = [
+const DEFAULT_QUICK_ACTIONS = [
   { label: '이번 주 인사이트', prompt: '이번 주 내 실천에 대해 인사이트를 줘' },
   { label: '목표 제안', prompt: '지금 내 상황에서 추가할만한 새 목표를 제안해줘' },
   { label: '동기 부여', prompt: '오늘 하루 동기 부여가 될 한마디 해줘' },
 ]
 
+const GOAL_QUICK_ACTIONS = [
+  { label: '진행 상황 분석', prompt: '이 목표의 진행 상황을 분석해줘' },
+  { label: '다음 단계 제안', prompt: '이 목표를 위한 다음 단계를 제안해줘' },
+  { label: '동기 부여', prompt: '이 목표를 계속할 수 있도록 동기 부여해줘' },
+]
+
+const TASK_QUICK_ACTIONS = [
+  { label: '꾸준히 하는 팁', prompt: '이 할 일을 꾸준히 하려면 어떻게 해야 할까?' },
+  { label: '시간 활용 조언', prompt: '이 할 일을 더 효과적으로 할 시간 활용법을 알려줘' },
+  { label: '대안 제안', prompt: '이 할 일의 대안이나 보완 활동을 제안해줘' },
+]
+
 export function AiChatPanel() {
-  const {
-    isLoading,
-    setLoading,
-    activeConversationId,
-    setActiveConversation,
-    isSidebarOpen,
-    toggleSidebar,
-    startNewConversation,
-  } = useAiChatStore()
+  const isLoading = useAiChatStore((s) => s.isLoading)
+  const setLoading = useAiChatStore((s) => s.setLoading)
+  const activeConversationId = useAiChatStore((s) => s.activeConversationId)
+  const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
+  const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
+  const toggleSidebar = useAiChatStore((s) => s.toggleSidebar)
+  const startNewConversation = useAiChatStore((s) => s.startNewConversation)
+  const context = useAiChatStore((s) => s.context)
+  const clearContext = useAiChatStore((s) => s.clearContext)
 
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -65,7 +78,10 @@ export function AiChatPanel() {
       let convId = activeConversationId
       let isNewConversation = false
       if (!convId) {
-        const conv = await createConversation.mutateAsync(undefined)
+        const conv = await createConversation.mutateAsync({
+          relatedGoalId: context?.goalId,
+          relatedTaskId: context?.type === 'task' ? context.entityId : undefined,
+        })
         convId = conv.id
         isNewConversation = true
       }
@@ -86,10 +102,26 @@ export function AiChatPanel() {
         { role: 'user' as const, content: trimmed },
       ]
 
+      // 첫 메시지일 때만 context 전달 (이후는 히스토리로 충분)
+      const isFirstMessage = allMessages.length === 1
+      const contextPayload =
+        isFirstMessage && context
+          ? {
+              context: {
+                type: context.type,
+                goalId: context.goalId,
+                goalName: context.goalName ?? context.entityName,
+                taskId: context.type === 'task' ? context.entityId : undefined,
+                taskName: context.type === 'task' ? context.entityName : undefined,
+                areaName: context.areaName,
+              },
+            }
+          : {}
+
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages, ...contextPayload }),
       })
 
       const data = await response.json()
@@ -139,7 +171,7 @@ export function AiChatPanel() {
         )}
       >
         {/* 사이드바 헤더 */}
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-3">
+        <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-3 py-2">
           <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
             대화 기록
           </span>
@@ -170,7 +202,7 @@ export function AiChatPanel() {
       {/* 메인 채팅 영역 */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+        <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-4 py-2">
           <div className="flex items-center gap-2">
             {/* 사이드바 토글 — 데스크톱만 */}
             <button
@@ -184,8 +216,20 @@ export function AiChatPanel() {
                 <PanelLeftOpen className="h-4 w-4" />
               )}
             </button>
-            <span className="text-base">✨</span>
-            <h3 className="text-sm font-semibold">AI 코치</h3>
+            <span className="text-base">🐾</span>
+            <h3 className="text-sm font-semibold">AI 이누</h3>
+            {context && (
+              <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
+                <span>{context.type === 'goal' ? '🎯' : '✅'}</span>
+                <span className="max-w-[120px] truncate">{context.entityName}</span>
+                <button
+                  onClick={clearContext}
+                  className="rounded-full p-0.5 transition-colors hover:bg-[var(--color-primary-100)]"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {/* 모바일: 대화 목록 보기 (사이드바 대신) */}
@@ -207,11 +251,17 @@ export function AiChatPanel() {
         <div className="flex-1 overflow-y-auto px-4 py-3">
           {!messages || messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-4">
+              <Mascot mood="happy" size="md" />
               <p className="text-center text-sm text-[var(--color-text-secondary)]">
                 무엇이든 물어보세요
               </p>
               <div className="flex flex-wrap justify-center gap-2">
-                {QUICK_ACTIONS.map(({ label, prompt }) => (
+                {(context?.type === 'goal'
+                  ? GOAL_QUICK_ACTIONS
+                  : context?.type === 'task'
+                    ? TASK_QUICK_ACTIONS
+                    : DEFAULT_QUICK_ACTIONS
+                ).map(({ label, prompt }) => (
                   <button
                     key={label}
                     onClick={() => sendMessage(prompt)}
@@ -271,7 +321,8 @@ export function AiChatPanel() {
  */
 function MobileHistoryButton() {
   const [isOpen, setIsOpen] = useState(false)
-  const { activeConversationId, setActiveConversation } = useAiChatStore()
+  const activeConversationId = useAiChatStore((s) => s.activeConversationId)
+  const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
 
   return (
     <div className="relative lg:hidden">
@@ -378,7 +429,7 @@ function ConversationList({
   )
 }
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'
 
   return (
@@ -395,4 +446,4 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       </div>
     </div>
   )
-}
+})

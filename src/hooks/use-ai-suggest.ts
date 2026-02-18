@@ -2,7 +2,16 @@ import { useCallback, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { AiGenerateRequest, AiGenerateResponse } from '@/lib/ai/types'
 
-const AI_TIMEOUT_MS = 15_000
+const HEAVY_TYPES = new Set([
+  'priority-rank',
+  'roadmap-diagnosis',
+  'brain-dump',
+  'task-suggest',
+])
+
+function getTimeoutMs(type: AiGenerateRequest['type']): number {
+  return HEAVY_TYPES.has(type) ? 45_000 : 20_000
+}
 
 interface AiApiResponse {
   success: boolean
@@ -39,7 +48,7 @@ export function useAiSuggest() {
       const controller = new AbortController()
       abortRef.current = controller
 
-      const timeoutId = setTimeout(() => controller.abort(), AI_TIMEOUT_MS)
+      const timeoutId = setTimeout(() => controller.abort(), getTimeoutMs(request.type))
 
       return fetchAiSuggestion(request, controller.signal).finally(() => {
         clearTimeout(timeoutId)

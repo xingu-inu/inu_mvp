@@ -5,6 +5,7 @@ import { generateContent } from '@/lib/ai/gemini-client'
 import { SYSTEM_PROMPT } from '@/lib/ai/constants'
 import { buildPrompt } from '@/lib/ai/prompts'
 import { isRateLimited } from '@/lib/rate-limit'
+import { detectInjectionPatterns } from '@/lib/ai/sanitize'
 import type { AiGenerateRequest, AiGenerateResponse } from '@/lib/ai/types'
 
 const contextSchema = z.object({
@@ -151,6 +152,25 @@ const priorityRankContextSchema = z.object({
   ),
 })
 
+const reviewInsightContextSchema = z.object({
+  period: z.enum(['week', 'month']),
+  periodLabel: z.string(),
+  completionRate: z.number(),
+  activeDays: z.number(),
+  totalDays: z.number(),
+  avgMoodLabel: z.string(),
+  moodTrend: z.array(z.object({ date: z.string(), mood: z.string() })),
+  topStreaks: z.array(z.object({ taskName: z.string(), count: z.number(), areaName: z.string() })),
+  areaBalances: z.array(z.object({ areaName: z.string(), completionRate: z.number() })),
+  weeklyReflection: z
+    .object({
+      highlight: z.string().optional(),
+      challenge: z.string().optional(),
+      next_focus: z.string().optional(),
+    })
+    .optional(),
+})
+
 const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('goal-brainstorm'),
@@ -188,6 +208,10 @@ const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('priority-rank'),
     context: priorityRankContextSchema,
+  }),
+  z.object({
+    type: z.literal('review-insight'),
+    context: reviewInsightContextSchema,
   }),
 ])
 
@@ -332,7 +356,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse and validate
-    const body = await request.json()
+    let body: unknown
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { code: 'INVALID_BODY', message: '요청 데이터를 읽지 못했어요.' },
+        },
+        { status: 400 }
+      )
+    }
     const parsed = aiRequestSchema.safeParse(body)
     if (!parsed.success) {
       return NextResponse.json(
@@ -344,8 +379,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build prompt and generate
+    // Sanitize user inputs before prompt construction
     const aiRequest = parsed.data as AiGenerateRequest
+
+    // Log potential injection attempts (monitoring only, not blocking)
+    const textsToCheck: string[] = []
+    if ('input' in aiRequest && typeof aiRequest.input === 'string') {
+      textsToCheck.push(aiRequest.input)
+    }
+    if ('context' in aiRequest && aiRequest.context) {
+      const ctx = aiRequest.context as Record<string, unknown>
+      for (const val of Object.values(ctx)) {
+        if (typeof val === 'string') textsToCheck.push(val)
+      }
+    }
+    for (const text of textsToCheck) {
+      if (detectInjectionPatterns(text)) {
+        console.warn('[ai-security] Injection pattern detected in /generate request')
+        break
+      }
+    }
+
+    // Build prompt and generate
     const userPrompt = buildPrompt(aiRequest)
     const rawResponse = await generateContent(SYSTEM_PROMPT, userPrompt)
 
