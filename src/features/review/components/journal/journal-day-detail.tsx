@@ -12,6 +12,7 @@ import { useHomeTasks } from '@/queries/use-home'
 import { useReflection } from '@/queries/use-reflection'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { MOOD_EMOJIS, MOOD_LABELS } from '../../utils/review-utils'
+import { parseCheckInNote } from '@/lib/utils/checkin-note'
 import { generateDayNarrative } from '../../utils/generate-insight'
 import { GrowthMessageCard } from '../growth-message-card'
 import type { HomeTask, TimeSlot, CheckInStatus, MoodLevel } from '@/types/entities'
@@ -199,6 +200,7 @@ function MoodHero({ mood, summary }: { mood: MoodLevel | null; summary: string |
 function DetailTaskRow({ task }: { task: HomeTask }) {
   const status = getTaskStatus(task)
   const area = task.goal?.area ?? task.directArea
+  const noteData = parseCheckInNote(task.todayCheckIn?.note ?? null)
 
   return (
     <div
@@ -224,6 +226,18 @@ function DetailTaskRow({ task }: { task: HomeTask }) {
           )}
         </div>
       </div>
+      {(noteData.text || noteData.mood) && (
+        <div className="mt-1.5 flex items-start gap-1.5 pl-7">
+          {noteData.mood && (
+            <span className="shrink-0 text-xs">{MOOD_EMOJIS[noteData.mood]}</span>
+          )}
+          {noteData.text && (
+            <p className="text-xs leading-relaxed text-[var(--color-text-tertiary)] italic">
+              {noteData.text}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

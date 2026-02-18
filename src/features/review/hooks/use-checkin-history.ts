@@ -13,7 +13,7 @@ export interface DayHistory {
   total: number
 }
 
-async function fetchCheckInHistory(
+export async function fetchCheckInHistory(
   start: string,
   end: string,
   directionId?: string

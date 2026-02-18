@@ -12,7 +12,7 @@ export interface MoodEntry {
   mood: MoodLevel
 }
 
-async function fetchMoodHistory(start: string, end: string): Promise<MoodEntry[]> {
+export async function fetchMoodHistory(start: string, end: string): Promise<MoodEntry[]> {
   const supabase = createClient()
 
   const { data, error } = await supabase

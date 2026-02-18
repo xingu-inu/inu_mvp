@@ -18,6 +18,11 @@ import {
   groupEventsByArea,
 } from '../utils/timeline-utils'
 import { AchievementHero, AreaBalanceBars } from './overview'
+import { AiReviewInsightCard } from './overview/ai-review-insight-card'
+import { AreaTrendSparklines } from './overview/area-trend-sparklines'
+import { MoodTrendChart } from './overview/mood-trend-chart'
+import { PeriodComparisonStrip } from './overview/period-comparison-strip'
+import { useComparisonData } from '../hooks/use-comparison-data'
 import { JournalHeatmap } from './journal/journal-heatmap'
 import { JournalDayDetail } from './journal/journal-day-detail'
 import { PeriodReflectionSection } from './period-reflection/period-reflection-section'
@@ -60,6 +65,12 @@ export function ReviewPageLayout() {
   const overviewStats = useMemo(
     () => computeOverviewStats(checkInHistory, moodHistory, totalDays),
     [checkInHistory, moodHistory, totalDays]
+  )
+
+  const comparison = useComparisonData(
+    overviewStats.completionRate,
+    overviewStats.activeDays,
+    moodHistory
   )
 
   const activeStreaks = useMemo(() => extractActiveStreaks(roadmapData), [roadmapData])
@@ -123,6 +134,7 @@ export function ReviewPageLayout() {
     monthlyReflection,
     onSaveMonthly: saveMonthly,
     isSavingMonthly,
+    overviewStats,
   }
 
   return (
@@ -138,6 +150,10 @@ export function ReviewPageLayout() {
             totalDays={totalDays}
             period={period}
           />
+
+          <PeriodComparisonStrip comparison={comparison} isWeek={isWeek} />
+
+          <MoodTrendChart moodHistory={moodHistory} />
 
           <JournalHeatmap
             checkInHistory={checkInHistory ?? []}
@@ -157,13 +173,28 @@ export function ReviewPageLayout() {
             />
           )}
 
+          <AreaTrendSparklines />
+
+          {/* AI Insight — only for current roadmap version */}
+          {isCurrentVersion && (
+            <AiReviewInsightCard
+              overviewStats={overviewStats}
+              activeStreaks={activeStreaks}
+              areaBalances={areaBalances}
+              moodHistory={moodHistory}
+              isWeek={isWeek}
+              periodLabel={reflectionLabel}
+              weeklyReflection={weeklyReflection}
+            />
+          )}
+
           {/* Reflection — only for current roadmap version */}
           {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
         </div>
       </div>
 
       {/* Mobile layout — single column, tighter spacing */}
-      <div className="space-y-4 overflow-y-auto p-4 lg:hidden">
+      <div className="space-y-4 overflow-y-auto p-4 pb-8 lg:hidden">
         <AchievementHero
           stats={overviewStats}
           streaks={activeStreaks}
@@ -171,6 +202,11 @@ export function ReviewPageLayout() {
           totalDays={totalDays}
           period={period}
         />
+
+        <PeriodComparisonStrip comparison={comparison} isWeek={isWeek} />
+
+        <MoodTrendChart moodHistory={moodHistory} />
+
         <JournalHeatmap
           checkInHistory={checkInHistory ?? []}
           startDate={startDate}
@@ -188,12 +224,28 @@ export function ReviewPageLayout() {
             onToggleArea={handleToggleArea}
           />
         )}
+
+        <AreaTrendSparklines />
+
         {/* Inline day detail for mobile */}
         {selectedDate && (
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
             <JournalDayDetail dateStr={selectedDate} />
           </div>
         )}
+        {/* AI Insight — only for current roadmap version */}
+        {isCurrentVersion && (
+          <AiReviewInsightCard
+            overviewStats={overviewStats}
+            activeStreaks={activeStreaks}
+            areaBalances={areaBalances}
+            moodHistory={moodHistory}
+            isWeek={isWeek}
+            periodLabel={reflectionLabel}
+            weeklyReflection={weeklyReflection}
+          />
+        )}
+
         {/* Reflection — only for current roadmap version */}
         {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
       </div>

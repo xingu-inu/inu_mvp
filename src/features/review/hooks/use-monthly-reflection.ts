@@ -29,6 +29,8 @@ export function useMonthlyReflection(monthStart?: string) {
 
 interface SaveMonthlyReflectionInput {
   summary?: string
+  highlight?: string
+  challenge?: string
 }
 
 /**
@@ -70,6 +72,8 @@ export function useSaveMonthlyReflection(monthStart?: string) {
                 user_id: '',
                 month_start: computedMonthStart,
                 summary: newReflection.summary || null,
+                highlight: newReflection.highlight || null,
+                challenge: newReflection.challenge || null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
               }

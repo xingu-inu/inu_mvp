@@ -10,6 +10,7 @@ export {
 } from './use-review-roadmap-data'
 export { useMonthlyReflection, useSaveMonthlyReflection } from './use-monthly-reflection'
 export { useWeeklyReflection, useSaveWeeklyReflection } from './use-weekly-reflection'
+export { useGoalReflection, useSaveGoalReflection } from './use-goal-reflection'
 export {
   useActivityLog,
   useAreaActivityLog,

@@ -8,6 +8,15 @@ import { REFLECTION_PROMPTS } from '../../utils/generate-insight'
 
 // ---- Types -------------------------------------------------------
 
+interface OverviewStats {
+  completionRate: number
+  activeDays: number
+  totalDays: number
+  avgMoodLabel: string
+  avgMoodEmoji: string
+  longestStreak: number
+}
+
 interface PeriodReflectionSectionProps {
   isWeek: boolean
   periodLabel: string // "이번 주" or "2월"
@@ -20,9 +29,24 @@ interface PeriodReflectionSectionProps {
   isSavingWeekly?: boolean
   monthlyReflection?: {
     summary?: string | null
+    highlight?: string | null
+    challenge?: string | null
   } | null
-  onSaveMonthly?: (data: { summary: string }) => void
+  onSaveMonthly?: (data: { summary?: string; highlight?: string; challenge?: string }) => void
   isSavingMonthly?: boolean
+  overviewStats?: OverviewStats
+}
+
+// ---- Local helpers -----------------------------------------------
+
+function MiniStatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="rounded-lg bg-[var(--color-bg-secondary)] px-2.5 py-2 text-center">
+      <p className="text-[10px] font-medium text-[var(--color-text-tertiary)]">{label}</p>
+      <p className="mt-0.5 text-sm font-semibold text-[var(--color-text-primary)]">{value}</p>
+      <p className="text-[10px] text-[var(--color-text-tertiary)]">{sub}</p>
+    </div>
+  )
 }
 
 // ---- Reflection field keys ----------------------------------------
@@ -46,6 +70,7 @@ export function PeriodReflectionSection({
   monthlyReflection,
   onSaveMonthly,
   isSavingMonthly = false,
+  overviewStats,
 }: PeriodReflectionSectionProps) {
   // Weekly local state
   const [weeklyValues, setWeeklyValues] = useState<Record<ReflectionKey, string>>({
@@ -56,6 +81,8 @@ export function PeriodReflectionSection({
 
   // Monthly local state
   const [monthlySummary, setMonthlySummary] = useState(monthlyReflection?.summary ?? '')
+  const [monthlyHighlight, setMonthlyHighlight] = useState(monthlyReflection?.highlight ?? '')
+  const [monthlyChallenge, setMonthlyChallenge] = useState(monthlyReflection?.challenge ?? '')
 
   // ---- Weekly handlers ----
 
@@ -88,13 +115,24 @@ export function PeriodReflectionSection({
   const handleMonthlyBlur = useCallback(() => {
     if (!onSaveMonthly) return
 
-    const trimmed = monthlySummary.trim()
-    const hasChanged = trimmed !== (monthlyReflection?.summary ?? '')
+    const trimmedSummary = monthlySummary.trim()
+    const trimmedHighlight = monthlyHighlight.trim()
+    const trimmedChallenge = monthlyChallenge.trim()
 
-    if (trimmed && hasChanged) {
-      onSaveMonthly({ summary: trimmed })
+    const hasContent = trimmedSummary || trimmedHighlight || trimmedChallenge
+    const hasChanged =
+      trimmedSummary !== (monthlyReflection?.summary ?? '') ||
+      trimmedHighlight !== (monthlyReflection?.highlight ?? '') ||
+      trimmedChallenge !== (monthlyReflection?.challenge ?? '')
+
+    if (hasContent && hasChanged) {
+      onSaveMonthly({
+        summary: trimmedSummary || undefined,
+        highlight: trimmedHighlight || undefined,
+        challenge: trimmedChallenge || undefined,
+      })
     }
-  }, [monthlySummary, monthlyReflection?.summary, onSaveMonthly])
+  }, [monthlySummary, monthlyHighlight, monthlyChallenge, monthlyReflection, onSaveMonthly])
 
   // ---- Textarea class ----
 
@@ -122,6 +160,27 @@ export function PeriodReflectionSection({
         </h3>
       </div>
 
+      {/* Mini summary cards */}
+      {overviewStats && (
+        <div className="mt-2 mb-3 grid grid-cols-3 gap-2">
+          <MiniStatCard
+            label="실천율"
+            value={`${overviewStats.completionRate}%`}
+            sub={`${overviewStats.activeDays}/${overviewStats.totalDays}일`}
+          />
+          <MiniStatCard
+            label="평균 기분"
+            value={overviewStats.avgMoodEmoji || '—'}
+            sub={overviewStats.avgMoodLabel}
+          />
+          <MiniStatCard
+            label="최장 스트릭"
+            value={overviewStats.longestStreak > 0 ? `🔥${overviewStats.longestStreak}` : '—'}
+            sub="연속일"
+          />
+        </div>
+      )}
+
       {isWeek ? (
         /* Weekly: prompt as placeholder, compact grid on desktop */
         <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
@@ -143,20 +202,50 @@ export function PeriodReflectionSection({
           ))}
         </div>
       ) : (
-        /* Monthly: single textarea */
-        <div className="mt-3 flex flex-col gap-1">
-          <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-            {REFLECTION_PROMPTS.monthly[0]}
-          </label>
-          <textarea
-            value={monthlySummary}
-            onChange={(e) => setMonthlySummary(e.target.value)}
-            onBlur={handleMonthlyBlur}
-            placeholder="적어보세요..."
-            disabled={isSavingMonthly}
-            rows={2}
-            className={textareaClass(isSavingMonthly)}
-          />
+        /* Monthly: 3 prompts matching weekly layout */
+        <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+              {REFLECTION_PROMPTS.monthly[2]}
+            </label>
+            <textarea
+              value={monthlyHighlight}
+              onChange={(e) => setMonthlyHighlight(e.target.value)}
+              onBlur={handleMonthlyBlur}
+              placeholder="적어보세요..."
+              disabled={isSavingMonthly}
+              rows={2}
+              className={textareaClass(isSavingMonthly)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+              {REFLECTION_PROMPTS.monthly[1]}
+            </label>
+            <textarea
+              value={monthlyChallenge}
+              onChange={(e) => setMonthlyChallenge(e.target.value)}
+              onBlur={handleMonthlyBlur}
+              placeholder="적어보세요..."
+              disabled={isSavingMonthly}
+              rows={2}
+              className={textareaClass(isSavingMonthly)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+              {REFLECTION_PROMPTS.monthly[0]}
+            </label>
+            <textarea
+              value={monthlySummary}
+              onChange={(e) => setMonthlySummary(e.target.value)}
+              onBlur={handleMonthlyBlur}
+              placeholder="적어보세요..."
+              disabled={isSavingMonthly}
+              rows={2}
+              className={textareaClass(isSavingMonthly)}
+            />
+          </div>
         </div>
       )}
     </motion.section>
