@@ -1,0 +1,31 @@
+export const ANALYTICS_EVENTS = {
+  // Auth
+  AUTH_SIGNUP: 'auth_signup',
+  AUTH_LOGIN: 'auth_login',
+  AUTH_LOGOUT: 'auth_logout',
+  // Onboarding
+  ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
+  ONBOARDING_COMPLETED: 'onboarding_completed',
+  // Check-in
+  CHECKIN_DONE: 'checkin_done',
+  CHECKIN_SKIP: 'checkin_skip',
+  CHECKIN_UNDO: 'checkin_undo',
+  // Goal
+  GOAL_CREATED: 'goal_created',
+  GOAL_STATUS_CHANGED: 'goal_status_changed',
+  GOAL_COMPLETED: 'goal_completed',
+  // Task
+  TASK_CREATED: 'task_created',
+  // Navigation
+  TAB_SWITCHED: 'tab_switched',
+  // Reflection
+  REFLECTION_SAVED: 'reflection_saved',
+  // AI
+  AI_CHAT_STARTED: 'ai_chat_started',
+  // Roadmap
+  ROADMAP_VERSION_CREATED: 'roadmap_version_created',
+  // Feedback
+  FEEDBACK_SUBMITTED: 'feedback_submitted',
+} as const
+
+export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS]

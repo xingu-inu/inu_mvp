@@ -1,0 +1,181 @@
+/* ========== Underwater Theme ========== */
+/* inu Design System - Seal Brand Identity */
+
+/* ========== Keyframes ========== */
+
+/* Gentle wave motion - vertical only to avoid clipping */
+@keyframes wave-sway {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Bubble float animation */
+@keyframes bubble-float {
+  0% {
+    transform: translateY(100%) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateY(-20vh) scale(1.1);
+    opacity: 0;
+  }
+}
+
+/* Light ray shimmer */
+@keyframes light-ray {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-5px) scaleY(1.05);
+  }
+}
+
+/* Card float animation (subtle) */
+@keyframes card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* ========== Animation Classes ========== */
+
+.animate-wave-sway {
+  animation: wave-sway 8s ease-in-out infinite;
+}
+
+.animate-wave-sway-delayed {
+  animation: wave-sway 10s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.animate-bubble-float {
+  animation: bubble-float var(--bubble-duration, 6s) ease-out infinite;
+  animation-delay: var(--bubble-delay, 0s);
+}
+
+.animate-light-ray {
+  animation: light-ray 4s ease-in-out infinite;
+}
+
+.animate-card-float {
+  animation: card-float 6s ease-in-out infinite;
+}
+
+/* ========== Underwater Background ========== */
+
+.underwater-bg {
+  background: linear-gradient(
+    180deg,
+    #7a8bb8 0%,
+    var(--color-water-calm) 50%,
+    var(--color-water-medium) 100%
+  );
+  position: relative;
+  overflow: hidden;
+}
+
+/* Dark mode gradient */
+[data-theme='dark'] .underwater-bg {
+  background: linear-gradient(
+    180deg,
+    var(--color-water-calm) 0%,
+    var(--color-water-medium) 50%,
+    var(--color-water-deep) 100%
+  );
+}
+
+/* ========== Auth Form Dive Styles ========== */
+
+.auth-form-dive label {
+  color: var(--color-water-light);
+}
+
+.auth-form-dive input {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-water-light);
+}
+
+.auth-form-dive input::placeholder {
+  color: rgba(248, 245, 240, 0.5);
+}
+
+.auth-form-dive input:focus {
+  border-color: var(--color-water-accent);
+  box-shadow: 0 0 0 3px rgba(240, 201, 135, 0.2);
+}
+
+.auth-form-dive button[type='submit'] {
+  background: linear-gradient(135deg, var(--color-water-accent) 0%, #d4a55a 100%);
+  color: var(--color-water-deep);
+}
+
+.auth-form-dive button[type='submit']:hover {
+  opacity: 0.9;
+}
+
+/* OAuth/Secondary buttons - needs !important to override Tailwind */
+.auth-form-dive button.w-full[type='button'] {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: var(--color-water-light) !important;
+}
+
+.auth-form-dive button.w-full[type='button']:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Password visibility toggle (small button inside input) */
+.auth-form-dive button[type='button']:not(.w-full) {
+  color: rgba(248, 245, 240, 0.6);
+}
+
+.auth-form-dive button[type='button']:not(.w-full):hover {
+  color: var(--color-water-accent);
+}
+
+/* Checkbox */
+.auth-form-dive [role='checkbox'] {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.auth-form-dive [role='checkbox'][data-state='checked'] {
+  background: var(--color-water-accent);
+  border-color: var(--color-water-accent);
+}
+
+/* Error messages */
+.auth-form-dive [data-error='true'] {
+  color: #f87171;
+}
+
+/* ========== Reduced Motion ========== */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-wave-sway,
+  .animate-wave-sway-delayed,
+  .animate-bubble-float,
+  .animate-light-ray,
+  .animate-card-float {
+    animation: none;
+  }
+}

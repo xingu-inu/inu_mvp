@@ -1,0 +1,128 @@
+/* ========== Accessibility Styles ========== */
+/* inu Design System - WCAG 2.1 AA Compliant */
+
+/* ========== Focus Styles ========== */
+
+/* Default focus-visible for interactive elements (exclude form inputs) */
+:focus-visible:not(input):not(textarea) {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--color-primary-100),
+    0 0 0 4px var(--color-primary-500);
+  border-radius: inherit;
+}
+
+/* Dark mode focus */
+[data-theme='dark'] :focus-visible:not(input):not(textarea) {
+  box-shadow:
+    0 0 0 3px var(--color-primary-900),
+    0 0 0 4px var(--color-primary-400);
+}
+
+/* Form inputs: no focus ring/underline */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ========== Screen Reader Only ========== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ========== Skip Link ========== */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-max);
+  padding: var(--space-3) var(--space-6);
+  background: var(--color-primary-500);
+  color: white;
+  border-radius: var(--radius-md);
+  font-weight: var(--font-semibold);
+  text-decoration: none;
+  transition: top var(--duration-fast) var(--ease-default);
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
+/* ========== Touch Target Minimum ========== */
+.touch-target {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+}
+
+/* ========== Reduced Motion ========== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========== High Contrast Mode ========== */
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+
+  .glass-1,
+  .glass-2,
+  .glass-3,
+  .glass-4 {
+    background: var(--color-bg-primary);
+    border: 2px solid var(--color-text-primary);
+  }
+}
+
+/* ========== Cursor Styles ========== */
+
+/* Interactive elements: pointer cursor */
+button:not(:disabled),
+a,
+select:not(:disabled),
+input[type='checkbox']:not(:disabled),
+input[type='radio']:not(:disabled),
+input[type='submit']:not(:disabled),
+input[type='reset']:not(:disabled),
+input[type='file']:not(:disabled),
+label,
+summary,
+[role='button']:not([aria-disabled='true']),
+[role='link'],
+[role='menuitem'],
+[role='tab'],
+[role='option'],
+[role='switch']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+
+/* Disabled elements: not-allowed cursor */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}

@@ -1,0 +1,58 @@
+# inu
+
+Self-development app. Direction → Area → Goal → Group → Task (5-level structure).
+Core loop: Onboarding → Roadmap → Daily check-in → Streak → Review
+
+3-tab structure: Home (`/home`, Day/Week/Month views) · Roadmap (`/roadmap`) · Review (`/review`)
+Home = Check-in + Calendar integration. Supports daily tasks (Tasks without a Goal).
+
+## Tech Stack
+
+- Next.js 16.1 (App Router, RSC), React 19.2, TypeScript 5.9
+- Tailwind CSS 4.0, Radix UI, Framer Motion, Lucide React
+- TanStack Query v5 (server), Zustand (client), nuqs (URL)
+- react-hook-form + Zod
+- Supabase (PostgreSQL, Auth, Edge Functions)
+- Vitest, Playwright, @testing-library/react
+
+## Commands
+
+npm run dev / build / lint / lint:fix / format / type-check / test / test:e2e / db:types
+
+## Rules
+
+- TypeScript strict: no `any`, explicit types
+- UI primitives → `components/ui/`, domain components → `components/common/`
+- Supabase queries: must handle loading/error states
+- Next.js 16+: route protection uses `src/proxy.ts` (not middleware.ts)
+- "No guilt" philosophy: no guilt/blame in user-facing messages, growth mindset only
+- Mutations must always use Optimistic Update: update all related caches (`tasks.all`, `goals.all`, etc.) immediately in `onMutate`. UI must update before server response
+- sort_order: use `fractional-indexing` library format (no numeric strings)
+- Commits: `type(scope): description`
+- After completing work: run `npm run lint` + `npm run type-check`
+- When 4+ TODOs exist: parallelize independent tasks using Task tool (sub-agents). Run independent file edits, searches, and research concurrently. Split into sub-agents when context is likely to grow large, keeping the main context lightweight
+- For major overhauls / large-scale refactors: always use WebSearch to research the latest official docs, best practices, and community patterns for the relevant technology before starting work. Don't rely on existing code inertia — reinforce with the latest approaches as of 2026
+
+## Naming
+
+| Type     | Convention      | Example           |
+| -------- | --------------- | ----------------- |
+| Files    | kebab-case      | `task-card.tsx`   |
+| Types    | PascalCase      | `CheckIn`         |
+| Consts   | UPPER_SNAKE     | `TIME_SLOTS`      |
+| Hooks    | use- prefix     | `use-checkin.ts`  |
+| Services | .service suffix | `task.service.ts` |
+
+## Data Model
+
+Direction → Area → Goal → Group (optional) → Task
+Core entities: CheckIn (done/skip/miss), DailyReflection (mood + summary)
+Goal statuses: Active / Backlog / Completed / Maintenance / Paused / Archive
+
+Details: @docs/plan/core/data-model.md
+
+## Docs
+
+- Screen specs + wireframes: @docs/plan/screens/
+- Design guide: @docs/plan/core/design-guide.md
+- Philosophy: @docs/plan/core/philosophy.md

@@ -1,0 +1,184 @@
+'use client'
+
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { Minus, Plus, Maximize2, ArrowDownUp, ArrowRightLeft } from 'lucide-react'
+import { useGoals } from '@/queries/use-goals'
+import { useAreas } from '@/queries/use-areas'
+import { useDirection } from '@/queries/use-direction'
+import { useRoadmapStore } from '@/stores/roadmap.store'
+import { MIN_ZOOM, MAX_ZOOM, ZOOM_STEP, DEFAULT_ZOOM } from '@/lib/constants/visual-tree'
+import { VisualTree } from './visual-tree'
+import { EmptyRoadmap } from '../empty-roadmap'
+import { VisualTreeSkeleton } from '../visual-tree-skeleton'
+
+function clampZoom(value: number): number {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
+}
+
+export function VisualTreeWrapper() {
+  const { setPanelMode, treeLayout, setTreeLayout } = useRoadmapStore()
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM)
+  const [isPanning, setIsPanning] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const panStart = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 })
+
+  const { data: direction } = useDirection()
+  const { data: goals = [], isLoading: goalsLoading } = useGoals()
+  const { data: areas = [], isLoading: areasLoading } = useAreas()
+
+  const isLoading = goalsLoading || areasLoading
+
+  const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), [])
+  const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), [])
+  const resetZoom = useCallback(() => setZoom(DEFAULT_ZOOM), [])
+  const toggleLayout = useCallback(
+    () => setTreeLayout(treeLayout === 'vertical' ? 'horizontal' : 'vertical'),
+    [treeLayout, setTreeLayout]
+  )
+
+  // Native wheel listener (non-passive) for Ctrl+scroll zoom
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP
+      setZoom((z) => clampZoom(z + delta))
+    }
+
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  // Drag-to-pan
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Only pan on left mouse button, and only on the background (not interactive elements)
+    if (e.button !== 0) return
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, [role="button"], input, textarea')) return
+
+    const el = scrollRef.current
+    if (!el) return
+
+    setIsPanning(true)
+    panStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: el.scrollLeft,
+      scrollTop: el.scrollTop,
+    }
+    el.setPointerCapture(e.pointerId)
+  }, [])
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      if (!isPanning) return
+      const el = scrollRef.current
+      if (!el) return
+
+      const dx = e.clientX - panStart.current.x
+      const dy = e.clientY - panStart.current.y
+      el.scrollLeft = panStart.current.scrollLeft - dx
+      el.scrollTop = panStart.current.scrollTop - dy
+    },
+    [isPanning]
+  )
+
+  const handlePointerUp = useCallback(() => {
+    setIsPanning(false)
+  }, [])
+
+  if (isLoading) {
+    return <VisualTreeSkeleton />
+  }
+
+  const activeAreas = areas.filter((area) => area.is_active)
+  const hasAnyGoals = goals.length > 0
+
+  if (!hasAnyGoals) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-[var(--color-bg-canvas)]">
+        <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} />
+      </div>
+    )
+  }
+
+  const zoomPercent = Math.round(zoom * 100)
+
+  return (
+    <div className="relative min-h-0 flex-1">
+      {/* Scrollable tree area with drag-to-pan */}
+      <div
+        className={`bg-dot-grid absolute inset-0 flex overflow-auto bg-[var(--color-bg-canvas)] ${isPanning ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        ref={scrollRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+      >
+        <div style={{ zoom }} className="m-auto">
+          <VisualTree
+            direction={direction ?? null}
+            goals={goals}
+            areas={activeAreas}
+            layoutDirection={treeLayout}
+          />
+        </div>
+      </div>
+
+      {/* Zoom controls — positioned over scroll area, always visible */}
+      <div className="absolute bottom-6 left-6 z-20">
+        <div className="flex items-center gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)]/90 px-2 py-1.5 shadow-sm backdrop-blur-md">
+          <button
+            onClick={zoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            aria-label="축소"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <button
+            onClick={resetZoom}
+            className="flex min-h-[44px] min-w-[3rem] items-center justify-center rounded-lg text-center text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)]"
+            aria-label="줌 초기화"
+          >
+            {zoomPercent}%
+          </button>
+          <button
+            onClick={zoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)] disabled:opacity-30"
+            aria-label="확대"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          <div className="mx-0.5 h-4 w-px bg-[var(--color-border)]" />
+          <button
+            onClick={resetZoom}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)]"
+            aria-label="맞춤"
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <div className="mx-0.5 h-4 w-px bg-[var(--color-border)]" />
+          <button
+            onClick={toggleLayout}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)]"
+            aria-label={
+              treeLayout === 'vertical' ? '가로 레이아웃으로 전환' : '세로 레이아웃으로 전환'
+            }
+            title={treeLayout === 'vertical' ? '가로 레이아웃' : '세로 레이아웃'}
+          >
+            {treeLayout === 'vertical' ? (
+              <ArrowRightLeft className="h-3.5 w-3.5" />
+            ) : (
+              <ArrowDownUp className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}

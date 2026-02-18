@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+@import '../styles/tokens.css';
+@import '../styles/glass.css';
+@import '../styles/a11y.css';
+@import '../styles/animations.css';
+@import '../styles/underwater.css';
+
+@custom-variant dark (&:where([data-theme="dark"] *));
+
+@theme inline {
+  /* ========== Colors ========== */
+
+  /* Primary palette */
+  --color-primary-50: var(--color-primary-50);
+  --color-primary-100: var(--color-primary-100);
+  --color-primary-200: var(--color-primary-200);
+  --color-primary-300: var(--color-primary-300);
+  --color-primary-400: var(--color-primary-400);
+  --color-primary-500: var(--color-primary-500);
+  --color-primary-600: var(--color-primary-600);
+  --color-primary-700: var(--color-primary-700);
+  --color-primary-800: var(--color-primary-800);
+  --color-primary-900: var(--color-primary-900);
+
+  /* Status colors */
+  --color-done: var(--color-done);
+  --color-done-bg: var(--color-done-bg);
+  --color-skip: var(--color-skip);
+  --color-skip-bg: var(--color-skip-bg);
+  --color-miss: var(--color-miss);
+  --color-miss-bg: var(--color-miss-bg);
+  --color-streak: var(--color-streak);
+  --color-streak-bg: var(--color-streak-bg);
+  --color-ai: var(--color-ai);
+  --color-ai-bg: var(--color-ai-bg);
+  --color-new-round: var(--color-new-round);
+
+  /* Area colors */
+  --color-area-health: var(--color-area-health);
+  --color-area-career: var(--color-area-career);
+  --color-area-finance: var(--color-area-finance);
+  --color-area-relationships: var(--color-area-relationships);
+  --color-area-hobbies: var(--color-area-hobbies);
+  --color-area-mental: var(--color-area-mental);
+  --color-area-learning: var(--color-area-learning);
+  --color-area-daily: var(--color-area-daily);
+
+  /* Surface colors */
+  --color-surface-primary: var(--color-bg-primary);
+  --color-surface-secondary: var(--color-bg-secondary);
+  --color-surface-tertiary: var(--color-bg-tertiary);
+  --color-surface-canvas: var(--color-bg-canvas);
+
+  /* Border colors */
+  --color-border: var(--color-border);
+  --color-border-hover: var(--color-border-hover);
+
+  /* Text colors */
+  --color-foreground: var(--color-text-primary);
+  --color-foreground-secondary: var(--color-text-secondary);
+  --color-foreground-tertiary: var(--color-text-tertiary);
+  --color-foreground-disabled: var(--color-text-disabled);
+
+  /* ========== Typography ========== */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* ========== Shadows ========== */
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+
+  /* ========== Animations ========== */
+  --animate-streak-pop: streak-pop 300ms var(--ease-spring);
+  --animate-particle-burst: particle-burst 600ms var(--ease-default) forwards;
+  --animate-fade-in: fade-in 250ms var(--ease-default);
+  --animate-slide-up: slide-up 250ms var(--ease-default);
+}
+
+/* ========== Base Layer ========== */
+@layer base {
+  :root {
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-left: env(safe-area-inset-left, 0px);
+    --safe-area-right: env(safe-area-inset-right, 0px);
+
+    /* Layout constants */
+    --top-bar-height: 3.5rem; /* 56px */
+    --bottom-nav-height: 4rem; /* 64px */
+  }
+
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+
+  /* Desktop: lock viewport — pages scroll inside their own containers */
+  @media (min-width: 1024px) {
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+
+  /* Smooth scroll behavior */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* ========== Safe Area Utilities ========== */
+.pt-safe {
+  padding-top: var(--safe-area-top);
+}
+.pb-safe {
+  padding-bottom: var(--safe-area-bottom);
+}
+.pl-safe {
+  padding-left: var(--safe-area-left);
+}
+.pr-safe {
+  padding-right: var(--safe-area-right);
+}
+
+.mt-safe {
+  margin-top: var(--safe-area-top);
+}
+.mb-safe {
+  margin-bottom: var(--safe-area-bottom);
+}
+
+/* ========== Layout Spacing Utilities ========== */
+
+/* Bottom nav offset (content doesn't go under nav) */
+.pb-bottom-nav {
+  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+}
+
+@media (min-width: 1024px) {
+  .pb-bottom-nav {
+    padding-bottom: 0;
+  }
+}
+
+/* Top bar offset */
+.pt-top-bar {
+  padding-top: calc(var(--top-bar-height) + var(--safe-area-top));
+}
+
+/* ========== Touch Target Utilities ========== */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.touch-target-lg {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* ========== Canvas Utilities ========== */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, var(--color-border) 0.75px, transparent 0.75px);
+  background-size: 24px 24px;
+}
+
+/* ========== Custom Scrollbar ========== */
+
+/* Thin scrollbar for all scrollable areas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+/* Hide scrollbar until hover (optional: for cleaner look) */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+/* Auto-hide scrollbar */
+.scrollbar-auto-hide {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-auto-hide:hover {
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar-thumb {
+  background: transparent;
+}
+
+.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}

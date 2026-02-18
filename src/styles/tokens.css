@@ -1,0 +1,222 @@
+/* ========== Design Tokens ========== */
+/* inu Design System - OKLCH Color System */
+
+:root {
+  /* ========== Colors (OKLCH) ========== */
+
+  /* Primary - Toss Blue */
+  --color-primary-50: oklch(97% 0.02 250);
+  --color-primary-100: oklch(94% 0.04 250);
+  --color-primary-200: oklch(88% 0.08 250);
+  --color-primary-300: oklch(78% 0.12 250);
+  --color-primary-400: oklch(65% 0.16 250);
+  --color-primary-500: oklch(55% 0.18 250); /* Main: #2186ff */
+  --color-primary-600: oklch(48% 0.16 250);
+  --color-primary-700: oklch(42% 0.14 250);
+  --color-primary-800: oklch(35% 0.1 250);
+  --color-primary-900: oklch(26% 0.08 250);
+
+  /* Status Colors */
+  --color-done: oklch(65% 0.2 145); /* Green #22c55e */
+  --color-done-bg: oklch(95% 0.05 145);
+  --color-skip: oklch(55% 0.02 260); /* Gray #6b7280 */
+  --color-skip-bg: oklch(95% 0.01 260);
+  --color-miss: oklch(70% 0.15 25); /* Soft Red #f87171 */
+  --color-miss-bg: oklch(95% 0.03 25);
+  --color-streak: oklch(75% 0.18 70); /* Orange #f59e0b */
+  --color-streak-bg: oklch(95% 0.05 70);
+  --color-streak-high: oklch(65% 0.2 50); /* Deep orange for 14+ streaks */
+  --color-streak-high-bg: oklch(95% 0.06 60);
+  --color-streak-ring: oklch(90% 0.08 80); /* Amber ring for at-risk */
+  --color-ai: oklch(60% 0.2 290); /* Purple #8b5cf6 */
+  --color-ai-bg: oklch(95% 0.05 290);
+  --color-new-round: oklch(70% 0.15 250); /* Blue #60a5fa */
+  --color-new-round-bg: oklch(97% 0.02 250);
+  --color-new-round-text: oklch(45% 0.15 250);
+  --color-danger-hover-bg: oklch(96% 0.03 25);
+  --color-quick-badge-bg: oklch(96% 0.06 85);
+  --color-quick-badge-text: oklch(55% 0.15 60);
+  --color-paused: oklch(75% 0.15 70); /* Amber */
+  --color-paused-bg: oklch(96% 0.04 70);
+  --color-archived: oklch(65% 0.15 25); /* Soft red */
+  --color-archived-bg: oklch(95% 0.04 25);
+  --color-maintenance: oklch(60% 0.15 250); /* Blue */
+  --color-maintenance-bg: oklch(96% 0.04 250);
+
+  /* On-primary: text/bg for elements on primary-500 colored backgrounds */
+  --color-text-on-primary: oklch(100% 0 0); /* White, theme-independent */
+  --color-bg-on-primary: oklch(100% 0 0 / 20%); /* Semi-transparent white overlay */
+
+  /* Area Colors (8 presets) */
+  --color-area-health: oklch(65% 0.18 160); /* Emerald */
+  --color-area-career: oklch(55% 0.2 270); /* Indigo */
+  --color-area-finance: oklch(75% 0.15 85); /* Gold */
+  --color-area-relationships: oklch(70% 0.18 10); /* Rose */
+  --color-area-hobbies: oklch(70% 0.15 200); /* Cyan */
+  --color-area-mental: oklch(70% 0.15 300); /* Lavender */
+  --color-area-learning: oklch(60% 0.18 240); /* Ocean */
+  --color-area-daily: oklch(55% 0.05 260); /* Slate */
+
+  /* Underwater Theme Colors */
+  --color-water-deep: #1e2952; /* Twilight Deep - deep water */
+  --color-water-medium: #3d4a7a; /* Cosmic Purple - medium depth */
+  --color-water-calm: #5a6b9e; /* Dusk Blue - calm water */
+  --color-water-light: #f8f5f0; /* Dawn Light - light accents */
+  --color-water-accent: #f0c987; /* Sunrise Gold - accent/hope */
+  --color-water-glow: rgba(240, 201, 135, 0.3);
+  --color-water-bubble: rgba(255, 255, 255, 0.4);
+  --color-water-ray: rgba(248, 245, 240, 0.08);
+
+  /* Surface Colors - Light Mode */
+  --color-bg-primary: oklch(100% 0 0);
+  --color-bg-secondary: oklch(98% 0.005 260);
+  --color-bg-tertiary: oklch(96% 0.01 260);
+  --color-bg-canvas: oklch(94.5% 0.012 260);
+  --color-border: oklch(92% 0.01 260);
+  --color-border-hover: oklch(85% 0.02 260);
+
+  /* Text Colors - Light Mode */
+  --color-text-primary: oklch(15% 0.01 260);
+  --color-text-secondary: oklch(40% 0.02 260);
+  --color-text-tertiary: oklch(55% 0.02 260);
+  --color-text-disabled: oklch(70% 0.01 260);
+
+  /* ========== Typography ========== */
+
+  /* Font Family */
+  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Font Size (1.25 modular scale) */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.875rem; /* 14px */
+  --text-base: 1rem; /* 16px */
+  --text-lg: 1.125rem; /* 18px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.5rem; /* 24px */
+  --text-3xl: 1.875rem; /* 30px */
+  --text-4xl: 2.25rem; /* 36px */
+  --text-5xl: 3rem; /* 48px */
+
+  /* Font Weight */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-extrabold: 800;
+
+  /* Line Height */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* ========== Spacing (4px base) ========== */
+  --space-0: 0;
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+
+  /* ========== Border Radius ========== */
+  --radius-sm: 0.25rem; /* 4px */
+  --radius-md: 0.5rem; /* 8px */
+  --radius-lg: 0.75rem; /* 12px */
+  --radius-xl: 1rem; /* 16px */
+  --radius-2xl: 1.25rem; /* 20px */
+  --radius-3xl: 1.5rem; /* 24px */
+  --radius-full: 9999px;
+
+  /* ========== Shadows ========== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  /* ========== Z-Index ========== */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-fixed: 30;
+  --z-modal-backdrop: 40;
+  --z-modal: 50;
+  --z-popover: 60;
+  --z-tooltip: 70;
+  --z-toast: 80;
+  --z-max: 9999;
+
+  /* ========== Animation ========== */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  /* ========== Touch Targets ========== */
+  --touch-min: 44px;
+  --touch-comfortable: 48px;
+  --touch-large: 56px;
+}
+
+/* ========== Dark Mode ========== */
+[data-theme='dark'] {
+  --color-bg-primary: oklch(12% 0.01 260);
+  --color-bg-secondary: oklch(16% 0.015 260);
+  --color-bg-tertiary: oklch(20% 0.02 260);
+  --color-bg-canvas: oklch(14% 0.015 260);
+  --color-border: oklch(25% 0.02 260);
+  --color-border-hover: oklch(35% 0.02 260);
+
+  --color-text-primary: oklch(95% 0.005 260);
+  --color-text-secondary: oklch(75% 0.01 260);
+  --color-text-tertiary: oklch(60% 0.01 260);
+  --color-text-disabled: oklch(45% 0.01 260);
+
+  --color-done-bg: oklch(25% 0.08 145);
+  --color-skip-bg: oklch(25% 0.02 260);
+  --color-miss-bg: oklch(25% 0.05 25);
+  --color-streak-bg: oklch(25% 0.08 70);
+  --color-streak-high-bg: oklch(28% 0.1 50);
+  --color-streak-ring: oklch(35% 0.1 80);
+  --color-ai-bg: oklch(25% 0.08 290);
+  --color-paused-bg: oklch(25% 0.06 70);
+  --color-archived-bg: oklch(25% 0.05 25);
+  --color-maintenance-bg: oklch(25% 0.06 250);
+  --color-new-round-bg: oklch(22% 0.06 250);
+  --color-new-round-text: oklch(75% 0.12 250);
+  --color-danger-hover-bg: oklch(22% 0.06 25);
+  --color-quick-badge-bg: oklch(25% 0.06 85);
+  --color-quick-badge-text: oklch(78% 0.12 60);
+
+  /* Shadow overrides for dark mode */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 8px 24px rgba(0, 0, 0, 0.3);
+
+  /* Primary scale overrides for dark mode */
+  --color-primary-50: oklch(18% 0.04 250);
+  --color-primary-100: oklch(22% 0.06 250);
+  --color-primary-200: oklch(28% 0.08 250);
+  --color-primary-700: oklch(80% 0.1 250);
+
+  /* Underwater Theme - Dark Mode */
+  --color-water-deep: #0f1629;
+  --color-water-medium: #1e2952;
+  --color-water-calm: #3d4a7a;
+  --color-water-glow: rgba(240, 201, 135, 0.2);
+  --color-water-bubble: rgba(255, 255, 255, 0.2);
+  --color-water-ray: rgba(248, 245, 240, 0.04);
+}
