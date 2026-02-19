@@ -5,7 +5,7 @@
   /* ========== Colors (OKLCH) ========== */
 
   /* Primary - Terra Cotta */
-  --color-primary-50:  oklch(97% 0.02 35);
+  --color-primary-50: oklch(97% 0.02 35);
   --color-primary-100: oklch(94% 0.04 35);
   --color-primary-200: oklch(88% 0.09 35);
   --color-primary-300: oklch(78% 0.13 35);
@@ -25,11 +25,11 @@
   --color-miss-bg: oklch(95% 0.025 20);
   --color-nudge: oklch(70% 0.14 55); /* Warm amber — overdue "gentle nudge" */
   --color-nudge-bg: oklch(96% 0.03 55);
-  --color-streak: oklch(68% 0.20 65);
+  --color-streak: oklch(68% 0.2 65);
   --color-streak-bg: oklch(95% 0.05 65);
   --color-streak-high: oklch(60% 0.22 55);
   --color-streak-high-bg: oklch(95% 0.06 55);
-  --color-streak-ring: oklch(85% 0.10 65);
+  --color-streak-ring: oklch(85% 0.1 65);
   --color-ai: oklch(55% 0.12 220);
   --color-ai-bg: oklch(95% 0.03 220);
   --color-new-round: oklch(68% 0.12 75);
@@ -40,7 +40,7 @@
   --color-quick-badge-text: oklch(52% 0.12 35);
   --color-paused: oklch(72% 0.12 55);
   --color-paused-bg: oklch(96% 0.03 55);
-  --color-archived: oklch(60% 0.10 20);
+  --color-archived: oklch(60% 0.1 20);
   --color-archived-bg: oklch(95% 0.03 20);
   --color-maintenance: oklch(58% 0.12 220);
   --color-maintenance-bg: oklch(96% 0.03 220);
@@ -51,12 +51,12 @@
 
   /* Area Colors (8 presets - muted earth tones) */
   --color-area-health: oklch(60% 0.12 160);
-  --color-area-career: oklch(55% 0.10 245);
+  --color-area-career: oklch(55% 0.1 245);
   --color-area-finance: oklch(68% 0.11 55);
   --color-area-relationships: oklch(65% 0.12 15);
-  --color-area-hobbies: oklch(60% 0.10 190);
-  --color-area-mental: oklch(65% 0.10 300);
-  --color-area-learning: oklch(58% 0.10 225);
+  --color-area-hobbies: oklch(60% 0.1 190);
+  --color-area-mental: oklch(65% 0.1 300);
+  --color-area-learning: oklch(58% 0.1 225);
   --color-area-daily: oklch(55% 0.04 55);
 
   /* Auth Theme Colors (Warm Earth) */
@@ -78,7 +78,7 @@
   --color-border-hover: oklch(84% 0.015 45);
 
   /* Text Colors - Light Mode */
-  --color-text-primary: oklch(22% 0.010 42);
+  --color-text-primary: oklch(22% 0.01 42);
   --color-text-secondary: oklch(45% 0.012 42);
   --color-text-tertiary: oklch(58% 0.008 45);
   --color-text-disabled: oklch(72% 0.005 45);
@@ -177,8 +177,8 @@
   /* Time-slot background tints (very subtle) */
   --color-slot-dawn: oklch(97% 0.008 280);
   --color-slot-morning: oklch(98.5% 0.012 85);
-  --color-slot-afternoon: oklch(98% 0.010 50);
-  --color-slot-evening: oklch(97.5% 0.010 260);
+  --color-slot-afternoon: oklch(98% 0.01 50);
+  --color-slot-evening: oklch(97.5% 0.01 260);
 
   /* ========== Animation ========== */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
@@ -197,12 +197,12 @@
 
 /* ========== Dark Mode ========== */
 [data-theme='dark'] {
-  --color-bg-primary: oklch(14% 0.020 50);
+  --color-bg-primary: oklch(14% 0.02 50);
   --color-bg-secondary: oklch(18% 0.023 50);
   --color-bg-tertiary: oklch(22% 0.025 50);
   --color-bg-canvas: oklch(12% 0.018 50);
-  --color-border: oklch(28% 0.030 50);
-  --color-border-hover: oklch(37% 0.030 50);
+  --color-border: oklch(28% 0.03 50);
+  --color-border-hover: oklch(37% 0.03 50);
 
   --color-text-primary: oklch(93% 0.008 45);
   --color-text-secondary: oklch(73% 0.012 43);
@@ -221,10 +221,10 @@
   --color-archived-bg: oklch(22% 0.04 20);
   --color-maintenance-bg: oklch(22% 0.05 220);
   --color-new-round-bg: oklch(20% 0.05 75);
-  --color-new-round-text: oklch(73% 0.10 75);
+  --color-new-round-text: oklch(73% 0.1 75);
   --color-danger-hover-bg: oklch(20% 0.05 20);
   --color-quick-badge-bg: oklch(22% 0.05 35);
-  --color-quick-badge-text: oklch(75% 0.10 35);
+  --color-quick-badge-text: oklch(75% 0.1 35);
 
   /* Calendar chip - dark mode */
   --chip-tint-opacity: 18%;
@@ -235,8 +235,8 @@
   /* Time-slot background tints - dark mode */
   --color-slot-dawn: oklch(15% 0.008 280);
   --color-slot-morning: oklch(16% 0.012 85);
-  --color-slot-afternoon: oklch(15.5% 0.010 50);
-  --color-slot-evening: oklch(15% 0.010 260);
+  --color-slot-afternoon: oklch(15.5% 0.01 50);
+  --color-slot-evening: oklch(15% 0.01 260);
 
   /* Shadow overrides for dark mode */
   --shadow-sm: 0 1px 3px rgba(30, 20, 10, 0.35);

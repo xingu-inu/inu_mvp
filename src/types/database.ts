@@ -1,16 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: '14.1'
   }
   public: {
     Tables: {
@@ -23,7 +17,7 @@ export type Database = {
           related_goal_id: string | null
           related_task_id: string | null
           title: string
-          type: Database["public"]["Enums"]["message_type"]
+          type: Database['public']['Enums']['message_type']
           user_id: string
         }
         Insert: {
@@ -34,7 +28,7 @@ export type Database = {
           related_goal_id?: string | null
           related_task_id?: string | null
           title: string
-          type: Database["public"]["Enums"]["message_type"]
+          type: Database['public']['Enums']['message_type']
           user_id: string
         }
         Update: {
@@ -45,30 +39,30 @@ export type Database = {
           related_goal_id?: string | null
           related_task_id?: string | null
           title?: string
-          type?: Database["public"]["Enums"]["message_type"]
+          type?: Database['public']['Enums']['message_type']
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ai_messages_related_goal_id_fkey"
-            columns: ["related_goal_id"]
+            foreignKeyName: 'ai_messages_related_goal_id_fkey'
+            columns: ['related_goal_id']
             isOneToOne: false
-            referencedRelation: "goals"
-            referencedColumns: ["id"]
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ai_messages_related_task_id_fkey"
-            columns: ["related_task_id"]
+            foreignKeyName: 'ai_messages_related_task_id_fkey'
+            columns: ['related_task_id']
             isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ai_messages_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'ai_messages_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -105,11 +99,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "announcements_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'announcements_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -123,7 +117,7 @@ export type Database = {
           is_active: boolean | null
           name: string
           sort_order: string | null
-          type: Database["public"]["Enums"]["area_type"]
+          type: Database['public']['Enums']['area_type']
           updated_at: string | null
           user_id: string
           why: string | null
@@ -137,7 +131,7 @@ export type Database = {
           is_active?: boolean | null
           name: string
           sort_order?: string | null
-          type?: Database["public"]["Enums"]["area_type"]
+          type?: Database['public']['Enums']['area_type']
           updated_at?: string | null
           user_id: string
           why?: string | null
@@ -151,25 +145,25 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           sort_order?: string | null
-          type?: Database["public"]["Enums"]["area_type"]
+          type?: Database['public']['Enums']['area_type']
           updated_at?: string | null
           user_id?: string
           why?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "areas_direction_id_fkey"
-            columns: ["direction_id"]
+            foreignKeyName: 'areas_direction_id_fkey'
+            columns: ['direction_id']
             isOneToOne: false
-            referencedRelation: "directions"
-            referencedColumns: ["id"]
+            referencedRelation: 'directions'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "areas_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'areas_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -203,25 +197,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "chat_conversations_related_goal_id_fkey"
-            columns: ["related_goal_id"]
+            foreignKeyName: 'chat_conversations_related_goal_id_fkey'
+            columns: ['related_goal_id']
             isOneToOne: false
-            referencedRelation: "goals"
-            referencedColumns: ["id"]
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "chat_conversations_related_task_id_fkey"
-            columns: ["related_task_id"]
+            foreignKeyName: 'chat_conversations_related_task_id_fkey'
+            columns: ['related_task_id']
             isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "chat_conversations_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'chat_conversations_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -249,11 +243,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "chat_messages_conversation_id_fkey"
-            columns: ["conversation_id"]
+            foreignKeyName: 'chat_messages_conversation_id_fkey'
+            columns: ['conversation_id']
             isOneToOne: false
-            referencedRelation: "chat_conversations"
-            referencedColumns: ["id"]
+            referencedRelation: 'chat_conversations'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -263,7 +257,7 @@ export type Database = {
           date: string
           id: string
           note: string | null
-          status: Database["public"]["Enums"]["checkin_status"]
+          status: Database['public']['Enums']['checkin_status']
           task_id: string
           user_id: string
         }
@@ -272,7 +266,7 @@ export type Database = {
           date: string
           id?: string
           note?: string | null
-          status: Database["public"]["Enums"]["checkin_status"]
+          status: Database['public']['Enums']['checkin_status']
           task_id: string
           user_id: string
         }
@@ -281,24 +275,24 @@ export type Database = {
           date?: string
           id?: string
           note?: string | null
-          status?: Database["public"]["Enums"]["checkin_status"]
+          status?: Database['public']['Enums']['checkin_status']
           task_id?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "check_ins_task_id_fkey"
-            columns: ["task_id"]
+            foreignKeyName: 'check_ins_task_id_fkey'
+            columns: ['task_id']
             isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "check_ins_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'check_ins_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -307,7 +301,7 @@ export type Database = {
           created_at: string | null
           date: string
           id: string
-          mood: Database["public"]["Enums"]["mood_level"] | null
+          mood: Database['public']['Enums']['mood_level'] | null
           summary: string | null
           updated_at: string | null
           user_id: string
@@ -316,7 +310,7 @@ export type Database = {
           created_at?: string | null
           date: string
           id?: string
-          mood?: Database["public"]["Enums"]["mood_level"] | null
+          mood?: Database['public']['Enums']['mood_level'] | null
           summary?: string | null
           updated_at?: string | null
           user_id: string
@@ -325,18 +319,18 @@ export type Database = {
           created_at?: string | null
           date?: string
           id?: string
-          mood?: Database["public"]["Enums"]["mood_level"] | null
+          mood?: Database['public']['Enums']['mood_level'] | null
           summary?: string | null
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "daily_reflections_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'daily_reflections_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -347,7 +341,7 @@ export type Database = {
           id: string
           name: string | null
           statement: string
-          status: Database["public"]["Enums"]["direction_status"]
+          status: Database['public']['Enums']['direction_status']
           updated_at: string | null
           user_id: string
           version: number
@@ -359,7 +353,7 @@ export type Database = {
           id?: string
           name?: string | null
           statement: string
-          status?: Database["public"]["Enums"]["direction_status"]
+          status?: Database['public']['Enums']['direction_status']
           updated_at?: string | null
           user_id: string
           version?: number
@@ -371,7 +365,7 @@ export type Database = {
           id?: string
           name?: string | null
           statement?: string
-          status?: Database["public"]["Enums"]["direction_status"]
+          status?: Database['public']['Enums']['direction_status']
           updated_at?: string | null
           user_id?: string
           version?: number
@@ -379,11 +373,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "directions_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'directions_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -417,11 +411,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "feedbacks_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'feedbacks_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -433,7 +427,7 @@ export type Database = {
           id: string
           name: string
           sort_order: string | null
-          status: Database["public"]["Enums"]["goal_status"]
+          status: Database['public']['Enums']['goal_status']
           status_change_note: string | null
           status_change_reason: string | null
           target_date: string | null
@@ -449,7 +443,7 @@ export type Database = {
           id?: string
           name: string
           sort_order?: string | null
-          status?: Database["public"]["Enums"]["goal_status"]
+          status?: Database['public']['Enums']['goal_status']
           status_change_note?: string | null
           status_change_reason?: string | null
           target_date?: string | null
@@ -465,7 +459,7 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: string | null
-          status?: Database["public"]["Enums"]["goal_status"]
+          status?: Database['public']['Enums']['goal_status']
           status_change_note?: string | null
           status_change_reason?: string | null
           target_date?: string | null
@@ -476,18 +470,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "goals_area_id_fkey"
-            columns: ["area_id"]
+            foreignKeyName: 'goals_area_id_fkey'
+            columns: ['area_id']
             isOneToOne: false
-            referencedRelation: "areas"
-            referencedColumns: ["id"]
+            referencedRelation: 'areas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "goals_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'goals_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -566,11 +560,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "phases_goal_id_fkey"
-            columns: ["goal_id"]
+            foreignKeyName: 'phases_goal_id_fkey'
+            columns: ['goal_id']
             isOneToOne: false
-            referencedRelation: "goals"
-            referencedColumns: ["id"]
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -657,16 +651,16 @@ export type Database = {
           related_area_ids: string[] | null
           related_goal_ids: string[] | null
           repeat_days: number[] | null
-          repeat_type: Database["public"]["Enums"]["repeat_type"]
+          repeat_type: Database['public']['Enums']['repeat_type']
           scheduled_date: string | null
           sort_order: string | null
           specific_time: string | null
           start_date: string | null
-          status: Database["public"]["Enums"]["task_status"]
+          status: Database['public']['Enums']['task_status']
           status_change_note: string | null
           status_change_reason: string | null
           streak_count: number | null
-          time_slot: Database["public"]["Enums"]["time_slot"]
+          time_slot: Database['public']['Enums']['time_slot']
           updated_at: string | null
           user_id: string
           why: string | null
@@ -690,16 +684,16 @@ export type Database = {
           related_area_ids?: string[] | null
           related_goal_ids?: string[] | null
           repeat_days?: number[] | null
-          repeat_type?: Database["public"]["Enums"]["repeat_type"]
+          repeat_type?: Database['public']['Enums']['repeat_type']
           scheduled_date?: string | null
           sort_order?: string | null
           specific_time?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database['public']['Enums']['task_status']
           status_change_note?: string | null
           status_change_reason?: string | null
           streak_count?: number | null
-          time_slot?: Database["public"]["Enums"]["time_slot"]
+          time_slot?: Database['public']['Enums']['time_slot']
           updated_at?: string | null
           user_id: string
           why?: string | null
@@ -723,48 +717,48 @@ export type Database = {
           related_area_ids?: string[] | null
           related_goal_ids?: string[] | null
           repeat_days?: number[] | null
-          repeat_type?: Database["public"]["Enums"]["repeat_type"]
+          repeat_type?: Database['public']['Enums']['repeat_type']
           scheduled_date?: string | null
           sort_order?: string | null
           specific_time?: string | null
           start_date?: string | null
-          status?: Database["public"]["Enums"]["task_status"]
+          status?: Database['public']['Enums']['task_status']
           status_change_note?: string | null
           status_change_reason?: string | null
           streak_count?: number | null
-          time_slot?: Database["public"]["Enums"]["time_slot"]
+          time_slot?: Database['public']['Enums']['time_slot']
           updated_at?: string | null
           user_id?: string
           why?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "tasks_area_id_fkey"
-            columns: ["area_id"]
+            foreignKeyName: 'tasks_area_id_fkey'
+            columns: ['area_id']
             isOneToOne: false
-            referencedRelation: "areas"
-            referencedColumns: ["id"]
+            referencedRelation: 'areas'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tasks_goal_id_fkey"
-            columns: ["goal_id"]
+            foreignKeyName: 'tasks_goal_id_fkey'
+            columns: ['goal_id']
             isOneToOne: false
-            referencedRelation: "goals"
-            referencedColumns: ["id"]
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tasks_phase_id_fkey"
-            columns: ["group_id"]
+            foreignKeyName: 'tasks_phase_id_fkey'
+            columns: ['group_id']
             isOneToOne: false
-            referencedRelation: "groups"
-            referencedColumns: ["id"]
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tasks_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'tasks_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -835,7 +829,7 @@ export type Database = {
             Args: {
               p_date?: string
               p_note?: string
-              p_status: Database["public"]["Enums"]["checkin_status"]
+              p_status: Database['public']['Enums']['checkin_status']
               p_task_id: string
               p_user_id: string
             }
@@ -844,7 +838,7 @@ export type Database = {
         | {
             Args: {
               p_note?: string
-              p_status: Database["public"]["Enums"]["checkin_status"]
+              p_status: Database['public']['Enums']['checkin_status']
               p_task_id: string
               p_user_id: string
             }
@@ -908,40 +902,23 @@ export type Database = {
     }
     Enums: {
       area_type:
-        | "health"
-        | "career"
-        | "finance"
-        | "relationships"
-        | "hobbies"
-        | "mental"
-        | "learning"
-        | "daily"
-        | "custom"
-      checkin_status: "done" | "skip" | "miss"
-      direction_status: "active" | "archived"
-      goal_status:
-        | "active"
-        | "backlog"
-        | "completed"
-        | "maintenance"
-        | "paused"
-        | "archived"
-      message_type:
-        | "celebration"
-        | "encouragement"
-        | "insight"
-        | "suggestion"
-        | "reminder"
-      mood_level: "terrible" | "bad" | "neutral" | "good" | "great"
-      repeat_type:
-        | "daily"
-        | "weekdays"
-        | "weekends"
-        | "weekly"
-        | "custom"
-        | "once"
-      task_status: "active" | "completed" | "paused"
-      time_slot: "dawn" | "morning" | "afternoon" | "evening" | "anytime"
+        | 'health'
+        | 'career'
+        | 'finance'
+        | 'relationships'
+        | 'hobbies'
+        | 'mental'
+        | 'learning'
+        | 'daily'
+        | 'custom'
+      checkin_status: 'done' | 'skip' | 'miss'
+      direction_status: 'active' | 'archived'
+      goal_status: 'active' | 'backlog' | 'completed' | 'maintenance' | 'paused' | 'archived'
+      message_type: 'celebration' | 'encouragement' | 'insight' | 'suggestion' | 'reminder'
+      mood_level: 'terrible' | 'bad' | 'neutral' | 'good' | 'great'
+      repeat_type: 'daily' | 'weekdays' | 'weekends' | 'weekly' | 'custom' | 'once'
+      task_status: 'active' | 'completed' | 'paused'
+      time_slot: 'dawn' | 'morning' | 'afternoon' | 'evening' | 'anytime'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -949,33 +926,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -984,23 +959,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1009,23 +984,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1034,80 +1009,60 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
       area_type: [
-        "health",
-        "career",
-        "finance",
-        "relationships",
-        "hobbies",
-        "mental",
-        "learning",
-        "daily",
-        "custom",
+        'health',
+        'career',
+        'finance',
+        'relationships',
+        'hobbies',
+        'mental',
+        'learning',
+        'daily',
+        'custom',
       ],
-      checkin_status: ["done", "skip", "miss"],
-      direction_status: ["active", "archived"],
-      goal_status: [
-        "active",
-        "backlog",
-        "completed",
-        "maintenance",
-        "paused",
-        "archived",
-      ],
-      message_type: [
-        "celebration",
-        "encouragement",
-        "insight",
-        "suggestion",
-        "reminder",
-      ],
-      mood_level: ["terrible", "bad", "neutral", "good", "great"],
-      repeat_type: [
-        "daily",
-        "weekdays",
-        "weekends",
-        "weekly",
-        "custom",
-        "once",
-      ],
-      task_status: ["active", "completed", "paused"],
-      time_slot: ["dawn", "morning", "afternoon", "evening", "anytime"],
+      checkin_status: ['done', 'skip', 'miss'],
+      direction_status: ['active', 'archived'],
+      goal_status: ['active', 'backlog', 'completed', 'maintenance', 'paused', 'archived'],
+      message_type: ['celebration', 'encouragement', 'insight', 'suggestion', 'reminder'],
+      mood_level: ['terrible', 'bad', 'neutral', 'good', 'great'],
+      repeat_type: ['daily', 'weekdays', 'weekends', 'weekly', 'custom', 'once'],
+      task_status: ['active', 'completed', 'paused'],
+      time_slot: ['dawn', 'morning', 'afternoon', 'evening', 'anytime'],
     },
   },
 } as const
