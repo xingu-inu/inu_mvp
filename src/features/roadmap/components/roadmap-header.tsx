@@ -33,12 +33,17 @@ export function RoadmapHeader() {
             variant="ghost"
             size="sm"
             onClick={() => setIsVersionHistoryOpen(true)}
-            className="text-[var(--color-text-tertiary)]"
+            className="min-h-[44px] text-[var(--color-text-tertiary)] lg:min-h-0"
           >
             <BookOpen className="mr-1 h-4 w-4" />
             과거 기록
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => setIsNewVersionWizardOpen(true)}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsNewVersionWizardOpen(true)}
+            className="min-h-[44px] lg:min-h-0"
+          >
             <Plus className="mr-1 h-4 w-4" />새 로드맵
           </Button>
         </div>

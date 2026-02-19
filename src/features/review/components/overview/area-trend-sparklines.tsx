@@ -20,8 +20,7 @@ function Sparkline({ points, color }: { points: AreaTrendPoint[]; color: string 
   const pathData = points
     .map((p, i) => {
       const x = SPARK_PAD + i * stepX
-      const y =
-        SPARK_H - SPARK_PAD - (p.completionRate / maxVal) * (SPARK_H - SPARK_PAD * 2)
+      const y = SPARK_H - SPARK_PAD - (p.completionRate / maxVal) * (SPARK_H - SPARK_PAD * 2)
       return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
     })
     .join(' ')
@@ -96,9 +95,7 @@ function AreaTrendRow({ data }: { data: AreaTrendData }) {
           <span className="font-mono text-[10px] font-medium text-[var(--color-text-secondary)]">
             {last?.completionRate ?? 0}%
           </span>
-          {direction === 'up' && (
-            <span className="text-[10px] text-emerald-600">+{delta}%</span>
-          )}
+          {direction === 'up' && <span className="text-[10px] text-emerald-600">+{delta}%</span>}
           {direction === 'down' && (
             <span className="text-[10px] text-[var(--color-text-tertiary)]">{delta}%</span>
           )}
@@ -118,10 +115,7 @@ export function AreaTrendSparklines() {
     return (
       <div className="space-y-2">
         {Array.from({ length: 3 }, (_, i) => (
-          <div
-            key={i}
-            className="h-12 animate-pulse rounded-lg bg-[var(--color-bg-secondary)]"
-          />
+          <div key={i} className="h-12 animate-pulse rounded-lg bg-[var(--color-bg-secondary)]" />
         ))}
       </div>
     )

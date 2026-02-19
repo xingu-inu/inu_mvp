@@ -11,7 +11,9 @@ interface ExportResult {
   failed: number
 }
 
-export async function POST(request: Request): Promise<NextResponse<ExportResult | { error: string }>> {
+export async function POST(
+  request: Request
+): Promise<NextResponse<ExportResult | { error: string }>> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -73,14 +75,18 @@ export async function POST(request: Request): Promise<NextResponse<ExportResult 
     if (task.specificTime) {
       startDateTime = `${date}T${task.specificTime}:00`
       const durationMs = (task.durationMinutes || 30) * 60_000
-      endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
+      endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
+        .toISOString()
+        .slice(0, 19)
     } else if (task.timeSlot && task.timeSlot !== 'anytime') {
       const config = TIME_SLOT_CONFIG[task.timeSlot as TimeSlot]
       if (config) {
         const midHour = Math.floor((config.hours[0] + config.hours[1]) / 2)
         startDateTime = `${date}T${String(midHour).padStart(2, '0')}:00:00`
         const durationMs = (task.durationMinutes || 30) * 60_000
-        endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
+        endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
+          .toISOString()
+          .slice(0, 19)
       } else {
         skipped++
         continue
@@ -88,7 +94,9 @@ export async function POST(request: Request): Promise<NextResponse<ExportResult 
     } else {
       startDateTime = `${date}T09:00:00`
       const durationMs = (task.durationMinutes || 30) * 60_000
-      endDateTime = new Date(new Date(startDateTime).getTime() + durationMs).toISOString().slice(0, 19)
+      endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
+        .toISOString()
+        .slice(0, 19)
     }
 
     const eventId = await createGoogleEvent(supabase, user.id, {

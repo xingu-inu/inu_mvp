@@ -85,9 +85,7 @@ export function computeSlotLayout(tasks: HomeTask[]): SlotLayout {
  * Cross-slot events go to the start slot only.
  * All-day events go to allDay.
  */
-export function assignGoogleEventsToSlots(
-  events: GoogleCalendarEvent[]
-): SlotGoogleEvents {
+export function assignGoogleEventsToSlots(events: GoogleCalendarEvent[]): SlotGoogleEvents {
   const result: SlotGoogleEvents = {
     dawn: [],
     morning: [],
@@ -128,9 +126,7 @@ export function assignGoogleEventsToSlots(
 /**
  * Hook: compute slot-based task layout for all days in a week.
  */
-export function useTaskLayout(
-  tasksByDate: Record<string, HomeTask[]>
-): Record<string, SlotLayout> {
+export function useTaskLayout(tasksByDate: Record<string, HomeTask[]>): Record<string, SlotLayout> {
   return useMemo(() => {
     const result: Record<string, SlotLayout> = {}
     for (const [dateStr, tasks] of Object.entries(tasksByDate)) {

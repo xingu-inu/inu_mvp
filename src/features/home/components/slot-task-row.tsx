@@ -60,11 +60,7 @@ function buildAriaLabel(task: HomeTask, status: string | undefined | null): stri
   return label
 }
 
-export const SlotTaskRow = memo(function SlotTaskRow({
-  task,
-  isPast,
-  onClick,
-}: SlotTaskRowProps) {
+export const SlotTaskRow = memo(function SlotTaskRow({ task, isPast, onClick }: SlotTaskRowProps) {
   const status = task.todayCheckIn?.status
   const areaColor = task.goal?.area?.color ?? task.directArea?.color ?? '#64748b'
   const isCompletedOnce = task.taskStatus === 'completed' && task.repeat_type === 'once'
@@ -72,11 +68,7 @@ export const SlotTaskRow = memo(function SlotTaskRow({
   const isSkip = status === 'skip'
 
   // Border color: status overrides area color
-  const borderColor = isDone
-    ? 'var(--color-done)'
-    : isSkip
-      ? 'var(--color-skip)'
-      : areaColor
+  const borderColor = isDone ? 'var(--color-done)' : isSkip ? 'var(--color-skip)' : areaColor
 
   return (
     <button
@@ -84,10 +76,10 @@ export const SlotTaskRow = memo(function SlotTaskRow({
       title={buildTooltip(task, status)}
       aria-label={buildAriaLabel(task, status)}
       className={cn(
-        'flex w-full items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] px-2 py-[var(--chip-py,3px)] text-left transition-all duration-150',
+        'flex w-full items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] px-2 py-[var(--chip-py,3px)] text-left transition-[opacity,border-color,background-color] duration-150',
         'min-h-[var(--chip-h,32px)]',
         'hover:brightness-[0.97] active:scale-[0.98]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-300)]',
+        'focus-visible:ring-2 focus-visible:ring-[var(--color-primary-300)] focus-visible:outline-none',
         isDone && 'opacity-60',
         isSkip && 'opacity-40',
         !isDone && !isSkip && isPast && 'opacity-50'
@@ -108,7 +100,7 @@ export const SlotTaskRow = memo(function SlotTaskRow({
       />
       {/* Time badge - conditional */}
       {task.specific_time && (
-        <span className="flex-shrink-0 text-[length:var(--chip-time-font-size,10px)] tabular-nums text-[var(--chip-time-color)]">
+        <span className="flex-shrink-0 text-[length:var(--chip-time-font-size,10px)] text-[var(--chip-time-color)] tabular-nums">
           {formatTime(task.specific_time)}
         </span>
       )}
@@ -123,16 +115,17 @@ export const SlotTaskRow = memo(function SlotTaskRow({
       </span>
       {/* Metadata badges */}
       <div className="flex flex-shrink-0 items-center gap-1">
-        {task.repeat_type !== 'once' && (() => {
-          const label = formatRepeatType(task.repeat_type)
-          return label ? (
-            <span className="text-[9px] leading-none text-[var(--color-text-disabled)]">
-              {label}
-            </span>
-          ) : null
-        })()}
+        {task.repeat_type !== 'once' &&
+          (() => {
+            const label = formatRepeatType(task.repeat_type)
+            return label ? (
+              <span className="text-[9px] leading-none text-[var(--color-text-disabled)]">
+                {label}
+              </span>
+            ) : null
+          })()}
         {task.duration_minutes > 0 && (
-          <span className="text-[9px] tabular-nums leading-none text-[var(--color-text-disabled)]">
+          <span className="text-[9px] leading-none text-[var(--color-text-disabled)] tabular-nums">
             {formatDuration(task.duration_minutes)}
           </span>
         )}

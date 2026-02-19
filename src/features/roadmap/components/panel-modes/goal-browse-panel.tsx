@@ -29,8 +29,6 @@ import {
   InlineGoalCreate,
 } from '../inline-forms'
 import { useDeleteConfirm } from '../../hooks'
-import { BrainDumpModal } from '../brain-dump'
-import { RoadmapDiagnosisModal } from '../roadmap-diagnosis'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { Goal, GoalStatus } from '@/types/entities'
@@ -69,12 +67,8 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [isCreatingArea, setIsCreatingArea] = useState(false)
   const [creatingGoalInAreaId, setCreatingGoalInAreaId] = useState<string | null>(null)
-  const isBrainDumpOpen = useRoadmapStore((s) => s.isBrainDumpOpen)
   const setIsBrainDumpOpen = useRoadmapStore((s) => s.setIsBrainDumpOpen)
-  const isDiagnosisOpen = useRoadmapStore((s) => s.isDiagnosisOpen)
   const setIsDiagnosisOpen = useRoadmapStore((s) => s.setIsDiagnosisOpen)
-  const diagnosisInitialScope = useRoadmapStore((s) => s.diagnosisInitialScope)
-  const diagnosisInitialTargetId = useRoadmapStore((s) => s.diagnosisInitialTargetId)
   const areaDelete = useDeleteConfirm()
 
   const deleteArea = useDeleteArea()
@@ -446,7 +440,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/area:opacity-100"
+                  className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
                   onClick={() => setCreatingGoalInAreaId(area.id)}
                   title="목표 추가"
                 >
@@ -456,10 +450,10 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    'h-7 w-7 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/area:opacity-100',
+                    'h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100',
                     isAreaExpanded &&
                       editingAreaId === area.id &&
-                      'bg-[var(--color-bg-tertiary)] [@media(hover:hover)]:opacity-100'
+                      'bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-100'
                   )}
                   onClick={() => {
                     if (areaDetailId === area.id && editingAreaId === area.id) {
@@ -479,7 +473,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/area:opacity-100"
+                  className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
                   onClick={() => areaDelete.toggleDelete(area.id)}
                   title="영역 삭제"
                 >
@@ -613,24 +607,6 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
           </button>
         )}
       </div>
-
-      <BrainDumpModal
-        open={isBrainDumpOpen}
-        onOpenChange={setIsBrainDumpOpen}
-        areas={areas}
-        goals={goals}
-        directionStatement={direction?.statement}
-      />
-
-      <RoadmapDiagnosisModal
-        open={isDiagnosisOpen}
-        onOpenChange={setIsDiagnosisOpen}
-        areas={areas}
-        goals={goals}
-        directionStatement={direction?.statement}
-        initialScope={diagnosisInitialScope}
-        initialTargetId={diagnosisInitialTargetId}
-      />
     </div>
   )
 }
@@ -705,7 +681,7 @@ function DirectionBar({
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6 shrink-0 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/direction:opacity-100"
+        className="h-6 w-6 shrink-0 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/direction:opacity-100"
         onClick={onEdit}
         title="방향 수정"
       >

@@ -17,15 +17,14 @@ import {
   computeAreaBalance,
   groupEventsByArea,
 } from '../utils/timeline-utils'
-import { AchievementHero, AreaBalanceBars } from './overview'
-import { AiReviewInsightCard } from './overview/ai-review-insight-card'
-import { AreaTrendSparklines } from './overview/area-trend-sparklines'
-import { MoodTrendChart } from './overview/mood-trend-chart'
-import { PeriodComparisonStrip } from './overview/period-comparison-strip'
 import { useComparisonData } from '../hooks/use-comparison-data'
-import { JournalHeatmap } from './journal/journal-heatmap'
+import { useAreaTrend } from '../hooks/use-area-trend'
+import { AchievementHero } from './overview'
+import { AreaBalanceUnified } from './overview/area-balance-unified'
+import { AiReviewInsightModal } from './overview/ai-review-insight-modal'
 import { JournalDayDetail } from './journal/journal-day-detail'
 import { PeriodReflectionSection } from './period-reflection/period-reflection-section'
+import { ReviewDayList } from './records/review-day-list'
 import { EmptyReview } from './empty-review'
 import { ReviewSkeleton } from './review-skeleton'
 
@@ -43,6 +42,7 @@ export function ReviewPageLayout() {
   const { data: moodHistory, isLoading: l2 } = useMoodHistory()
   const { data: roadmapData, isLoading: l3 } = useReviewRoadmapData()
   const { data: activityEvents = [] } = useActivityLog()
+  const { data: areaTrends = [] } = useAreaTrend()
 
   // Weekly/Monthly reflection
   const { data: weeklyReflection } = useWeeklyReflection(isWeek ? weekStartDate : undefined)
@@ -98,7 +98,7 @@ export function ReviewPageLayout() {
     setExpandedAreaId((prev) => (prev === areaId ? null : areaId))
   }, [])
 
-  // Heatmap date selection (desktop → panel, mobile → toggle inline)
+  // Date selection (desktop → panel, mobile → toggle inline)
   const handleSelectDate = useCallback(
     (date: string) => {
       selectDay(date)
@@ -134,90 +134,127 @@ export function ReviewPageLayout() {
     monthlyReflection,
     onSaveMonthly: saveMonthly,
     isSavingMonthly,
-    overviewStats,
   }
 
   return (
     <div className="flex h-full flex-col">
-      {/* Desktop layout — compact, 2-column grid */}
+      {/* ═══ Desktop layout ═══ */}
       <div className="hidden h-full lg:block">
         <div className="h-full space-y-4 overflow-y-auto p-4 lg:p-5">
-          {/* Hero: horizontal ring + narrative */}
-          <AchievementHero
-            stats={overviewStats}
-            streaks={activeStreaks}
-            checkInHistory={checkInHistory ?? []}
-            totalDays={totalDays}
-            period={period}
-          />
+          {/* ACT 1: At a Glance + AI button */}
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <AchievementHero
+                stats={overviewStats}
+                streaks={activeStreaks}
+                checkInHistory={checkInHistory ?? []}
+                totalDays={totalDays}
+                period={period}
+                comparison={comparison}
+              />
+            </div>
+            {isCurrentVersion && (
+              <div className="shrink-0 pt-1">
+                <AiReviewInsightModal
+                  overviewStats={overviewStats}
+                  activeStreaks={activeStreaks}
+                  areaBalances={areaBalances}
+                  moodHistory={moodHistory}
+                  isWeek={isWeek}
+                  periodLabel={reflectionLabel}
+                  weeklyReflection={weeklyReflection}
+                />
+              </div>
+            )}
+          </div>
 
-          <PeriodComparisonStrip comparison={comparison} isWeek={isWeek} />
+          {/* ACT 2: Areas (left) + Records (right) side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="min-w-0">
+              {areaBalances.length > 0 && (
+                <AreaBalanceUnified
+                  areas={areaBalances}
+                  trends={areaTrends}
+                  selectedAreaId={selectedAreaId}
+                  onSelectArea={selectArea}
+                  expandedAreaId={null}
+                  onToggleArea={() => {}}
+                />
+              )}
+            </div>
+            <div className="min-w-0">
+              <ReviewDayList
+                checkInHistory={checkInHistory ?? []}
+                moodHistory={moodHistory ?? []}
+                startDate={startDate}
+                endDate={endDate}
+                onSelectDate={handleSelectDate}
+                selectedDate={selectedDate}
+              />
+            </div>
+          </div>
 
-          <MoodTrendChart moodHistory={moodHistory} />
-
-          <JournalHeatmap
-            checkInHistory={checkInHistory ?? []}
-            startDate={startDate}
-            endDate={endDate}
-            isWeek={isWeek}
-            onSelectDate={handleSelectDate}
-            selectedDate={selectedDate}
-          />
-          {areaBalances.length > 0 && (
-            <AreaBalanceBars
-              areas={areaBalances}
-              selectedAreaId={selectedAreaId}
-              onSelectArea={selectArea}
-              expandedAreaId={null}
-              onToggleArea={() => {}}
-            />
-          )}
-
-          <AreaTrendSparklines />
-
-          {/* AI Insight — only for current roadmap version */}
-          {isCurrentVersion && (
-            <AiReviewInsightCard
-              overviewStats={overviewStats}
-              activeStreaks={activeStreaks}
-              areaBalances={areaBalances}
-              moodHistory={moodHistory}
-              isWeek={isWeek}
-              periodLabel={reflectionLabel}
-              weeklyReflection={weeklyReflection}
-            />
-          )}
-
-          {/* Reflection — only for current roadmap version */}
+          {/* ACT 3: Reflect */}
           {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
+          {!isCurrentVersion && (
+            <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
+              회고 작성은 현재 로드맵에서만 가능합니다
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Mobile layout — single column, tighter spacing */}
+      {/* ═══ Mobile layout ═══ */}
       <div className="space-y-4 overflow-y-auto p-4 pb-8 lg:hidden">
-        <AchievementHero
-          stats={overviewStats}
-          streaks={activeStreaks}
+        {/* ACT 1: At a Glance + AI button */}
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <AchievementHero
+              stats={overviewStats}
+              streaks={activeStreaks}
+              checkInHistory={checkInHistory ?? []}
+              totalDays={totalDays}
+              period={period}
+              comparison={comparison}
+            />
+          </div>
+          {isCurrentVersion && (
+            <div className="shrink-0 pt-1">
+              <AiReviewInsightModal
+                overviewStats={overviewStats}
+                activeStreaks={activeStreaks}
+                areaBalances={areaBalances}
+                moodHistory={moodHistory}
+                isWeek={isWeek}
+                periodLabel={reflectionLabel}
+                weeklyReflection={weeklyReflection}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Records — horizontal cards with mood trend */}
+        <ReviewDayList
           checkInHistory={checkInHistory ?? []}
-          totalDays={totalDays}
-          period={period}
-        />
-
-        <PeriodComparisonStrip comparison={comparison} isWeek={isWeek} />
-
-        <MoodTrendChart moodHistory={moodHistory} />
-
-        <JournalHeatmap
-          checkInHistory={checkInHistory ?? []}
+          moodHistory={moodHistory ?? []}
           startDate={startDate}
           endDate={endDate}
-          isWeek={isWeek}
           onSelectDate={handleToggleDate}
           selectedDate={selectedDate}
         />
+
+        {/* Inline day detail (when date selected) */}
+        {selectedDate && (
+          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+            <JournalDayDetail dateStr={selectedDate} />
+          </div>
+        )}
+
+        {/* Areas */}
         {areaBalances.length > 0 && (
-          <AreaBalanceBars
+          <AreaBalanceUnified
             areas={areaBalances}
+            trends={areaTrends}
             selectedAreaId={null}
             onSelectArea={() => {}}
             expandedAreaId={expandedAreaId}
@@ -225,29 +262,13 @@ export function ReviewPageLayout() {
           />
         )}
 
-        <AreaTrendSparklines />
-
-        {/* Inline day detail for mobile */}
-        {selectedDate && (
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-            <JournalDayDetail dateStr={selectedDate} />
-          </div>
-        )}
-        {/* AI Insight — only for current roadmap version */}
-        {isCurrentVersion && (
-          <AiReviewInsightCard
-            overviewStats={overviewStats}
-            activeStreaks={activeStreaks}
-            areaBalances={areaBalances}
-            moodHistory={moodHistory}
-            isWeek={isWeek}
-            periodLabel={reflectionLabel}
-            weeklyReflection={weeklyReflection}
-          />
-        )}
-
-        {/* Reflection — only for current roadmap version */}
+        {/* ACT 3: Reflect */}
         {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
+        {!isCurrentVersion && (
+          <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
+            회고 작성은 현재 로드맵에서만 가능합니다
+          </p>
+        )}
       </div>
     </div>
   )

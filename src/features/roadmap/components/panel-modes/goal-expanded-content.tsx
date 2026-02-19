@@ -209,7 +209,7 @@ const TaskRow = memo(function TaskRow({
         open={showMovePopover}
         onOpenChange={setShowMovePopover}
       >
-        <div className="flex shrink-0 items-center gap-1 pr-1.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/task:opacity-100">
+        <div className="flex shrink-0 items-center gap-1 pr-1.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/task:opacity-100">
           {/* Direct status buttons */}
           {task.status === 'active' && task.repeat_type === 'once' && (
             <button
@@ -613,7 +613,7 @@ const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
         </div>
       </div>
       {/* Unlink button (hover only) */}
-      <div className="flex shrink-0 items-center pr-1.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cross:opacity-100">
+      <div className="flex shrink-0 items-center pr-1.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/cross:opacity-100">
         <button
           type="button"
           onClick={(e) => {
@@ -1133,7 +1133,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                           setInlineMode({ type: 'edit-group', groupId: group.id })
                                         }}
                                         title="수정"
-                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/grp:opacity-100"
+                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)] lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/grp:opacity-100"
                                       >
                                         <Edit2 className="h-3 w-3" />
                                       </button>
@@ -1143,7 +1143,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                           groupDelete.toggleDelete(group.id)
                                         }}
                                         title="삭제"
-                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[var(--color-miss)] transition-all hover:bg-[var(--color-bg-tertiary)] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/grp:opacity-100"
+                                        className="flex h-6 w-6 cursor-pointer items-center justify-center rounded-md text-[var(--color-miss)] transition-all hover:bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/grp:opacity-100"
                                       >
                                         <Trash2 className="h-3 w-3" />
                                       </button>

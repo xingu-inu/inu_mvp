@@ -12,3 +12,6 @@ export { VisualTree, VisualTreeWrapper } from './components/visual-tree'
 
 // Panel Modes
 export { GoalViewMode, GroupEditForm, GroupCreateForm } from './components/panel-modes'
+
+// Mobile
+export { MobileRoadmapFab } from './components/mobile-roadmap-fab'

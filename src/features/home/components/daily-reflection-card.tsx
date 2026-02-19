@@ -25,10 +25,8 @@ export function DailyReflectionCard({ tasks, date }: DailyReflectionCardProps) {
   const dateString = format(date, 'yyyy-MM-dd')
   const isViewingToday = isToday(date)
 
-
   // React Query hooks
   const { data: reflection, isLoading } = useReflection(dateString)
-
 
   if (isLoading) {
     return (

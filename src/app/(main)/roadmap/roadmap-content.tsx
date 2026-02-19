@@ -10,6 +10,8 @@ import {
   VisualTreeWrapper,
   VisualTreeSkeleton,
 } from '@/features/roadmap'
+import { MobileRoadmapFab } from '@/features/roadmap/components/mobile-roadmap-fab'
+import { RoadmapAiModals } from './roadmap-ai-modals'
 
 const NewVersionWizard = dynamic(
   () =>
@@ -62,6 +64,12 @@ export default function RoadmapContent() {
           </Suspense>
         </div>
       </PageContainer>
+
+      {/* Mobile: FAB for creating areas/goals + AI features */}
+      <MobileRoadmapFab />
+
+      {/* AI Modals — single instance for both desktop & mobile */}
+      <RoadmapAiModals />
 
       {/* Version Management Modals */}
       <NewVersionWizard />

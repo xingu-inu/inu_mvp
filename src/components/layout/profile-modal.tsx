@@ -459,11 +459,7 @@ function NotificationSettingsView() {
     <div className="space-y-4">
       <ToggleRow label="달성 리마인더" description="매일 설정한 시간에 알림" defaultChecked />
       <ToggleRow label="주간 리뷰 알림" description="매주 일요일 저녁 리마인드" defaultChecked />
-      <ToggleRow
-        label="AI 인사이트"
-        description="이누의 새 인사이트 알림"
-        defaultChecked={false}
-      />
+      <ToggleRow label="AI 인사이트" description="이누의 새 인사이트 알림" defaultChecked={false} />
     </div>
   )
 }

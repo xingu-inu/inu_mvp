@@ -92,7 +92,8 @@ export async function proxy(request: NextRequest) {
   // ── Single profile query for all logged-in branches ──
   const isAdminPath = pathname.startsWith('/admin')
   const needsProfile =
-    user && (isAdminPath || isAuthPath || requiresOnboarding || isOnboardingPath || pathname === '/')
+    user &&
+    (isAdminPath || isAuthPath || requiresOnboarding || isOnboardingPath || pathname === '/')
 
   let profile: { onboarding_completed: boolean; is_admin: boolean } | null = null
   if (needsProfile) {

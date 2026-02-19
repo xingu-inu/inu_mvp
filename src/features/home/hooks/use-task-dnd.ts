@@ -1,16 +1,16 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useDebouncedCallback } from 'use-debounce'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
+import { format, startOfWeek } from 'date-fns'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core'
 import { getNewOrderBetween as _getNewOrderBetween } from '@/lib/fractional-index'
 import { moveNode, type MoveNodeInput } from '@/actions/tree.actions'
 import { queryKeys } from '@/lib/query/keys'
 import type { HomeTask } from '@/types/entities'
+import type { HomeTask as ActionHomeTask } from '@/actions/home.actions'
 import type { AreaGroup } from '@/lib/utils/task-utils'
 
 function isValidFractionalKey(key: string): boolean {
@@ -23,7 +23,13 @@ function sanitizeKey(key: string | null): string | null {
 }
 
 function safeNewOrderBetween(before: string | null, after: string | null): string {
-  return _getNewOrderBetween(sanitizeKey(before), sanitizeKey(after))
+  const a = sanitizeKey(before)
+  const b = sanitizeKey(after)
+  // Guard: if both keys exist and a >= b (duplicate/corrupt sort_order), fall back to appending after a
+  if (a != null && b != null && a >= b) {
+    return _getNewOrderBetween(a, null)
+  }
+  return _getNewOrderBetween(a, b)
 }
 
 const DAILY_CONTAINER = 'daily'
@@ -43,6 +49,7 @@ interface DragItem {
 export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], selectedDate: Date) {
   const queryClient = useQueryClient()
   const dateStr = format(selectedDate, 'yyyy-MM-dd')
+  const weekStartStr = format(startOfWeek(selectedDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
 
   // ── Drag state ──
   const [activeItem, setActiveItem] = useState<DragItem | null>(null)
@@ -85,26 +92,46 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
   // Source container ref — tracks where a task originated at drag start (roadmap pattern)
   const dragSourceContainer = useRef<string | null>(null)
 
-  // Previous data for rollback
-  const previousDataRef = useRef<unknown>(null)
+  // Previous data for rollback (both daily + weekly caches)
+  const previousDataRef = useRef<{ daily: unknown; weekly: unknown } | null>(null)
+
+  // Auto-clear drag overlay once base containers catch up from cache update.
+  // Fires only when baseContainers/baseAreaOrder change so the overlay persists
+  // until props reflect the optimistic cache update — prevents snap-back.
+  useEffect(() => {
+    if (!activeItem && !pendingCrossMove && dragContainers) {
+      setDragContainers(null)
+      setDragAreaOrder(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseContainers, baseAreaOrder])
 
   // ── Debounced server mutation ──
   const mutation = useMutation({
     mutationFn: moveNode,
     onError: () => {
       if (previousDataRef.current) {
-        queryClient.setQueryData(queryKeys.tasks.home(dateStr), previousDataRef.current)
+        queryClient.setQueryData(queryKeys.tasks.home(dateStr), previousDataRef.current.daily)
+        queryClient.setQueryData(
+          queryKeys.tasks.homeWeek(weekStartStr),
+          previousDataRef.current.weekly
+        )
       }
       toast.error('이동에 실패했어요. 다시 시도해주세요.')
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.home(dateStr) })
+      // Prefix match: invalidates both tasks.home(date) AND tasks.homeWeek(week)
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
     },
   })
 
-  const debouncedMutate = useDebouncedCallback((input: MoveNodeInput) => {
-    mutation.mutate(input)
-  }, 300)
+  // Direct mutation (no debounce) — each drag operation must persist independently
+  const doMutate = useCallback(
+    (input: MoveNodeInput) => {
+      mutation.mutate(input)
+    },
+    [mutation]
+  )
 
   // ── Find which container holds a given ID (roadmap pattern) ──
   const findContainer = useCallback(
@@ -171,13 +198,17 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
       if (!activeContainer) return
 
       // Determine target container
-      const overData = over.data.current as { type?: string; containerId?: string } | undefined
+      const overData = over.data.current as
+        | { type?: string; containerId?: string; areaId?: string }
+        | undefined
       let overContainer: string | undefined
 
       if (overData?.type === 'container') {
         overContainer = overData.containerId
       } else if (overData?.type === 'task') {
         overContainer = overData.containerId ?? findContainer(overId)
+      } else if (overData?.type === 'area' && overData.areaId) {
+        overContainer = overData.areaId as string
       }
 
       if (!overContainer || activeContainer === overContainer) return
@@ -264,24 +295,15 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
             })
             const newSortOrder = calculateNewOrderForArea(areaItems, oldIndex, newIndex)
 
-            const dateKey = queryKeys.tasks.home(dateStr)
-            previousDataRef.current = queryClient.getQueryData(dateKey)
-            queryClient.setQueryData<HomeTask[]>(dateKey, (prev) =>
-              prev?.map((t) =>
-                t.goal?.area?.id === areaId
-                  ? {
-                      ...t,
-                      goal: { ...t.goal!, area: { ...t.goal!.area, sort_order: newSortOrder } },
-                    }
-                  : t
-              )
-            )
+            previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
+            patchAreaInHomeCaches(queryClient, dateStr, weekStartStr, areaId, newSortOrder)
 
-            debouncedMutate({
+            doMutate({
               nodeId: areaId,
               nodeType: 'area',
               newOrder: newSortOrder,
             })
+            return // useEffect cleans up dragContainers after cache propagation
           }
         }
 
@@ -303,51 +325,73 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
           return
         }
 
-        const containerIds = taskContainers[currentContainer] ?? []
-        const taskIndex = containerIds.indexOf(taskId)
-        const newOrder = calculateNewOrder(currentContainer, taskIndex, taskId)
-
-        const dateKey = queryKeys.tasks.home(dateStr)
-
         // Cross-move detection via dragSourceContainer ref (roadmap pattern)
         if (sourceContainer === currentContainer) {
-          // Same container reorder
-          previousDataRef.current = queryClient.getQueryData(dateKey)
-          queryClient.setQueryData<HomeTask[]>(dateKey, (prev) =>
-            prev?.map((t) => (t.id === taskId ? { ...t, sort_order: newOrder } : t))
+          // Same container reorder — use over.id to determine target position
+          const overId = String(over.id)
+          const containerIds = taskContainers[currentContainer] ?? []
+          const oldIndex = containerIds.indexOf(taskId)
+
+          // Resolve over position: if over.id is a container/area droppable, move to end
+          let overIndex = containerIds.indexOf(overId)
+          if (overIndex === -1) {
+            overIndex = containerIds.length - 1
+          }
+
+          if (oldIndex === -1 || oldIndex === overIndex) {
+            setDragContainers(null)
+            setDragAreaOrder(null)
+            return
+          }
+
+          const reordered = arrayMove(containerIds, oldIndex, overIndex)
+          // Commit reordered IDs so UI immediately shows new position
+          setDragContainers((prev) => (prev ? { ...prev, [currentContainer]: reordered } : prev))
+
+          const targetIdx = reordered.indexOf(taskId)
+          const prevTask = targetIdx > 0 ? tasksById.get(reordered[targetIdx - 1]) : null
+          const nextTask =
+            targetIdx < reordered.length - 1 ? tasksById.get(reordered[targetIdx + 1]) : null
+          const newOrder = safeNewOrderBetween(
+            prevTask?.sort_order ?? null,
+            nextTask?.sort_order ?? null
           )
 
-          debouncedMutate({
+          previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
+          patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
+            sortOrder: newOrder,
+          })
+
+          doMutate({
             nodeId: taskId,
             nodeType: 'task',
             newOrder,
           })
+          return // useEffect cleans up dragContainers after cache propagation
         } else {
           // Cross-container move
-          if (currentContainer === DAILY_CONTAINER) {
-            // Moving to daily → goal_id = null
-            previousDataRef.current = queryClient.getQueryData(dateKey)
-            queryClient.setQueryData<HomeTask[]>(dateKey, (prev) =>
-              prev?.map((t) =>
-                t.id === taskId
-                  ? {
-                      ...t,
-                      sort_order: newOrder,
-                      goal_id: null,
-                      goal: null,
-                      group_id: null,
-                      group: null,
-                    }
-                  : t
-              )
-            )
+          const containerIds = taskContainers[currentContainer] ?? []
+          const taskIndex = containerIds.indexOf(taskId)
+          const newOrder = calculateNewOrder(currentContainer, taskIndex, taskId)
 
-            debouncedMutate({
+          if (currentContainer === DAILY_CONTAINER) {
+            // Moving to daily → goalId = null
+            previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
+            patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
+              sortOrder: newOrder,
+              goalId: null,
+              goal: null,
+              groupId: null,
+              group: null,
+            })
+
+            doMutate({
               nodeId: taskId,
               nodeType: 'task',
               newOrder,
               newParentId: null,
             })
+            return // useEffect cleans up dragContainers after cache propagation
           } else {
             // Moving to an area — need to determine goal
             const targetAreaGroup = areaGroups.find((g) => g.area.id === currentContainer)
@@ -356,34 +400,35 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
             if (goals.length === 1) {
               const targetGoal = goals[0]
               const targetArea = targetAreaGroup!.area
-              previousDataRef.current = queryClient.getQueryData(dateKey)
-              queryClient.setQueryData<HomeTask[]>(dateKey, (prev) =>
-                prev?.map((t) =>
-                  t.id === taskId
-                    ? {
-                        ...t,
-                        sort_order: newOrder,
-                        goal_id: targetGoal.id,
-                        goal: {
-                          id: targetGoal.id,
-                          name: targetGoal.name,
-                          why: null,
-                          areaId: targetArea.id,
-                          area: { ...targetArea, why: null },
-                        },
-                        group_id: null,
-                        group: null,
-                      }
-                    : t
-                )
-              )
+              previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
+              patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
+                sortOrder: newOrder,
+                goalId: targetGoal.id,
+                goal: {
+                  id: targetGoal.id,
+                  name: targetGoal.name,
+                  why: null,
+                  areaId: targetArea.id,
+                  area: {
+                    id: targetArea.id,
+                    name: targetArea.name,
+                    emoji: targetArea.emoji,
+                    color: targetArea.color,
+                    why: null,
+                    sortOrder: targetArea.sort_order,
+                  },
+                },
+                groupId: null,
+                group: null,
+              })
 
-              debouncedMutate({
+              doMutate({
                 nodeId: taskId,
                 nodeType: 'task',
                 newOrder,
                 newParentId: targetGoal.id,
               })
+              return // useEffect cleans up dragContainers after cache propagation
             } else if (goals.length > 1) {
               // Multiple goals — show picker, keep drag containers frozen for preview
               setPendingCrossMove({
@@ -393,13 +438,15 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
                 newOrder,
               })
               return
+            } else {
+              // No active goals in this area — clean up immediately (no mutation)
+              toast.info('이 영역에 활성 목표가 없어요. 로드맵에서 목표를 먼저 만들어주세요.')
+              setDragContainers(null)
+              setDragAreaOrder(null)
+              return
             }
           }
         }
-
-        setDragContainers(null)
-        setDragAreaOrder(null)
-        return
       }
 
       setDragContainers(null)
@@ -410,11 +457,13 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
       dragAreaOrder,
       taskContainers,
       areaGroups,
+      tasksById,
       findContainer,
       calculateNewOrder,
       queryClient,
       dateStr,
-      debouncedMutate,
+      weekStartStr,
+      doMutate,
     ]
   )
 
@@ -431,37 +480,36 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     (goalId: string) => {
       if (!pendingCrossMove) return
 
-      const dateKey = queryKeys.tasks.home(dateStr)
-      previousDataRef.current = queryClient.getQueryData(dateKey)
+      previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
 
       const targetAreaGroup = areaGroups.find((g) => g.goals.some((gl) => gl.id === goalId))
       const targetGoal = targetAreaGroup?.goals.find((g) => g.id === goalId)
       const targetArea = targetAreaGroup?.area
 
       if (targetGoal && targetArea) {
-        queryClient.setQueryData<HomeTask[]>(dateKey, (prev) =>
-          prev?.map((t) =>
-            t.id === pendingCrossMove.taskId
-              ? {
-                  ...t,
-                  sort_order: pendingCrossMove.newOrder,
-                  goal_id: goalId,
-                  goal: {
-                    id: goalId,
-                    name: targetGoal.name,
-                    why: null,
-                    areaId: targetArea.id,
-                    area: { ...targetArea, why: null },
-                  },
-                  group_id: null,
-                  group: null,
-                }
-              : t
-          )
-        )
+        patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, pendingCrossMove.taskId, {
+          sortOrder: pendingCrossMove.newOrder,
+          goalId: goalId,
+          goal: {
+            id: goalId,
+            name: targetGoal.name,
+            why: null,
+            areaId: targetArea.id,
+            area: {
+              id: targetArea.id,
+              name: targetArea.name,
+              emoji: targetArea.emoji,
+              color: targetArea.color,
+              why: null,
+              sortOrder: targetArea.sort_order,
+            },
+          },
+          groupId: null,
+          group: null,
+        })
       }
 
-      debouncedMutate({
+      doMutate({
         nodeId: pendingCrossMove.taskId,
         nodeType: 'task',
         newOrder: pendingCrossMove.newOrder,
@@ -469,10 +517,9 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
       })
 
       setPendingCrossMove(null)
-      setDragContainers(null)
-      setDragAreaOrder(null)
+      // dragContainers cleanup deferred to useEffect (waits for cache propagation)
     },
-    [pendingCrossMove, queryClient, dateStr, debouncedMutate, areaGroups]
+    [pendingCrossMove, queryClient, dateStr, weekStartStr, doMutate, areaGroups]
   )
 
   const cancelCrossMove = useCallback(() => {
@@ -498,6 +545,81 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     confirmCrossMove,
     cancelCrossMove,
   }
+}
+
+// ═══════════════════════════════════════
+// Cache helpers — snapshot / patch both daily + weekly caches
+// ═══════════════════════════════════════
+
+/** Snapshot both daily and weekly caches for rollback */
+function snapshotHomeCaches(
+  qc: QueryClient,
+  dateStr: string,
+  weekStartStr: string
+): { daily: unknown; weekly: unknown } {
+  return {
+    daily: qc.getQueryData(queryKeys.tasks.home(dateStr)),
+    weekly: qc.getQueryData(queryKeys.tasks.homeWeek(weekStartStr)),
+  }
+}
+
+/** Patch a single task in both daily and weekly caches (camelCase fields) */
+function patchTaskInHomeCaches(
+  qc: QueryClient,
+  dateStr: string,
+  weekStartStr: string,
+  taskId: string,
+  patch: Partial<ActionHomeTask>
+): void {
+  // 1. Daily cache
+  const dateKey = queryKeys.tasks.home(dateStr)
+  qc.setQueryData<ActionHomeTask[]>(dateKey, (prev) =>
+    prev?.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+  )
+
+  // 2. Weekly cache
+  const weekKey = queryKeys.tasks.homeWeek(weekStartStr)
+  qc.setQueryData<Record<string, ActionHomeTask[]>>(weekKey, (prev) => {
+    if (!prev) return prev
+    const next = { ...prev }
+    for (const [d, tasks] of Object.entries(next)) {
+      if (tasks.some((t) => t.id === taskId)) {
+        next[d] = tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+        break // task appears in only one date
+      }
+    }
+    return next
+  })
+}
+
+/** Patch area sort order across both daily and weekly caches */
+function patchAreaInHomeCaches(
+  qc: QueryClient,
+  dateStr: string,
+  weekStartStr: string,
+  areaId: string,
+  newSortOrder: string
+): void {
+  const patchFn = (t: ActionHomeTask): ActionHomeTask =>
+    t.goal?.area?.id === areaId
+      ? { ...t, goal: { ...t.goal!, area: { ...t.goal!.area, sortOrder: newSortOrder } } }
+      : t
+
+  // Daily cache
+  qc.setQueryData<ActionHomeTask[]>(queryKeys.tasks.home(dateStr), (prev) => prev?.map(patchFn))
+
+  // Weekly cache — area sort order affects all days
+  qc.setQueryData<Record<string, ActionHomeTask[]>>(
+    queryKeys.tasks.homeWeek(weekStartStr),
+    (prev) => {
+      if (!prev) return prev
+      const next: Record<string, ActionHomeTask[]> = {}
+      for (const [d, tasks] of Object.entries(prev)) {
+        next[d] = tasks.map(patchFn)
+      }
+      return next
+    }
+  )
 }
 
 // Helper: calculate new sort_order for an area move

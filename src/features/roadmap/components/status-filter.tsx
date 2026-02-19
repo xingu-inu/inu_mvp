@@ -38,7 +38,7 @@ export function StatusFilter() {
   const extraOptions = ALL_OPTIONS.filter((o) => o.value !== statusFilter)
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="scrollbar-none flex items-center gap-2 overflow-x-auto">
       {/* Selected chip — always visible, no conditional render */}
       <Chip
         variant="selection"

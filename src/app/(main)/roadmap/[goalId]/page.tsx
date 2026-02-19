@@ -52,7 +52,7 @@ export default function GoalDetailPage({ params }: GoalDetailPageProps) {
 
   return (
     <PageContainer className="p-0">
-      <div className="h-screen">{renderContent()}</div>
+      <div className="h-full">{renderContent()}</div>
     </PageContainer>
   )
 }

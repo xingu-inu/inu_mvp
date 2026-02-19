@@ -34,7 +34,7 @@ export function LandingHeader({ transparent = false }: LandingHeaderProps) {
         'fixed top-0 right-0 left-0 z-50 transition-all duration-300',
         isOpaque
           ? 'glass-3 border-b border-[var(--color-border)]'
-          : 'border-b border-transparent bg-transparent',
+          : 'border-b border-transparent bg-transparent'
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 md:h-20 md:px-8">

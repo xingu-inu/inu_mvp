@@ -60,7 +60,7 @@ export function GoalTaskItem({
               )}
             </button>
             <button
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--color-miss)] transition-opacity hover:bg-[var(--color-bg-tertiary)] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/task:opacity-100"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--color-miss)] transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/task:opacity-100"
               onClick={onDeleteToggle}
               title="할 일 삭제"
             >

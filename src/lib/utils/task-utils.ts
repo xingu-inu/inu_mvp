@@ -332,7 +332,8 @@ export interface GroupedByAreaResult {
  */
 export function groupTasksByArea(
   tasks: HomeTask[],
-  allAreas?: Array<{ id: string; name: string; emoji: string; color: string; sort_order: string }>
+  allAreas?: Array<{ id: string; name: string; emoji: string; color: string; sort_order: string }>,
+  allGoals?: Array<{ id: string; name: string; area_id: string; status: string }>
 ): GroupedByAreaResult {
   const areaMap = new Map<string, AreaGroup>()
   const dailyTasks: HomeTask[] = []
@@ -420,21 +421,38 @@ export function groupTasksByArea(
     }
   }
 
+  // Merge actual goals from DB so areas have correct goal lists for DnD cross-move
+  if (allGoals) {
+    for (const goal of allGoals) {
+      if (goal.status !== 'active' && goal.status !== 'maintenance') continue
+      const group = areaMap.get(goal.area_id)
+      if (group && !group.goals.some((g) => g.id === goal.id)) {
+        group.goals.push({ id: goal.id, name: goal.name })
+      }
+    }
+  }
+
   // Sort tasks within each area by sort_order only (no check-in status reordering)
   // Then sort areas by area sort_order
+  // Stable tiebreaker by id to prevent order flickering when sort_orders are identical
   const safeCompare = (x: string | null | undefined, y: string | null | undefined) =>
     (x ?? '').localeCompare(y ?? '')
+
+  const stableTaskCompare = (a: HomeTask, b: HomeTask) => {
+    const cmp = safeCompare(a.sort_order, b.sort_order)
+    return cmp !== 0 ? cmp : a.id.localeCompare(b.id)
+  }
 
   const areaGroups = Array.from(areaMap.values())
     .map((group) => ({
       ...group,
-      tasks: group.tasks.sort((a, b) => safeCompare(a.sort_order, b.sort_order)),
+      tasks: group.tasks.sort(stableTaskCompare),
     }))
     .sort((a, b) => safeCompare(a.area.sort_order, b.area.sort_order))
 
   return {
     areaGroups,
-    dailyTasks: dailyTasks.sort((a, b) => safeCompare(a.sort_order, b.sort_order)),
+    dailyTasks: dailyTasks.sort(stableTaskCompare),
   }
 }
 

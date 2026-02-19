@@ -16,10 +16,7 @@ interface FloatingCardProps {
 function FloatingCard({ className, style, children }: FloatingCardProps) {
   return (
     <div
-      className={[
-        'glass-2 animate-card-float rounded-2xl p-4 w-48 shadow-sm',
-        className,
-      ]
+      className={['glass-2 animate-card-float w-48 rounded-2xl p-4 shadow-sm', className]
         .filter(Boolean)
         .join(' ')}
       style={style}
@@ -45,12 +42,13 @@ export function LandingHero() {
     <section
       className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 text-center"
       style={{
-        background: 'linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-primary-50) 100%)',
+        background:
+          'linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-primary-50) 100%)',
       }}
     >
       {/* Left floating card */}
       <motion.div
-        className="absolute left-[5%] top-1/2 hidden -translate-y-1/2 lg:block"
+        className="absolute top-1/2 left-[5%] hidden -translate-y-1/2 lg:block"
         {...(reducedMotion
           ? {}
           : {
@@ -70,7 +68,7 @@ export function LandingHero() {
 
       {/* Right floating card */}
       <motion.div
-        className="absolute right-[5%] top-1/2 hidden -translate-y-1/2 lg:block"
+        className="absolute top-1/2 right-[5%] hidden -translate-y-1/2 lg:block"
         {...(reducedMotion
           ? {}
           : {
@@ -91,7 +89,7 @@ export function LandingHero() {
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center">
         <motion.h1
-          className="font-serif font-normal text-3xl md:text-4xl lg:text-5xl leading-tight text-[var(--color-text-primary)]"
+          className="font-serif text-3xl leading-tight font-normal text-[var(--color-text-primary)] md:text-4xl lg:text-5xl"
           {...fadeUp(0.2)}
         >
           내 인생의 로드맵을 그리고,
@@ -100,7 +98,7 @@ export function LandingHero() {
         </motion.h1>
 
         <motion.p
-          className="text-base md:text-lg text-[var(--color-text-secondary)] max-w-md mx-auto mt-6"
+          className="mx-auto mt-6 max-w-md text-base text-[var(--color-text-secondary)] md:text-lg"
           {...fadeUp(0.4)}
         >
           방향 → 목표 → 실천. 왜 하는지 기억하면서, 내 시간 안에서 조금씩 나아가세요.
@@ -108,16 +106,13 @@ export function LandingHero() {
 
         <motion.div {...fadeUp(0.6)}>
           <Link href="/signup">
-            <Button size="lg" className="px-12 mt-10">
+            <Button size="lg" className="mt-10 px-12">
               시작하기
             </Button>
           </Link>
         </motion.div>
 
-        <motion.p
-          className="text-sm text-[var(--color-text-tertiary)] mt-6"
-          {...fadeUp(0.6)}
-        >
+        <motion.p className="mt-6 text-sm text-[var(--color-text-tertiary)]" {...fadeUp(0.6)}>
           이미 계정이 있으신가요?{' '}
           <Link href="/login" className="text-[var(--color-primary-500)] hover:underline">
             로그인

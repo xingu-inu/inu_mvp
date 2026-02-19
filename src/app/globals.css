@@ -174,11 +174,15 @@
   background-size: 24px 24px;
 }
 
-/* ========== Custom Scrollbar ========== */
+/* ========== Custom Scrollbar (auto-hide) ========== */
 
-/* Thin scrollbar for all scrollable areas */
+/* Global: hidden by default, visible on hover */
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
   scrollbar-color: var(--color-border) transparent;
 }
 
@@ -193,15 +197,19 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: transparent;
   border-radius: 3px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+}
+
+*:hover::-webkit-scrollbar-thumb:hover {
   background: var(--color-border-hover);
 }
 
-/* Hide scrollbar until hover (optional: for cleaner look) */
+/* Explicit thin scrollbar (4px, for compact areas) */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
@@ -215,22 +223,4 @@
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: var(--color-border);
   border-radius: 2px;
-}
-
-/* Auto-hide scrollbar */
-.scrollbar-auto-hide {
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.scrollbar-auto-hide:hover {
-  scrollbar-color: var(--color-border) transparent;
-}
-
-.scrollbar-auto-hide::-webkit-scrollbar-thumb {
-  background: transparent;
-}
-
-.scrollbar-auto-hide:hover::-webkit-scrollbar-thumb {
-  background: var(--color-border);
 }

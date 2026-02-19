@@ -120,7 +120,6 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
           <PanelSkeleton />
         ) : (
           <>
-
             {showReflection && reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
             )}

@@ -1,8 +1,8 @@
 'use client'
 
-import { memo, useRef, useState, useEffect } from 'react'
+import { memo } from 'react'
 import { cn } from '@/lib/utils'
-import type { DisplaySlot } from '@/lib/constants/time-slots'
+import { SLOT_MAX_VISIBLE, type DisplaySlot } from '@/lib/constants/time-slots'
 import { parseTime } from '../hooks/use-task-layout'
 import { SlotTaskRow } from './slot-task-row'
 import { SlotGoogleEventRow } from './slot-google-event-row'
@@ -26,6 +26,7 @@ interface SlotBlockProps {
   isPastSlot?: boolean
   day: Date
   slotHeight?: number
+  timeProgress?: number
   onTaskClick: (taskId: string | null, day: Date) => void
 }
 
@@ -43,22 +44,10 @@ export const SlotBlock = memo(function SlotBlock({
   isPastSlot,
   day,
   slotHeight,
+  timeProgress,
   onTaskClick,
 }: SlotBlockProps) {
   const isEmpty = tasks.length === 0 && googleEvents.length === 0
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [canScroll, setCanScroll] = useState(false)
-
-  // Detect whether the content overflows (needs scroll)
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-    const check = () => setCanScroll(el.scrollHeight > el.clientHeight + 2)
-    check()
-    const observer = new ResizeObserver(check)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [tasks.length, googleEvents.length])
 
   // Merge tasks and events into a single time-sorted list
   const items: SlotItem[] = []
@@ -73,54 +62,54 @@ export const SlotBlock = memo(function SlotBlock({
 
   items.sort((a, b) => a.sortKey - b.sortKey)
 
+  const visibleItems = items.slice(0, SLOT_MAX_VISIBLE)
+  const hiddenCount = items.length - SLOT_MAX_VISIBLE
+
   return (
     <div
       className={cn(
-        'relative border-b border-[var(--color-border)]/50 transition-colors',
-        isNow && isToday && 'border-t-2 border-t-[var(--color-primary-400)] bg-[var(--color-primary-50)]/30',
-        isPastSlot && !isNow && 'opacity-75',
+        'relative overflow-hidden border-b border-[var(--color-border)]/50 transition-colors',
+        isNow &&
+          isToday &&
+          'border-t-2 border-t-[var(--color-primary-400)] bg-[var(--color-primary-50)]/30',
+        isPastSlot && !isNow && 'opacity-60 saturate-75'
       )}
       style={{
         ...(!(isNow && isToday) ? { backgroundColor: SLOT_BG[slot] } : {}),
-        ...(slotHeight ? { height: `${slotHeight}px` } : { minHeight: '40px' }),
+        height: slotHeight ? `${slotHeight}px` : undefined,
+        minHeight: slotHeight ? undefined : '40px',
+        transition: 'height 200ms ease-out, min-height 200ms ease-out',
       }}
     >
-      <div
-        ref={scrollRef}
-        className={cn(
-          'h-full overflow-y-auto',
-          // Thin scrollbar styling
-          '[&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[var(--color-border)] [&::-webkit-scrollbar-track]:bg-transparent',
-        )}
-      >
-        {!isEmpty && (
-          <div className="flex flex-col gap-0.5 p-0.5">
-            {items.map((item) =>
-              item.type === 'task' ? (
-                <SlotTaskRow
-                  key={item.task.id}
-                  task={item.task}
-                  isPast={isPast}
-                  onClick={() => onTaskClick(item.task.id, day)}
-                />
-              ) : (
-                <SlotGoogleEventRow
-                  key={item.event.id}
-                  event={item.event}
-                />
-              )
-            )}
-          </div>
-        )}
-      </div>
-      {/* Fade gradient at bottom when scrollable */}
-      {canScroll && (
+      {timeProgress != null && (
         <div
-          className="pointer-events-none absolute bottom-0 left-0 right-0 h-4"
-          style={{
-            background: `linear-gradient(to top, ${SLOT_BG[slot] ?? 'var(--color-bg-primary)'}, transparent)`,
-          }}
+          className="pointer-events-none absolute right-0 left-0 z-10 border-t-2 border-[var(--color-primary-500)]"
+          style={{ top: `${timeProgress * 100}%` }}
         />
+      )}
+      {!isEmpty && (
+        <div className="flex flex-col gap-0.5 p-0.5">
+          {visibleItems.map((item) =>
+            item.type === 'task' ? (
+              <SlotTaskRow
+                key={item.task.id}
+                task={item.task}
+                isPast={isPast}
+                onClick={() => onTaskClick(item.task.id, day)}
+              />
+            ) : (
+              <SlotGoogleEventRow key={item.event.id} event={item.event} />
+            )
+          )}
+          {hiddenCount > 0 && (
+            <button
+              className="mx-0.5 rounded px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)]"
+              onClick={() => onTaskClick(null, day)}
+            >
+              +{hiddenCount} more
+            </button>
+          )}
+        </div>
       )}
     </div>
   )

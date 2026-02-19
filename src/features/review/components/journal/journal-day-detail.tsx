@@ -228,9 +228,7 @@ function DetailTaskRow({ task }: { task: HomeTask }) {
       </div>
       {(noteData.text || noteData.mood) && (
         <div className="mt-1.5 flex items-start gap-1.5 pl-7">
-          {noteData.mood && (
-            <span className="shrink-0 text-xs">{MOOD_EMOJIS[noteData.mood]}</span>
-          )}
+          {noteData.mood && <span className="shrink-0 text-xs">{MOOD_EMOJIS[noteData.mood]}</span>}
           {noteData.text && (
             <p className="text-xs leading-relaxed text-[var(--color-text-tertiary)] italic">
               {noteData.text}

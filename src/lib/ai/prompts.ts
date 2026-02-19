@@ -17,7 +17,8 @@ function buildContextBlock(context: AiContext): string {
   if (context.goalName) parts.push(`목표: ${sanitizeUserText(context.goalName)}`)
   if (context.goalWhy) parts.push(`목표의 이유: ${sanitizeUserText(context.goalWhy)}`)
   if (context.groupName) parts.push(`현재 그룹: ${sanitizeUserText(context.groupName)}`)
-  if (context.groupDescription) parts.push(`그룹 설명: ${sanitizeUserText(context.groupDescription)}`)
+  if (context.groupDescription)
+    parts.push(`그룹 설명: ${sanitizeUserText(context.groupDescription)}`)
   if (context.existingGoals?.length) {
     parts.push(`이미 있는 목표: ${context.existingGoals.map(sanitizeUserText).join(', ')}`)
   }
@@ -299,7 +300,9 @@ function buildTaskSuggestPrompt(request: AiTaskSuggestRequest): string {
   }
 
   if (context.existingTasks.length > 0) {
-    parts.push(`이미 있는 할 일:\n${context.existingTasks.map((t) => `- ${sanitizeUserText(t.name)}`).join('\n')}`)
+    parts.push(
+      `이미 있는 할 일:\n${context.existingTasks.map((t) => `- ${sanitizeUserText(t.name)}`).join('\n')}`
+    )
   }
 
   const contextBlock = `<user_data>\n${parts.join('\n\n')}\n</user_data>`
@@ -358,7 +361,10 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
   if (context.areas.length > 0) {
     parts.push(
       `영역 목록:\n${context.areas
-        .map((a) => `- ${a.emoji} ${sanitizeUserText(a.name)} (id: ${a.id}${a.why ? `, why: "${sanitizeUserText(a.why)}"` : ''})`)
+        .map(
+          (a) =>
+            `- ${a.emoji} ${sanitizeUserText(a.name)} (id: ${a.id}${a.why ? `, why: "${sanitizeUserText(a.why)}"` : ''})`
+        )
         .join('\n')}`
     )
   }
@@ -478,7 +484,9 @@ JSON 형식으로 반환:
 function buildReviewInsightPrompt(request: AiReviewInsightRequest): string {
   const ctx = request.context
   const moodTrendStr = ctx.moodTrend.map((m) => `${m.date}: ${m.mood}`).join(', ')
-  const streakStr = ctx.topStreaks.map((s) => `${s.taskName}(${s.areaName}): ${s.count}일`).join(', ')
+  const streakStr = ctx.topStreaks
+    .map((s) => `${s.taskName}(${s.areaName}): ${s.count}일`)
+    .join(', ')
   const areaStr = ctx.areaBalances.map((a) => `${a.areaName}: ${a.completionRate}%`).join(', ')
 
   const reflectionStr = ctx.weeklyReflection

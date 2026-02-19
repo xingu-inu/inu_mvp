@@ -262,12 +262,14 @@ export function UnifiedCalendar() {
                           ))}
                         </div>
                       )}
-                      <span className={cn(
-                        'text-[9px] leading-none tabular-nums lg:text-[10px]',
-                        !dayIsFuture && daySummary.done === daySummary.total
-                          ? 'font-medium text-[var(--color-done)]'
-                          : 'text-[var(--color-text-disabled)]'
-                      )}>
+                      <span
+                        className={cn(
+                          'text-[9px] leading-none tabular-nums lg:text-[10px]',
+                          !dayIsFuture && daySummary.done === daySummary.total
+                            ? 'font-medium text-[var(--color-done)]'
+                            : 'text-[var(--color-text-disabled)]'
+                        )}
+                      >
                         {dayIsFuture ? daySummary.total : `${daySummary.done}/${daySummary.total}`}
                       </span>
                     </div>

@@ -133,7 +133,9 @@ export function GoogleCalendarConnect() {
           disabled={isTogglingSync}
           className={cn(
             'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors',
-            connection.sync_enabled ? 'bg-[var(--color-primary-500)]' : 'bg-[var(--color-bg-tertiary)]'
+            connection.sync_enabled
+              ? 'bg-[var(--color-primary-500)]'
+              : 'bg-[var(--color-bg-tertiary)]'
           )}
         >
           <span

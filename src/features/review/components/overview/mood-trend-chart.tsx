@@ -63,7 +63,9 @@ export function MoodTrendChart({ moodHistory }: MoodTrendChartProps) {
       >
         <div className="mb-2 flex items-center gap-1.5">
           <TrendingUp className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
-          <span className="text-xs font-medium text-[var(--color-text-secondary)]">기분 트렌드</span>
+          <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+            기분 트렌드
+          </span>
         </div>
         <div className="flex h-16 items-center justify-center">
           <p className="text-xs text-[var(--color-text-tertiary)]">

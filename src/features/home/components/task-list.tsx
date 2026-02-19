@@ -13,6 +13,7 @@ import { PastDaySummary } from './past-day-summary'
 import { useHomeStore } from '@/stores/home.store'
 import { groupTasksByArea } from '@/lib/utils/task-utils'
 import { useActiveAreas } from '@/queries/use-areas'
+import { useGoals } from '@/queries/use-goals'
 import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
 
@@ -38,6 +39,7 @@ export function TaskList({
   enableAiSuggest,
 }: TaskListProps) {
   const { data: activeAreas = [] } = useActiveAreas()
+  const { data: allGoals = [] } = useGoals()
   const [filter, setFilter] = useState<TaskFilter>('all')
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
@@ -82,11 +84,8 @@ export function TaskList({
     const todayStr = format(new Date(), 'yyyy-MM-dd')
     const selectedStr = format(selectedDate, 'yyyy-MM-dd')
     if (todayStr !== selectedStr) return []
-    return tasks.filter(
-      (t) => !t.todayCheckIn?.status && t.streak_count >= 3
-    )
+    return tasks.filter((t) => !t.todayCheckIn?.status && t.streak_count >= 3)
   }, [tasks, selectedDate])
-
 
   const allAreasForGrouping = useMemo(
     () =>
@@ -102,9 +101,22 @@ export function TaskList({
     [activeAreas, isReadOnly]
   )
 
+  const allGoalsForGrouping = useMemo(
+    () =>
+      isReadOnly
+        ? undefined
+        : allGoals.map((g) => ({
+            id: g.id,
+            name: g.name,
+            area_id: g.area_id,
+            status: g.status,
+          })),
+    [allGoals, isReadOnly]
+  )
+
   const { areaGroups, dailyTasks } = useMemo(
-    () => groupTasksByArea(filteredTasks, allAreasForGrouping),
-    [filteredTasks, allAreasForGrouping]
+    () => groupTasksByArea(filteredTasks, allAreasForGrouping, allGoalsForGrouping),
+    [filteredTasks, allAreasForGrouping, allGoalsForGrouping]
   )
 
   // DnD enabled only when not read-only and filter is 'all' (to prevent sort order confusion)
@@ -137,9 +149,7 @@ export function TaskList({
           <span className="text-sm font-medium text-[var(--color-streak)]">
             🔥 {Math.max(...streakAtRiskTasks.map((t) => t.streak_count))}일 스트릭을 이어가세요
           </span>
-          <span className="ml-auto text-xs text-[var(--color-text-tertiary)]">
-            지금 체크인
-          </span>
+          <span className="ml-auto text-xs text-[var(--color-text-tertiary)]">지금 체크인</span>
         </button>
       )}
 

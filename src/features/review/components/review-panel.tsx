@@ -31,7 +31,7 @@ function usePanelHeader(): {
   return useMemo(() => {
     switch (panelMode) {
       case 'overview':
-        return { title: '회고 요약', backLabel: null, onBack: null }
+        return { title: '날짜별 기록', backLabel: null, onBack: null }
 
       case 'day-detail': {
         let dateLabel = ''

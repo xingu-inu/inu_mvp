@@ -44,10 +44,7 @@ async function syncTaskToGoogleCreate(
     })
 
     if (eventId) {
-      await supabase
-        .from('tasks')
-        .update({ google_event_id: eventId })
-        .eq('id', task.id)
+      await supabase.from('tasks').update({ google_event_id: eventId }).eq('id', task.id)
     }
   } catch {
     // Google sync is best-effort
@@ -75,10 +72,7 @@ async function syncTaskToGoogleUpdate(
       await syncTaskToGoogleCreate(supabase, userId, task)
     } else if (!task.specific_time && task.google_event_id) {
       await deleteGoogleEvent(supabase, userId, task.google_event_id)
-      await supabase
-        .from('tasks')
-        .update({ google_event_id: null })
-        .eq('id', task.id)
+      await supabase.from('tasks').update({ google_event_id: null }).eq('id', task.id)
     }
   } catch {
     // Google sync is best-effort

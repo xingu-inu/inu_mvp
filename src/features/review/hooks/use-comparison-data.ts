@@ -55,7 +55,10 @@ export function useComparisonData(
 
   // Fetch previous period check-in history
   const { data: prevCheckIns } = useQuery({
-    queryKey: [...queryKeys.review.history(prevStart, prevEnd, directionId ?? undefined), 'comparison'],
+    queryKey: [
+      ...queryKeys.review.history(prevStart, prevEnd, directionId ?? undefined),
+      'comparison',
+    ],
     queryFn: () => fetchCheckInHistory(prevStart, prevEnd, directionId ?? undefined),
     staleTime: STALE_TIMES.STATS,
     enabled: !!directionId,

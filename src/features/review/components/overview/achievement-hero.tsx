@@ -6,6 +6,7 @@ import { StreakBadge } from '@/components/ui/badge'
 import { generateGreeting, generateInsightText } from '../../utils/generate-insight'
 import type { OverviewStats, ActiveStreak } from '../../utils/timeline-utils'
 import type { DayHistory } from '../../hooks/use-checkin-history'
+import type { ComparisonData } from '../../hooks/use-comparison-data'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Constants
@@ -26,6 +27,7 @@ interface AchievementHeroProps {
   checkInHistory: DayHistory[]
   totalDays: number
   period: 'week' | 'month'
+  comparison: ComparisonData
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -79,6 +81,57 @@ function ProgressRing({ rate, isZero }: { rate: number; isZero: boolean }) {
   )
 }
 
+function DeltaChip({
+  label,
+  delta,
+  suffix,
+  isMood = false,
+}: {
+  label: string
+  delta: number
+  suffix: string
+  isMood?: boolean
+}) {
+  const isPositive = delta > 0
+  const isNeutral = delta === 0
+  const displayValue = isMood ? Math.abs(delta).toFixed(1) : Math.abs(delta)
+  const sign = isPositive ? '+' : isNeutral ? '' : '-'
+
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
+        isPositive && 'bg-emerald-50 text-emerald-700',
+        isNeutral && 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]',
+        !isPositive &&
+          !isNeutral &&
+          'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
+      )}
+    >
+      <span>{label}</span>
+      <span>
+        {sign}
+        {displayValue}
+        {suffix}
+      </span>
+    </span>
+  )
+}
+
+function ComparisonChips({ comparison }: { comparison: ComparisonData; isWeek: boolean }) {
+  if (!comparison.hasPrevData) return null
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      <DeltaChip label="실천율" delta={comparison.completionDelta} suffix="%p" />
+      <DeltaChip label="활동일" delta={comparison.activeDaysDelta} suffix="일" />
+      {comparison.moodDelta !== null && (
+        <DeltaChip label="기분" delta={comparison.moodDelta} suffix="" isMood />
+      )}
+    </div>
+  )
+}
+
 function StreakStrip({ streaks }: { streaks: ActiveStreak[] }) {
   if (streaks.length === 0) return null
 
@@ -112,6 +165,7 @@ export function AchievementHero({
   checkInHistory,
   totalDays,
   period,
+  comparison,
 }: AchievementHeroProps) {
   const isZero = stats.completionRate === 0
 
@@ -155,6 +209,9 @@ export function AchievementHero({
           {insightText && (
             <p className="text-xs text-[var(--color-text-tertiary)]">{insightText}</p>
           )}
+
+          {/* Comparison delta chips */}
+          <ComparisonChips comparison={comparison} isWeek={period === 'week'} />
 
           <StreakStrip streaks={streaks} />
         </div>

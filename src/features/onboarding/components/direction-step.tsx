@@ -27,7 +27,7 @@ function ShimmerSkeleton() {
 function TypedDirection({ text }: { text: string }) {
   const words = text.split(' ')
   return (
-    <p className="font-serif text-center text-lg leading-relaxed font-medium text-[var(--color-text-primary)]">
+    <p className="text-center font-serif text-lg leading-relaxed font-medium text-[var(--color-text-primary)]">
       &ldquo;
       {words.map((word, i) => (
         <motion.span
@@ -111,7 +111,13 @@ export function DirectionStep() {
           <p className="mb-8 text-sm text-[var(--color-ai)]">
             inu가 당신의 패턴을 보면서 나중에 제안해드릴게요.
           </p>
-          <Button onClick={() => { trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'direction' }); nextStep() }} className="w-full">
+          <Button
+            onClick={() => {
+              trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'direction' })
+              nextStep()
+            }}
+            className="w-full"
+          >
             탐색하며 시작하기
           </Button>
         </Card>

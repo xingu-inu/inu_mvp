@@ -10,8 +10,12 @@ import { useTaskLayout, assignGoogleEventsToSlots } from '../hooks/use-task-layo
 import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 import { useHomeStore } from '@/stores/home.store'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
-import { TIME_SLOT_CONFIG, DISPLAY_SLOTS, getCurrentSlot, ANYTIME_MAX_VISIBLE, ANYTIME_COLLAPSE_THRESHOLD, SLOT_DAWN_COLLAPSED_HEIGHT } from '@/lib/constants/time-slots'
-import { motion, AnimatePresence } from 'framer-motion'
+import {
+  TIME_SLOT_CONFIG,
+  DISPLAY_SLOTS,
+  getCurrentSlot,
+  SLOT_DAWN_COLLAPSED_HEIGHT,
+} from '@/lib/constants/time-slots'
 import { SlotBlock } from './slot-block'
 import { SlotTaskRow } from './slot-task-row'
 import { SlotGoogleEventRow } from './slot-google-event-row'
@@ -93,36 +97,16 @@ export function WeekViewGrid() {
     return () => window.removeEventListener('resize', measure)
   }, [isLoading])
 
-  // Anytime row: week-wide metrics for stable collapse state
+  // Anytime row: check if any day has anytime tasks or all-day events
   const hasAnyAnytime = Object.values(layoutByDate).some((sl) => sl.anytime.length > 0)
   const hasAnyAllDay = Object.values(googleSlotsByDate).some((gs) => gs.allDay.length > 0)
   const showAnytimeRow = hasAnyAnytime || hasAnyAllDay
-
-  const maxAnytimePerDay = useMemo(
-    () =>
-      Math.max(
-        0,
-        ...Object.values(layoutByDate).map((sl) => sl.anytime.length),
-        ...Object.values(googleSlotsByDate).map((gs) => gs.allDay.length)
-      ),
-    [layoutByDate, googleSlotsByDate]
-  )
-  const totalWeekAnytime = useMemo(
-    () =>
-      Object.values(layoutByDate).reduce((sum, sl) => sum + sl.anytime.length, 0) +
-      Object.values(googleSlotsByDate).reduce((sum, gs) => sum + gs.allDay.length, 0),
-    [layoutByDate, googleSlotsByDate]
-  )
-
-  // Auto-collapse anytime row if any day exceeds threshold
-  const [anytimeExpanded, setAnytimeExpanded] = useState(false)
-  const showAnytimeCollapsed = showAnytimeRow && maxAnytimePerDay > ANYTIME_COLLAPSE_THRESHOLD && !anytimeExpanded
 
   const hasAnyTasks = useMemo(
     () => Object.values(entityTasksByDate).some((tasks) => tasks.length > 0),
     [entityTasksByDate]
   )
-  const gridColumns = `${GUTTER_PX}px repeat(7, 1fr)`
+  const gridColumns = `${GUTTER_PX}px repeat(7, minmax(0, 1fr))`
 
   // ── Slot height calculation ──
   const gridBodyRef = useRef<HTMLDivElement>(null)
@@ -133,7 +117,8 @@ export function WeekViewGrid() {
     if (!el) return
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        setGridBodyHeight(entry.contentRect.height)
+        const h = Math.round(entry.contentRect.height)
+        setGridBodyHeight((prev) => (Math.abs(prev - h) > 1 ? h : prev))
       }
     })
     observer.observe(el)
@@ -189,7 +174,7 @@ export function WeekViewGrid() {
         className="overflow-auto lg:min-h-0 lg:flex-1"
         style={{ height: 'calc(100dvh - var(--grid-top, 200px))' }}
       >
-        <div className="min-w-[840px]">
+        <div className="flex h-full min-w-[840px] flex-col">
           {/* ── Sticky day headers ── */}
           <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
@@ -254,7 +239,7 @@ export function WeekViewGrid() {
                           )}
                         </div>
                         {isDayPast && (
-                          <span className="text-[10px] tabular-nums text-[var(--color-text-disabled)]">
+                          <span className="text-[10px] text-[var(--color-text-disabled)] tabular-nums">
                             {doneCount}/{totalCount}
                           </span>
                         )}
@@ -264,130 +249,14 @@ export function WeekViewGrid() {
                 )
               })}
             </div>
-
-            {/* ── Anytime row (collapsible) ── */}
-            {showAnytimeRow && showAnytimeCollapsed && (
-              <div className="border-t border-[var(--color-border)]">
-                <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
-                  <button
-                    onClick={() => setAnytimeExpanded(true)}
-                    className="sticky left-0 z-10 flex items-center justify-center bg-[var(--color-bg-primary)] px-1 py-1.5 text-[10px] text-[var(--color-text-disabled)] hover:text-[var(--color-text-tertiary)]"
-                  >
-                    종일 ▾
-                  </button>
-                  {weekDays.map((day) => {
-                    const dateStr = format(day, 'yyyy-MM-dd')
-                    const anytimeTasks = layoutByDate[dateStr]?.anytime ?? []
-                    const allDayEvents = googleSlotsByDate[dateStr]?.allDay ?? []
-                    const allItems = [...anytimeTasks.map((t) => ({
-                      color: t.goal?.area?.color ?? t.directArea?.color ?? '#64748b',
-                      isDone: t.todayCheckIn?.status === 'done',
-                    })), ...allDayEvents.map(() => ({
-                      color: 'var(--color-google-event)',
-                      isDone: false,
-                    }))]
-                    const visibleDots = allItems.slice(0, 6)
-                    const overflow = allItems.length - 6
-
-                    return (
-                      <button
-                        key={dateStr}
-                        onClick={() => {
-                          setAnytimeExpanded(true)
-                          setCurrentDate(day)
-                        }}
-                        className="flex min-w-0 flex-wrap items-center gap-0.5 border-l border-[var(--color-border)]/50 px-1 py-1.5 transition-colors hover:bg-[var(--color-bg-tertiary)]"
-                      >
-                        {visibleDots.map((item, i) => (
-                          <span
-                            key={i}
-                            className={cn(
-                              'h-1 w-1 flex-shrink-0 rounded-full',
-                              item.isDone ? '' : 'border'
-                            )}
-                            style={item.isDone
-                              ? { backgroundColor: item.color }
-                              : { borderColor: item.color }
-                            }
-                          />
-                        ))}
-                        {overflow > 0 && (
-                          <span className="text-[8px] text-[var(--color-text-disabled)]">+{overflow}</span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-            <AnimatePresence>
-              {showAnytimeRow && !showAnytimeCollapsed && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeInOut' }}
-                  className="overflow-hidden border-t border-[var(--color-border)]"
-                >
-                  {maxAnytimePerDay > ANYTIME_COLLAPSE_THRESHOLD && (
-                    <button
-                      onClick={() => setAnytimeExpanded(false)}
-                      className="flex w-full items-center justify-between px-3 py-1 text-[10px] text-[var(--color-text-disabled)] transition-colors hover:bg-[var(--color-bg-tertiary)]"
-                    >
-                      <span>종일 {totalWeekAnytime}개</span>
-                      <span>접기 ▴</span>
-                    </button>
-                  )}
-                  <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
-                    <div className="sticky left-0 z-10 flex items-center justify-center bg-[var(--color-bg-primary)] px-1 py-1.5">
-                      {maxAnytimePerDay <= ANYTIME_COLLAPSE_THRESHOLD && (
-                        <span className="text-xs text-[var(--color-text-disabled)]">종일</span>
-                      )}
-                    </div>
-                    {weekDays.map((day) => {
-                      const dateStr = format(day, 'yyyy-MM-dd')
-                      const anytimeTasks = layoutByDate[dateStr]?.anytime ?? []
-                      const allDayEvents = googleSlotsByDate[dateStr]?.allDay ?? []
-                      const isDayPast = isBefore(day, startOfToday())
-
-                      return (
-                        <div
-                          key={dateStr}
-                          className="flex min-w-0 flex-col gap-1 border-l border-[var(--color-border)]/50 px-0.5 py-1"
-                        >
-                          {anytimeTasks.slice(0, ANYTIME_MAX_VISIBLE).map((task) => (
-                            <SlotTaskRow
-                              key={task.id}
-                              task={task}
-                              isPast={isDayPast}
-                              onClick={() => {
-                                setCurrentDate(day)
-                                setHighlightedTaskId(task.id)
-                              }}
-                            />
-                          ))}
-                          {allDayEvents.slice(0, ANYTIME_MAX_VISIBLE).map((event) => (
-                            <SlotGoogleEventRow key={event.id} event={event} />
-                          ))}
-                          {anytimeTasks.length + allDayEvents.length > ANYTIME_MAX_VISIBLE && (
-                            <button
-                              onClick={() => setCurrentDate(day)}
-                              className="w-full rounded-[var(--chip-radius,8px)] border border-dashed border-[var(--color-border)]/50 px-1 py-0.5 text-[10px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)] min-h-[24px] flex items-center justify-center"
-                            >
-                              +{anytimeTasks.length + allDayEvents.length - ANYTIME_MAX_VISIBLE}
-                            </button>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* ── 4-Block grid body ── */}
-          <div ref={gridBodyRef} className="grid flex-1" style={{ gridTemplateColumns: gridColumns }}>
+          <div
+            ref={gridBodyRef}
+            className="grid flex-1"
+            style={{ gridTemplateColumns: gridColumns }}
+          >
             {/* Slot labels gutter */}
             <div className="sticky left-0 z-10 flex flex-col bg-[var(--color-bg-primary)]">
               {DISPLAY_SLOTS.map((slot) => {
@@ -404,7 +273,9 @@ export function WeekViewGrid() {
                       isDawnEmpty && 'opacity-50'
                     )}
                     style={{
-                      ...(currentSlot !== slot ? { backgroundColor: `var(--color-slot-${slot})` } : {}),
+                      ...(currentSlot !== slot
+                        ? { backgroundColor: `var(--color-slot-${slot})` }
+                        : {}),
                       ...(gutterHeight ? { height: `${gutterHeight}px` } : { minHeight: '40px' }),
                     }}
                   >
@@ -413,16 +284,20 @@ export function WeekViewGrid() {
                     </span>
                     {/* Hide hour range text when dawn is collapsed to save space */}
                     {!isDawnEmpty && (
-                      <span className={cn(
-                        'text-[9px] leading-none',
-                        currentSlot === slot ? 'text-[var(--color-primary-500)]' : 'text-[var(--color-text-disabled)]'
-                      )}>
+                      <span
+                        className={cn(
+                          'text-[9px] leading-none',
+                          currentSlot === slot
+                            ? 'text-[var(--color-primary-500)]'
+                            : 'text-[var(--color-text-disabled)]'
+                        )}
+                      >
                         {config.hours[0]}-{config.hours[1]}
                       </span>
                     )}
                     {/* "Now" indicator for current slot */}
                     {currentSlot === slot && (
-                      <span className="mt-0.5 text-[8px] font-semibold leading-none text-[var(--color-primary-500)]">
+                      <span className="mt-0.5 text-[8px] leading-none font-semibold text-[var(--color-primary-500)]">
                         지금
                       </span>
                     )}
@@ -443,7 +318,7 @@ export function WeekViewGrid() {
                 <div
                   key={dateStr}
                   className={cn(
-                    'flex flex-col border-l border-[var(--color-border)]/50',
+                    'flex min-w-0 flex-col overflow-hidden border-l border-[var(--color-border)]/50',
                     dayIsToday && 'bg-[var(--color-primary-50)]/20'
                   )}
                 >
@@ -471,6 +346,50 @@ export function WeekViewGrid() {
           </div>
         </div>
       </div>
+
+      {/* ── Anytime row (fixed at bottom, outside scroll area) ── */}
+      {showAnytimeRow && (
+        <div className="flex-shrink-0 overflow-x-auto border-t-2 border-[var(--color-border)] bg-[var(--color-bg-secondary)]/60">
+          <div className="min-w-[840px]">
+            <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
+              <div className="sticky left-0 z-10 flex items-center justify-center bg-[var(--color-bg-secondary)]/60 px-1 py-2">
+                <span className="text-[11px] font-medium text-[var(--color-text-tertiary)]">
+                  종일
+                </span>
+              </div>
+              {weekDays.map((day) => {
+                const dateStr = format(day, 'yyyy-MM-dd')
+                const anytimeTasks = layoutByDate[dateStr]?.anytime ?? []
+                const allDayEvents = googleSlotsByDate[dateStr]?.allDay ?? []
+                const isDayPast = isBefore(day, startOfToday())
+
+                return (
+                  <div
+                    key={dateStr}
+                    className="flex min-w-0 flex-col gap-0.5 overflow-y-auto border-l border-[var(--color-border)]/50 px-0.5 py-1"
+                    style={{ maxHeight: `${4 * 28}px` }}
+                  >
+                    {anytimeTasks.map((task) => (
+                      <SlotTaskRow
+                        key={task.id}
+                        task={task}
+                        isPast={isDayPast}
+                        onClick={() => {
+                          setCurrentDate(day)
+                          setHighlightedTaskId(task.id)
+                        }}
+                      />
+                    ))}
+                    {allDayEvents.map((event) => (
+                      <SlotGoogleEventRow key={event.id} event={event} />
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Empty state */}
       {!hasAnyTasks && (

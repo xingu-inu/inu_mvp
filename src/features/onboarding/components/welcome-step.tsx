@@ -81,7 +81,14 @@ export function WelcomeStep() {
           transition={{ delay: 1.1 }}
           className="w-full max-w-xs"
         >
-          <Button onClick={() => { trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'welcome' }); nextStep() }} size="lg" className="w-full">
+          <Button
+            onClick={() => {
+              trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'welcome' })
+              nextStep()
+            }}
+            size="lg"
+            className="w-full"
+          >
             시작하기
           </Button>
         </motion.div>

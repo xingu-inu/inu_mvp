@@ -92,7 +92,7 @@ const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center pr-1.5 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cross:opacity-100">
+      <div className="flex shrink-0 items-center pr-1.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/cross:opacity-100">
         <button
           type="button"
           onClick={(e) => {
@@ -341,7 +341,7 @@ export function GoalViewMode({
       </div>
 
       {/* Content */}
-      <div className="flex-1 space-y-5 overflow-y-auto p-4">
+      <div className="flex-1 space-y-5 overflow-y-auto p-4 pb-8 lg:pb-4">
         {/* Why */}
         {goal.why ? (
           <div className="rounded-lg bg-[var(--color-bg-secondary)] px-4 py-3">
@@ -656,7 +656,7 @@ export function GoalViewMode({
                               </div>
                             </button>
                             <button
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--color-miss)] transition-opacity hover:bg-[var(--color-bg-tertiary)] [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/grp:opacity-100"
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--color-miss)] transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/grp:opacity-100"
                               onClick={() => groupDelete.toggleDelete(group.id)}
                               title="그룹 삭제"
                             >

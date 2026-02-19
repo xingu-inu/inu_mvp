@@ -2,12 +2,7 @@ import { useCallback, useRef } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { AiGenerateRequest, AiGenerateResponse } from '@/lib/ai/types'
 
-const HEAVY_TYPES = new Set([
-  'priority-rank',
-  'roadmap-diagnosis',
-  'brain-dump',
-  'task-suggest',
-])
+const HEAVY_TYPES = new Set(['priority-rank', 'roadmap-diagnosis', 'brain-dump', 'task-suggest'])
 
 function getTimeoutMs(type: AiGenerateRequest['type']): number {
   return HEAVY_TYPES.has(type) ? 45_000 : 20_000

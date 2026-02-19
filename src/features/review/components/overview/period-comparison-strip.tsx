@@ -21,7 +21,7 @@ export function PeriodComparisonStrip({ comparison, isWeek }: PeriodComparisonSt
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3"
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <ArrowLeftRight className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
         <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">
           {periodLabel} 대비
@@ -29,22 +29,9 @@ export function PeriodComparisonStrip({ comparison, isWeek }: PeriodComparisonSt
       </div>
 
       <div className="grid grid-cols-3 gap-2">
-        <ComparisonMetric
-          label="실천율"
-          delta={comparison.completionDelta}
-          suffix="%p"
-        />
-        <ComparisonMetric
-          label="활동일"
-          delta={comparison.activeDaysDelta}
-          suffix="일"
-        />
-        <ComparisonMetric
-          label="기분"
-          delta={comparison.moodDelta}
-          suffix=""
-          isMood
-        />
+        <ComparisonMetric label="실천율" delta={comparison.completionDelta} suffix="%p" />
+        <ComparisonMetric label="활동일" delta={comparison.activeDaysDelta} suffix="일" />
+        <ComparisonMetric label="기분" delta={comparison.moodDelta} suffix="" isMood />
       </div>
     </motion.div>
   )

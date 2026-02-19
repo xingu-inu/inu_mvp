@@ -47,7 +47,7 @@ export const OverflowMenu = memo(function OverflowMenu({
           className={cn(
             'flex shrink-0 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-opacity hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-primary)]',
             !alwaysVisible &&
-              `[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:${hoverGroupClass}`,
+              `lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:${hoverGroupClass}`,
             triggerClassName
           )}
           title="더보기"

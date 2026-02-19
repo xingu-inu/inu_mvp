@@ -2,7 +2,15 @@
 
 import Image from 'next/image'
 
-export type MascotMood = 'happy' | 'proud' | 'curious' | 'sleepy' | 'encouraging' | 'celebrating' | 'checkin' | 'empty'
+export type MascotMood =
+  | 'happy'
+  | 'proud'
+  | 'curious'
+  | 'sleepy'
+  | 'encouraging'
+  | 'celebrating'
+  | 'checkin'
+  | 'empty'
 
 type MascotSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 

@@ -42,9 +42,7 @@ export function AiChatButton({ context, variant = 'card', className }: AiChatBut
       )}
     >
       <BotMessageSquare className="h-4 w-4 shrink-0 text-[var(--color-primary-500)]" />
-      <span className="text-sm font-medium text-[var(--color-primary-600)]">
-        이누에게 물어보기
-      </span>
+      <span className="text-sm font-medium text-[var(--color-primary-600)]">이누에게 물어보기</span>
     </button>
   )
 }

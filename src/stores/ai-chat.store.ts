@@ -49,7 +49,6 @@ export const useAiChatStore = create<AiChatState>((set) => ({
   startNewConversation: () => set({ activeConversationId: null, context: null }),
 
   context: null,
-  openChatWithContext: (context) =>
-    set({ context, isOpen: true, activeConversationId: null }),
+  openChatWithContext: (context) => set({ context, isOpen: true, activeConversationId: null }),
   clearContext: () => set({ context: null }),
 }))

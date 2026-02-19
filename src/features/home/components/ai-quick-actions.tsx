@@ -10,7 +10,10 @@ interface AiQuickActionsProps {
   selectedDate: Date
 }
 
-export function AiQuickActions({ tasks: _tasks, selectedDate: _selectedDate }: AiQuickActionsProps) {
+export function AiQuickActions({
+  tasks: _tasks,
+  selectedDate: _selectedDate,
+}: AiQuickActionsProps) {
   void _tasks // kept for interface compatibility
   void _selectedDate
 

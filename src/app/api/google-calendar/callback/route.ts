@@ -35,9 +35,7 @@ export async function GET(request: Request): Promise<NextResponse> {
         user_id: user.id,
         access_token: tokens.access_token ?? '',
         refresh_token: tokens.refresh_token ?? '',
-        token_expires_at: tokens.expiry_date
-          ? new Date(tokens.expiry_date).toISOString()
-          : null,
+        token_expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
         calendar_id: 'primary',
         sync_enabled: true,
       },

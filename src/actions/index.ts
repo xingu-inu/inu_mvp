@@ -91,7 +91,11 @@ export { getMonthlyReflection, saveMonthlyReflection } from './monthly-reflectio
 
 export { getWeeklyReflection, saveWeeklyReflection } from './weekly-reflection.actions'
 
-export { getGoalReflection, getGoalReflections, saveGoalReflection } from './goal-reflection.actions'
+export {
+  getGoalReflection,
+  getGoalReflections,
+  saveGoalReflection,
+} from './goal-reflection.actions'
 
 export { getProfile, updateProfile, updateAvatar, isOnboardingCompleted } from './profile.actions'
 

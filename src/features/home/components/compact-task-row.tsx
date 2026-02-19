@@ -154,7 +154,8 @@ export const CompactTaskRow = memo(
             hasError && 'animate-shake',
             isReadOnly && 'opacity-70',
             isExpanded && !status && 'bg-[var(--color-bg-secondary)]',
-            isStreakAtRisk && 'ring-1 ring-[var(--color-streak-ring)] bg-[var(--color-streak-bg)]/30'
+            isStreakAtRisk &&
+              'bg-[var(--color-streak-bg)]/30 ring-1 ring-[var(--color-streak-ring)]'
           )}
         >
           {/* Particle Animation */}
@@ -237,7 +238,9 @@ export const CompactTaskRow = memo(
                 <Calendar1
                   className={cn(
                     'h-3.5 w-3.5 flex-shrink-0',
-                    isTimePassed ? 'text-[var(--color-text-disabled)]' : 'text-[var(--color-text-tertiary)]'
+                    isTimePassed
+                      ? 'text-[var(--color-text-disabled)]'
+                      : 'text-[var(--color-text-tertiary)]'
                   )}
                   aria-hidden="true"
                 />
@@ -245,7 +248,9 @@ export const CompactTaskRow = memo(
                 <Repeat
                   className={cn(
                     'h-3.5 w-3.5 flex-shrink-0',
-                    isTimePassed ? 'text-[var(--color-text-disabled)]' : 'text-[var(--color-text-tertiary)]'
+                    isTimePassed
+                      ? 'text-[var(--color-text-disabled)]'
+                      : 'text-[var(--color-text-tertiary)]'
                   )}
                   aria-hidden="true"
                 />
@@ -295,20 +300,17 @@ export const CompactTaskRow = memo(
           )}
 
           {/* Postpone button (once tasks only, pending, today only) */}
-          {!status &&
-            !effectiveReadOnly &&
-            task.repeat_type === 'once' &&
-            !isCompletedOnce && (
-              <button
-                onClick={handlePostpone}
-                onPointerDown={(e) => e.stopPropagation()}
-                aria-label={`${task.name} 내일로 미루기`}
-                disabled={updateTask.isPending}
-                className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-text-tertiary)] hover:text-white disabled:opacity-50"
-              >
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            )}
+          {!status && !effectiveReadOnly && task.repeat_type === 'once' && !isCompletedOnce && (
+            <button
+              onClick={handlePostpone}
+              onPointerDown={(e) => e.stopPropagation()}
+              aria-label={`${task.name} 내일로 미루기`}
+              disabled={updateTask.isPending}
+              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-text-tertiary)] hover:text-white disabled:opacity-50"
+            >
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
 
           {/* Delete button (hover visible on desktop) */}
           {!effectiveReadOnly && !isCompletedOnce && (

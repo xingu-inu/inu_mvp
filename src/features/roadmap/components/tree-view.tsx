@@ -242,7 +242,12 @@ export const TreeView = memo(function TreeView({
       ref={containerRef}
       className="relative overflow-hidden rounded-xl bg-[var(--color-bg-primary)] shadow-[var(--shadow-card)]"
     >
-      <TreeNodeComponent node={tree} level={0} onGoalSelect={handleGoalSelect} />
+      <TreeNodeComponent
+        node={tree}
+        level={0}
+        onGoalSelect={handleGoalSelect}
+        isMobile={isMobile}
+      />
       {crossLinks.length > 0 && (
         <CrossLinkOverlay
           containerRef={containerRef}
@@ -262,12 +267,14 @@ interface TreeNodeComponentProps {
   node: TreeNode
   level: number
   onGoalSelect: (goalId: string) => void
+  isMobile?: boolean
 }
 
 const TreeNodeComponent = memo(function TreeNodeComponent({
   node,
   level,
   onGoalSelect,
+  isMobile = false,
 }: TreeNodeComponentProps) {
   // Default expanded state based on node type
   const getDefaultExpanded = () => {
@@ -308,6 +315,7 @@ const TreeNodeComponent = memo(function TreeNodeComponent({
         hasChildren={hasChildren}
         onToggle={handleToggle}
         onClick={handleClick}
+        isMobile={isMobile}
       />
 
       {/* Children */}
@@ -319,6 +327,7 @@ const TreeNodeComponent = memo(function TreeNodeComponent({
               node={child}
               level={level + 1}
               onGoalSelect={onGoalSelect}
+              isMobile={isMobile}
             />
           ))}
         </div>
@@ -338,6 +347,7 @@ interface NodeHeaderProps {
   hasChildren: boolean
   onToggle: () => void
   onClick: () => void
+  isMobile?: boolean
 }
 
 const NodeHeader = memo(function NodeHeader({
@@ -347,8 +357,12 @@ const NodeHeader = memo(function NodeHeader({
   hasChildren,
   onToggle,
   onClick,
+  isMobile = false,
 }: NodeHeaderProps) {
-  const paddingLeft = 12 + level * 16 // Reduced base padding + indentation
+  const effectiveLevel = isMobile ? Math.min(level, 3) : level
+  const indent = isMobile ? 8 : 16
+  const base = isMobile ? 8 : 12
+  const paddingLeft = base + effectiveLevel * indent
 
   // Node-specific styles
   const nodeStyles = getNodeStyles(node)
@@ -371,7 +385,7 @@ const NodeHeader = memo(function NodeHeader({
             e.stopPropagation()
             onToggle()
           }}
-          className="flex h-6 w-6 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-bg-tertiary)]"
+          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-bg-tertiary)] max-lg:h-10 max-lg:w-10"
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-[var(--color-text-secondary)]" />
@@ -380,7 +394,7 @@ const NodeHeader = memo(function NodeHeader({
           )}
         </button>
       ) : (
-        <div className="w-6" />
+        <div className="w-8 max-lg:w-10" />
       )}
 
       {/* Icon */}

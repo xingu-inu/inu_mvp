@@ -40,10 +40,10 @@ export const SlotGoogleEventRow = memo(function SlotGoogleEventRow({
       onClick={handleClick}
       title={tooltip}
       aria-label={tooltip}
-      className="flex w-full items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] border-[var(--color-google-event)] bg-[var(--color-google-event-bg)] px-2 py-[var(--chip-py,3px)] text-left transition-all duration-150 min-h-[var(--chip-h,32px)] hover:brightness-[0.97] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-300)] cursor-pointer"
+      className="flex min-h-[var(--chip-h,32px)] w-full cursor-pointer items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] border-[var(--color-google-event)] bg-[var(--color-google-event-bg)] px-2 py-[var(--chip-py,3px)] text-left transition-all duration-150 hover:brightness-[0.97] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-300)] focus-visible:outline-none active:scale-[0.98]"
     >
       {!event.isAllDay && (
-        <span className="flex-shrink-0 text-[length:var(--chip-time-font-size,10px)] tabular-nums text-[var(--chip-time-color)]">
+        <span className="flex-shrink-0 text-[length:var(--chip-time-font-size,10px)] text-[var(--chip-time-color)] tabular-nums">
           {formatStartTime(event.startMinutes)}
         </span>
       )}

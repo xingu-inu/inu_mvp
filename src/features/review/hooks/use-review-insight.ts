@@ -20,11 +20,11 @@ export function useReviewInsight() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({})) as { error?: string }
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string }
         throw new Error(errorData.error || '분석 생성에 실패했습니다')
       }
 
-      const result = await response.json() as { success: boolean; data: AiReviewInsightResponse }
+      const result = (await response.json()) as { success: boolean; data: AiReviewInsightResponse }
       setData(result.data)
       return result.data
     } catch (err) {

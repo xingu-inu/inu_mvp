@@ -112,9 +112,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
 
       {/* Name + optional subtitle */}
       <div className="min-w-0 flex-1">
-        <span className={cn('block truncate', getNameStyles(node))}>
-          {node.name}
-        </span>
+        <span className={cn('block truncate', getNameStyles(node))}>{node.name}</span>
         {node.type === 'direction' && node.why && (
           <span className="block truncate text-[10px] text-[var(--color-text-on-primary)] italic opacity-80">
             {node.why}

@@ -70,7 +70,7 @@ export function GoalList({ isMobile = false }: GoalListProps) {
   const hasAnyGoals = goals.length > 0
 
   if (!hasAnyGoals) {
-    return <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} />
+    return <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} isMobile={isMobile} />
   }
 
   // Tree View - 계층 구조 (Direction → Status → Area → Goal → Group → Task)

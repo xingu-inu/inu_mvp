@@ -16,7 +16,11 @@ interface AiReviewInsightCardProps {
   moodHistory: MoodEntry[] | undefined
   isWeek: boolean
   periodLabel: string
-  weeklyReflection?: { highlight?: string | null; challenge?: string | null; next_focus?: string | null } | null
+  weeklyReflection?: {
+    highlight?: string | null
+    challenge?: string | null
+    next_focus?: string | null
+  } | null
 }
 
 export function AiReviewInsightCard({
@@ -58,7 +62,16 @@ export function AiReviewInsightCard({
         : undefined,
     }
     void generate(context)
-  }, [isWeek, periodLabel, overviewStats, moodHistory, activeStreaks, areaBalances, weeklyReflection, generate])
+  }, [
+    isWeek,
+    periodLabel,
+    overviewStats,
+    moodHistory,
+    activeStreaks,
+    areaBalances,
+    weeklyReflection,
+    generate,
+  ])
 
   // Not yet generated — show trigger button
   if (!data && !isLoading && !error) {
@@ -104,7 +117,11 @@ export function AiReviewInsightCard({
             className="rounded-md p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]"
             aria-label={isExpanded ? '접기' : '펼치기'}
           >
-            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {isExpanded ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
       </div>
@@ -147,13 +164,15 @@ export function AiReviewInsightCard({
                 {/* Patterns */}
                 {data.patterns.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                    <p className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
                       발견한 패턴
                     </p>
                     {data.patterns.map((item, i) => (
                       <div key={i} className="flex items-start gap-2">
                         <span className="shrink-0 text-sm">{item.emoji}</span>
-                        <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
+                        <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                          {item.text}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -162,7 +181,7 @@ export function AiReviewInsightCard({
                 {/* Coaching */}
                 {data.coaching.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                    <p className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
                       제안
                     </p>
                     {data.coaching.map((item, i) => (
@@ -171,7 +190,9 @@ export function AiReviewInsightCard({
                         className="flex items-start gap-2 rounded-lg bg-[var(--color-primary-50)] p-2 dark:bg-[var(--color-primary-900)]/10"
                       >
                         <span className="shrink-0 text-sm">{item.emoji}</span>
-                        <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">{item.text}</p>
+                        <p className="text-xs leading-relaxed text-[var(--color-text-secondary)]">
+                          {item.text}
+                        </p>
                       </div>
                     ))}
                   </div>
@@ -179,7 +200,7 @@ export function AiReviewInsightCard({
 
                 {/* Encouragement */}
                 {data.encouragement && (
-                  <p className="text-center text-xs italic leading-relaxed text-[var(--color-text-tertiary)]">
+                  <p className="text-center text-xs leading-relaxed text-[var(--color-text-tertiary)] italic">
                     &ldquo;{data.encouragement}&rdquo;
                   </p>
                 )}

@@ -22,8 +22,8 @@ export function LandingSections() {
                 큰 그림 속에서 오늘을 실천
               </h2>
               <p className="mt-4 max-w-lg leading-relaxed text-[var(--color-text-secondary)]">
-                인생의 방향에서 시작해, 영역 → 목표 → 실천까지. 모든 할 일이 큰
-                그림 안에 연결되어 있어요.
+                인생의 방향에서 시작해, 영역 → 목표 → 실천까지. 모든 할 일이 큰 그림 안에 연결되어
+                있어요.
               </p>
             </ScrollFadeIn>
 
@@ -41,7 +41,7 @@ export function LandingSections() {
                 </div>
 
                 {/* Area */}
-                <div className="ml-4 mb-3">
+                <div className="mb-3 ml-4">
                   <div className="glass-1 rounded-xl px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span
@@ -54,7 +54,7 @@ export function LandingSections() {
                     </div>
 
                     {/* Goal */}
-                    <div className="ml-3 mt-3">
+                    <div className="mt-3 ml-3">
                       <div className="glass-1 rounded-lg px-3 py-2">
                         <span className="text-sm text-[var(--color-text-primary)]">
                           🎯 10km 달리기
@@ -62,9 +62,7 @@ export function LandingSections() {
 
                         {/* Task */}
                         <div className="mt-2 ml-2 flex items-center gap-2">
-                          <span className="text-[var(--color-done)] text-xs">
-                            ✅
-                          </span>
+                          <span className="text-xs text-[var(--color-done)]">✅</span>
                           <span className="text-xs text-[var(--color-text-secondary)]">
                             매일 30분 러닝
                           </span>
@@ -80,7 +78,7 @@ export function LandingSections() {
       </section>
 
       {/* Section 02: Why Chain */}
-      <section className="py-20 md:py-28 bg-[var(--color-bg-secondary)]">
+      <section className="bg-[var(--color-bg-secondary)] py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-6 md:px-8">
           <div className="flex flex-col gap-12 lg:flex-row-reverse lg:items-center lg:gap-16">
             {/* Text right (reversed) */}
@@ -92,8 +90,8 @@ export function LandingSections() {
                 왜 하는지 항상 기억
               </h2>
               <p className="mt-4 max-w-lg leading-relaxed text-[var(--color-text-secondary)]">
-                모든 레벨에 &apos;왜?&apos;를 부여하세요. 아래에서 위로 올라가면
-                인생의 근본적인 이유가 드러나요.
+                모든 레벨에 &apos;왜?&apos;를 부여하세요. 아래에서 위로 올라가면 인생의 근본적인
+                이유가 드러나요.
               </p>
             </ScrollFadeIn>
 
@@ -102,14 +100,14 @@ export function LandingSections() {
               <div className="glass-2 rounded-2xl p-6">
                 <div className="flex flex-col gap-0">
                   {/* Top bubble */}
-                  <div className="glass-1 rounded-xl px-4 py-3 border border-[var(--color-primary-500)]/30">
+                  <div className="glass-1 rounded-xl border border-[var(--color-primary-500)]/30 px-4 py-3">
                     <p className="text-sm font-medium text-[var(--color-primary-500)]">
                       건강하고 당당한 삶
                     </p>
                   </div>
 
                   {/* Connector */}
-                  <div className="ml-4 border-l-2 border-[var(--color-primary-500)] h-5" />
+                  <div className="ml-4 h-5 border-l-2 border-[var(--color-primary-500)]" />
 
                   {/* Middle bubble 1 */}
                   <div className="glass-1 rounded-xl px-4 py-3">
@@ -119,7 +117,7 @@ export function LandingSections() {
                   </div>
 
                   {/* Connector */}
-                  <div className="ml-4 border-l-2 border-[var(--color-primary-500)]/50 h-5" />
+                  <div className="ml-4 h-5 border-l-2 border-[var(--color-primary-500)]/50" />
 
                   {/* Middle bubble 2 */}
                   <div className="glass-1 rounded-xl px-4 py-3">
@@ -129,13 +127,11 @@ export function LandingSections() {
                   </div>
 
                   {/* Connector */}
-                  <div className="ml-4 border-l-2 border-[var(--color-primary-500)]/30 h-5" />
+                  <div className="ml-4 h-5 border-l-2 border-[var(--color-primary-500)]/30" />
 
                   {/* Bottom bubble */}
                   <div className="glass-1 rounded-xl px-4 py-3">
-                    <p className="text-xs text-[var(--color-text-secondary)]">
-                      매일 30분 러닝
-                    </p>
+                    <p className="text-xs text-[var(--color-text-secondary)]">매일 30분 러닝</p>
                   </div>
                 </div>
               </div>
@@ -157,8 +153,8 @@ export function LandingSections() {
                 15초면 완료, 부담 제로
               </h2>
               <p className="mt-4 max-w-lg leading-relaxed text-[var(--color-text-secondary)]">
-                Done 또는 Skip, 한 번의 탭으로 체크인 완료. 스트릭이 끊겨도 누적은
-                남아요. 새 라운드에서 다시 시작하세요.
+                Done 또는 Skip, 한 번의 탭으로 체크인 완료. 스트릭이 끊겨도 누적은 남아요. 새
+                라운드에서 다시 시작하세요.
               </p>
             </ScrollFadeIn>
 
@@ -205,7 +201,7 @@ export function LandingSections() {
       </section>
 
       {/* Section 04: 시간 속의 실천 */}
-      <section className="py-20 md:py-28 bg-[var(--color-bg-secondary)]">
+      <section className="bg-[var(--color-bg-secondary)] py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-6 md:px-8">
           <div className="flex flex-col gap-12 lg:flex-row-reverse lg:items-center lg:gap-16">
             {/* Text right (reversed) */}
@@ -217,8 +213,8 @@ export function LandingSections() {
                 내 시간 안에서 배치
               </h2>
               <p className="mt-4 max-w-lg leading-relaxed text-[var(--color-text-secondary)]">
-                시간대별로 할 일을 배치하고, 캘린더와 연동해서 빈 시간을 활용하세요.
-                지금 뭘 할 차례인지 바로 보여요.
+                시간대별로 할 일을 배치하고, 캘린더와 연동해서 빈 시간을 활용하세요. 지금 뭘 할
+                차례인지 바로 보여요.
               </p>
             </ScrollFadeIn>
 
@@ -250,9 +246,7 @@ export function LandingSections() {
                       className="glass-1 flex-1 rounded-lg border-l-4 px-3 py-2"
                       style={{ borderColor: 'var(--color-area-career)' }}
                     >
-                      <span className="text-sm text-[var(--color-text-primary)]">
-                        영어 쉐도잉
-                      </span>
+                      <span className="text-sm text-[var(--color-text-primary)]">영어 쉐도잉</span>
                     </div>
                   </div>
 
@@ -265,9 +259,7 @@ export function LandingSections() {
                       className="glass-1 flex-1 rounded-lg border-l-4 px-3 py-2"
                       style={{ borderColor: 'var(--color-area-hobbies)' }}
                     >
-                      <span className="text-sm text-[var(--color-text-primary)]">
-                        독서 30분
-                      </span>
+                      <span className="text-sm text-[var(--color-text-primary)]">독서 30분</span>
                     </div>
                   </div>
                 </div>
@@ -290,8 +282,8 @@ export function LandingSections() {
                 데이터 기반의 현실적 조언
               </h2>
               <p className="mt-4 max-w-lg leading-relaxed text-[var(--color-text-secondary)]">
-                AI가 실제 달성률, 스트릭, 기분 패턴을 참고해 현실적인 조언을 드려요.
-                목표 분해, 페이스 조절, 동기 부여까지.
+                AI가 실제 달성률, 스트릭, 기분 패턴을 참고해 현실적인 조언을 드려요. 목표 분해,
+                페이스 조절, 동기 부여까지.
               </p>
             </ScrollFadeIn>
 
@@ -307,8 +299,8 @@ export function LandingSections() {
                       color: 'var(--color-ai)',
                     }}
                   >
-                    💡 독서 스트릭 5일째! 이번 달 목표한 2권 중 1권은 거뜬하겠네요.
-                    내일은 좀 쉬어도 괜찮아요 🙂
+                    💡 독서 스트릭 5일째! 이번 달 목표한 2권 중 1권은 거뜬하겠네요. 내일은 좀 쉬어도
+                    괜찮아요 🙂
                   </div>
 
                   {/* User bubble */}
@@ -323,7 +315,7 @@ export function LandingSections() {
       </section>
 
       {/* Section 06: Final CTA */}
-      <section className="py-24 md:py-32 bg-[var(--color-bg-secondary)]">
+      <section className="bg-[var(--color-bg-secondary)] py-24 md:py-32">
         <div className="mx-auto max-w-2xl px-6 text-center">
           <ScrollFadeIn>
             <h2 className="font-serif text-2xl font-normal text-[var(--color-text-primary)] md:text-3xl lg:text-4xl">
@@ -339,10 +331,7 @@ export function LandingSections() {
             </Link>
             <p className="mt-4 text-sm text-[var(--color-text-tertiary)]">
               이미 계정이 있으신가요?{' '}
-              <Link
-                href="/login"
-                className="text-[var(--color-primary-500)] hover:underline"
-              >
+              <Link href="/login" className="text-[var(--color-primary-500)] hover:underline">
                 로그인
               </Link>
             </p>
