@@ -12,6 +12,10 @@ import {
   FirstGoalStep,
   CompletionScreen,
   AnimatedStep,
+  BrainDumpStep,
+  OrganizeStep,
+  PrioritizeStep,
+  ActionsStep,
 } from '@/features/onboarding'
 
 export default function OnboardingPage() {
@@ -71,6 +75,26 @@ export default function OnboardingPage() {
         {currentStep === 'first-goal' && (
           <AnimatedStep key="first-goal" stepKey="first-goal" direction={direction}>
             <FirstGoalStep />
+          </AnimatedStep>
+        )}
+        {currentStep === 'brain-dump' && (
+          <AnimatedStep key="brain-dump" stepKey="brain-dump" direction={direction}>
+            <BrainDumpStep />
+          </AnimatedStep>
+        )}
+        {currentStep === 'organize' && (
+          <AnimatedStep key="organize" stepKey="organize" direction={direction}>
+            <OrganizeStep />
+          </AnimatedStep>
+        )}
+        {currentStep === 'prioritize' && (
+          <AnimatedStep key="prioritize" stepKey="prioritize" direction={direction}>
+            <PrioritizeStep />
+          </AnimatedStep>
+        )}
+        {currentStep === 'actions' && (
+          <AnimatedStep key="actions" stepKey="actions" direction={direction}>
+            <ActionsStep />
           </AnimatedStep>
         )}
         {currentStep === 'completion' && (

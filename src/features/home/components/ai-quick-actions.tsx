@@ -24,7 +24,7 @@ export function AiQuickActions({
       <button
         type="button"
         onClick={() => setIsPriorityRankOpen(true)}
-        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
+        className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
       >
         <ListOrdered className="h-3.5 w-3.5" />
         우선순위 정리

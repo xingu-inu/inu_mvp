@@ -31,6 +31,18 @@ export interface TaskInput {
   name: string
 }
 
+export interface GoalInputV2 {
+  name: string
+  why?: string
+  areaType: AreaType
+  status: 'active' | 'backlog'
+}
+
+export interface TaskInputV2 {
+  name: string
+  goalName: string
+}
+
 export interface OnboardingResult {
   directionId: string
   firstAreaId: string
@@ -59,6 +71,38 @@ export const completeOnboarding = authAction(
       p_areas: areas as unknown as Json,
       p_first_goal: (firstGoal || null) as unknown as Json,
       p_first_task: (firstTask || null) as unknown as Json,
+    })
+
+    if (error) throw error
+
+    revalidatePath('/')
+
+    return data as unknown as OnboardingResult
+  }
+)
+
+/**
+ * Complete the onboarding process using the v3 brain-dump flow
+ * @param direction - Life direction statement
+ * @param areas - Derived life areas
+ * @param goals - Multiple goals with area types and statuses
+ * @param tasks - Accepted tasks linked to goals by name
+ */
+export const completeOnboardingV2 = authAction(
+  'completeOnboardingV2',
+  async (
+    { supabase, user },
+    direction: DirectionInput,
+    areas: AreaInput[],
+    goals: GoalInputV2[],
+    tasks: TaskInputV2[]
+  ): Promise<OnboardingResult> => {
+    const { data, error } = await supabase.rpc('complete_onboarding', {
+      p_user_id: user.id,
+      p_direction: direction as unknown as Json,
+      p_areas: areas as unknown as Json,
+      p_first_goal: (goals.length > 0 ? goals : null) as unknown as Json,
+      p_first_task: (tasks.length > 0 ? tasks : null) as unknown as Json,
     })
 
     if (error) throw error

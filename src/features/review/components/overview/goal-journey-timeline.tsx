@@ -17,24 +17,25 @@ const EVENT_DOT_COLORS: Record<JourneyEventType, string> = {
   'goal-created': 'bg-blue-500',
   'status-change': 'bg-amber-500',
   'group-completed': 'bg-green-500',
-  'task-added': 'bg-gray-400',
+  'task-added': 'bg-gray-400 dark:bg-gray-500',
   'goal-completed': 'bg-emerald-500',
 }
 
 const EVENT_CARD_STYLES: Record<JourneyEventType, string> = {
-  'goal-created': 'border-blue-200 bg-blue-50',
-  'status-change': 'border-amber-200 bg-amber-50',
-  'group-completed': 'border-green-200 bg-green-50',
+  'goal-created': 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30',
+  'status-change': 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30',
+  'group-completed': 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30',
   'task-added': 'border-[var(--color-border)] bg-[var(--color-bg-secondary)]',
-  'goal-completed': 'border-emerald-200 bg-emerald-50',
+  'goal-completed':
+    'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30',
 }
 
 const EVENT_TITLE_COLORS: Record<JourneyEventType, string> = {
-  'goal-created': 'text-blue-700',
-  'status-change': 'text-amber-700',
-  'group-completed': 'text-green-700',
+  'goal-created': 'text-blue-700 dark:text-blue-400',
+  'status-change': 'text-amber-700 dark:text-amber-400',
+  'group-completed': 'text-green-700 dark:text-green-400',
   'task-added': 'text-[var(--color-text-secondary)]',
-  'goal-completed': 'text-emerald-700',
+  'goal-completed': 'text-emerald-700 dark:text-emerald-400',
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -73,7 +74,7 @@ function EventCard({ event }: { event: JourneyEvent }) {
       {event.type === 'status-change' && (
         <>
           {event.reason && (
-            <span className="mt-1.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+            <span className="mt-1.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
               {event.reason}
             </span>
           )}

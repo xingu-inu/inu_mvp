@@ -76,8 +76,8 @@ export const SlotTaskRow = memo(function SlotTaskRow({ task, isPast, onClick }: 
       title={buildTooltip(task, status)}
       aria-label={buildAriaLabel(task, status)}
       className={cn(
-        'flex w-full items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] px-2 py-[var(--chip-py,3px)] text-left transition-[opacity,border-color,background-color] duration-150',
-        'min-h-[var(--chip-h,32px)]',
+        'flex w-full items-center gap-1 rounded-[var(--chip-radius,8px)] border-l-[3px] px-2 py-[var(--chip-py,6px)] text-left transition-[opacity,border-color,background-color] duration-150',
+        'min-h-[var(--chip-h,44px)]',
         'hover:brightness-[0.97] active:scale-[0.98]',
         'focus-visible:ring-2 focus-visible:ring-[var(--color-primary-300)] focus-visible:outline-none',
         isDone && 'opacity-60',

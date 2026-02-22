@@ -456,11 +456,15 @@ export function useUpdateTask() {
       }
       toast.error('수정에 실패했습니다.')
     },
-    onSettled: () => {
+    onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
       queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
+      // 구조적 변경(goal/group 이동 등)일 때만 goals 전체 invalidation
+      const structuralKeys = ['goal_id', 'group_id', 'is_active']
+      if (Object.keys(variables.input).some((k) => structuralKeys.includes(k))) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      }
     },
     onSuccess: (_data, { input }) => {
       // Suppress toast for DnD operations (only sort_order/group_id changes)

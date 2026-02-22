@@ -2,13 +2,7 @@
 
 import { generateKeyBetween } from 'fractional-indexing'
 import type { TypedSupabaseClient } from './base.repository'
-import {
-  handleSupabaseError,
-  isNotFoundError,
-  now,
-  isValidFractionalKey,
-  batchReorder,
-} from './base.repository'
+import { handleSupabaseError, isNotFoundError, now, batchReorder } from './base.repository'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/entities'
 
 export const taskRepository = {
@@ -113,26 +107,9 @@ export const taskRepository = {
     userId: string,
     input: CreateTaskInput
   ): Promise<Task> {
-    // sort_order 계산 (fractional-indexing 형식)
-    let newSortOrder: string
-    if (input.goal_id) {
-      const { data: lastTask } = await supabase
-        .from('tasks')
-        .select('sort_order')
-        .eq('goal_id', input.goal_id)
-        .eq('user_id', userId)
-        .order('sort_order', { ascending: false })
-        .limit(1)
-        .single()
-
-      const lastKey =
-        lastTask?.sort_order && isValidFractionalKey(lastTask.sort_order)
-          ? lastTask.sort_order
-          : null
-      newSortOrder = generateKeyBetween(lastKey, null)
-    } else {
-      newSortOrder = generateKeyBetween(null, null)
-    }
+    // sort_order collision on rapid concurrent creates is intentional
+    // — self-heals via batchReorder RPC on next explicit sort
+    const newSortOrder = generateKeyBetween(null, null)
 
     const { data, error } = await supabase
       .from('tasks')

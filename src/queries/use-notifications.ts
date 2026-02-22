@@ -13,23 +13,25 @@ import {
 import { unwrapListResponse } from '@/lib/api'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { getHomeTasks, getWeekHomeTasks } from '@/actions/home.actions'
-import { getGoals } from '@/actions/goal.actions'
+import { getActiveGoalsMinimal } from '@/actions/goal.actions'
 import type { AppNotification } from '@/types/entities'
+import type { MinimalGoal } from '@/repositories/goal.repository'
 
 async function fetchNotifications(): Promise<AppNotification[]> {
   const today = new Date()
   const dateStr = format(today, 'yyyy-MM-dd')
   const isMonday = today.getDay() === 1
 
-  // Core data (always needed)
-  const [tasksResponse, goalsResponse] = await Promise.all([getHomeTasks(dateStr), getGoals()])
+  // Core data — use lightweight goal query (no groups/tasks join)
+  const [tasksResponse, goalsResponse] = await Promise.all([
+    getHomeTasks(dateStr),
+    getActiveGoalsMinimal(),
+  ])
 
   const apiTasks = unwrapListResponse(tasksResponse)
   const todayTasks = mapApiTasksToEntities(apiTasks)
 
-  const activeGoals = goalsResponse.success
-    ? goalsResponse.data.filter((g) => g.status === 'active')
-    : []
+  const activeGoals: MinimalGoal[] = goalsResponse.success ? goalsResponse.data : []
 
   // Weekly data (conditional)
   let lastWeekStats: WeeklyStats | undefined
@@ -92,6 +94,7 @@ export function useNotifications() {
     queryKey: queryKeys.notifications.today(),
     queryFn: fetchNotifications,
     staleTime: STALE_TIMES.NOTIFICATIONS,
+    refetchOnWindowFocus: true,
   })
 }
 

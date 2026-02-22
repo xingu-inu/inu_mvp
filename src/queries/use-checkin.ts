@@ -185,6 +185,13 @@ export function useCheckIn(): UseMutationResult<CheckInResult, Error, CreateChec
       // Prefix match invalidates both daily and weekly caches
       queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      // Notifications 뱃지 즉시 갱신 (staleTime 2분이어도 체크인 후 반영)
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.today() })
+      // Review 통계 갱신 — 체크인 데이터에 의존하는 쿼리만 타겟
+      queryClient.invalidateQueries({ queryKey: ['review', 'history'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'roadmapProgress'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'areaStats'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'obstacle-analysis'] })
     },
   })
 }
@@ -244,6 +251,13 @@ export function useUndoCheckIn() {
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
       queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      // Notifications 뱃지 즉시 갱신 (staleTime 2분이어도 체크인 취소 후 반영)
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.today() })
+      // Review 통계 갱신 — 체크인 데이터에 의존하는 쿼리만 타겟
+      queryClient.invalidateQueries({ queryKey: ['review', 'history'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'roadmapProgress'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'areaStats'] })
+      queryClient.invalidateQueries({ queryKey: ['review', 'obstacle-analysis'] })
     },
   })
 }

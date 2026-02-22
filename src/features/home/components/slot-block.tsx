@@ -26,6 +26,7 @@ interface SlotBlockProps {
   isPastSlot?: boolean
   day: Date
   slotHeight?: number
+  maxVisible?: number
   onTaskClick: (taskId: string | null, day: Date) => void
 }
 
@@ -43,9 +44,11 @@ export const SlotBlock = memo(function SlotBlock({
   isPastSlot,
   day,
   slotHeight,
+  maxVisible,
   onTaskClick,
 }: SlotBlockProps) {
   const isEmpty = tasks.length === 0 && googleEvents.length === 0
+  const limit = maxVisible ?? SLOT_MAX_VISIBLE
 
   // Merge tasks and events into a single time-sorted list
   const items: SlotItem[] = []
@@ -60,8 +63,8 @@ export const SlotBlock = memo(function SlotBlock({
 
   items.sort((a, b) => a.sortKey - b.sortKey)
 
-  const visibleItems = items.slice(0, SLOT_MAX_VISIBLE)
-  const hiddenCount = Math.max(0, items.length - SLOT_MAX_VISIBLE)
+  const visibleItems = items.slice(0, limit)
+  const hiddenCount = Math.max(0, items.length - limit)
 
   return (
     <div

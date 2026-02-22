@@ -2,6 +2,7 @@
 
 import { authAction, validate } from '@/lib/security'
 import { areaRepository, directionRepository } from '@/repositories'
+import { getActiveDirectionId } from '@/repositories/base.repository'
 import { successResponse, errorResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createAreaSchema, updateAreaSchema } from '@/lib/validations'
@@ -18,7 +19,8 @@ const NOT_FOUND_ERROR_MAP = {
 export const getAreas = authAction(
   'getAreas',
   async ({ supabase, user }): Promise<ApiListResult<Area>> => {
-    const areas = await areaRepository.getAll(supabase, user.id)
+    const directionId = await getActiveDirectionId(supabase, user.id)
+    const areas = await areaRepository.getAll(supabase, user.id, directionId)
     return listResponse(areas)
   }
 )
@@ -29,7 +31,8 @@ export const getAreas = authAction(
 export const getActiveAreas = authAction(
   'getActiveAreas',
   async ({ supabase, user }): Promise<ApiListResult<Area>> => {
-    const areas = await areaRepository.getActive(supabase, user.id)
+    const directionId = await getActiveDirectionId(supabase, user.id)
+    const areas = await areaRepository.getActive(supabase, user.id, directionId)
     return listResponse(areas)
   }
 )

@@ -31,26 +31,20 @@ interface MilestoneCard {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function MilestoneCardItem({ card, index }: { card: MilestoneCard; index: number }) {
-  const accentStyle =
+  const accentClass =
     card.accent === 'green'
-      ? {
-          border: '1px solid var(--color-success-200, #bbf7d0)',
-          background: 'var(--color-success-50, #f0fdf4)',
-        }
+      ? 'border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/30'
       : card.accent === 'orange'
-        ? {
-            border: '1px solid var(--color-amber-200, #fde68a)',
-            background: 'var(--color-amber-50, #fffbeb)',
-          }
-        : { border: '1px solid var(--color-border)', background: 'var(--color-bg-card)' }
+        ? 'border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+        : 'border border-[var(--color-border)] bg-[var(--color-bg-card)]'
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: index * 0.06, ease: 'easeOut' }}
-      className="flex shrink-0 flex-col gap-1 rounded-xl p-3"
-      style={{ minWidth: 140, maxWidth: 200, ...accentStyle }}
+      className={`flex shrink-0 flex-col gap-1 rounded-xl p-3 ${accentClass}`}
+      style={{ minWidth: 140, maxWidth: 200 }}
     >
       <span className="text-xl leading-none" aria-hidden="true">
         {card.icon}

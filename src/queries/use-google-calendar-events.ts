@@ -24,6 +24,7 @@ export function useGoogleCalendarEvents(weekStartStr: string) {
       return data.events ?? []
     },
     staleTime: STALE_TIMES.GOOGLE_CALENDAR,
+    refetchOnWindowFocus: true,
     enabled: isConnected,
   })
 }

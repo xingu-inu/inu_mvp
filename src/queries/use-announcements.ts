@@ -18,5 +18,6 @@ export function useActiveAnnouncements() {
       return unwrapResponse(res)
     },
     staleTime: STALE_TIMES.ANNOUNCEMENTS,
+    refetchOnWindowFocus: true,
   })
 }

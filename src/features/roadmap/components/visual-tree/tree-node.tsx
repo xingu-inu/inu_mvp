@@ -1,10 +1,14 @@
 'use client'
 
-import { useState, memo, type ReactNode } from 'react'
+import { Fragment, useState, memo, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
+import { cn } from '@/lib/utils'
 import { TreeNodeCard, type VisualTreeNode } from './tree-node-card'
+import { TreeContextMenu } from './tree-context-menu'
+import { DraggableTreeNode } from './draggable-tree-node'
+import { TreeInsertionIndicator } from './tree-insertion-indicator'
 import type { SelectedNodeType, TreeLayoutDirection } from '@/stores/roadmap.store'
 
 interface TreeNodeProps {
@@ -14,14 +18,18 @@ interface TreeNodeProps {
   isFormMode: boolean
   defaultExpanded?: boolean
   layoutDirection: TreeLayoutDirection
-  /** ID of the node whose quick-add popover is open */
   addingToId?: string | null
-  /** Called when [+] button is clicked */
   onStartAdd?: (type: SelectedNodeType, id: string) => void
-  /** Called when quick-add popover closes */
   onCancelAdd?: () => void
-  /** Returns popover content for a given node */
   getQuickAddContent?: (node: VisualTreeNode) => ReactNode
+  focusedIds: Set<string> | null
+  searchMatchedIds: Set<string>
+  searchQuery: string
+  isDndEnabled: boolean
+  isDragging: boolean
+  dndOverId: string | null
+  onDeleteNode: (type: SelectedNodeType, id: string) => void
+  parentGoalMap: Map<string, string>
 }
 
 export const TreeNode = memo(function TreeNode({
@@ -35,6 +43,14 @@ export const TreeNode = memo(function TreeNode({
   onStartAdd,
   onCancelAdd,
   getQuickAddContent,
+  focusedIds,
+  searchMatchedIds,
+  searchQuery,
+  isDndEnabled,
+  isDragging,
+  dndOverId,
+  onDeleteNode,
+  parentGoalMap,
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? getDefaultExpanded(node))
 
@@ -44,41 +60,85 @@ export const TreeNode = memo(function TreeNode({
   const canAdd = node.type !== 'task'
   const isAddingHere = addingToId === node.id
 
+  // Focus mode: dim non-focused nodes
+  const isFocusDimmed = focusedIds !== null && !focusedIds.has(node.id)
+
+  // Search: check if this node is a direct name match (for text highlight)
+  const isSearchActive = searchMatchedIds.size > 0
+  const isInSearchPath = isSearchActive && searchMatchedIds.has(node.id)
+  const isSearchMatch =
+    isSearchActive &&
+    searchQuery.length > 0 &&
+    node.name.toLowerCase().includes(searchQuery.toLowerCase())
+
+  // Auto-expand when search finds matches in subtree
+  const effectiveExpanded = isSearchActive && isInSearchPath ? true : isExpanded
+
+  // Render card (DraggableTreeNode when DnD enabled, TreeNodeCard otherwise)
+  const cardElement = isDndEnabled ? (
+    <DraggableTreeNode
+      node={node}
+      isSelected={isSelected}
+      isExpanded={effectiveExpanded}
+      hasChildren={hasChildren}
+      onSelect={() => onNodeSelect(node.type, node.id)}
+      onToggle={() => setIsExpanded(!isExpanded)}
+      isSearchMatch={isSearchMatch}
+      searchQuery={searchQuery}
+    />
+  ) : (
+    <TreeNodeCard
+      node={node}
+      isSelected={isSelected}
+      isExpanded={effectiveExpanded}
+      hasChildren={hasChildren}
+      onSelect={() => onNodeSelect(node.type, node.id)}
+      onToggle={() => setIsExpanded(!isExpanded)}
+      isSearchMatch={isSearchMatch}
+      searchQuery={searchQuery}
+    />
+  )
+
   return (
     <div className={isHorizontal ? 'flex flex-row items-center' : 'flex flex-col items-center'}>
-      {/* Card with optional [+] button and popover */}
+      {/* Card with context menu, optional [+] button and popover */}
       <Popover.Root
         open={isAddingHere}
         onOpenChange={(open) => {
           if (!open) onCancelAdd?.()
         }}
       >
-        <div className="group/node relative">
-          <TreeNodeCard
-            node={node}
-            isSelected={isSelected}
-            isExpanded={isExpanded}
-            hasChildren={hasChildren}
-            onSelect={() => onNodeSelect(node.type, node.id)}
-            onToggle={() => setIsExpanded(!isExpanded)}
-          />
+        <TreeContextMenu
+          node={node}
+          onEdit={() => onNodeSelect(node.type, node.id)}
+          onAddChild={() => onStartAdd?.(node.type, node.id)}
+          onDelete={node.type !== 'direction' ? () => onDeleteNode(node.type, node.id) : undefined}
+        >
+          <div
+            className={cn(
+              'group/node relative',
+              isFocusDimmed && 'pointer-events-none opacity-[0.15]'
+            )}
+          >
+            {cardElement}
 
-          {/* [+] button — appears on hover, positioned at right edge */}
-          {canAdd && onStartAdd && (
-            <Popover.Trigger asChild>
-              <button
-                className="absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-bg-primary)] text-[var(--color-primary-500)] opacity-0 shadow-sm transition-all group-hover/node:opacity-100 hover:bg-[var(--color-primary-50)] hover:shadow-md"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onStartAdd(node.type, node.id)
-                }}
-                title={getAddLabel(node.type)}
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </button>
-            </Popover.Trigger>
-          )}
-        </div>
+            {/* [+] button — appears on hover, positioned at right edge */}
+            {canAdd && onStartAdd && (
+              <Popover.Trigger asChild>
+                <button
+                  className="absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-bg-primary)] text-[var(--color-primary-500)] opacity-0 shadow-sm transition-all group-hover/node:opacity-100 hover:bg-[var(--color-primary-50)] hover:shadow-md"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onStartAdd(node.type, node.id)
+                  }}
+                  title={getAddLabel(node.type)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              </Popover.Trigger>
+            )}
+          </div>
+        </TreeContextMenu>
 
         {/* Quick Add popover content */}
         {isAddingHere && getQuickAddContent && (
@@ -97,7 +157,7 @@ export const TreeNode = memo(function TreeNode({
 
       {/* Connector + children */}
       <AnimatePresence initial={false}>
-        {isExpanded && hasChildren && (
+        {effectiveExpanded && hasChildren && (
           <motion.div
             initial={
               isHorizontal
@@ -128,23 +188,46 @@ export const TreeNode = memo(function TreeNode({
               <div className="h-5 shrink-0 border-l-2 border-[var(--color-border-hover)]" />
             )}
 
-            {/* Children container */}
+            {/* Children container with optional insertion indicators */}
             <div className={isHorizontal ? 'flex flex-col' : 'flex'}>
-              {node.children!.map((child, index) => (
-                <ChildBranch
-                  key={child.id}
-                  child={child}
-                  index={index}
-                  total={node.children!.length}
-                  selectedNodeId={selectedNodeId}
-                  onNodeSelect={onNodeSelect}
-                  isFormMode={isFormMode}
+              {isDndEnabled && isDragging && (
+                <TreeInsertionIndicator
+                  id={`insert-0-${node.id}`}
                   layoutDirection={layoutDirection}
-                  addingToId={addingToId}
-                  onStartAdd={onStartAdd}
-                  onCancelAdd={onCancelAdd}
-                  getQuickAddContent={getQuickAddContent}
+                  isActive={dndOverId === `insert-0-${node.id}`}
                 />
+              )}
+              {node.children!.map((child, index) => (
+                <Fragment key={child.id}>
+                  <ChildBranch
+                    child={child}
+                    index={index}
+                    total={node.children!.length}
+                    selectedNodeId={selectedNodeId}
+                    onNodeSelect={onNodeSelect}
+                    isFormMode={isFormMode}
+                    layoutDirection={layoutDirection}
+                    addingToId={addingToId}
+                    onStartAdd={onStartAdd}
+                    onCancelAdd={onCancelAdd}
+                    getQuickAddContent={getQuickAddContent}
+                    focusedIds={focusedIds}
+                    searchMatchedIds={searchMatchedIds}
+                    searchQuery={searchQuery}
+                    isDndEnabled={isDndEnabled}
+                    isDragging={isDragging}
+                    dndOverId={dndOverId}
+                    onDeleteNode={onDeleteNode}
+                    parentGoalMap={parentGoalMap}
+                  />
+                  {isDndEnabled && isDragging && (
+                    <TreeInsertionIndicator
+                      id={`insert-${index + 1}-${node.id}`}
+                      layoutDirection={layoutDirection}
+                      isActive={dndOverId === `insert-${index + 1}-${node.id}`}
+                    />
+                  )}
+                </Fragment>
               ))}
             </div>
           </motion.div>
@@ -157,9 +240,6 @@ export const TreeNode = memo(function TreeNode({
 /**
  * Each child draws its portion of the connector bar
  * plus a stub connecting to the child node.
- *
- * Vertical: horizontal bar segments + vertical stubs
- * Horizontal: vertical bar segments + horizontal stubs
  */
 const ChildBranch = memo(function ChildBranch({
   child,
@@ -173,6 +253,14 @@ const ChildBranch = memo(function ChildBranch({
   onStartAdd,
   onCancelAdd,
   getQuickAddContent,
+  focusedIds,
+  searchMatchedIds,
+  searchQuery,
+  isDndEnabled,
+  isDragging,
+  dndOverId,
+  onDeleteNode,
+  parentGoalMap,
 }: {
   child: VisualTreeNode
   index: number
@@ -185,6 +273,14 @@ const ChildBranch = memo(function ChildBranch({
   onStartAdd?: (type: SelectedNodeType, id: string) => void
   onCancelAdd?: () => void
   getQuickAddContent?: (node: VisualTreeNode) => ReactNode
+  focusedIds: Set<string> | null
+  searchMatchedIds: Set<string>
+  searchQuery: string
+  isDndEnabled: boolean
+  isDragging: boolean
+  dndOverId: string | null
+  onDeleteNode: (type: SelectedNodeType, id: string) => void
+  parentGoalMap: Map<string, string>
 }) {
   const isFirst = index === 0
   const isLast = index === total - 1
@@ -194,24 +290,17 @@ const ChildBranch = memo(function ChildBranch({
   if (isHorizontal) {
     return (
       <div className="relative flex flex-row items-center py-2">
-        {/* Vertical bar segments (each child draws its halves) */}
         {!isOnly && (
           <>
-            {/* Top half of vertical bar */}
             {!isFirst && (
               <div className="absolute top-0 left-0 h-1/2 w-0.5 bg-[var(--color-border-hover)]" />
             )}
-            {/* Bottom half of vertical bar */}
             {!isLast && (
               <div className="absolute top-1/2 left-0 h-1/2 w-0.5 bg-[var(--color-border-hover)]" />
             )}
           </>
         )}
-
-        {/* Horizontal stub from vertical bar to child */}
         {!isOnly && <div className="w-5 shrink-0 border-t-2 border-[var(--color-border-hover)]" />}
-
-        {/* Recursive child node */}
         <TreeNode
           node={child}
           selectedNodeId={selectedNodeId}
@@ -222,32 +311,32 @@ const ChildBranch = memo(function ChildBranch({
           onStartAdd={onStartAdd}
           onCancelAdd={onCancelAdd}
           getQuickAddContent={getQuickAddContent}
+          focusedIds={focusedIds}
+          searchMatchedIds={searchMatchedIds}
+          searchQuery={searchQuery}
+          isDndEnabled={isDndEnabled}
+          isDragging={isDragging}
+          dndOverId={dndOverId}
+          onDeleteNode={onDeleteNode}
+          parentGoalMap={parentGoalMap}
         />
       </div>
     )
   }
 
-  // Vertical layout (existing behavior)
   return (
     <div className="relative flex flex-col items-center px-3">
-      {/* Horizontal bar segments (each child draws its halves) */}
       {!isOnly && (
         <>
-          {/* Left half of horizontal bar */}
           {!isFirst && (
             <div className="absolute top-0 left-0 h-0.5 w-1/2 bg-[var(--color-border-hover)]" />
           )}
-          {/* Right half of horizontal bar */}
           {!isLast && (
             <div className="absolute top-0 left-1/2 h-0.5 w-1/2 bg-[var(--color-border-hover)]" />
           )}
         </>
       )}
-
-      {/* Vertical stub from horizontal bar to child */}
       {!isOnly && <div className="h-5 shrink-0 border-l-2 border-[var(--color-border-hover)]" />}
-
-      {/* Recursive child node */}
       <TreeNode
         node={child}
         selectedNodeId={selectedNodeId}
@@ -258,6 +347,14 @@ const ChildBranch = memo(function ChildBranch({
         onStartAdd={onStartAdd}
         onCancelAdd={onCancelAdd}
         getQuickAddContent={getQuickAddContent}
+        focusedIds={focusedIds}
+        searchMatchedIds={searchMatchedIds}
+        searchQuery={searchQuery}
+        isDndEnabled={isDndEnabled}
+        isDragging={isDragging}
+        dndOverId={dndOverId}
+        onDeleteNode={onDeleteNode}
+        parentGoalMap={parentGoalMap}
       />
     </div>
   )

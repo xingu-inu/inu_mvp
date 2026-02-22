@@ -27,6 +27,9 @@ function safeNewOrderBetween(before: string | null, after: string | null): strin
   const b = sanitizeKey(after)
   // Guard: if both keys exist and a >= b (duplicate/corrupt sort_order), fall back to appending after a
   if (a != null && b != null && a >= b) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[DnD] sort_order 충돌: "${a}" >= "${b}". append fallback 사용`)
+    }
     return _getNewOrderBetween(a, null)
   }
   return _getNewOrderBetween(a, b)
@@ -44,6 +47,14 @@ export interface PendingCrossMove {
 interface DragItem {
   type: 'area' | 'task'
   id: string
+}
+
+/** Mutation variables — carries the server input and optimistic patch info (applied in onMutate) */
+interface DndMutationVars {
+  input: MoveNodeInput
+  optimistic?:
+    | { type: 'task'; taskId: string; patch: Partial<ActionHomeTask> }
+    | { type: 'area'; areaId: string; newSortOrder: string }
 }
 
 export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], selectedDate: Date) {
@@ -92,9 +103,6 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
   // Source container ref — tracks where a task originated at drag start (roadmap pattern)
   const dragSourceContainer = useRef<string | null>(null)
 
-  // Previous data for rollback (both daily + weekly caches)
-  const previousDataRef = useRef<{ daily: unknown; weekly: unknown } | null>(null)
-
   // Auto-clear drag overlay once base containers catch up from cache update.
   // Fires only when baseContainers/baseAreaOrder change so the overlay persists
   // until props reflect the optimistic cache update — prevents snap-back.
@@ -106,33 +114,56 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseContainers, baseAreaOrder])
 
-  // ── Debounced server mutation ──
+  // ── Server mutation — canonical TanStack Query optimistic update pattern ──
   const mutation = useMutation({
-    mutationFn: moveNode,
-    onSuccess: () => {
-      // Target only the affected date/week caches (not all ['tasks', 'home'])
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.home(dateStr) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.homeWeek(weekStartStr) })
+    mutationFn: (vars: DndMutationVars) => moveNode(vars.input),
+    onMutate: async (vars) => {
+      // 1. Cancel in-flight refetches — no stale data can overwrite optimistic update
+      await queryClient.cancelQueries({ queryKey: ['tasks', 'home'] })
+      await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
+      await queryClient.cancelQueries({ queryKey: queryKeys.goals.all })
+
+      // 2. Snapshot AFTER cancel — guaranteed clean baseline for rollback
+      const snapshot = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
+
+      // 3. Apply optimistic patch
+      if (vars.optimistic) {
+        if (vars.optimistic.type === 'task') {
+          patchTaskInHomeCaches(
+            queryClient,
+            dateStr,
+            weekStartStr,
+            vars.optimistic.taskId,
+            vars.optimistic.patch
+          )
+        } else {
+          patchAreaInHomeCaches(
+            queryClient,
+            dateStr,
+            weekStartStr,
+            vars.optimistic.areaId,
+            vars.optimistic.newSortOrder
+          )
+        }
+      }
+
+      return snapshot
     },
-    onError: () => {
-      if (previousDataRef.current) {
-        queryClient.setQueryData(queryKeys.tasks.home(dateStr), previousDataRef.current.daily)
-        queryClient.setQueryData(
-          queryKeys.tasks.homeWeek(weekStartStr),
-          previousDataRef.current.weekly
-        )
+    onError: (_err, _vars, context) => {
+      // Per-mutation rollback via onMutate context (canonical pattern)
+      if (context) {
+        queryClient.setQueryData(queryKeys.tasks.home(dateStr), context.daily)
+        queryClient.setQueryData(queryKeys.tasks.homeWeek(weekStartStr), context.weekly)
       }
       toast.error('이동에 실패했어요. 다시 시도해주세요.')
     },
-  })
-
-  // Direct mutation (no debounce) — each drag operation must persist independently
-  const doMutate = useCallback(
-    (input: MoveNodeInput) => {
-      mutation.mutate(input)
+    onSettled: () => {
+      // Broad invalidation on both success and error
+      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
     },
-    [mutation]
-  )
+  })
 
   // ── Find which container holds a given ID (roadmap pattern) ──
   const findContainer = useCallback(
@@ -296,13 +327,9 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
             })
             const newSortOrder = calculateNewOrderForArea(areaItems, oldIndex, newIndex)
 
-            previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
-            patchAreaInHomeCaches(queryClient, dateStr, weekStartStr, areaId, newSortOrder)
-
-            doMutate({
-              nodeId: areaId,
-              nodeType: 'area',
-              newOrder: newSortOrder,
+            mutation.mutate({
+              input: { nodeId: areaId, nodeType: 'area', newOrder: newSortOrder },
+              optimistic: { type: 'area', areaId, newSortOrder },
             })
             return // useEffect cleans up dragContainers after cache propagation
           }
@@ -330,13 +357,24 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
         if (sourceContainer === currentContainer) {
           // Same container reorder — use over.id to determine target position
           const overId = String(over.id)
+
+          // Bug 5 fix: if drop target is a container/area droppable (not a task), skip reorder
+          const overItemData = over.data.current as { type?: string } | undefined
+          if (overItemData?.type === 'container' || overItemData?.type === 'area') {
+            setDragContainers(null)
+            setDragAreaOrder(null)
+            return
+          }
+
           const containerIds = taskContainers[currentContainer] ?? []
           const oldIndex = containerIds.indexOf(taskId)
 
-          // Resolve over position: if over.id is a container/area droppable, move to end
-          let overIndex = containerIds.indexOf(overId)
+          const overIndex = containerIds.indexOf(overId)
           if (overIndex === -1) {
-            overIndex = containerIds.length - 1
+            // overId not found in container — bail out
+            setDragContainers(null)
+            setDragAreaOrder(null)
+            return
           }
 
           if (oldIndex === -1 || oldIndex === overIndex) {
@@ -358,15 +396,9 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
             nextTask?.sort_order ?? null
           )
 
-          previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
-          patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
-            sortOrder: newOrder,
-          })
-
-          doMutate({
-            nodeId: taskId,
-            nodeType: 'task',
-            newOrder,
+          mutation.mutate({
+            input: { nodeId: taskId, nodeType: 'task', newOrder },
+            optimistic: { type: 'task', taskId, patch: { sortOrder: newOrder } },
           })
           return // useEffect cleans up dragContainers after cache propagation
         } else {
@@ -377,20 +409,19 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
 
           if (currentContainer === DAILY_CONTAINER) {
             // Moving to daily → goalId = null
-            previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
-            patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
-              sortOrder: newOrder,
-              goalId: null,
-              goal: null,
-              groupId: null,
-              group: null,
-            })
-
-            doMutate({
-              nodeId: taskId,
-              nodeType: 'task',
-              newOrder,
-              newParentId: null,
+            mutation.mutate({
+              input: { nodeId: taskId, nodeType: 'task', newOrder, newParentId: null },
+              optimistic: {
+                type: 'task',
+                taskId,
+                patch: {
+                  sortOrder: newOrder,
+                  goalId: null,
+                  goal: null,
+                  groupId: null,
+                  group: null,
+                },
+              },
             })
             return // useEffect cleans up dragContainers after cache propagation
           } else {
@@ -401,33 +432,33 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
             if (goals.length === 1) {
               const targetGoal = goals[0]
               const targetArea = targetAreaGroup!.area
-              previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
-              patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, taskId, {
-                sortOrder: newOrder,
-                goalId: targetGoal.id,
-                goal: {
-                  id: targetGoal.id,
-                  name: targetGoal.name,
-                  why: null,
-                  areaId: targetArea.id,
-                  area: {
-                    id: targetArea.id,
-                    name: targetArea.name,
-                    emoji: targetArea.emoji,
-                    color: targetArea.color,
-                    why: null,
-                    sortOrder: targetArea.sort_order,
+
+              mutation.mutate({
+                input: { nodeId: taskId, nodeType: 'task', newOrder, newParentId: targetGoal.id },
+                optimistic: {
+                  type: 'task',
+                  taskId,
+                  patch: {
+                    sortOrder: newOrder,
+                    goalId: targetGoal.id,
+                    goal: {
+                      id: targetGoal.id,
+                      name: targetGoal.name,
+                      why: null,
+                      areaId: targetArea.id,
+                      area: {
+                        id: targetArea.id,
+                        name: targetArea.name,
+                        emoji: targetArea.emoji,
+                        color: targetArea.color,
+                        why: null,
+                        sortOrder: targetArea.sort_order,
+                      },
+                    },
+                    groupId: null,
+                    group: null,
                   },
                 },
-                groupId: null,
-                group: null,
-              })
-
-              doMutate({
-                nodeId: taskId,
-                nodeType: 'task',
-                newOrder,
-                newParentId: targetGoal.id,
               })
               return // useEffect cleans up dragContainers after cache propagation
             } else if (goals.length > 1) {
@@ -461,10 +492,7 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
       tasksById,
       findContainer,
       calculateNewOrder,
-      queryClient,
-      dateStr,
-      weekStartStr,
-      doMutate,
+      mutation,
     ]
   )
 
@@ -481,46 +509,48 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     (goalId: string) => {
       if (!pendingCrossMove) return
 
-      previousDataRef.current = snapshotHomeCaches(queryClient, dateStr, weekStartStr)
-
       const targetAreaGroup = areaGroups.find((g) => g.goals.some((gl) => gl.id === goalId))
       const targetGoal = targetAreaGroup?.goals.find((g) => g.id === goalId)
       const targetArea = targetAreaGroup?.area
 
-      if (targetGoal && targetArea) {
-        patchTaskInHomeCaches(queryClient, dateStr, weekStartStr, pendingCrossMove.taskId, {
-          sortOrder: pendingCrossMove.newOrder,
-          goalId: goalId,
-          goal: {
-            id: goalId,
-            name: targetGoal.name,
-            why: null,
-            areaId: targetArea.id,
-            area: {
-              id: targetArea.id,
-              name: targetArea.name,
-              emoji: targetArea.emoji,
-              color: targetArea.color,
-              why: null,
-              sortOrder: targetArea.sort_order,
-            },
-          },
-          groupId: null,
-          group: null,
-        })
-      }
+      const patch: Partial<ActionHomeTask> | undefined =
+        targetGoal && targetArea
+          ? {
+              sortOrder: pendingCrossMove.newOrder,
+              goalId: goalId,
+              goal: {
+                id: goalId,
+                name: targetGoal.name,
+                why: null,
+                areaId: targetArea.id,
+                area: {
+                  id: targetArea.id,
+                  name: targetArea.name,
+                  emoji: targetArea.emoji,
+                  color: targetArea.color,
+                  why: null,
+                  sortOrder: targetArea.sort_order,
+                },
+              },
+              groupId: null,
+              group: null,
+            }
+          : undefined
 
-      doMutate({
-        nodeId: pendingCrossMove.taskId,
-        nodeType: 'task',
-        newOrder: pendingCrossMove.newOrder,
-        newParentId: goalId,
+      mutation.mutate({
+        input: {
+          nodeId: pendingCrossMove.taskId,
+          nodeType: 'task',
+          newOrder: pendingCrossMove.newOrder,
+          newParentId: goalId,
+        },
+        optimistic: patch ? { type: 'task', taskId: pendingCrossMove.taskId, patch } : undefined,
       })
 
       setPendingCrossMove(null)
       // dragContainers cleanup deferred to useEffect (waits for cache propagation)
     },
-    [pendingCrossMove, queryClient, dateStr, weekStartStr, doMutate, areaGroups]
+    [pendingCrossMove, mutation, areaGroups]
   )
 
   const cancelCrossMove = useCallback(() => {

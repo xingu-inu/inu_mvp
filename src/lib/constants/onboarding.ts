@@ -244,6 +244,48 @@ export const SAMPLE_GROUP_WHYS: string[] = [
 ]
 
 // ============================================
+// Goal Chip Options (v3 onboarding - brain dump)
+// ============================================
+export interface GoalChipOption {
+  id: string
+  label: string
+  emoji: string
+  areaType: AreaType
+}
+
+export const GOAL_CHIP_OPTIONS: GoalChipOption[] = [
+  // 건강
+  { id: 'lose-weight', label: '살 빼기', emoji: '🏃', areaType: 'health' },
+  { id: 'exercise-daily', label: '매일 운동', emoji: '💪', areaType: 'health' },
+  { id: 'sleep-early', label: '일찍 자기', emoji: '😴', areaType: 'health' },
+  { id: 'stretching', label: '스트레칭', emoji: '🧘‍♀️', areaType: 'health' },
+  { id: 'diet-manage', label: '식단 관리', emoji: '🥗', areaType: 'health' },
+  // 커리어
+  { id: 'job-change', label: '이직 준비', emoji: '💼', areaType: 'career' },
+  { id: 'side-project', label: '사이드프로젝트', emoji: '🚀', areaType: 'career' },
+  { id: 'certification', label: '자격증', emoji: '📜', areaType: 'career' },
+  // 학습
+  { id: 'english', label: '영어 공부', emoji: '🇺🇸', areaType: 'learning' },
+  { id: 'coding', label: '코딩 공부', emoji: '💻', areaType: 'learning' },
+  { id: 'reading', label: '독서', emoji: '📖', areaType: 'learning' },
+  // 재정
+  { id: 'saving', label: '저축하기', emoji: '💰', areaType: 'finance' },
+  { id: 'investing', label: '재테크', emoji: '📊', areaType: 'finance' },
+  { id: 'side-income', label: '부업', emoji: '💵', areaType: 'finance' },
+  // 관계
+  { id: 'family-time', label: '가족과 시간', emoji: '👨‍👩‍👧', areaType: 'relationships' },
+  { id: 'networking', label: '인간관계', emoji: '🤝', areaType: 'relationships' },
+  // 마음
+  { id: 'meditation', label: '명상', emoji: '🧘', areaType: 'mental' },
+  { id: 'journaling', label: '일기 쓰기', emoji: '✍️', areaType: 'mental' },
+  // 취미
+  { id: 'cooking', label: '요리 배우기', emoji: '🍳', areaType: 'hobbies' },
+  { id: 'travel', label: '여행', emoji: '✈️', areaType: 'hobbies' },
+  // 일상
+  { id: 'morning-routine', label: '아침 루틴', emoji: '☀️', areaType: 'daily' },
+]
+
+// ============================================
 // Step Configuration (legacy v1 - kept for migration)
 // ============================================
 export const ONBOARDING_STEPS = ['values', 'direction', 'first-goal'] as const
@@ -267,7 +309,38 @@ export const ONBOARDING_STEPS_V2 = [
 ] as const
 export type OnboardingStepV2 = (typeof ONBOARDING_STEPS_V2)[number] | 'completion'
 
-/** Steps shown in the progress indicator (excludes welcome and completion) */
+// ============================================
+// Onboarding Step Configuration (v3 - brain dump flow)
+// ============================================
+export const ONBOARDING_STEPS_V3 = [
+  'welcome',
+  'brain-dump',
+  'organize',
+  'prioritize',
+  'actions',
+  'direction',
+] as const
+export type OnboardingStepV3 = (typeof ONBOARDING_STEPS_V3)[number] | 'completion'
+
+/** Steps shown in the progress indicator - v3 (excludes welcome and completion) */
+export const INDICATOR_STEPS_V3 = [
+  'brain-dump',
+  'organize',
+  'prioritize',
+  'actions',
+  'direction',
+] as const
+export type IndicatorStepV3 = (typeof INDICATOR_STEPS_V3)[number]
+
+export const STEP_CONFIG_V3: Record<IndicatorStepV3, { index: number; label: string }> = {
+  'brain-dump': { index: 0, label: '쏟아내기' },
+  organize: { index: 1, label: '정리' },
+  prioritize: { index: 2, label: '우선순위' },
+  actions: { index: 3, label: '실천' },
+  direction: { index: 4, label: '방향' },
+}
+
+/** Steps shown in the progress indicator - v2 legacy (excludes welcome and completion) */
 export const INDICATOR_STEPS = ['values', 'direction', 'areas', 'first-goal'] as const
 export type IndicatorStep = (typeof INDICATOR_STEPS)[number]
 

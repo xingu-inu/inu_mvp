@@ -10,7 +10,7 @@ import type { GoalReflection, CreateGoalReflectionInput, MoodLevel } from '@/typ
 export function useGoalReflection(goalId: string, periodStart: string, periodEnd: string) {
   return useQuery<GoalReflection | null>({
     queryKey: queryKeys.review.goalReflection(goalId, periodStart, periodEnd),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     queryFn: async () => {
       if (!goalId || !periodStart || !periodEnd) return null
       const response = await getGoalReflection({ goalId, periodStart, periodEnd })

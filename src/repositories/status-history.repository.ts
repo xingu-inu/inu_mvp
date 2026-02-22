@@ -192,6 +192,7 @@ export const statusHistoryRepository = {
 
   /**
    * 기간별 상태 변경 사유 집계 (막힘 분석용)
+   * RPC 우선 → 미배포 시 레거시 2-쿼리 폴백
    */
   async getReasonCounts(
     supabase: TypedSupabaseClient,
@@ -199,9 +200,32 @@ export const statusHistoryRepository = {
     startDate: string,
     endDate: string
   ): Promise<ReasonCount[]> {
+    // Try RPC first (single query with SQL GROUP BY)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('get_reason_counts', {
+        p_user_id: userId,
+        p_start_date: startDate,
+        p_end_date: endDate,
+      })
+
+      if (!error && data) {
+        return (data as Array<{ reason: string; entity_count: number; entity_type: string }>)
+          .map((row) => ({
+            reason: row.reason,
+            count: Number(row.entity_count),
+            entity_type: row.entity_type as 'goal' | 'task',
+          }))
+          .sort((a, b) => b.count - a.count)
+      }
+      // RPC not deployed yet — fall through to legacy path
+    } catch {
+      // RPC not available — fall through to legacy path
+    }
+
+    // Legacy fallback: 2 sequential queries + JS aggregation
     const results: ReasonCount[] = []
 
-    // Goal reasons
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: goalData, error: goalError } = await (supabase as any)
       .from('goal_status_history')
@@ -213,7 +237,6 @@ export const statusHistoryRepository = {
 
     if (goalError) handleSupabaseError(goalError)
 
-    // Task reasons
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: taskData, error: taskError } = await (supabase as any)
       .from('task_status_history')
@@ -225,7 +248,6 @@ export const statusHistoryRepository = {
 
     if (taskError) handleSupabaseError(taskError)
 
-    // Aggregate counts
     const countMap = new Map<string, { goal: number; task: number }>()
 
     for (const row of (goalData ?? []) as Array<{ reason: string }>) {
@@ -249,7 +271,6 @@ export const statusHistoryRepository = {
       }
     }
 
-    // Sort by total count descending
     results.sort((a, b) => b.count - a.count)
 
     return results

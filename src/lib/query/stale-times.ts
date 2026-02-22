@@ -18,18 +18,21 @@ export const STALE_TIMES = {
   GROUP: 3 * 60 * 1000, // 그룹 - 주 1-2회 수정
 
   // ═══════════════════════════════════════════════════
-  // 자주 변경 (1분) - 일 3-5회 수정
-  // ═══════════════════════════════════════════════════
-  TASK: 60 * 1000, // 태스크 - 매일 수정 가능
-
-  // ═══════════════════════════════════════════════════
-  // 자주 변경 (1분) - mutation이 invalidateQueries로 즉시 갱신하므로
+  // mutation-driven 데이터 (5분) - mutation이 invalidateQueries로 즉시 갱신하므로
   // staleTime은 "아무 작업 안 할 때" 자동 리페치 간격
   // ═══════════════════════════════════════════════════
-  CHECKIN: 60 * 1000, // 체크인 - mutation 후 invalidate로 갱신
-  HOME_TASKS: 60 * 1000, // 홈 할 일 - mutation 후 invalidate로 갱신
-  STATS: 60 * 1000, // 통계 - 체크인마다 변경
-  DASHBOARD: 60 * 1000, // 대시보드 - 체크인마다 변경
+  TASK: 5 * 60 * 1000, // 태스크 - mutation 후 invalidate로 갱신
+  CHECKIN: 5 * 60 * 1000, // 체크인 - mutation 후 invalidate로 갱신
+  HOME_TASKS: 5 * 60 * 1000, // 홈 할 일 - mutation 후 invalidate로 갱신
+  STATS: 5 * 60 * 1000, // 통계 - mutation 후 invalidate로 갱신
+  DASHBOARD: 5 * 60 * 1000, // 대시보드 - mutation 후 invalidate로 갱신
+
+  // ═══════════════════════════════════════════════════
+  // Review 통계 (10분) - 과거 데이터, 거의 변경 안 됨
+  // ═══════════════════════════════════════════════════
+  REVIEW: 10 * 60 * 1000, // Review 통계 - 체크인 mutation이 invalidate로 갱신
+  REVIEW_HISTORICAL: 30 * 60 * 1000, // 과거 기간 데이터 - 불변 (이전 주/월)
+  REVIEW_ACTIVITY: 30 * 60 * 1000, // 활동 로그/여정 - 구조 변경 시만 갱신
 
   // ═══════════════════════════════════════════════════
   // Google Calendar (5분) - 외부 데이터
@@ -40,8 +43,8 @@ export const STALE_TIMES = {
   // ═══════════════════════════════════════════════════
   // 실시간 필요 (즉시) - Realtime 구독 대상
   // ═══════════════════════════════════════════════════
-  AI_MESSAGES: 0, // AI 메시지 - 즉시 반영 필요
-  NOTIFICATIONS: 30 * 1000, // 알림 - 체크인/태스크 변경 반영
+  AI_MESSAGES: 30 * 1000, // AI 메시지 - mutations use optimistic updates + invalidation, 30s is safe
+  NOTIFICATIONS: 2 * 60 * 1000, // 알림 - 체크인 mutation이 invalidate로 즉시 갱신, refetchOnWindowFocus 보완
 
   // ═══════════════════════════════════════════════════
   // Chat (AI Coach)

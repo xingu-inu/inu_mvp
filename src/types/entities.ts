@@ -52,6 +52,7 @@ export interface Profile extends BaseEntity {
   timezone: string
   onboarding_completed: boolean
   is_admin: boolean
+  ai_model: string | null
 }
 
 export interface Direction extends BaseEntity {
@@ -386,6 +387,7 @@ export interface UpdateReflectionInput {
 export interface UpdateProfileInput {
   name?: string
   timezone?: string
+  ai_model?: string
 }
 
 // ============================================

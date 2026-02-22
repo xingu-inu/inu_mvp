@@ -8,19 +8,50 @@ import {
   now,
   getActiveDirectionId,
   batchReorder,
-  isValidFractionalKey,
 } from './base.repository'
 import { generateKeyBetween } from 'fractional-indexing'
 import type { Goal, GoalStatus, CreateGoalInput, UpdateGoalInput } from '@/types/entities'
 
+/**
+ * Lightweight goal shape for notifications — no groups/tasks join.
+ * area_id intentionally omitted; callers needing it should use getAll().
+ */
+export interface MinimalGoal {
+  id: string
+  name: string
+  status: GoalStatus
+  target_date: string | null
+}
+
 export const goalRepository = {
   /**
-   * 사용자의 모든 Goal 조회 (Area 포함)
+   * Active Goal을 경량 쿼리로 조회 (notifications 전용)
+   * groups/tasks join 없이 id, name, status, target_date만 반환
    */
-  async getAll(supabase: TypedSupabaseClient, userId: string): Promise<Goal[]> {
-    const directionId = await getActiveDirectionId(supabase, userId)
+  async getActiveMinimal(supabase: TypedSupabaseClient, userId: string): Promise<MinimalGoal[]> {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('id, name, status, target_date')
+      .eq('user_id', userId)
+      .eq('status', 'active')
 
-    if (directionId) {
+    if (error) handleSupabaseError(error)
+    return (data ?? []) as MinimalGoal[]
+  },
+
+  /**
+   * 사용자의 모든 Goal 조회 (Area 포함)
+   * @param directionId - 제공 시 내부 getActiveDirectionId 호출 스킵
+   */
+  async getAll(
+    supabase: TypedSupabaseClient,
+    userId: string,
+    directionId?: string | null
+  ): Promise<Goal[]> {
+    const resolvedDirectionId =
+      directionId !== undefined ? directionId : await getActiveDirectionId(supabase, userId)
+
+    if (resolvedDirectionId) {
       // Use inner join to filter by direction
       const { data, error } = await supabase
         .from('goals')
@@ -28,7 +59,7 @@ export const goalRepository = {
           `*, area:areas!inner(id, name, emoji, color, type, direction_id), groups:groups(*), tasks:tasks(*)`
         )
         .eq('user_id', userId)
-        .eq('area.direction_id', directionId)
+        .eq('area.direction_id', resolvedDirectionId)
         .order('created_at', { ascending: false })
         .order('sort_order', { ascending: true, referencedTable: 'groups' })
         .order('sort_order', { ascending: true, referencedTable: 'tasks' })
@@ -50,15 +81,18 @@ export const goalRepository = {
 
   /**
    * 상태별 Goal 조회
+   * @param directionId - 제공 시 내부 getActiveDirectionId 호출 스킵
    */
   async getByStatus(
     supabase: TypedSupabaseClient,
     userId: string,
-    status: GoalStatus
+    status: GoalStatus,
+    directionId?: string | null
   ): Promise<Goal[]> {
-    const directionId = await getActiveDirectionId(supabase, userId)
+    const resolvedDirectionId =
+      directionId !== undefined ? directionId : await getActiveDirectionId(supabase, userId)
 
-    if (directionId) {
+    if (resolvedDirectionId) {
       // Use inner join to filter by direction
       const { data, error } = await supabase
         .from('goals')
@@ -67,7 +101,7 @@ export const goalRepository = {
         )
         .eq('user_id', userId)
         .eq('status', status)
-        .eq('area.direction_id', directionId)
+        .eq('area.direction_id', resolvedDirectionId)
         .order('sort_order', { ascending: true })
         .order('sort_order', { ascending: true, referencedTable: 'groups' })
         .order('sort_order', { ascending: true, referencedTable: 'tasks' })
@@ -130,25 +164,15 @@ export const goalRepository = {
 
   /**
    * Goal 생성
+   * sort_order collision on rapid concurrent creates is intentional
+   * — self-heals via batchReorder RPC on next explicit sort
    */
   async create(
     supabase: TypedSupabaseClient,
     userId: string,
     input: CreateGoalInput
   ): Promise<Goal> {
-    // 해당 Area의 마지막 sort_order 조회
-    const { data: lastGoal } = await supabase
-      .from('goals')
-      .select('sort_order')
-      .eq('area_id', input.area_id)
-      .eq('user_id', userId)
-      .order('sort_order', { ascending: false })
-      .limit(1)
-      .single()
-
-    const lastKey =
-      lastGoal?.sort_order && isValidFractionalKey(lastGoal.sort_order) ? lastGoal.sort_order : null
-    const newSortOrder = generateKeyBetween(lastKey, null)
+    const newSortOrder = generateKeyBetween(null, null)
 
     const { data, error } = await supabase
       .from('goals')

@@ -1,15 +1,17 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { Minus, Plus, Maximize2, ArrowDownUp, ArrowRightLeft } from 'lucide-react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { Minus, Plus, Maximize2, ArrowDownUp, ArrowRightLeft, Search } from 'lucide-react'
 import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
-import { useRoadmapStore } from '@/stores/roadmap.store'
+import { useRoadmapStore, selectStatusFilter } from '@/stores/roadmap.store'
 import { MIN_ZOOM, MAX_ZOOM, ZOOM_STEP, DEFAULT_ZOOM } from '@/lib/constants/visual-tree'
-import { VisualTree } from './visual-tree'
+import { VisualTree, buildVisualTreeData } from './visual-tree'
 import { EmptyRoadmap } from '../empty-roadmap'
 import { VisualTreeSkeleton } from '../visual-tree-skeleton'
+import { TreeSearchBar } from './tree-search-bar'
+import { useTreeSearch } from '../../hooks/use-tree-search'
 
 function clampZoom(value: number): number {
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value * 100) / 100))
@@ -19,6 +21,7 @@ export function VisualTreeWrapper() {
   const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
   const treeLayout = useRoadmapStore((s) => s.treeLayout)
   const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
+  const statusFilter = useRoadmapStore(selectStatusFilter)
   const [zoom, setZoom] = useState(DEFAULT_ZOOM)
   const [isPanning, setIsPanning] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -29,6 +32,45 @@ export function VisualTreeWrapper() {
   const { data: areas = [], isLoading: areasLoading } = useAreas()
 
   const isLoading = goalsLoading || areasLoading
+  const activeAreas = useMemo(() => areas.filter((area) => area.is_active), [areas])
+
+  // Search state
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Build tree for search (same pure function used by VisualTree)
+  const { tree: searchTree } = useMemo(
+    () => buildVisualTreeData(direction ?? null, activeAreas, goals, statusFilter),
+    [direction, activeAreas, goals, statusFilter]
+  )
+
+  const searchResult = useTreeSearch(searchTree, searchQuery)
+
+  // Scroll to node when navigating search results
+  const handleSearchNavigate = useCallback((nodeId: string) => {
+    const el = document.querySelector(`[data-node-id="${nodeId}"]`)
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
+  }, [])
+
+  const handleSearchClose = useCallback(() => {
+    setIsSearchOpen(false)
+    setSearchQuery('')
+  }, [])
+
+  // Ctrl+F keyboard shortcut
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault()
+        setIsSearchOpen(true)
+      }
+      if (e.key === 'Escape' && isSearchOpen) {
+        handleSearchClose()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [isSearchOpen, handleSearchClose])
 
   const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), [])
@@ -56,7 +98,6 @@ export function VisualTreeWrapper() {
 
   // Drag-to-pan
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // Only pan on left mouse button, and only on the background (not interactive elements)
     if (e.button !== 0) return
     const target = e.target as HTMLElement
     if (target.closest('button, a, [role="button"], input, textarea')) return
@@ -96,7 +137,6 @@ export function VisualTreeWrapper() {
     return <VisualTreeSkeleton />
   }
 
-  const activeAreas = areas.filter((area) => area.is_active)
   const hasAnyGoals = goals.length > 0
 
   if (!hasAnyGoals) {
@@ -111,6 +151,20 @@ export function VisualTreeWrapper() {
 
   return (
     <div className="relative min-h-0 flex-1">
+      {/* Search bar — floating above tree, outside zoom */}
+      <TreeSearchBar
+        isOpen={isSearchOpen}
+        onClose={handleSearchClose}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        currentIndex={searchResult.currentIndex}
+        total={searchResult.total}
+        onNext={searchResult.goNext}
+        onPrev={searchResult.goPrev}
+        onNavigate={handleSearchNavigate}
+        orderedMatches={searchResult.orderedMatches}
+      />
+
       {/* Scrollable tree area with drag-to-pan */}
       <div
         className={`bg-dot-grid absolute inset-0 flex overflow-auto bg-[var(--color-bg-canvas)] ${isPanning ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
@@ -126,6 +180,9 @@ export function VisualTreeWrapper() {
             goals={goals}
             areas={activeAreas}
             layoutDirection={treeLayout}
+            zoom={zoom}
+            searchQuery={searchQuery}
+            searchMatchedIds={searchResult.matchedIds}
           />
         </div>
       </div>
@@ -178,6 +235,15 @@ export function VisualTreeWrapper() {
             ) : (
               <ArrowDownUp className="h-3.5 w-3.5" />
             )}
+          </button>
+          <div className="mx-0.5 h-4 w-px bg-[var(--color-border)]" />
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-tertiary)]"
+            aria-label="노드 검색"
+            title="검색 (Ctrl+F)"
+          >
+            <Search className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>

@@ -21,9 +21,9 @@ function getHeatmapColor(completed: number, total: number): string {
   if (total === 0) return 'bg-[var(--color-bg-tertiary)]'
   const rate = completed / total
   if (rate === 0) return 'bg-[var(--color-bg-tertiary)]'
-  if (rate <= 0.5) return 'bg-emerald-200'
-  if (rate < 1) return 'bg-emerald-400'
-  return 'bg-emerald-600'
+  if (rate <= 0.5) return 'bg-emerald-200 dark:bg-emerald-800/60'
+  if (rate < 1) return 'bg-emerald-400 dark:bg-emerald-600/70'
+  return 'bg-emerald-600 dark:bg-emerald-500'
 }
 
 export function JournalHeatmap({
@@ -82,7 +82,8 @@ export function JournalHeatmap({
               className={cn(
                 'h-8 w-8 rounded-md transition-transform hover:scale-110',
                 getHeatmapColor(day.completed, day.total),
-                selectedDate === day.date && 'ring-2 ring-[var(--color-primary-500)] ring-offset-1'
+                selectedDate === day.date &&
+                  'ring-2 ring-[var(--color-primary-500)] ring-offset-1 ring-offset-[var(--color-bg-primary)]'
               )}
               title={`${day.date} (${day.completed}/${day.total})`}
             />
@@ -124,7 +125,8 @@ export function JournalHeatmap({
             className={cn(
               'h-8 w-8 rounded-md transition-transform hover:scale-110',
               getHeatmapColor(day.completed, day.total),
-              selectedDate === day.date && 'ring-2 ring-[var(--color-primary-500)] ring-offset-1'
+              selectedDate === day.date &&
+                'ring-2 ring-[var(--color-primary-500)] ring-offset-1 ring-offset-[var(--color-bg-primary)]'
             )}
             title={`${day.date} (${day.completed}/${day.total})`}
           />

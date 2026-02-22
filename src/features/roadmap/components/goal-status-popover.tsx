@@ -98,8 +98,12 @@ export function GoalStatusPopover({ goal }: GoalStatusPopoverProps) {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn('p-1', transitionType ? 'w-80' : 'w-48')}
+        className={cn(
+          'p-1',
+          transitionType ? 'max-h-[min(420px,70vh)] w-80 overflow-y-auto' : 'w-48'
+        )}
         align="end"
+        collisionPadding={16}
         onClick={(e) => e.stopPropagation()}
       >
         {transitionType ? (

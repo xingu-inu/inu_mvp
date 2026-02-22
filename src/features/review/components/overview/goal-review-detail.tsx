@@ -25,12 +25,12 @@ interface GoalReviewDetailProps {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const STATUS_STYLES: Record<GoalStatus, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  backlog: 'bg-gray-100 text-gray-600',
-  completed: 'bg-blue-100 text-blue-700',
-  maintenance: 'bg-amber-100 text-amber-700',
-  paused: 'bg-orange-100 text-orange-700',
-  archived: 'bg-gray-100 text-gray-500',
+  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  backlog: 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400',
+  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  maintenance: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  paused: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  archived: 'bg-gray-100 text-gray-500 dark:bg-gray-800/50 dark:text-gray-500',
 }
 
 const STATUS_LABELS: Record<GoalStatus, string> = {
@@ -43,9 +43,9 @@ const STATUS_LABELS: Record<GoalStatus, string> = {
 }
 
 const CHECKIN_DOT_STYLES: Record<CheckInStatus, string> = {
-  done: 'bg-emerald-500',
-  skip: 'bg-gray-300',
-  miss: 'bg-red-300',
+  done: 'bg-emerald-500 dark:bg-emerald-400',
+  skip: 'bg-gray-300 dark:bg-gray-600',
+  miss: 'bg-red-300 dark:bg-red-500/70',
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -298,7 +298,9 @@ function GroupSection({
       <div className="flex items-center gap-1.5 py-1">
         <FolderOpen className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
         <span className="text-sm font-medium text-[var(--color-text-secondary)]">{groupName}</span>
-        {isCompleted && <span className="text-xs text-emerald-600">&#10003;</span>}
+        {isCompleted && (
+          <span className="text-xs text-emerald-600 dark:text-emerald-400">&#10003;</span>
+        )}
       </div>
       <div className="border-l-2 border-[var(--color-border)] pl-3">
         {tasks.length > 0 ? (

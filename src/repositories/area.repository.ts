@@ -17,17 +17,28 @@ export const areaRepository = {
   /**
    * 사용자의 모든 Area 조회
    */
-  async getAll(supabase: TypedSupabaseClient, userId: string): Promise<Area[]> {
-    const directionId = await getActiveDirectionId(supabase, userId)
+  /**
+   * 사용자의 모든 Area 조회
+   * @param directionId - 제공 시 내부 getActiveDirectionId 호출 스킵
+   */
+  async getAll(
+    supabase: TypedSupabaseClient,
+    userId: string,
+    directionId?: string | null
+  ): Promise<Area[]> {
+    const resolvedDirectionId =
+      directionId !== undefined ? directionId : await getActiveDirectionId(supabase, userId)
 
     const query = supabase
       .from('areas')
-      .select('*')
+      .select(
+        'id, user_id, name, emoji, color, why, sort_order, is_active, direction_id, type, created_at, updated_at'
+      )
       .eq('user_id', userId)
       .order('sort_order', { ascending: true })
 
-    if (directionId) {
-      query.eq('direction_id', directionId)
+    if (resolvedDirectionId) {
+      query.eq('direction_id', resolvedDirectionId)
     }
 
     const { data, error } = await query
@@ -38,19 +49,27 @@ export const areaRepository = {
 
   /**
    * 활성화된 Area만 조회 (현재 로드맵 버전 기준)
+   * @param directionId - 제공 시 내부 getActiveDirectionId 호출 스킵
    */
-  async getActive(supabase: TypedSupabaseClient, userId: string): Promise<Area[]> {
-    const directionId = await getActiveDirectionId(supabase, userId)
+  async getActive(
+    supabase: TypedSupabaseClient,
+    userId: string,
+    directionId?: string | null
+  ): Promise<Area[]> {
+    const resolvedDirectionId =
+      directionId !== undefined ? directionId : await getActiveDirectionId(supabase, userId)
 
     const query = supabase
       .from('areas')
-      .select('*')
+      .select(
+        'id, user_id, name, emoji, color, why, sort_order, is_active, direction_id, type, created_at, updated_at'
+      )
       .eq('user_id', userId)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
 
-    if (directionId) {
-      query.eq('direction_id', directionId)
+    if (resolvedDirectionId) {
+      query.eq('direction_id', resolvedDirectionId)
     }
 
     const { data, error } = await query

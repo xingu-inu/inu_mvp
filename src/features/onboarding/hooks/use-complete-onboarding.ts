@@ -3,8 +3,16 @@
 import { useState, useCallback } from 'react'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useOnboardingStore } from '@/stores/onboarding.store'
-import { completeOnboarding } from '@/actions/onboarding.actions'
-import type { DirectionInput, AreaInput, GoalInput, TaskInput } from '@/actions/onboarding.actions'
+import { completeOnboarding, completeOnboardingV2 } from '@/actions/onboarding.actions'
+import type {
+  DirectionInput,
+  AreaInput,
+  GoalInput,
+  TaskInput,
+  GoalInputV2,
+  TaskInputV2,
+} from '@/actions/onboarding.actions'
+import type { AreaType } from '@/types/entities'
 
 export function useCompleteOnboarding() {
   const [isPending, setIsPending] = useState(false)
@@ -19,6 +27,11 @@ export function useCompleteOnboarding() {
     firstGoal,
     firstTask,
     setNavigating,
+    isGuidedMode,
+    organizedGoals,
+    activeGoalIds,
+    suggestedTasks,
+    derivedAreas,
   } = useOnboardingStore()
 
   const complete = useCallback(async () => {
@@ -28,7 +41,7 @@ export function useCompleteOnboarding() {
     setError(null)
 
     try {
-      // Build direction input
+      // Build direction input (shared between v2 and v3)
       let directionStatement: string
       if (directionMode === 'edit' && editedDirection) {
         directionStatement = editedDirection
@@ -42,40 +55,70 @@ export function useCompleteOnboarding() {
         statement: directionStatement,
       }
 
-      // Build areas input from multi-select (Step 3)
-      const areas: AreaInput[] = selectedAreas.map((area, index) => ({
-        name: area.name,
-        type: area.type,
-        emoji: area.emoji,
-        color: area.color,
-        sortOrder: `a${index}`,
-      }))
+      if (isGuidedMode) {
+        // ---- V2 guided mode ----
+        const areas: AreaInput[] = selectedAreas.map((area, index) => ({
+          name: area.name,
+          type: area.type,
+          emoji: area.emoji,
+          color: area.color,
+          sortOrder: `a${index}`,
+        }))
 
-      // Build goal input (optional)
-      let goal: GoalInput | undefined
-      if (firstGoal?.name && selectedGoalArea) {
-        goal = {
-          name: firstGoal.name,
-          why: firstGoal.why,
+        let goal: GoalInput | undefined
+        if (firstGoal?.name && selectedGoalArea) {
+          goal = {
+            name: firstGoal.name,
+            why: firstGoal.why,
+          }
         }
+
+        let task: TaskInput | undefined
+        if (firstTask?.name) {
+          task = { name: firstTask.name }
+        }
+
+        await completeOnboarding(direction, areas, goal, task)
+
+        trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+          areas_count: areas.length,
+          has_goal: !!goal,
+          has_task: !!task,
+          direction_mode: directionMode,
+        })
+      } else {
+        // ---- V3 brain-dump mode ----
+        const areas: AreaInput[] = derivedAreas.map((area, index) => ({
+          name: area.name,
+          type: area.type,
+          emoji: area.emoji,
+          color: area.color,
+          sortOrder: `a${index}`,
+        }))
+
+        const goals: GoalInputV2[] = organizedGoals.map((g) => ({
+          name: g.name,
+          areaType: (g.userOverriddenArea || g.areaType) as AreaType,
+          status: activeGoalIds.includes(g.id) ? ('active' as const) : ('backlog' as const),
+        }))
+
+        const tasks: TaskInputV2[] = suggestedTasks
+          .filter((t) => t.accepted)
+          .map((t) => {
+            const goal = organizedGoals.find((g) => g.id === t.goalId)
+            return { name: t.name, goalName: goal?.name || '' }
+          })
+
+        await completeOnboardingV2(direction, areas, goals, tasks)
+
+        trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
+          areas_count: areas.length,
+          goals_count: goals.length,
+          tasks_count: tasks.length,
+          direction_mode: directionMode,
+          is_v3: true,
+        })
       }
-
-      // Build task input (optional)
-      let task: TaskInput | undefined
-      if (firstTask?.name) {
-        task = { name: firstTask.name }
-      }
-
-      // Call server action
-      await completeOnboarding(direction, areas, goal, task)
-
-      // Track onboarding completion
-      trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
-        areas_count: areas.length,
-        has_goal: !!goal,
-        has_task: !!task,
-        direction_mode: directionMode,
-      })
 
       // Show transition loading screen before navigation
       setNavigating(true)
@@ -100,6 +143,11 @@ export function useCompleteOnboarding() {
     firstGoal,
     firstTask,
     setNavigating,
+    isGuidedMode,
+    organizedGoals,
+    activeGoalIds,
+    suggestedTasks,
+    derivedAreas,
   ])
 
   return { complete, isPending, error }

@@ -37,6 +37,6 @@ export function useMoodHistory() {
   return useQuery({
     queryKey: queryKeys.review.moods(startDate, endDate),
     queryFn: () => fetchMoodHistory(startDate, endDate),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
   })
 }

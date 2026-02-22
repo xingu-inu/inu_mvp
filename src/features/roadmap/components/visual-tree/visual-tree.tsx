@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useCallback, useRef, useState, memo } from 'react'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
 import {
   useRoadmapStore,
   selectSelectedNodeId,
@@ -11,17 +12,28 @@ import {
 } from '@/stores/roadmap.store'
 import { TreeNode } from './tree-node'
 import { TreeQuickAdd } from './tree-quick-add'
+import { TreeNodeCard } from './tree-node-card'
 import { CrossLinkOverlay, type CrossLink } from '../cross-link-overlay'
 import type { VisualTreeNode } from './tree-node-card'
 import type { Direction, Area, Goal } from '@/types/entities'
 import type { AreaType } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
+import { useFocusBranch } from '../../hooks/use-focus-branch'
+import { useVisualTreeDnd } from '../../hooks/use-visual-tree-dnd'
+import { DROP_ANIMATION } from '@/lib/dnd/dnd-config'
+import { useDeleteArea } from '@/queries/use-areas'
+import { useDeleteGoal } from '@/queries/use-goals'
+import { useDeleteGroup } from '@/queries/use-groups'
+import { useDeleteTask } from '@/queries/use-tasks'
 
 interface VisualTreeProps {
   direction: Direction | null
   goals: Goal[]
   areas: Area[]
   layoutDirection: TreeLayoutDirection
+  zoom: number
+  searchQuery: string
+  searchMatchedIds: Set<string>
 }
 
 export const VisualTree = memo(function VisualTree({
@@ -29,6 +41,9 @@ export const VisualTree = memo(function VisualTree({
   goals,
   areas,
   layoutDirection,
+  zoom,
+  searchQuery,
+  searchMatchedIds,
 }: VisualTreeProps) {
   const selectedNodeId = useRoadmapStore(selectSelectedNodeId)
   const statusFilter = useRoadmapStore(selectStatusFilter)
@@ -43,6 +58,28 @@ export const VisualTree = memo(function VisualTree({
     () => buildVisualTreeData(direction, areas, goals, statusFilter),
     [direction, areas, goals, statusFilter]
   )
+
+  // Focus mode: highlight selected node's branch
+  const focusedIds = useFocusBranch(treeData, selectedNodeId)
+
+  // DnD
+  const {
+    sensors,
+    collisionDetection,
+    dndState,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDragCancel,
+  } = useVisualTreeDnd({ tree: treeData, zoom })
+
+  const isDragging = dndState.activeId !== null
+
+  // Delete mutations
+  const deleteArea = useDeleteArea()
+  const deleteGoal = useDeleteGoal()
+  const deleteGroup = useDeleteGroup()
+  const deleteTask = useDeleteTask()
 
   // Map group/task IDs to their parent goal IDs for inline editing
   const parentGoalMap = useMemo(() => {
@@ -151,31 +188,86 @@ export const VisualTree = memo(function VisualTree({
     [focusGoal, select, parentGoalMap]
   )
 
+  // Unified delete handler for context menu
+  const handleDeleteNode = useCallback(
+    (type: SelectedNodeType, id: string) => {
+      switch (type) {
+        case 'area':
+          deleteArea.mutate(id)
+          break
+        case 'goal':
+          deleteGoal.mutate(id)
+          break
+        case 'group': {
+          const goalId = parentGoalMap.get(id)
+          if (goalId) deleteGroup.mutate({ id, goalId })
+          break
+        }
+        case 'task':
+          deleteTask.mutate(id)
+          break
+      }
+    },
+    [deleteArea, deleteGoal, deleteGroup, deleteTask, parentGoalMap]
+  )
+
   if (!treeData) return null
 
   return (
-    <div className="relative p-10" ref={containerRef}>
-      <div className="w-fit min-w-max">
-        <TreeNode
-          node={treeData}
-          selectedNodeId={selectedNodeId}
-          onNodeSelect={handleNodeSelect}
-          isFormMode={false}
-          layoutDirection={layoutDirection}
-          addingToId={addingToId}
-          onStartAdd={handleStartAdd}
-          onCancelAdd={handleCancelAdd}
-          getQuickAddContent={getQuickAddContent}
-        />
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="relative p-10" ref={containerRef}>
+        <div className="w-fit min-w-max">
+          <TreeNode
+            node={treeData}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+            isFormMode={false}
+            layoutDirection={layoutDirection}
+            addingToId={addingToId}
+            onStartAdd={handleStartAdd}
+            onCancelAdd={handleCancelAdd}
+            getQuickAddContent={getQuickAddContent}
+            focusedIds={focusedIds}
+            searchMatchedIds={searchMatchedIds}
+            searchQuery={searchQuery}
+            isDndEnabled
+            isDragging={isDragging}
+            dndOverId={dndState.overId}
+            onDeleteNode={handleDeleteNode}
+            parentGoalMap={parentGoalMap}
+          />
+        </div>
+        {crossLinks.length > 0 && !isDragging && (
+          <CrossLinkOverlay
+            containerRef={containerRef}
+            crossLinks={crossLinks}
+            layoutDirection={layoutDirection}
+          />
+        )}
       </div>
-      {crossLinks.length > 0 && (
-        <CrossLinkOverlay
-          containerRef={containerRef}
-          crossLinks={crossLinks}
-          layoutDirection={layoutDirection}
-        />
-      )}
-    </div>
+
+      <DragOverlay dropAnimation={DROP_ANIMATION}>
+        {dndState.activeNode && (
+          <div className="opacity-80">
+            <TreeNodeCard
+              node={dndState.activeNode}
+              isSelected={false}
+              isExpanded={false}
+              hasChildren={false}
+              onSelect={() => {}}
+              onToggle={() => {}}
+            />
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   )
 })
 
@@ -183,7 +275,7 @@ export const VisualTree = memo(function VisualTree({
  * Build tree data without status-group layer:
  * Direction → Area → Goal → Group → Task
  */
-function buildVisualTreeData(
+export function buildVisualTreeData(
   direction: Direction | null,
   areas: Area[],
   goals: Goal[],
@@ -243,6 +335,7 @@ function buildVisualTreeData(
                 isCompletedTask: task.status === 'completed',
                 repeatType: task.repeat_type,
                 hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
+                sortOrder: task.sort_order,
               },
             }
           })
@@ -255,6 +348,7 @@ function buildVisualTreeData(
             meta: {
               count: groupTasks.length || undefined,
               isCompleted: group.is_completed,
+              sortOrder: group.sort_order,
             },
             children: taskNodes.length > 0 ? taskNodes : undefined,
           }
@@ -287,6 +381,7 @@ function buildVisualTreeData(
               isCompletedTask: task.status === 'completed',
               repeatType: task.repeat_type,
               hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
+              sortOrder: task.sort_order,
             },
           }
         })
@@ -305,6 +400,7 @@ function buildVisualTreeData(
             count: tasks.length || undefined,
             totalStreak: totalStreak || undefined,
             targetDate: goal.target_date ?? undefined,
+            sortOrder: goal.sort_order,
           },
           children: allChildren.length > 0 ? allChildren : undefined,
         }
@@ -317,7 +413,7 @@ function buildVisualTreeData(
         emoji: area.emoji,
         color: area.color,
         why: area.why,
-        meta: { count: areaGoals.length },
+        meta: { count: areaGoals.length, sortOrder: area.sort_order },
         children: goalNodes.length > 0 ? goalNodes : undefined,
       }
     })

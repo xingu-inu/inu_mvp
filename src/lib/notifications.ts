@@ -1,7 +1,14 @@
 import { differenceInDays, parseISO } from 'date-fns'
 import { calculateTaskStats } from '@/lib/utils/task-utils'
 import { isStreakMilestone } from '@/lib/constants/animations'
-import type { HomeTask, Goal, AppNotification } from '@/types/entities'
+import type { HomeTask, AppNotification } from '@/types/entities'
+
+/** Minimal goal shape needed for notification computation */
+interface NotificationGoal {
+  id: string
+  name: string
+  target_date: string | null
+}
 
 export interface WeeklyStats {
   totalDone: number
@@ -21,7 +28,7 @@ export interface GoalWeeklyStats {
  */
 export function computeNotifications(
   todayTasks: HomeTask[],
-  activeGoals: Goal[],
+  activeGoals: NotificationGoal[],
   today: Date = new Date(),
   weeklyData?: {
     lastWeekStats?: WeeklyStats
@@ -85,7 +92,7 @@ function computeStreakAtRisk(tasks: HomeTask[], dateStr: string): AppNotificatio
     }))
 }
 
-function computeGoalDeadlines(goals: Goal[], today: Date): AppNotification[] {
+function computeGoalDeadlines(goals: NotificationGoal[], today: Date): AppNotification[] {
   return goals
     .filter((g) => {
       if (!g.target_date) return false

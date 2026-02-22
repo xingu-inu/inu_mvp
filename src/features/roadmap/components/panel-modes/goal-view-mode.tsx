@@ -16,6 +16,7 @@ import {
   Calendar1,
   Repeat,
   Stethoscope,
+  Pencil,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -38,6 +39,7 @@ import {
   InlineGroupCreate,
   InlineGroupEdit,
   InlineDeleteConfirm,
+  InlineGoalEdit,
 } from '../inline-forms'
 import { GoalTaskItem } from '../shared/goal-task-item'
 import { StatusTransitionDialog } from '../status-transition-dialog'
@@ -162,6 +164,7 @@ export function GoalViewMode({
   }>({ open: false, type: 'pause', targetStatus: 'paused' })
   const [completionDialogOpen, setCompletionDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [goalEditOpen, setGoalEditOpen] = useState(false)
 
   const handleClose = () => {
     useRoadmapStore.getState().clearSelection()
@@ -329,6 +332,16 @@ export function GoalViewMode({
           </div>
         </div>
         <div className="flex gap-1">
+          {goal.area && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setGoalEditOpen(true)}
+              aria-label="편집"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
           <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="삭제">
             <Trash2 className="h-4 w-4 text-[var(--color-miss)]" />
           </Button>
@@ -885,6 +898,15 @@ export function GoalViewMode({
               삭제하기
             </Button>
           </ModalFooter>
+        </ResponsiveModal>
+      )}
+
+      {/* Goal Edit Modal (dialog on desktop, drawer on mobile) */}
+      {goal && goal.area && (
+        <ResponsiveModal open={goalEditOpen} onOpenChange={setGoalEditOpen} title="목표 편집">
+          <ModalBody className="px-4 pb-6">
+            <InlineGoalEdit goal={goal} area={goal.area} onDone={() => setGoalEditOpen(false)} />
+          </ModalBody>
         </ResponsiveModal>
       )}
     </div>

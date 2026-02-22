@@ -104,7 +104,7 @@ export const POST = authRoute(
     }
 
     // Sanitize user messages for injection detection
-    const uiMessages = parsed.data.messages as UIMessage[]
+    const uiMessages = parsed.data.messages as unknown as UIMessage[]
     const lastMessage = uiMessages[uiMessages.length - 1]
     if (lastMessage) {
       const lastText = lastMessage.parts

@@ -25,9 +25,11 @@ function addDismissedId(id: string) {
 }
 
 const TYPE_STYLES: Record<string, string> = {
-  info: 'bg-blue-50 text-blue-800 border-blue-200',
-  update: 'bg-green-50 text-green-800 border-green-200',
-  event: 'bg-purple-50 text-purple-800 border-purple-200',
+  info: 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
+  update:
+    'bg-green-50 text-green-800 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800',
+  event:
+    'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800',
 }
 
 export function AnnouncementBanner() {
@@ -65,7 +67,7 @@ export function AnnouncementBanner() {
             <button
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-black/5"
+              className="flex h-11 w-11 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
             >
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
@@ -73,7 +75,7 @@ export function AnnouncementBanner() {
           <button
             type="button"
             onClick={handleDismiss}
-            className="flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-black/5"
+            className="flex h-11 w-11 items-center justify-center rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>

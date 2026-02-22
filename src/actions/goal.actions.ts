@@ -2,9 +2,11 @@
 
 import { authAction, validate } from '@/lib/security'
 import { goalRepository, statusHistoryRepository } from '@/repositories'
+import { getActiveDirectionId } from '@/repositories/base.repository'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createGoalSchema, updateGoalSchema } from '@/lib/validations'
+import type { MinimalGoal } from '@/repositories/goal.repository'
 
 import type {
   Goal,
@@ -20,12 +22,26 @@ const NOT_FOUND_ERROR_MAP = {
 } as const
 
 /**
+ * Active Goal 경량 조회 (notifications 전용)
+ * groups/tasks join 없이 id, name, status, target_date만 반환
+ */
+export const getActiveGoalsMinimal = authAction(
+  'getActiveGoalsMinimal',
+  async ({ supabase, user }): Promise<ApiListResult<MinimalGoal>> => {
+    const goals = await goalRepository.getActiveMinimal(supabase, user.id)
+    return listResponse(goals)
+  }
+)
+
+/**
  * 사용자의 모든 Goal 조회
+ * directionId를 1회 resolve 후 repository에 전달하여 중복 쿼리 방지
  */
 export const getGoals = authAction(
   'getGoals',
   async ({ supabase, user }): Promise<ApiListResult<Goal>> => {
-    const goals = await goalRepository.getAll(supabase, user.id)
+    const directionId = await getActiveDirectionId(supabase, user.id)
+    const goals = await goalRepository.getAll(supabase, user.id, directionId)
     return listResponse(goals)
   }
 )
@@ -36,7 +52,8 @@ export const getGoals = authAction(
 export const getGoalsByStatus = authAction(
   'getGoalsByStatus',
   async ({ supabase, user }, status: GoalStatus): Promise<ApiListResult<Goal>> => {
-    const goals = await goalRepository.getByStatus(supabase, user.id, status)
+    const directionId = await getActiveDirectionId(supabase, user.id)
+    const goals = await goalRepository.getByStatus(supabase, user.id, status, directionId)
     return listResponse(goals)
   }
 )

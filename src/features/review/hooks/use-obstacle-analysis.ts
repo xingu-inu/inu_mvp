@@ -70,7 +70,7 @@ export function useObstacleAnalysis(
       if (!result.success || !result.data) return null
       return result.data
     },
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     enabled: !!startDate && !!endDate,
   })
 

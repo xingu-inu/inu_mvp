@@ -1,7 +1,10 @@
 'use client'
 
-import { useState, useRef, useEffect, memo } from 'react'
-import { Send, Plus, PanelLeftClose, PanelLeftOpen, Trash2, X } from 'lucide-react'
+import { useState, useRef, useEffect, useMemo, memo } from 'react'
+import { useChat } from '@ai-sdk/react'
+import { DefaultChatTransport } from 'ai'
+import type { UIMessage } from 'ai'
+import { Send, Square, Plus, PanelLeftClose, PanelLeftOpen, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { formatDistanceToNow } from 'date-fns'
@@ -36,9 +39,26 @@ const TASK_QUICK_ACTIONS = [
   { label: '대안 제안', prompt: '이 할 일의 대안이나 보완 활동을 제안해줘' },
 ]
 
+/** Convert DB ChatMessage[] to UIMessage[] */
+function toUIMessages(dbMessages: ChatMessage[]): UIMessage[] {
+  return dbMessages.map((m) => ({
+    id: m.id,
+    role: m.role as 'user' | 'assistant',
+    parts: [{ type: 'text' as const, text: m.content }],
+    createdAt: new Date(m.created_at),
+  }))
+}
+
+/** Extract text from UIMessage parts */
+function getMessageText(message: UIMessage): string {
+  return (message.parts ?? [])
+    .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+    .map((p) => p.text)
+    .join('')
+    .replace(/[\u2588-\u258F]+$/, '')
+}
+
 export function AiChatPanel() {
-  const isLoading = useAiChatStore((s) => s.isLoading)
-  const setLoading = useAiChatStore((s) => s.setLoading)
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -48,42 +68,95 @@ export function AiChatPanel() {
   const clearContext = useAiChatStore((s) => s.clearContext)
 
   const [input, setInput] = useState('')
+  const [isComposing, setIsComposing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const isSendingRef = useRef(false)
 
-  const { data: messages } = useChatMessages(activeConversationId)
+  // DB queries
+  const { data: dbMessages } = useChatMessages(activeConversationId)
   const createConversation = useCreateConversation()
   const saveChatMessage = useSaveChatMessage()
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  // Context body for API requests (recreated only when context changes)
+  const contextBody = useMemo(() => {
+    if (!context) return {}
+    return {
+      context: {
+        type: context.type,
+        goalId: context.goalId,
+        goalName: context.goalName ?? context.entityName,
+        taskId: context.type === 'task' ? context.entityId : undefined,
+        taskName: context.type === 'task' ? context.entityName : undefined,
+        areaName: context.areaName,
+      },
+    }
+  }, [context])
 
+  // Transport recreates when context changes (rare — only on goal/task chat entry)
+  const transport = useMemo(
+    () => new DefaultChatTransport({ api: '/api/ai/chat', body: contextBody }),
+    [contextBody]
+  )
+
+  // Streaming chat
+  const { messages, sendMessage, status, stop, setMessages } = useChat({
+    transport,
+    onFinish: async ({ message }) => {
+      if (!activeConversationId || message.role !== 'assistant') return
+      const text = getMessageText(message)
+      if (text) {
+        await saveChatMessage.mutateAsync({
+          conversationId: activeConversationId,
+          role: 'assistant',
+          content: text,
+        })
+      }
+    },
+    onError: () => {
+      toast.error('메시지 전송에 실패했어요. 다시 시도해주세요.')
+    },
+  })
+
+  const isStreaming = status === 'streaming' || status === 'submitted'
+
+  // Sync DB → useChat only when conversation changes (not during streaming)
+  const prevConvRef = useRef<string | null | undefined>(undefined)
   useEffect(() => {
-    scrollToBottom()
+    if (prevConvRef.current !== activeConversationId && !isStreaming) {
+      if (activeConversationId === null || dbMessages !== undefined) {
+        prevConvRef.current = activeConversationId
+        setMessages(dbMessages ? toUIMessages(dbMessages) : [])
+      }
+    }
+  }, [activeConversationId, dbMessages, setMessages, isStreaming])
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Focus input on conversation change
   useEffect(() => {
     inputRef.current?.focus()
   }, [activeConversationId])
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return
-
+  const handleSend = async (text: string) => {
+    if (!text.trim() || isStreaming || isSendingRef.current) return
+    isSendingRef.current = true
     const trimmed = text.trim()
     setInput('')
-    setLoading(true)
 
     try {
       let convId = activeConversationId
-      let isNewConversation = false
       if (!convId) {
         const conv = await createConversation.mutateAsync({
           relatedGoalId: context?.goalId,
           relatedTaskId: context?.type === 'task' ? context.entityId : undefined,
         })
         convId = conv.id
-        isNewConversation = true
+        prevConvRef.current = conv.id
+        setActiveConversation(conv.id)
       }
 
       await saveChatMessage.mutateAsync({
@@ -91,61 +164,27 @@ export function AiChatPanel() {
         role: 'user',
         content: trimmed,
       })
-
-      // 새 대화인 경우: optimistic 데이터가 캐시에 채워진 후 활성화해야 깜빡임 없음
-      if (isNewConversation) {
-        setActiveConversation(convId)
-      }
-
-      const allMessages = [
-        ...(messages ?? []).map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user' as const, content: trimmed },
-      ]
-
-      // 첫 메시지일 때만 context 전달 (이후는 히스토리로 충분)
-      const isFirstMessage = allMessages.length === 1
-      const contextPayload =
-        isFirstMessage && context
-          ? {
-              context: {
-                type: context.type,
-                goalId: context.goalId,
-                goalName: context.goalName ?? context.entityName,
-                taskId: context.type === 'task' ? context.entityId : undefined,
-                taskName: context.type === 'task' ? context.entityName : undefined,
-                areaName: context.areaName,
-              },
-            }
-          : {}
-
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: allMessages, ...contextPayload }),
-      })
-
-      const data = await response.json()
-      const assistantContent = data.success
-        ? data.data.content
-        : '응답을 생성하지 못했어요. 잠시 후 다시 시도해주세요.'
-
-      await saveChatMessage.mutateAsync({
-        conversationId: convId,
-        role: 'assistant',
-        content: assistantContent,
-      })
+      sendMessage({ text: trimmed })
     } catch {
-      toast.error('메시지 전송에 실패했어요. 다시 시도해주세요.')
+      toast.error('대화를 시작하지 못했어요.')
+      setInput(trimmed)
     } finally {
-      setLoading(false)
+      isSendingRef.current = false
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
       e.preventDefault()
-      sendMessage(input)
+      handleSend(input)
     }
+  }
+
+  const handleNewChat = () => {
+    startNewConversation()
+    setMessages([])
+    prevConvRef.current = undefined
+    inputRef.current?.focus()
   }
 
   return (
@@ -157,37 +196,29 @@ export function AiChatPanel() {
       className={cn(
         'fixed z-50 flex overflow-hidden rounded-2xl bg-[var(--color-bg-primary)] shadow-2xl ring-1 ring-[var(--color-border)] transition-[width] duration-300',
         'right-6 bottom-24 h-[500px]',
-        // 데스크톱: 사이드바 열리면 넓어짐
         isSidebarOpen ? 'w-[640px]' : 'w-96',
-        // 모바일: 항상 전체 너비
         'max-lg:right-4 max-lg:bottom-36 max-lg:left-4 max-lg:w-auto'
       )}
     >
-      {/* 사이드바 (대화 목록) — 데스크톱만 */}
+      {/* Sidebar (conversations) — desktop only */}
       <div
         className={cn(
           'hidden flex-col border-r border-[var(--color-border)] transition-[width,opacity] duration-300 lg:flex',
           isSidebarOpen ? 'w-[220px] opacity-100' : 'w-0 overflow-hidden opacity-0'
         )}
       >
-        {/* 사이드바 헤더 */}
         <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-3 py-2">
           <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
             대화 기록
           </span>
           <button
-            onClick={() => {
-              startNewConversation()
-              inputRef.current?.focus()
-            }}
+            onClick={handleNewChat}
             className="rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
             title="새 대화"
           >
             <Plus className="h-3.5 w-3.5" />
           </button>
         </div>
-
-        {/* 대화 목록 */}
         <div className="flex-1 overflow-y-auto">
           <ConversationList
             activeId={activeConversationId}
@@ -199,12 +230,11 @@ export function AiChatPanel() {
         </div>
       </div>
 
-      {/* 메인 채팅 영역 */}
+      {/* Main chat area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Header */}
         <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-4 py-2">
           <div className="flex items-center gap-2">
-            {/* 사이드바 토글 — 데스크톱만 */}
             <button
               onClick={toggleSidebar}
               className="hidden rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)] lg:block"
@@ -221,7 +251,9 @@ export function AiChatPanel() {
             {context && (
               <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
                 <span>{context.type === 'goal' ? '🎯' : '✅'}</span>
-                <span className="max-w-[120px] truncate">{context.entityName}</span>
+                <span className="max-w-[120px] truncate" title={context.entityName}>
+                  {context.entityName}
+                </span>
                 <button
                   onClick={clearContext}
                   className="rounded-full p-0.5 transition-colors hover:bg-[var(--color-primary-100)]"
@@ -232,13 +264,9 @@ export function AiChatPanel() {
             )}
           </div>
           <div className="flex items-center gap-1">
-            {/* 모바일: 대화 목록 보기 (사이드바 대신) */}
             <MobileHistoryButton />
             <button
-              onClick={() => {
-                startNewConversation()
-                inputRef.current?.focus()
-              }}
+              onClick={handleNewChat}
               className="rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
               title="새 대화"
             >
@@ -249,7 +277,7 @@ export function AiChatPanel() {
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3">
-          {!messages || messages.length === 0 ? (
+          {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-4">
               <Mascot mood="happy" size="md" />
               <p className="text-center text-sm text-[var(--color-text-secondary)]">
@@ -264,7 +292,7 @@ export function AiChatPanel() {
                 ).map(({ label, prompt }) => (
                   <button
                     key={label}
-                    onClick={() => sendMessage(prompt)}
+                    onClick={() => handleSend(prompt)}
                     className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
                   >
                     {label}
@@ -274,10 +302,16 @@ export function AiChatPanel() {
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              {messages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
+              {messages.map((msg, i) => (
+                <StreamingBubble
+                  key={msg.id}
+                  message={msg}
+                  isLastStreaming={
+                    isStreaming && msg.role === 'assistant' && i === messages.length - 1
+                  }
+                />
               ))}
-              {isLoading && (
+              {isStreaming && messages[messages.length - 1]?.role === 'user' && (
                 <div className="flex items-center gap-1.5 px-1">
                   <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--color-text-tertiary)] [animation-delay:0ms]" />
                   <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--color-text-tertiary)] [animation-delay:150ms]" />
@@ -297,17 +331,29 @@ export function AiChatPanel() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
+              onCompositionStart={() => setIsComposing(true)}
+              onCompositionEnd={() => setIsComposing(false)}
               placeholder="메시지를 입력하세요..."
-              disabled={isLoading}
+              disabled={isStreaming}
               className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
             />
-            <button
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isLoading}
-              className="rounded-lg bg-[var(--color-primary-500)] p-2 text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-40"
-            >
-              <Send className="h-4 w-4" />
-            </button>
+            {isStreaming ? (
+              <button
+                onClick={() => stop()}
+                className="rounded-lg bg-[var(--color-miss)] p-2 text-white transition-colors hover:bg-[var(--color-miss)]/80"
+                title="중지"
+              >
+                <Square className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => handleSend(input)}
+                disabled={!input.trim()}
+                className="rounded-lg bg-[var(--color-primary-500)] p-2 text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-40"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -315,10 +361,7 @@ export function AiChatPanel() {
   )
 }
 
-/**
- * 모바일용 대화 기록 버튼 + 드롭다운
- * lg 이상에서는 사이드바가 있으므로 숨김
- */
+/** Mobile conversation history dropdown (lg+ uses sidebar instead) */
 function MobileHistoryButton() {
   const [isOpen, setIsOpen] = useState(false)
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
@@ -336,9 +379,7 @@ function MobileHistoryButton() {
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-          {/* Dropdown */}
           <div className="absolute top-full right-0 z-20 mt-1 w-64 rounded-xl bg-[var(--color-bg-primary)] shadow-xl ring-1 ring-[var(--color-border)]">
             <div className="max-h-64 overflow-y-auto py-1">
               <ConversationList
@@ -429,8 +470,15 @@ function ConversationList({
   )
 }
 
-const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMessage }) {
+const StreamingBubble = memo(function StreamingBubble({
+  message,
+  isLastStreaming,
+}: {
+  message: UIMessage
+  isLastStreaming?: boolean
+}) {
   const isUser = message.role === 'user'
+  const text = getMessageText(message)
 
   return (
     <div className={cn('flex', isUser ? 'justify-end' : 'justify-start')}>
@@ -442,7 +490,12 @@ const MessageBubble = memo(function MessageBubble({ message }: { message: ChatMe
             : 'rounded-bl-md bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)]'
         )}
       >
-        <p className="whitespace-pre-wrap">{message.content}</p>
+        <p className="break-words whitespace-pre-wrap">
+          {text}
+          {isLastStreaming && (
+            <span className="ml-0.5 inline-block h-[1em] w-[3px] animate-pulse rounded-full bg-current align-middle opacity-70" />
+          )}
+        </p>
       </div>
     </div>
   )

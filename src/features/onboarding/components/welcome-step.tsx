@@ -10,9 +10,9 @@ export function WelcomeStep() {
   const { nextStep } = useOnboardingStore()
 
   const features = [
-    { emoji: '🧭', text: '방향을 찾고' },
-    { emoji: '✅', text: '매일 작은 실천을 쌓고' },
-    { emoji: '📊', text: '성장을 기록해요' },
+    { emoji: '💡', text: '하고 싶은 것들을 쏟아내고' },
+    { emoji: '✨', text: 'AI가 깔끔하게 정리해주고' },
+    { emoji: '🚀', text: '내일부터 바로 시작해요' },
   ]
 
   return (
@@ -45,9 +45,8 @@ export function WelcomeStep() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          나의 인생 로드맵을
-          <br />
-          함께 그려볼까요?
+          머릿속에 있는 것들,
+          <br />다 꺼내볼까요?
         </motion.p>
 
         {/* Feature list with stagger */}

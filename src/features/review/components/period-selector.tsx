@@ -23,7 +23,7 @@ export function PeriodSelector() {
         <button
           onClick={() => setPeriod('week')}
           className={cn(
-            'flex-1 px-4 py-2 text-sm font-medium transition-colors',
+            'min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
             period === 'week'
               ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-600)]'
               : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
@@ -35,7 +35,7 @@ export function PeriodSelector() {
         <button
           onClick={() => setPeriod('month')}
           className={cn(
-            'flex-1 px-4 py-2 text-sm font-medium transition-colors',
+            'min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
             period === 'month'
               ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-600)]'
               : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
@@ -50,7 +50,7 @@ export function PeriodSelector() {
       <div className="flex items-center justify-between">
         <button
           onClick={handlePrevPeriod}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+          className="flex h-11 w-11 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
           aria-label={`이전 ${period === 'week' ? '주' : '달'}`}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -73,7 +73,7 @@ export function PeriodSelector() {
           onClick={handleNextPeriod}
           disabled={!canGoNext}
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-lg transition-colors',
+            'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
             canGoNext
               ? 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
               : 'cursor-not-allowed text-[var(--color-text-tertiary)] opacity-30'

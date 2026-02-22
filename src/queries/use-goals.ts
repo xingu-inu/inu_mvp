@@ -224,9 +224,14 @@ export function useUpdateGoal() {
       }
       toast.error('수정에 실패했습니다.')
     },
-    onSettled: (_data, _err, { id }) => {
+    onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.detail(id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.goals.detail(variables.id) })
+      // Goal 상태 변경 시 Home 캐시 갱신
+      if (variables.input.status) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
+        queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
+      }
     },
     onSuccess: (_data, { id, input, previousStatus }) => {
       if (input.status && previousStatus && input.status !== previousStatus) {

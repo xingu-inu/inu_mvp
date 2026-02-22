@@ -14,7 +14,7 @@ import type { WeeklyReflection, CreateWeeklyReflectionInput } from '@/types/enti
 export function useWeeklyReflection(weekStart?: string) {
   return useQuery<WeeklyReflection | null>({
     queryKey: queryKeys.review.weeklyReflection(weekStart ?? ''),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     queryFn: async () => {
       if (!weekStart) return null
       const response = await getWeeklyReflection(weekStart)

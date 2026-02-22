@@ -50,12 +50,17 @@ function CheckIcon({ delay }: { delay: number }) {
 export function CompletionScreen() {
   const { complete, isPending, error } = useCompleteOnboarding()
   const {
+    isGuidedMode,
     generatedDirection,
     directionMode,
     editedDirection,
     selectedAreas,
     firstGoal,
     firstTask,
+    organizedGoals,
+    activeGoalIds,
+    suggestedTasks,
+    derivedAreas,
   } = useOnboardingStore()
 
   const [isCompleted, setIsCompleted] = useState(false)
@@ -85,20 +90,50 @@ export function CompletionScreen() {
     summaryItems.push({ icon: '🌱', label: '탐색 모드', value: '탐색하며 시작해요' })
   }
 
-  if (selectedAreas.length > 0) {
-    summaryItems.push({
-      icon: '📋',
-      label: '나의 영역',
-      value: selectedAreas.map((a) => `${a.emoji}${a.name}`).join(' '),
-    })
-  }
+  if (isGuidedMode) {
+    // V2 guided mode summary
+    if (selectedAreas.length > 0) {
+      summaryItems.push({
+        icon: '📋',
+        label: '나의 영역',
+        value: selectedAreas.map((a) => `${a.emoji}${a.name}`).join(' '),
+      })
+    }
 
-  if (firstGoal) {
-    summaryItems.push({ icon: '🎯', label: '첫 목표', value: firstGoal.name })
-  }
+    if (firstGoal) {
+      summaryItems.push({ icon: '🎯', label: '첫 목표', value: firstGoal.name })
+    }
 
-  if (firstTask) {
-    summaryItems.push({ icon: '✅', label: '첫 실천', value: firstTask.name })
+    if (firstTask) {
+      summaryItems.push({ icon: '✅', label: '첫 실천', value: firstTask.name })
+    }
+  } else {
+    // V3 brain-dump mode summary
+    if (derivedAreas.length > 0) {
+      summaryItems.push({
+        icon: '📋',
+        label: '나의 영역',
+        value: derivedAreas.map((a) => `${a.emoji}${a.name}`).join(' '),
+      })
+    }
+
+    const activeGoals = organizedGoals.filter((g) => activeGoalIds.includes(g.id)).slice(0, 3)
+    if (activeGoals.length > 0) {
+      summaryItems.push({
+        icon: '🎯',
+        label: '목표',
+        value: activeGoals.map((g) => g.name).join(', '),
+      })
+    }
+
+    const acceptedTasks = suggestedTasks.filter((t) => t.accepted).slice(0, 3)
+    if (acceptedTasks.length > 0) {
+      summaryItems.push({
+        icon: '✅',
+        label: '실천',
+        value: acceptedTasks.map((t) => t.name).join(', '),
+      })
+    }
   }
 
   if (error) {
@@ -133,7 +168,7 @@ export function CompletionScreen() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        준비 완료!
+        {isGuidedMode ? '준비 완료!' : '벌써 이만큼 정리했어요!'}
       </motion.h2>
 
       {/* Summary card */}

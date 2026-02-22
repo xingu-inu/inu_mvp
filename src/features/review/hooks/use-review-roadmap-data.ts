@@ -81,8 +81,7 @@ async function fetchReviewRoadmapData(
         id, name, status, why, created_at,
         groups (id, name, is_completed, sort_order),
         tasks (
-          id, name, why, group_id, time_slot, streak_count, best_streak, is_active, related_goal_ids,
-          check_ins (date, status)
+          id, name, why, group_id, time_slot, streak_count, best_streak, is_active, related_goal_ids
         )
       )
     `
@@ -96,6 +95,39 @@ async function fetchReviewRoadmapData(
 
   if (error) throw error
   if (!areas) return []
+
+  // Collect all task IDs
+  const allTaskIds: string[] = []
+  for (const area of areas) {
+    for (const goal of area.goals ?? []) {
+      for (const task of goal.tasks ?? []) {
+        allTaskIds.push(task.id)
+      }
+    }
+  }
+
+  // Fetch check_ins with date filter (batch in chunks of 100 for Supabase .in() limit)
+  const checkInsByTask = new Map<string, Array<{ date: string; status: string }>>()
+
+  if (allTaskIds.length > 0) {
+    const CHUNK_SIZE = 100
+    for (let i = 0; i < allTaskIds.length; i += CHUNK_SIZE) {
+      const chunk = allTaskIds.slice(i, i + CHUNK_SIZE)
+      const { data: checkIns, error: ciError } = await supabase
+        .from('check_ins')
+        .select('task_id, date, status')
+        .in('task_id', chunk)
+        .gte('date', start)
+        .lte('date', end)
+
+      if (ciError) throw ciError
+      for (const ci of checkIns ?? []) {
+        const existing = checkInsByTask.get(ci.task_id) ?? []
+        existing.push({ date: ci.date, status: ci.status })
+        checkInsByTask.set(ci.task_id, existing)
+      }
+    }
+  }
 
   const result: AreaReviewData[] = areas
     .map((area) => {
@@ -114,9 +146,7 @@ async function fetchReviewRoadmapData(
           }))
 
         const tasks: TaskReviewSummary[] = (goal.tasks ?? []).map((task) => {
-          const periodCheckIns = (task.check_ins ?? []).filter(
-            (c) => c.date >= start && c.date <= end
-          )
+          const periodCheckIns = checkInsByTask.get(task.id) ?? []
           const totalScheduled = periodCheckIns.length
           const totalDone = periodCheckIns.filter((c) => c.status === 'done').length
 
@@ -259,7 +289,7 @@ export function useReviewRoadmapData() {
   return useQuery({
     queryKey: queryKeys.review.roadmapProgress(startDate, endDate, directionId),
     queryFn: () => fetchReviewRoadmapData(startDate, endDate, directionId),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     enabled: !!directionId,
   })
 }

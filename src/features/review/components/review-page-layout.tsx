@@ -23,13 +23,16 @@ import { AchievementHero } from './overview'
 import { AreaBalanceUnified } from './overview/area-balance-unified'
 import { AiReviewInsightModal } from './overview/ai-review-insight-modal'
 import { JournalDayDetail } from './journal/journal-day-detail'
+import { JournalHeatmap } from './journal/journal-heatmap'
 import { PeriodReflectionSection } from './period-reflection/period-reflection-section'
 import { ReviewDayList } from './records/review-day-list'
+import { GoalReviewDetail } from './overview/goal-review-detail'
 import { MilestoneSection } from './overview/milestone-cards'
-import { WhyTemperatureSection } from './overview/why-temperature-check'
 import { ObstacleAnalysisSection } from './overview/obstacle-analysis'
 import { EmptyReview } from './empty-review'
 import { ReviewSkeleton } from './review-skeleton'
+import { ResponsiveModal, ModalBody } from '@/components/ui/responsive-modal'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 
 export function ReviewPageLayout() {
   const { startDate, endDate, isWeek, periodLabel, weekStartDate } = useReviewPeriod()
@@ -39,6 +42,8 @@ export function ReviewPageLayout() {
   const selectDay = useReviewStore((s) => s.selectDay)
   const selectArea = useReviewStore((s) => s.selectArea)
   const clearSelection = useReviewStore((s) => s.clearSelection)
+  const selectedGoalId = useReviewStore((s) => s.selectedGoalId)
+  const isMobile = useIsMobile()
 
   // Data fetching
   const { data: checkInHistory, isLoading: l1 } = useCheckInHistory()
@@ -144,42 +149,39 @@ export function ReviewPageLayout() {
       {/* ═══ Desktop layout ═══ */}
       <div className="hidden h-full lg:block">
         <div className="h-full space-y-4 overflow-y-auto p-4 lg:p-5">
-          {/* ACT 1: At a Glance + AI button */}
-          <div className="flex items-start gap-3">
-            <div className="min-w-0 flex-1">
-              <AchievementHero
-                stats={overviewStats}
-                streaks={activeStreaks}
-                checkInHistory={checkInHistory ?? []}
-                totalDays={totalDays}
-                period={period}
-                comparison={comparison}
-              />
-            </div>
-            {isCurrentVersion && (
-              <div className="shrink-0 pt-1">
-                <AiReviewInsightModal
-                  overviewStats={overviewStats}
-                  activeStreaks={activeStreaks}
-                  areaBalances={areaBalances}
-                  moodHistory={moodHistory}
-                  isWeek={isWeek}
-                  periodLabel={reflectionLabel}
-                  weeklyReflection={weeklyReflection}
-                />
-              </div>
-            )}
-          </div>
+          {/* ACT 1: At a Glance + Milestones */}
+          <div className="space-y-2">
+            <AchievementHero
+              stats={overviewStats}
+              streaks={activeStreaks}
+              checkInHistory={checkInHistory ?? []}
+              totalDays={totalDays}
+              period={period}
+              comparison={comparison}
+              actions={
+                isCurrentVersion ? (
+                  <AiReviewInsightModal
+                    overviewStats={overviewStats}
+                    activeStreaks={activeStreaks}
+                    areaBalances={areaBalances}
+                    moodHistory={moodHistory}
+                    isWeek={isWeek}
+                    periodLabel={reflectionLabel}
+                    weeklyReflection={weeklyReflection}
+                  />
+                ) : undefined
+              }
+            />
 
-          {/* ACT 1.5: Milestones & Growth */}
-          <MilestoneSection
-            roadmapData={roadmapData ?? []}
-            activityEvents={activityEvents}
-            comparison={comparison}
-            period={period}
-            startDate={startDate}
-            endDate={endDate}
-          />
+            <MilestoneSection
+              roadmapData={roadmapData ?? []}
+              activityEvents={activityEvents}
+              comparison={comparison}
+              period={period}
+              startDate={startDate}
+              endDate={endDate}
+            />
+          </div>
 
           {/* ACT 2: Areas (left) + Records (right) side by side */}
           <div className="grid grid-cols-2 gap-4">
@@ -215,10 +217,7 @@ export function ReviewPageLayout() {
             </p>
           )}
 
-          {/* ACT 4: Why Temperature Check */}
-          {isCurrentVersion && <WhyTemperatureSection roadmapData={roadmapData ?? []} />}
-
-          {/* ACT 5: Obstacle Analysis */}
+          {/* ACT 4: Obstacle Analysis */}
           {isCurrentVersion && (
             <ObstacleAnalysisSection
               roadmapData={roadmapData ?? []}
@@ -232,20 +231,16 @@ export function ReviewPageLayout() {
 
       {/* ═══ Mobile layout ═══ */}
       <div className="space-y-4 overflow-y-auto p-4 pb-8 lg:hidden">
-        {/* ACT 1: At a Glance + AI button */}
-        <div className="flex items-start gap-2">
-          <div className="min-w-0 flex-1">
-            <AchievementHero
-              stats={overviewStats}
-              streaks={activeStreaks}
-              checkInHistory={checkInHistory ?? []}
-              totalDays={totalDays}
-              period={period}
-              comparison={comparison}
-            />
-          </div>
-          {isCurrentVersion && (
-            <div className="shrink-0 pt-1">
+        {/* ACT 1: At a Glance */}
+        <AchievementHero
+          stats={overviewStats}
+          streaks={activeStreaks}
+          checkInHistory={checkInHistory ?? []}
+          totalDays={totalDays}
+          period={period}
+          comparison={comparison}
+          actions={
+            isCurrentVersion ? (
               <AiReviewInsightModal
                 overviewStats={overviewStats}
                 activeStreaks={activeStreaks}
@@ -255,19 +250,30 @@ export function ReviewPageLayout() {
                 periodLabel={reflectionLabel}
                 weeklyReflection={weeklyReflection}
               />
-            </div>
-          )}
-        </div>
-
-        {/* Records — horizontal cards with mood trend */}
-        <ReviewDayList
-          checkInHistory={checkInHistory ?? []}
-          moodHistory={moodHistory ?? []}
-          startDate={startDate}
-          endDate={endDate}
-          onSelectDate={handleToggleDate}
-          selectedDate={selectedDate}
+            ) : undefined
+          }
         />
+
+        {/* Records: weekly → day list, monthly → heatmap */}
+        {isWeek ? (
+          <ReviewDayList
+            checkInHistory={checkInHistory ?? []}
+            moodHistory={moodHistory ?? []}
+            startDate={startDate}
+            endDate={endDate}
+            onSelectDate={handleToggleDate}
+            selectedDate={selectedDate}
+          />
+        ) : (
+          <JournalHeatmap
+            checkInHistory={checkInHistory ?? []}
+            startDate={startDate}
+            endDate={endDate}
+            isWeek={false}
+            onSelectDate={handleToggleDate}
+            selectedDate={selectedDate}
+          />
+        )}
 
         {/* Inline day detail (when date selected) */}
         {selectedDate && (
@@ -306,10 +312,7 @@ export function ReviewPageLayout() {
           </p>
         )}
 
-        {/* ACT 4: Why Temperature Check */}
-        {isCurrentVersion && <WhyTemperatureSection roadmapData={roadmapData ?? []} />}
-
-        {/* ACT 5: Obstacle Analysis */}
+        {/* ACT 4: Obstacle Analysis */}
         {isCurrentVersion && (
           <ObstacleAnalysisSection
             roadmapData={roadmapData ?? []}
@@ -319,6 +322,22 @@ export function ReviewPageLayout() {
           />
         )}
       </div>
+
+      {/* Goal review detail drawer (mobile) */}
+      {isMobile && (
+        <ResponsiveModal
+          open={!!selectedGoalId}
+          onOpenChange={(open) => {
+            if (!open) clearSelection()
+          }}
+          title="목표 상세"
+          forceMode="drawer"
+        >
+          <ModalBody className="px-4 pb-6">
+            {selectedGoalId && <GoalReviewDetail goalId={selectedGoalId} />}
+          </ModalBody>
+        </ResponsiveModal>
+      )}
     </div>
   )
 }

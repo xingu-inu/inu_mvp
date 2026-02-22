@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useCallback, useMemo } from 'react'
-import { motion } from 'framer-motion'
-import { PenLine } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { REFLECTION_PROMPTS } from '../../utils/generate-insight'
 
@@ -49,6 +49,12 @@ export function PeriodReflectionSection({
   onSaveMonthly,
   isSavingMonthly = false,
 }: PeriodReflectionSectionProps) {
+  // Collapsible state — default expanded if any saved content exists
+  const hasExistingContent = isWeek
+    ? !!(weeklyReflection?.highlight || weeklyReflection?.challenge || weeklyReflection?.next_focus)
+    : !!(monthlyReflection?.summary || monthlyReflection?.highlight || monthlyReflection?.challenge)
+  const [isExpanded, setIsExpanded] = useState(hasExistingContent)
+
   // Weekly local state
   const [weeklyValues, setWeeklyValues] = useState<Record<ReflectionKey, string>>({
     highlight: weeklyReflection?.highlight ?? '',
@@ -125,111 +131,132 @@ export function PeriodReflectionSection({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3"
     >
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <PenLine className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-        <h3 className="text-xs font-semibold text-[var(--color-text-primary)]">
-          {periodLabel} 회고
-        </h3>
-      </div>
+      {/* Header — collapsible toggle */}
+      <button
+        type="button"
+        onClick={() => setIsExpanded((p) => !p)}
+        className="flex w-full items-center justify-between"
+      >
+        <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          ✏️ {periodLabel} 회고
+        </span>
+        <ChevronDown
+          className={cn(
+            'h-3.5 w-3.5 text-[var(--color-text-tertiary)] transition-transform',
+            isExpanded && 'rotate-180'
+          )}
+        />
+      </button>
 
-      {isWeek ? (
-        /* Weekly: prompt as placeholder, compact grid on desktop */
-        <>
-          <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
-            {REFLECTION_FIELDS.map(({ key, promptIndex }) => (
-              <div key={key} className="flex flex-col gap-1">
-                <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                  {REFLECTION_PROMPTS.weekly[promptIndex]}
-                </label>
-                <textarea
-                  value={weeklyValues[key]}
-                  onChange={(e) => handleWeeklyChange(key, e.target.value)}
-                  placeholder="적어보세요..."
-                  disabled={isSavingWeekly}
-                  rows={2}
-                  className={textareaClass(isSavingWeekly)}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 flex justify-end">
-            <button
-              type="button"
-              onClick={handleWeeklySave}
-              disabled={!hasWeeklyChanges || isSavingWeekly}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                hasWeeklyChanges && !isSavingWeekly
-                  ? 'bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-600)]'
-                  : 'cursor-not-allowed bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]'
-              )}
-            >
-              {isSavingWeekly ? '저장 중...' : '저장'}
-            </button>
-          </div>
-        </>
-      ) : (
-        /* Monthly: 3 prompts matching weekly layout */
-        <>
-          <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                {REFLECTION_PROMPTS.monthly[2]}
-              </label>
-              <textarea
-                value={monthlyHighlight}
-                onChange={(e) => setMonthlyHighlight(e.target.value)}
-                placeholder="적어보세요..."
-                disabled={isSavingMonthly}
-                rows={2}
-                className={textareaClass(isSavingMonthly)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                {REFLECTION_PROMPTS.monthly[1]}
-              </label>
-              <textarea
-                value={monthlyChallenge}
-                onChange={(e) => setMonthlyChallenge(e.target.value)}
-                placeholder="적어보세요..."
-                disabled={isSavingMonthly}
-                rows={2}
-                className={textareaClass(isSavingMonthly)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                {REFLECTION_PROMPTS.monthly[0]}
-              </label>
-              <textarea
-                value={monthlySummary}
-                onChange={(e) => setMonthlySummary(e.target.value)}
-                placeholder="적어보세요..."
-                disabled={isSavingMonthly}
-                rows={2}
-                className={textareaClass(isSavingMonthly)}
-              />
-            </div>
-          </div>
-          <div className="mt-3 flex justify-end">
-            <button
-              type="button"
-              onClick={handleMonthlySave}
-              disabled={!hasMonthlyChanges || isSavingMonthly}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                hasMonthlyChanges && !isSavingMonthly
-                  ? 'bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-600)]'
-                  : 'cursor-not-allowed bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]'
-              )}
-            >
-              {isSavingMonthly ? '저장 중...' : '저장'}
-            </button>
-          </div>
-        </>
-      )}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            {isWeek ? (
+              /* Weekly: prompt as placeholder, compact grid on desktop */
+              <>
+                <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
+                  {REFLECTION_FIELDS.map(({ key, promptIndex }) => (
+                    <div key={key} className="flex flex-col gap-1">
+                      <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                        {REFLECTION_PROMPTS.weekly[promptIndex]}
+                      </label>
+                      <textarea
+                        value={weeklyValues[key]}
+                        onChange={(e) => handleWeeklyChange(key, e.target.value)}
+                        placeholder="적어보세요..."
+                        disabled={isSavingWeekly}
+                        rows={2}
+                        className={textareaClass(isSavingWeekly)}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleWeeklySave}
+                    disabled={!hasWeeklyChanges || isSavingWeekly}
+                    className={cn(
+                      'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                      hasWeeklyChanges && !isSavingWeekly
+                        ? 'bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-600)]'
+                        : 'cursor-not-allowed bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]'
+                    )}
+                  >
+                    {isSavingWeekly ? '저장 중...' : '저장'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Monthly: 3 prompts matching weekly layout */
+              <>
+                <div className="mt-3 grid gap-2.5 lg:grid-cols-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                      {REFLECTION_PROMPTS.monthly[2]}
+                    </label>
+                    <textarea
+                      value={monthlyHighlight}
+                      onChange={(e) => setMonthlyHighlight(e.target.value)}
+                      placeholder="적어보세요..."
+                      disabled={isSavingMonthly}
+                      rows={2}
+                      className={textareaClass(isSavingMonthly)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                      {REFLECTION_PROMPTS.monthly[1]}
+                    </label>
+                    <textarea
+                      value={monthlyChallenge}
+                      onChange={(e) => setMonthlyChallenge(e.target.value)}
+                      placeholder="적어보세요..."
+                      disabled={isSavingMonthly}
+                      rows={2}
+                      className={textareaClass(isSavingMonthly)}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                      {REFLECTION_PROMPTS.monthly[0]}
+                    </label>
+                    <textarea
+                      value={monthlySummary}
+                      onChange={(e) => setMonthlySummary(e.target.value)}
+                      placeholder="적어보세요..."
+                      disabled={isSavingMonthly}
+                      rows={2}
+                      className={textareaClass(isSavingMonthly)}
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleMonthlySave}
+                    disabled={!hasMonthlyChanges || isSavingMonthly}
+                    className={cn(
+                      'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                      hasMonthlyChanges && !isSavingMonthly
+                        ? 'bg-[var(--color-primary-500)] text-white hover:bg-[var(--color-primary-600)]'
+                        : 'cursor-not-allowed bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]'
+                    )}
+                  >
+                    {isSavingMonthly ? '저장 중...' : '저장'}
+                  </button>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.section>
   )
 }

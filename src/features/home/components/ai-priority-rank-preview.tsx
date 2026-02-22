@@ -13,7 +13,7 @@ interface AiPriorityRankPreviewProps {
 
 const TIER_STYLES: Record<number, string> = {
   1: 'bg-[var(--color-done)]/10',
-  2: 'bg-amber-500/10',
+  2: 'bg-amber-500/10 dark:bg-amber-500/15',
   3: 'bg-[var(--color-bg-tertiary)]',
 }
 

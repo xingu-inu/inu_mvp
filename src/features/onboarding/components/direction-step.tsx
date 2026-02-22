@@ -47,11 +47,15 @@ function TypedDirection({ text }: { text: string }) {
 
 export function DirectionStep() {
   const {
+    isGuidedMode,
+    organizedGoals,
+    activeGoalIds,
     generatedDirection,
     directionMode,
     editedDirection,
     setDirectionMode,
     setEditedDirection,
+    setGeneratedDirection,
     nextStep,
     prevStep,
   } = useOnboardingStore()
@@ -60,6 +64,35 @@ export function DirectionStep() {
   const alreadyVisited = directionMode === 'edit' || directionMode === 'explore'
   const [isLoading, setIsLoading] = useState(!alreadyVisited)
   const [showDirection, setShowDirection] = useState(alreadyVisited)
+
+  // V3: synthesize direction from active goals via AI
+  useEffect(() => {
+    if (isGuidedMode || generatedDirection) return
+
+    const activeGoals = organizedGoals.filter((g) => activeGoalIds.includes(g.id))
+    const goalNames = activeGoals.map((g) => g.name)
+
+    fetch('/api/ai/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'why-vision',
+        target: 'direction-why',
+        context: { existingGoals: goalNames },
+      }),
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        if (result.success && result.data?.suggestions?.[0]?.text) {
+          setGeneratedDirection(result.data.suggestions[0].text)
+        } else {
+          setGeneratedDirection(`${goalNames.slice(0, 3).join(', ')}을 향해 나아가는 삶`)
+        }
+      })
+      .catch(() => {
+        setGeneratedDirection(`${goalNames.slice(0, 3).join(', ')}을 향해 나아가는 삶`)
+      })
+  }, [isGuidedMode, generatedDirection, organizedGoals, activeGoalIds, setGeneratedDirection])
 
   // Shimmer → reveal sequence (first visit only)
   useEffect(() => {
@@ -168,7 +201,9 @@ export function DirectionStep() {
         {isLoading ? '✨ 당신의 방향을 만들고 있어요...' : '✨ 이런 방향은 어떨까요?'}
       </motion.h2>
       <p className="mb-4 text-sm text-[var(--color-text-secondary)]">
-        선택한 가치를 바탕으로 만들어봤어요
+        {isGuidedMode
+          ? '선택한 가치를 바탕으로 만들어봤어요'
+          : '당신의 목표들을 바탕으로 만들어봤어요'}
       </p>
 
       {/* Direction Card */}

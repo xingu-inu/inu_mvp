@@ -42,7 +42,7 @@ function ReasonPatternCard({ reasonCounts }: ReasonPatternCardProps) {
   const maxCount = sorted[0]?.[1] ?? 1
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+    <div>
       <p className="mb-0.5 text-[11px] text-[var(--color-text-tertiary)]">
         이번 기간 가장 많이 등장한 막힘 사유예요
       </p>
@@ -96,7 +96,7 @@ function TimeSlotCard({ timeSlotAnalysis }: TimeSlotCardProps) {
     : `${lowest.label}에서 어려움이 있었네요. 다른 시간대를 시도해볼까요?`
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+    <div>
       <p className="mb-2.5 text-[11px] text-[var(--color-text-tertiary)]">{insightMessage}</p>
       <div className="space-y-2">
         {timeSlotAnalysis.map((slot) => {
@@ -146,7 +146,7 @@ function SkipMissInsightCard({ skipMiss }: SkipMissInsightCardProps) {
 
   if (totalSkip + totalMiss < 3) {
     return (
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+      <div>
         <p className="text-xs text-[var(--color-text-tertiary)]">
           아직 데이터가 쌓이는 중이에요 🌱
         </p>
@@ -157,7 +157,7 @@ function SkipMissInsightCard({ skipMiss }: SkipMissInsightCardProps) {
   const total = totalSkip + totalMiss
 
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
+    <div>
       {/* Segmented bar */}
       <div className="mb-3 flex h-2 w-full overflow-hidden rounded-full bg-[var(--color-bg-tertiary)]">
         {totalSkip > 0 && (
@@ -242,10 +242,22 @@ export function ObstacleAnalysisSection({
         </p>
       </div>
 
-      <div className="space-y-3">
-        {hasReasons && <ReasonPatternCard reasonCounts={data.reasonCounts} />}
-        {hasTimeSlots && <TimeSlotCard timeSlotAnalysis={data.timeSlotAnalysis} />}
-        {hasSkipMiss && <SkipMissInsightCard skipMiss={data.skipMiss} />}
+      <div className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
+        {hasReasons && (
+          <div className="p-3">
+            <ReasonPatternCard reasonCounts={data.reasonCounts} />
+          </div>
+        )}
+        {hasTimeSlots && (
+          <div className="p-3">
+            <TimeSlotCard timeSlotAnalysis={data.timeSlotAnalysis} />
+          </div>
+        )}
+        {hasSkipMiss && (
+          <div className="p-3">
+            <SkipMissInsightCard skipMiss={data.skipMiss} />
+          </div>
+        )}
       </div>
     </section>
   )

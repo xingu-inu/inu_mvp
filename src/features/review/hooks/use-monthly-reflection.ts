@@ -14,7 +14,7 @@ import type { MonthlyReflection, CreateMonthlyReflectionInput } from '@/types/en
 export function useMonthlyReflection(monthStart?: string) {
   return useQuery<MonthlyReflection | null>({
     queryKey: queryKeys.review.monthlyReflection(monthStart ?? ''),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     queryFn: async () => {
       if (!monthStart) return null
       const response = await getMonthlyReflection(monthStart)

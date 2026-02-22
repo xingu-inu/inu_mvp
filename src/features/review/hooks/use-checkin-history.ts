@@ -81,7 +81,7 @@ export function useCheckInHistory() {
   return useQuery({
     queryKey: queryKeys.review.history(startDate, endDate, directionId),
     queryFn: () => fetchCheckInHistory(startDate, endDate, directionId),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW,
     enabled: !!directionId,
   })
 }

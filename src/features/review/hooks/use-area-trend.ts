@@ -73,7 +73,6 @@ interface CheckInRow {
 interface TaskRow {
   id: string
   is_active: boolean
-  check_ins: CheckInRow[]
 }
 
 interface GoalRow {
@@ -110,8 +109,7 @@ async function fetchAreaTrends(
       goals (
         id, status,
         tasks (
-          id, is_active,
-          check_ins (date, status)
+          id, is_active
         )
       )
     `
@@ -122,6 +120,41 @@ async function fetchAreaTrends(
   if (error) throw error
   if (!areas) return []
 
+  // Collect all active task IDs
+  const allTaskIds: string[] = []
+  for (const area of areas as AreaRow[]) {
+    for (const goal of area.goals ?? []) {
+      if (!['active', 'maintenance'].includes(goal.status)) continue
+      for (const task of goal.tasks ?? []) {
+        if (!task.is_active) continue
+        allTaskIds.push(task.id)
+      }
+    }
+  }
+
+  // Fetch check_ins with date filter in chunks
+  const checkInsByTask = new Map<string, CheckInRow[]>()
+
+  if (allTaskIds.length > 0) {
+    const CHUNK_SIZE = 100
+    for (let i = 0; i < allTaskIds.length; i += CHUNK_SIZE) {
+      const chunk = allTaskIds.slice(i, i + CHUNK_SIZE)
+      const { data: checkIns, error: ciError } = await supabase
+        .from('check_ins')
+        .select('task_id, date, status')
+        .in('task_id', chunk)
+        .gte('date', overallStart)
+        .lte('date', overallEnd)
+
+      if (ciError) throw ciError
+      for (const ci of checkIns ?? []) {
+        const existing = checkInsByTask.get(ci.task_id) ?? []
+        existing.push({ date: ci.date, status: ci.status })
+        checkInsByTask.set(ci.task_id, existing)
+      }
+    }
+  }
+
   const result: AreaTrendData[] = []
 
   for (const area of areas as AreaRow[]) {
@@ -131,9 +164,7 @@ async function fetchAreaTrends(
       if (!['active', 'maintenance'].includes(goal.status)) continue
       for (const task of goal.tasks ?? []) {
         if (!task.is_active) continue
-        const relevantCheckIns = (task.check_ins ?? []).filter(
-          (c) => c.date >= overallStart && c.date <= overallEnd
-        )
+        const relevantCheckIns = checkInsByTask.get(task.id) ?? []
         activeTasks.push({ id: task.id, checkIns: relevantCheckIns })
       }
     }
@@ -183,7 +214,7 @@ export function useAreaTrend() {
   return useQuery<AreaTrendData[]>({
     queryKey: [...queryKeys.review.areaStats(overallStart, overallEnd), 'trend', directionId],
     queryFn: () => fetchAreaTrends(isWeek, startDate, directionId!),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW_HISTORICAL,
     enabled: !!directionId,
   })
 }

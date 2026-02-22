@@ -28,6 +28,7 @@ interface AchievementHeroProps {
   totalDays: number
   period: 'week' | 'month'
   comparison: ComparisonData
+  actions?: React.ReactNode
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -101,7 +102,7 @@ function DeltaChip({
     <span
       className={cn(
         'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
-        isPositive && 'bg-emerald-50 text-emerald-700',
+        isPositive && 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
         isNeutral && 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]',
         !isPositive &&
           !isNeutral &&
@@ -166,6 +167,7 @@ export function AchievementHero({
   totalDays,
   period,
   comparison,
+  actions,
 }: AchievementHeroProps) {
   const isZero = stats.completionRate === 0
 
@@ -186,12 +188,14 @@ export function AchievementHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className={cn(
-        'rounded-2xl p-4',
+        'relative rounded-2xl p-4',
         isZero
           ? 'bg-[var(--color-bg-secondary)]'
           : 'bg-gradient-to-br from-[var(--color-primary-50)] to-[var(--color-bg-card)]'
       )}
     >
+      {actions && <div className="absolute top-3 right-3">{actions}</div>}
+
       {/* Horizontal layout: ring left, content right */}
       <div className="flex items-center gap-4">
         <ProgressRing rate={stats.completionRate} isZero={isZero} />

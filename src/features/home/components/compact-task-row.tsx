@@ -171,7 +171,7 @@ export const CompactTaskRow = memo(
               onPointerDown={(e) => e.stopPropagation()}
               aria-label={`${task.name} 완료`}
               disabled={checkIn.isPending}
-              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 border-[var(--color-border)] transition-colors hover:border-[var(--color-done)] hover:bg-[var(--color-done-bg)] disabled:opacity-50"
+              className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border-2 border-[var(--color-border)] transition-colors before:absolute before:-inset-3 before:content-[''] hover:border-[var(--color-done)] hover:bg-[var(--color-done-bg)] disabled:opacity-50"
             >
               <Check className="h-3 w-3 text-transparent" aria-hidden="true" />
             </button>
@@ -191,7 +191,7 @@ export const CompactTaskRow = memo(
               onPointerDown={(e) => e.stopPropagation()}
               disabled={!canUndo || undoCheckIn.isPending}
               aria-label={canUndo ? '달성 취소' : '완료됨'}
-              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-[var(--color-done)] text-white transition-colors disabled:opacity-70"
+              className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-[var(--color-done)] text-white transition-colors before:absolute before:-inset-3 before:content-[''] disabled:opacity-70"
             >
               <Check className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -211,7 +211,7 @@ export const CompactTaskRow = memo(
               onPointerDown={(e) => e.stopPropagation()}
               disabled={!canUndo || undoCheckIn.isPending}
               aria-label={canUndo ? '달성 취소' : '건너뜀'}
-              className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-[var(--color-skip)] text-white transition-colors disabled:opacity-70"
+              className="relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-[var(--color-skip)] text-white transition-colors before:absolute before:-inset-3 before:content-[''] disabled:opacity-70"
             >
               <SkipForward className="h-3 w-3" aria-hidden="true" />
             </button>
@@ -293,7 +293,7 @@ export const CompactTaskRow = memo(
               onPointerDown={(e) => e.stopPropagation()}
               aria-label={`${task.name} 건너뛰기`}
               disabled={checkIn.isPending}
-              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-skip)] hover:text-white disabled:opacity-50"
+              className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all before:absolute before:-inset-[9px] before:content-[''] hover:bg-[var(--color-skip)] hover:text-white disabled:opacity-50"
             >
               <SkipForward className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -306,7 +306,7 @@ export const CompactTaskRow = memo(
               onPointerDown={(e) => e.stopPropagation()}
               aria-label={`${task.name} 내일로 미루기`}
               disabled={updateTask.isPending}
-              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-text-tertiary)] hover:text-white disabled:opacity-50"
+              className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all before:absolute before:-inset-[9px] before:content-[''] hover:bg-[var(--color-text-tertiary)] hover:text-white disabled:opacity-50"
             >
               <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -318,7 +318,7 @@ export const CompactTaskRow = memo(
               onClick={() => setIsDeleting(true)}
               onPointerDown={(e) => e.stopPropagation()}
               aria-label={`${task.name} 삭제`}
-              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-miss)] hover:text-white"
+              className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all before:absolute before:-inset-[9px] before:content-[''] hover:bg-[var(--color-miss)] hover:text-white"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
@@ -337,7 +337,7 @@ export const CompactTaskRow = memo(
               onClick={handleRowClick}
               onPointerDown={(e) => e.stopPropagation()}
               aria-label={isExpanded ? '접기' : '펼치기'}
-              className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all hover:bg-[var(--color-text-tertiary)] hover:text-white"
+              className="relative flex h-6 w-6 flex-shrink-0 items-center justify-center rounded text-[var(--color-text-tertiary)] transition-all before:absolute before:-inset-[9px] before:content-[''] hover:bg-[var(--color-text-tertiary)] hover:text-white"
             >
               <ChevronDown
                 className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-180')}

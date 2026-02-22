@@ -155,7 +155,7 @@ export function useGoalJourney(goalId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.review.goalJourney(goalId ?? ''),
     queryFn: () => fetchGoalJourney(goalId!),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW_ACTIVITY,
     enabled: !!goalId,
   })
 }

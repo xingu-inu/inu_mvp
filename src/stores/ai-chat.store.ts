@@ -17,10 +17,6 @@ interface AiChatState {
   activeConversationId: string | null
   setActiveConversation: (id: string | null) => void
 
-  // AI 응답 로딩
-  isLoading: boolean
-  setLoading: (loading: boolean) => void
-
   // 새 대화 시작
   startNewConversation: () => void
 
@@ -42,9 +38,6 @@ export const useAiChatStore = create<AiChatState>((set) => ({
 
   activeConversationId: null,
   setActiveConversation: (id) => set({ activeConversationId: id, context: null }),
-
-  isLoading: false,
-  setLoading: (loading) => set({ isLoading: loading }),
 
   startNewConversation: () => set({ activeConversationId: null, context: null }),
 

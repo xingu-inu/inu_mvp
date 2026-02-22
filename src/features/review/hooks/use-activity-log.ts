@@ -186,7 +186,7 @@ export function useActivityLog() {
   return useQuery({
     queryKey: queryKeys.review.activityLog(directionId),
     queryFn: () => fetchActivityLog(undefined, directionId),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW_ACTIVITY,
     enabled: !!directionId,
   })
 }
@@ -198,7 +198,7 @@ export function useAreaActivityLog(areaId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.review.areaActivityLog(areaId ?? '', directionId),
     queryFn: () => fetchActivityLog(areaId, directionId),
-    staleTime: STALE_TIMES.STATS,
+    staleTime: STALE_TIMES.REVIEW_ACTIVITY,
     enabled: !!areaId && !!directionId,
   })
 }

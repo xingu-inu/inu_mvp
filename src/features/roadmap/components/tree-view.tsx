@@ -385,7 +385,7 @@ const NodeHeader = memo(function NodeHeader({
             e.stopPropagation()
             onToggle()
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-bg-tertiary)] max-lg:h-10 max-lg:w-10"
+          className="flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-[var(--color-bg-tertiary)] max-lg:h-11 max-lg:w-11"
         >
           {isExpanded ? (
             <ChevronDown className="h-4 w-4 text-[var(--color-text-secondary)]" />
@@ -394,7 +394,7 @@ const NodeHeader = memo(function NodeHeader({
           )}
         </button>
       ) : (
-        <div className="w-8 max-lg:w-10" />
+        <div className="w-8 max-lg:w-11" />
       )}
 
       {/* Icon */}

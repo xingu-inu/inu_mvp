@@ -23,9 +23,9 @@ const TYPE_LABELS: Record<string, string> = {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  info: 'bg-blue-100 text-blue-700',
-  update: 'bg-green-100 text-green-700',
-  event: 'bg-purple-100 text-purple-700',
+  info: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  update: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+  event: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
 }
 
 export function AdminAnnouncements() {

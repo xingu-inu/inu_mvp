@@ -160,7 +160,7 @@ export function TaskList({
             key={opt.value}
             onClick={() => setFilter(opt.value)}
             className={cn(
-              'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+              'rounded-full px-3 py-2 text-xs font-medium transition-colors',
               filter === opt.value
                 ? 'bg-[var(--color-primary-500)] text-white'
                 : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)]'

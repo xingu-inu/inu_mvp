@@ -174,7 +174,7 @@ function DailyDroppableSection({
       ref={setNodeRef}
       aria-labelledby="daily-tasks"
       className={cn(
-        'rounded-lg border-l-2 pl-3 transition-all',
+        'border-l-2 pl-3 transition-all',
         isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
       )}
       style={{ borderLeftColor: 'var(--color-text-tertiary)' }}

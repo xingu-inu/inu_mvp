@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { AI_MODELS, DEFAULT_MODEL } from '@/lib/ai/provider'
 import { ResponsiveModal, ModalBody } from '@/components/ui/responsive-modal'
 import { useTheme } from '@/components/providers'
 import { cn } from '@/lib/utils'
@@ -271,6 +272,31 @@ function MainView({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* AI Model */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-[var(--color-text-secondary)]">AI 모델</p>
+        <div className="flex gap-1 rounded-xl bg-[var(--color-bg-secondary)] p-1">
+          {AI_MODELS.map(({ value, label, description }) => (
+            <button
+              key={value}
+              onClick={() => updateProfile.mutate({ ai_model: value })}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center rounded-lg py-2 text-sm font-medium transition-colors',
+                profile?.ai_model === value || (!profile?.ai_model && value === DEFAULT_MODEL)
+                  ? 'bg-[var(--color-bg-primary)] text-[var(--color-primary-500)] shadow-sm'
+                  : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+              )}
+            >
+              <span>{label}</span>
+              <span className="text-[10px] font-normal text-[var(--color-text-tertiary)]">
+                {description}
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-[var(--color-text-tertiary)]">채팅과 AI 제안 모두에 적용돼요</p>
       </div>
 
       {/* Admin Link */}

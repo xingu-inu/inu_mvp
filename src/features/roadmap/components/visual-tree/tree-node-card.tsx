@@ -39,6 +39,7 @@ export interface VisualTreeNode {
     isCompletedTask?: boolean
     repeatType?: string
     hasCrossLinks?: boolean
+    sortOrder?: string
   }
 }
 
@@ -49,6 +50,8 @@ interface TreeNodeCardProps {
   hasChildren: boolean
   onSelect: () => void
   onToggle: () => void
+  isSearchMatch?: boolean
+  searchQuery?: string
 }
 
 export const TreeNodeCard = memo(function TreeNodeCard({
@@ -58,6 +61,8 @@ export const TreeNodeCard = memo(function TreeNodeCard({
   hasChildren,
   onSelect,
   onToggle,
+  isSearchMatch,
+  searchQuery,
 }: TreeNodeCardProps) {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -77,7 +82,8 @@ export const TreeNodeCard = memo(function TreeNodeCard({
         'hover:shadow-md focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none',
         getCardStyles(node),
         isSelected &&
-          'shadow-[0_0_0_4px_var(--color-primary-100)] ring-2 ring-[var(--color-primary-500)]/60'
+          'shadow-[0_0_0_4px_var(--color-primary-100)] ring-2 ring-[var(--color-primary-500)]/60',
+        isSearchMatch && !isSelected && 'ring-2 ring-[var(--color-primary-400)]'
       )}
       onClick={onSelect}
       onKeyDown={handleKeyDown}
@@ -112,7 +118,9 @@ export const TreeNodeCard = memo(function TreeNodeCard({
 
       {/* Name + optional subtitle */}
       <div className="min-w-0 flex-1">
-        <span className={cn('block truncate', getNameStyles(node))}>{node.name}</span>
+        <span className={cn('block truncate', getNameStyles(node))}>
+          {isSearchMatch && searchQuery ? highlightText(node.name, searchQuery) : node.name}
+        </span>
         {node.type === 'direction' && node.why && (
           <span className="block truncate text-[10px] text-[var(--color-text-on-primary)] italic opacity-80">
             {node.why}
@@ -330,6 +338,21 @@ function getCardStyles(node: VisualTreeNode): string {
     default:
       return 'border-[var(--color-border)]'
   }
+}
+
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query) return text
+  const index = text.toLowerCase().indexOf(query.toLowerCase())
+  if (index === -1) return text
+  return (
+    <>
+      {text.slice(0, index)}
+      <mark className="rounded bg-[var(--color-primary-100)] text-inherit">
+        {text.slice(index, index + query.length)}
+      </mark>
+      {text.slice(index + query.length)}
+    </>
+  )
 }
 
 function getNameStyles(node: VisualTreeNode): string {
