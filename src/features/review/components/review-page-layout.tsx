@@ -25,6 +25,9 @@ import { AiReviewInsightModal } from './overview/ai-review-insight-modal'
 import { JournalDayDetail } from './journal/journal-day-detail'
 import { PeriodReflectionSection } from './period-reflection/period-reflection-section'
 import { ReviewDayList } from './records/review-day-list'
+import { MilestoneSection } from './overview/milestone-cards'
+import { WhyTemperatureSection } from './overview/why-temperature-check'
+import { ObstacleAnalysisSection } from './overview/obstacle-analysis'
 import { EmptyReview } from './empty-review'
 import { ReviewSkeleton } from './review-skeleton'
 
@@ -168,6 +171,16 @@ export function ReviewPageLayout() {
             )}
           </div>
 
+          {/* ACT 1.5: Milestones & Growth */}
+          <MilestoneSection
+            roadmapData={roadmapData ?? []}
+            activityEvents={activityEvents}
+            comparison={comparison}
+            period={period}
+            startDate={startDate}
+            endDate={endDate}
+          />
+
           {/* ACT 2: Areas (left) + Records (right) side by side */}
           <div className="grid grid-cols-2 gap-4">
             <div className="min-w-0">
@@ -200,6 +213,19 @@ export function ReviewPageLayout() {
             <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
               회고 작성은 현재 로드맵에서만 가능합니다
             </p>
+          )}
+
+          {/* ACT 4: Why Temperature Check */}
+          {isCurrentVersion && <WhyTemperatureSection roadmapData={roadmapData ?? []} />}
+
+          {/* ACT 5: Obstacle Analysis */}
+          {isCurrentVersion && (
+            <ObstacleAnalysisSection
+              roadmapData={roadmapData ?? []}
+              checkInHistory={checkInHistory ?? []}
+              startDate={startDate}
+              endDate={endDate}
+            />
           )}
         </div>
       </div>
@@ -250,6 +276,16 @@ export function ReviewPageLayout() {
           </div>
         )}
 
+        {/* ACT 1.5: Milestones & Growth */}
+        <MilestoneSection
+          roadmapData={roadmapData ?? []}
+          activityEvents={activityEvents}
+          comparison={comparison}
+          period={period}
+          startDate={startDate}
+          endDate={endDate}
+        />
+
         {/* Areas */}
         {areaBalances.length > 0 && (
           <AreaBalanceUnified
@@ -268,6 +304,19 @@ export function ReviewPageLayout() {
           <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
             회고 작성은 현재 로드맵에서만 가능합니다
           </p>
+        )}
+
+        {/* ACT 4: Why Temperature Check */}
+        {isCurrentVersion && <WhyTemperatureSection roadmapData={roadmapData ?? []} />}
+
+        {/* ACT 5: Obstacle Analysis */}
+        {isCurrentVersion && (
+          <ObstacleAnalysisSection
+            roadmapData={roadmapData ?? []}
+            checkInHistory={checkInHistory ?? []}
+            startDate={startDate}
+            endDate={endDate}
+          />
         )}
       </div>
     </div>

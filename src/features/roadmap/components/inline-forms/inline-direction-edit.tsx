@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Check, X } from 'lucide-react'
@@ -39,6 +39,9 @@ export function InlineDirectionEdit({
     },
   })
 
+  const watchedStatement = useWatch({ control: form.control, name: 'statement' })
+  const watchedWhy = useWatch({ control: form.control, name: 'why' })
+
   const handleSubmit = (values: z.infer<typeof directionSchema>) => {
     updateDirection.mutate(
       {
@@ -71,7 +74,7 @@ export function InlineDirectionEdit({
         )}
         <SampleChips
           items={SAMPLE_DIRECTION_STATEMENTS}
-          selectedValue={form.watch('statement')}
+          selectedValue={watchedStatement}
           onToggle={(val) =>
             form.setValue('statement', form.getValues('statement') === val ? '' : val)
           }
@@ -80,7 +83,7 @@ export function InlineDirectionEdit({
       <Input placeholder="왜 이 방향인가요? (선택)" className="text-sm" {...form.register('why')} />
       <SampleChips
         items={SAMPLE_DIRECTION_WHYS}
-        selectedValue={form.watch('why') ?? ''}
+        selectedValue={watchedWhy ?? ''}
         onToggle={(val) => form.setValue('why', form.getValues('why') === val ? '' : val)}
       />
       <div className="flex gap-2">

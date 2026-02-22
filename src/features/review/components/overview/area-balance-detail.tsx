@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format, parseISO } from 'date-fns'
+import { differenceInDays, format, parseISO } from 'date-fns'
 import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
 import { StreakBadge } from '@/components/ui/badge'
@@ -95,6 +95,28 @@ function getAreaStats(areaData: AreaReviewData): {
 
 function getGroupedTasks(tasks: TaskReviewSummary[], groupId: string | null): TaskReviewSummary[] {
   return tasks.filter((t) => t.groupId === groupId && t.isActive && !t.isCrossLinked)
+}
+
+function getGoalDateLabel(createdAt: string, status: GoalStatus): string {
+  const created = parseISO(createdAt)
+  const dateStr = format(created, 'M월 d일')
+  const elapsed = differenceInDays(new Date(), created)
+
+  switch (status) {
+    case 'active':
+    case 'maintenance':
+      return `${dateStr} 시작 · ${elapsed}일째`
+    case 'completed':
+      return `${dateStr} 시작 · 완료`
+    case 'paused':
+      return `${dateStr} 시작 · 일시정지`
+    case 'backlog':
+      return `${dateStr} 생성`
+    case 'archived':
+      return `${dateStr} 시작 · 아카이브`
+    default:
+      return `${dateStr} 생성`
+  }
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -230,9 +252,14 @@ function GoalAccordionRow({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <span className="text-sm">&#127919;</span>
-          <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--color-text-primary)]">
-            {goal.name}
-          </span>
+          <div className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-[var(--color-text-primary)]">
+              {goal.name}
+            </span>
+            <span className="block text-xs text-[var(--color-text-tertiary)]">
+              {getGoalDateLabel(goal.createdAt, goal.status)}
+            </span>
+          </div>
         </button>
 
         <span
@@ -321,6 +348,12 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
     [selectGoal]
   )
 
+  const sortedGoals = useMemo(
+    () =>
+      [...(areaData?.goals ?? [])].sort((a, b) => a.goal.createdAt.localeCompare(b.goal.createdAt)),
+    [areaData?.goals]
+  )
+
   if (!areaData || !stats) return null
 
   return (
@@ -350,14 +383,14 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
         목표 {stats.activeGoals}개 · Task {stats.activeTasks}개
       </p>
 
-      {/* Goal accordion sections */}
+      {/* Goal accordion sections (sorted by creation date) */}
       {areaData.goals.length > 0 && (
         <div>
           <span className="mb-2 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             목표별 현황
           </span>
           <div className="flex flex-col gap-2">
-            {areaData.goals.map((goalData) => (
+            {sortedGoals.map((goalData) => (
               <GoalAccordionRow
                 key={goalData.goal.id}
                 goalData={goalData}

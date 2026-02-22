@@ -139,6 +139,9 @@ export const queryKeys = {
     activityLog: (directionId?: string) => ['review', 'activity-log', directionId] as const,
     areaActivityLog: (areaId: string, directionId?: string) =>
       ['review', 'area-activity-log', areaId, directionId] as const,
+    goalJourney: (goalId: string) => ['review', 'goal-journey', goalId] as const,
+    obstacleAnalysis: (start: string, end: string) =>
+      ['review', 'obstacle-analysis', start, end] as const,
   },
   // ============================================
   // Notifications (computed from tasks/goals)

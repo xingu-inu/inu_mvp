@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { format, isToday, isFuture, startOfDay, isBefore, parseISO } from 'date-fns'
@@ -65,7 +66,7 @@ function HomeDailyPanel() {
 function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
   const { data: apiTasks = [], isLoading } = useHomeTasks(selectedDate)
   const { data: currentDirection } = useDirection()
-  const tasks = mapApiTasksToEntities(apiTasks)
+  const tasks = useMemo(() => mapApiTasksToEntities(apiTasks), [apiTasks])
   const viewingToday = isToday(selectedDate)
   const viewingFuture = isFuture(startOfDay(selectedDate))
   const dateLabel = format(selectedDate, 'M월 d일 EEEE', { locale: ko })

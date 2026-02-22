@@ -11,7 +11,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
 import { queryKeys } from '@/lib/query/keys'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (

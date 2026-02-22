@@ -26,7 +26,6 @@ interface SlotBlockProps {
   isPastSlot?: boolean
   day: Date
   slotHeight?: number
-  timeProgress?: number
   onTaskClick: (taskId: string | null, day: Date) => void
 }
 
@@ -44,7 +43,6 @@ export const SlotBlock = memo(function SlotBlock({
   isPastSlot,
   day,
   slotHeight,
-  timeProgress,
   onTaskClick,
 }: SlotBlockProps) {
   const isEmpty = tasks.length === 0 && googleEvents.length === 0
@@ -63,7 +61,7 @@ export const SlotBlock = memo(function SlotBlock({
   items.sort((a, b) => a.sortKey - b.sortKey)
 
   const visibleItems = items.slice(0, SLOT_MAX_VISIBLE)
-  const hiddenCount = items.length - SLOT_MAX_VISIBLE
+  const hiddenCount = Math.max(0, items.length - SLOT_MAX_VISIBLE)
 
   return (
     <div
@@ -71,7 +69,7 @@ export const SlotBlock = memo(function SlotBlock({
         'relative overflow-hidden border-b border-[var(--color-border)]/50 transition-colors',
         isNow &&
           isToday &&
-          'border-t-2 border-t-[var(--color-primary-400)] bg-[var(--color-primary-50)]/30',
+          'border-l-[3px] border-l-[var(--color-primary-400)] bg-[var(--color-primary-50)]/50',
         isPastSlot && !isNow && 'opacity-60 saturate-75'
       )}
       style={{
@@ -81,12 +79,6 @@ export const SlotBlock = memo(function SlotBlock({
         transition: 'height 200ms ease-out, min-height 200ms ease-out',
       }}
     >
-      {timeProgress != null && (
-        <div
-          className="pointer-events-none absolute right-0 left-0 z-10 border-t-2 border-[var(--color-primary-500)]"
-          style={{ top: `${timeProgress * 100}%` }}
-        />
-      )}
       {!isEmpty && (
         <div className="flex flex-col gap-0.5 p-0.5">
           {visibleItems.map((item) =>

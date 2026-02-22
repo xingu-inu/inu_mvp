@@ -48,6 +48,7 @@ import { TaskMoveGoalPopover } from '../shared/task-move-goal-popover'
 import { OverflowMenu, type OverflowMenuItem } from '../shared/overflow-menu'
 import { useGoalWithRelations, useGoals, useUpdateGoal, useDeleteGoal } from '@/queries/use-goals'
 import { cn } from '@/lib/utils'
+import { DragOverlayCard } from '@/components/common'
 import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
 import { useRoadmapStore, selectInlineMode, type InlineMode } from '@/stores/roadmap.store'
 import { TIME_SLOT_CONFIG } from '@/lib/constants/time-slots'
@@ -507,14 +508,17 @@ const FlatTaskListWithDnd = memo(function FlatTaskListWithDnd({
   reorderTasks: ReturnType<typeof useReorderTasks>
 }) {
   const [localTasks, setLocalTasks] = useState(tasks)
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   useEffect(() => {
     setLocalTasks(tasks)
   }, [tasks])
 
   const tasksById = useMemo(() => new Map(localTasks.map((t) => [t.id, t])), [localTasks])
+  const activeTask = activeTaskId ? tasksById.get(activeTaskId) : null
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      setActiveTaskId(null)
       const { active, over } = event
       if (over && active.id !== over.id) {
         setLocalTasks((prev) => {
@@ -535,9 +539,13 @@ const FlatTaskListWithDnd = memo(function FlatTaskListWithDnd({
     [localTasks, goalId, reorderTasks]
   )
 
-  const handleDragStart = useCallback(() => {
-    clearInline()
-  }, [clearInline])
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      setActiveTaskId(event.active.id as string)
+      clearInline()
+    },
+    [clearInline]
+  )
 
   return (
     <DndContext
@@ -556,6 +564,20 @@ const FlatTaskListWithDnd = memo(function FlatTaskListWithDnd({
         onTaskClick={onTaskClick}
         clearInline={clearInline}
       />
+      <DragOverlay dropAnimation={DROP_ANIMATION}>
+        {activeTask ? (
+          <DragOverlayCard>
+            <TaskRow
+              task={activeTask}
+              areaMap={areaMap}
+              goalId={goalId}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              onStatusChange={() => {}}
+            />
+          </DragOverlayCard>
+        ) : null}
+      </DragOverlay>
     </DndContext>
   )
 })
@@ -1295,7 +1317,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                   {/* DragOverlay */}
                   <DragOverlay dropAnimation={DROP_ANIMATION}>
                     {activeTask ? (
-                      <div className="rounded-md bg-[var(--color-bg-primary)] shadow-lg ring-2 ring-[var(--color-primary-300)]">
+                      <DragOverlayCard>
                         <TaskRow
                           task={activeTask}
                           areaMap={areaMap}
@@ -1304,7 +1326,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                           onDelete={() => {}}
                           onStatusChange={() => {}}
                         />
-                      </div>
+                      </DragOverlayCard>
                     ) : null}
                   </DragOverlay>
                 </DndContext>

@@ -17,3 +17,4 @@ export {
   type ActivityEvent,
   type ActivityEventType,
 } from './use-activity-log'
+export { useGoalJourney, type JourneyEvent, type JourneyEventType } from './use-goal-journey'

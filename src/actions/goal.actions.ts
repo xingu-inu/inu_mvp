@@ -1,7 +1,7 @@
 'use server'
 
 import { authAction, validate } from '@/lib/security'
-import { goalRepository } from '@/repositories'
+import { goalRepository, statusHistoryRepository } from '@/repositories'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createGoalSchema, updateGoalSchema } from '@/lib/validations'
@@ -86,6 +86,22 @@ export const updateGoal = authAction(
     const v = validate(updateGoalSchema, input)
     if (!v.success) return v.response
 
+    // 상태 변경 시 히스토리 기록
+    if (v.data.status) {
+      const current = await goalRepository.getById(supabase, id, user.id)
+      if (current && current.status !== v.data.status) {
+        await statusHistoryRepository.insertGoalHistory(
+          supabase,
+          user.id,
+          id,
+          current.status,
+          v.data.status,
+          input.status_change_reason,
+          input.status_change_note
+        )
+      }
+    }
+
     const goal = await goalRepository.update(supabase, id, user.id, v.data)
     return successResponse(goal)
   },
@@ -98,6 +114,20 @@ export const updateGoal = authAction(
 export const updateGoalStatus = authAction(
   'updateGoalStatus',
   async ({ supabase, user }, id: string, status: GoalStatus): Promise<ApiResponse<Goal>> => {
+    // 현재 상태 조회 후 히스토리 기록
+    const current = await goalRepository.getById(supabase, id, user.id)
+    if (current && current.status !== status) {
+      await statusHistoryRepository.insertGoalHistory(
+        supabase,
+        user.id,
+        id,
+        current.status,
+        status,
+        null,
+        null
+      )
+    }
+
     const goal = await goalRepository.updateStatus(supabase, id, user.id, status)
     return successResponse(goal)
   },

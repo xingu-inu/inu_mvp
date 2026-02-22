@@ -11,6 +11,7 @@ import { InlineTaskInput } from './inline-task-input'
 import { DailySectionHeader } from './daily-section-header'
 import { GoalPickerPopover } from './goal-picker-popover'
 import { DragOverlayCard } from '@/components/common'
+import { cn } from '@/lib/utils'
 import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
 import { useTaskDnd } from '../hooks/use-task-dnd'
 import type { HomeTask } from '@/types/entities'
@@ -172,11 +173,11 @@ function DailyDroppableSection({
     <section
       ref={setNodeRef}
       aria-labelledby="daily-tasks"
-      className="border-l-2 pl-3 transition-colors"
-      style={{
-        borderLeftColor: 'var(--color-text-tertiary)',
-        backgroundColor: isOver ? 'var(--color-bg-secondary)' : undefined,
-      }}
+      className={cn(
+        'rounded-lg border-l-2 pl-3 transition-all',
+        isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
+      )}
+      style={{ borderLeftColor: 'var(--color-text-tertiary)' }}
     >
       <DailySectionHeader taskCount={tasks.length} />
 

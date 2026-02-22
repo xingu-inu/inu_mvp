@@ -25,13 +25,10 @@ import type { SlotGoogleEvents } from '../hooks/use-task-layout'
 
 const GUTTER_PX = 56
 
-/** Check if a slot is before the current slot (for past-slot dimming on today) */
-function isSlotCurrent(slot: string, currentSlot: string): boolean {
+/** Check if a slot is strictly before the current slot (for past-slot dimming on today) */
+function isSlotPast(slot: string, currentSlot: string): boolean {
   const order = ['dawn', 'morning', 'afternoon', 'evening']
-  const slotIdx = order.indexOf(slot)
-  const currentIdx = order.indexOf(currentSlot)
-  // Slot is "past" if it comes before the current slot
-  return slotIdx >= currentIdx
+  return order.indexOf(slot) < order.indexOf(currentSlot)
 }
 
 /**
@@ -75,10 +72,12 @@ export function WeekViewGrid() {
     return result
   }, [googleEvents])
 
-  // Current slot tracking (updates every minute)
+  // Current slot + progress tracking (updates every minute)
   const [currentSlot, setCurrentSlot] = useState(getCurrentSlot)
   useEffect(() => {
-    const interval = setInterval(() => setCurrentSlot(getCurrentSlot()), 60_000)
+    const interval = setInterval(() => {
+      setCurrentSlot(getCurrentSlot())
+    }, 60_000)
     return () => clearInterval(interval)
   }, [])
 
@@ -277,6 +276,7 @@ export function WeekViewGrid() {
                         ? { backgroundColor: `var(--color-slot-${slot})` }
                         : {}),
                       ...(gutterHeight ? { height: `${gutterHeight}px` } : { minHeight: '40px' }),
+                      transition: 'height 200ms ease-out, min-height 200ms ease-out',
                     }}
                   >
                     <span className="text-center text-sm leading-tight text-[var(--color-text-disabled)]">
@@ -323,7 +323,7 @@ export function WeekViewGrid() {
                   )}
                 >
                   {DISPLAY_SLOTS.map((slot) => {
-                    const slotIsPast = dayIsToday && !isSlotCurrent(slot, currentSlot)
+                    const slotIsPast = dayIsToday && isSlotPast(slot, currentSlot)
                     return (
                       <SlotBlock
                         key={slot}

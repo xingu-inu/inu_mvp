@@ -9,6 +9,7 @@ import { WhyCard } from '../why-card'
 import type { GoalStatus, CheckInStatus, MoodLevel } from '@/types/entities'
 import type { GoalReviewData, TaskReviewSummary } from '../../hooks/use-review-roadmap-data'
 import { useGoalReflection, useSaveGoalReflection, useReviewPeriod } from '../../hooks'
+import { GoalJourneyTimeline } from './goal-journey-timeline'
 import { cn } from '@/lib/utils'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -442,6 +443,9 @@ export function GoalReviewDetail({ goalId }: GoalReviewDetailProps) {
 
       {/* Cross-linked tasks */}
       <CrossLinkedSection tasks={crossLinkedTasks} />
+
+      {/* Goal Journey Timeline */}
+      <GoalJourneyTimeline goalId={goalId} />
 
       {/* Goal reflection */}
       <GoalReflectionSection goalId={goalId} />

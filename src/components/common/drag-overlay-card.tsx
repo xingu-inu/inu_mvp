@@ -4,7 +4,7 @@ interface DragOverlayCardProps {
 
 export function DragOverlayCard({ children }: DragOverlayCardProps) {
   return (
-    <div className="rounded-lg bg-[var(--color-bg-primary)] shadow-lg ring-1 ring-black/5 dark:ring-white/10">
+    <div className="rounded-md bg-[var(--color-bg-primary)] shadow-lg ring-2 ring-[var(--color-primary-300)]">
       {children}
     </div>
   )

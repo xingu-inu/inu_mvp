@@ -25,6 +25,7 @@ interface SaveGoalReflectionInput {
   summary?: string
   progress_feeling?: MoodLevel
   next_focus?: string
+  why_temperature?: number
 }
 
 export function useSaveGoalReflection(goalId: string, periodStart: string, periodEnd: string) {
@@ -60,6 +61,7 @@ export function useSaveGoalReflection(goalId: string, periodStart: string, perio
               summary: newReflection.summary ?? null,
               progress_feeling: newReflection.progress_feeling ?? null,
               next_focus: newReflection.next_focus ?? null,
+              why_temperature: newReflection.why_temperature ?? null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }

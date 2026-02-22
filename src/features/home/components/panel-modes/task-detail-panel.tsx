@@ -95,6 +95,28 @@ export function TaskDetailPanel() {
   })
 
   const currentWhy = useWatch({ control: form.control, name: 'why' })
+  const [
+    schedRepeatType,
+    schedRepeatDays,
+    schedScheduledDate,
+    schedTimeSlot,
+    schedSpecificTime,
+    schedDurationMinutes,
+    schedStartDate,
+    schedEndDate,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      'repeat_type',
+      'repeat_days',
+      'scheduled_date',
+      'time_slot',
+      'specific_time',
+      'duration_minutes',
+      'start_date',
+      'end_date',
+    ],
+  })
   const watchedRelatedAreaIds = useWatch({ control: form.control, name: 'related_area_ids' })
   const rawRelatedGoalIds = useWatch({ control: form.control, name: 'related_goal_ids' })
   const relatedGoalIds = useMemo(() => rawRelatedGoalIds ?? [], [rawRelatedGoalIds])
@@ -104,7 +126,7 @@ export function TaskDetailPanel() {
   // Why suggestions (same as Roadmap)
   const goal = useMemo(
     () => (task?.goal_id ? (allGoals.find((g) => g.id === task.goal_id) ?? null) : null),
-    [allGoals, task?.goal_id]
+    [allGoals, task]
   )
   const goalArea = areas.find((a) => a.id === goal?.area_id)
   const areaType = (goalArea?.type ?? goal?.area?.type ?? 'custom') as AreaType
@@ -654,14 +676,14 @@ export function TaskDetailPanel() {
                 defaultOpen
                 preview={
                   <ScheduleSummary
-                    repeatType={form.watch('repeat_type') ?? 'once'}
-                    repeatDays={form.watch('repeat_days')}
-                    scheduledDate={form.watch('scheduled_date')}
-                    timeSlot={form.watch('time_slot')}
-                    specificTime={form.watch('specific_time')}
-                    durationMinutes={form.watch('duration_minutes')}
-                    startDate={form.watch('start_date')}
-                    endDate={form.watch('end_date')}
+                    repeatType={schedRepeatType ?? 'once'}
+                    repeatDays={schedRepeatDays}
+                    scheduledDate={schedScheduledDate}
+                    timeSlot={schedTimeSlot}
+                    specificTime={schedSpecificTime}
+                    durationMinutes={schedDurationMinutes}
+                    startDate={schedStartDate}
+                    endDate={schedEndDate}
                   />
                 }
               >

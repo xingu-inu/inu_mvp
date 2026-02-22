@@ -88,6 +88,28 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
   })
 
   const currentWhy = useWatch({ control: form.control, name: 'why' })
+  const [
+    schedRepeatType,
+    schedRepeatDays,
+    schedScheduledDate,
+    schedTimeSlot,
+    schedSpecificTime,
+    schedDurationMinutes,
+    schedStartDate,
+    schedEndDate,
+  ] = useWatch({
+    control: form.control,
+    name: [
+      'repeat_type',
+      'repeat_days',
+      'scheduled_date',
+      'time_slot',
+      'specific_time',
+      'duration_minutes',
+      'start_date',
+      'end_date',
+    ],
+  })
   const relatedAreaIds = useWatch({ control: form.control, name: 'related_area_ids' }) ?? []
   const rawRelatedGoalIds = useWatch({ control: form.control, name: 'related_goal_ids' })
   const relatedGoalIds = useMemo(() => rawRelatedGoalIds ?? [], [rawRelatedGoalIds])
@@ -205,14 +227,14 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
         defaultOpen
         preview={
           <ScheduleSummary
-            repeatType={form.watch('repeat_type') ?? 'once'}
-            repeatDays={form.watch('repeat_days')}
-            scheduledDate={form.watch('scheduled_date')}
-            timeSlot={form.watch('time_slot')}
-            specificTime={form.watch('specific_time')}
-            durationMinutes={form.watch('duration_minutes')}
-            startDate={form.watch('start_date')}
-            endDate={form.watch('end_date')}
+            repeatType={schedRepeatType ?? 'once'}
+            repeatDays={schedRepeatDays}
+            scheduledDate={schedScheduledDate}
+            timeSlot={schedTimeSlot}
+            specificTime={schedSpecificTime}
+            durationMinutes={schedDurationMinutes}
+            startDate={schedStartDate}
+            endDate={schedEndDate}
           />
         }
       >

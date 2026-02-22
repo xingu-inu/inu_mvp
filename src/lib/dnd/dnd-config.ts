@@ -11,4 +11,4 @@ export function useStandardSensors() {
 }
 
 /** Standard drop animation for DragOverlay */
-export const DROP_ANIMATION = { duration: 200, easing: 'ease' } as const
+export const DROP_ANIMATION = { duration: 120, easing: 'ease' } as const

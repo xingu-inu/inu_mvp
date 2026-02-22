@@ -74,6 +74,7 @@ export const goalReflectionRepository = {
           summary: input.summary ?? null,
           progress_feeling: input.progress_feeling ?? null,
           next_focus: input.next_focus ?? null,
+          why_temperature: input.why_temperature ?? null,
           updated_at: now(),
         },
         { onConflict: 'goal_id,period_start,period_end' }

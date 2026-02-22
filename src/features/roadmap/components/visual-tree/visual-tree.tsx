@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useRef, memo } from 'react'
+import { useMemo, useCallback, useRef, useState, memo } from 'react'
 import {
   useRoadmapStore,
   selectSelectedNodeId,
@@ -10,9 +10,11 @@ import {
   type Selection,
 } from '@/stores/roadmap.store'
 import { TreeNode } from './tree-node'
+import { TreeQuickAdd } from './tree-quick-add'
 import { CrossLinkOverlay, type CrossLink } from '../cross-link-overlay'
 import type { VisualTreeNode } from './tree-node-card'
 import type { Direction, Area, Goal } from '@/types/entities'
+import type { AreaType } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
 
 interface VisualTreeProps {
@@ -33,6 +35,9 @@ export const VisualTree = memo(function VisualTree({
   const select = useRoadmapStore((s) => s.select)
   const focusGoal = useRoadmapStore((s) => s.focusGoal)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Quick Add state — which node's popover is open
+  const [addingToId, setAddingToId] = useState<string | null>(null)
 
   const { tree: treeData, crossLinks } = useMemo(
     () => buildVisualTreeData(direction, areas, goals, statusFilter),
@@ -55,6 +60,64 @@ export const VisualTree = memo(function VisualTree({
     }
     return map
   }, [goals])
+
+  // Map area ID → area type for sample suggestions
+  const areaTypeMap = useMemo(() => {
+    const map = new Map<string, AreaType>()
+    for (const area of areas) {
+      map.set(area.id, area.type as AreaType)
+    }
+    return map
+  }, [areas])
+
+  // Map goal ID → area ID for context lookup
+  const goalAreaMap = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const goal of goals) {
+      map.set(goal.id, goal.area_id)
+    }
+    return map
+  }, [goals])
+
+  const handleStartAdd = useCallback((_type: SelectedNodeType, id: string) => {
+    setAddingToId(id)
+  }, [])
+
+  const handleCancelAdd = useCallback(() => {
+    setAddingToId(null)
+  }, [])
+
+  const getQuickAddContent = useCallback(
+    (node: VisualTreeNode) => {
+      const parentType = node.type as 'direction' | 'area' | 'goal' | 'group'
+      let goalId: string | undefined
+      let areaType: AreaType | undefined
+
+      if (parentType === 'area') {
+        areaType = areaTypeMap.get(node.id)
+      } else if (parentType === 'goal') {
+        const areaId = goalAreaMap.get(node.id)
+        if (areaId) areaType = areaTypeMap.get(areaId)
+      } else if (parentType === 'group') {
+        goalId = parentGoalMap.get(node.id)
+        if (goalId) {
+          const areaId = goalAreaMap.get(goalId)
+          if (areaId) areaType = areaTypeMap.get(areaId)
+        }
+      }
+
+      return (
+        <TreeQuickAdd
+          parentType={parentType}
+          parentId={node.id}
+          goalId={goalId}
+          areaType={areaType}
+          onClose={handleCancelAdd}
+        />
+      )
+    },
+    [areaTypeMap, goalAreaMap, parentGoalMap, handleCancelAdd]
+  )
 
   const handleNodeSelect = useCallback(
     (type: SelectedNodeType, id: string) => {
@@ -99,6 +162,10 @@ export const VisualTree = memo(function VisualTree({
           onNodeSelect={handleNodeSelect}
           isFormMode={false}
           layoutDirection={layoutDirection}
+          addingToId={addingToId}
+          onStartAdd={handleStartAdd}
+          onCancelAdd={handleCancelAdd}
+          getQuickAddContent={getQuickAddContent}
         />
       </div>
       {crossLinks.length > 0 && (

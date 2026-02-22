@@ -401,10 +401,16 @@ export function groupTasksByArea(
     }
   }
 
-  // Add empty groups for areas that have no tasks yet
+  // Ensure all areas use authoritative sort_order from allAreas,
+  // and add empty groups for areas that have no tasks yet.
+  // Task-embedded area.sort_order can be missing (e.g. get_today_tasks RPC),
+  // so allAreas is the single source of truth for ordering.
   if (allAreas) {
     for (const area of allAreas) {
-      if (!areaMap.has(area.id)) {
+      const existing = areaMap.get(area.id)
+      if (existing) {
+        existing.area.sort_order = area.sort_order
+      } else {
         areaMap.set(area.id, {
           area: {
             id: area.id,

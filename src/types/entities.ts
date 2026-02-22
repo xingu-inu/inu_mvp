@@ -477,6 +477,31 @@ export interface ArchivedRoadmapData {
 }
 
 // ============================================
+// Status History (Goal/Task 상태 변경 히스토리)
+// ============================================
+export interface GoalStatusHistory {
+  id: string
+  goal_id: string
+  user_id: string
+  from_status: GoalStatus
+  to_status: GoalStatus
+  reason: string | null
+  note: string | null
+  created_at: string
+}
+
+export interface TaskStatusHistory {
+  id: string
+  task_id: string
+  user_id: string
+  from_status: TaskStatus
+  to_status: TaskStatus
+  reason: string | null
+  note: string | null
+  created_at: string
+}
+
+// ============================================
 // Monthly Reflection
 // ============================================
 export interface MonthlyReflection extends BaseEntity {
@@ -511,6 +536,7 @@ export interface GoalReflection extends BaseEntity {
   summary: string | null
   progress_feeling: MoodLevel | null
   next_focus: string | null
+  why_temperature: number | null // 1-5 (1=cold, 5=burning)
 }
 
 export interface CreateGoalReflectionInput {
@@ -520,12 +546,14 @@ export interface CreateGoalReflectionInput {
   summary?: string
   progress_feeling?: MoodLevel
   next_focus?: string
+  why_temperature?: number
 }
 
 export interface UpdateGoalReflectionInput {
   summary?: string
   progress_feeling?: MoodLevel
   next_focus?: string
+  why_temperature?: number
 }
 
 // ============================================

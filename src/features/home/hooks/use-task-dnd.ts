@@ -109,6 +109,11 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
   // ── Debounced server mutation ──
   const mutation = useMutation({
     mutationFn: moveNode,
+    onSuccess: () => {
+      // Target only the affected date/week caches (not all ['tasks', 'home'])
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.home(dateStr) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.tasks.homeWeek(weekStartStr) })
+    },
     onError: () => {
       if (previousDataRef.current) {
         queryClient.setQueryData(queryKeys.tasks.home(dateStr), previousDataRef.current.daily)
@@ -118,10 +123,6 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
         )
       }
       toast.error('이동에 실패했어요. 다시 시도해주세요.')
-    },
-    onSettled: () => {
-      // Prefix match: invalidates both tasks.home(date) AND tasks.homeWeek(week)
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
     },
   })
 

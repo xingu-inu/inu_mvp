@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useReviewPeriod } from './use-review-period'
 import { useReviewDirection } from './use-review-direction'
 import { calculateCheckInRate, RECENT_CHECKINS_LIMIT } from '../utils/review-utils'
-import type { GoalStatus, CheckInStatus } from '@/types/entities'
+import type { GoalStatus, CheckInStatus, TimeSlot } from '@/types/entities'
 
 // ============================================
 // Types
@@ -18,6 +18,7 @@ export interface TaskReviewSummary {
   taskName: string
   why: string | null
   groupId: string | null
+  timeSlot: TimeSlot | null
   streakCount: number
   bestStreak: number
   isActive: boolean
@@ -36,6 +37,7 @@ export interface GoalReviewData {
     name: string
     status: GoalStatus
     why: string | null
+    createdAt: string
   }
   groups: Array<{
     id: string
@@ -76,10 +78,10 @@ async function fetchReviewRoadmapData(
     `
       id, name, emoji, color, why,
       goals (
-        id, name, status, why,
+        id, name, status, why, created_at,
         groups (id, name, is_completed, sort_order),
         tasks (
-          id, name, why, group_id, streak_count, best_streak, is_active, related_goal_ids,
+          id, name, why, group_id, time_slot, streak_count, best_streak, is_active, related_goal_ids,
           check_ins (date, status)
         )
       )
@@ -129,6 +131,7 @@ async function fetchReviewRoadmapData(
             taskName: task.name,
             why: task.why,
             groupId: task.group_id,
+            timeSlot: (task.time_slot as TimeSlot) ?? null,
             streakCount: task.streak_count ?? 0,
             bestStreak: task.best_streak ?? 0,
             isActive: task.is_active ?? true,
@@ -150,6 +153,7 @@ async function fetchReviewRoadmapData(
             name: goal.name,
             status: goal.status as GoalStatus,
             why: goal.why,
+            createdAt: goal.created_at ?? '',
           },
           groups,
           tasks,

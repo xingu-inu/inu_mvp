@@ -100,7 +100,7 @@ export async function batchReorder(
 
   const { error } = await supabase.rpc('batch_update_sort_order', {
     p_table_name: tableName,
-    p_updates: JSON.stringify(updates),
+    p_updates: updates,
   })
   if (error) handleSupabaseError(error)
 }

@@ -6,6 +6,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { AreaSectionHeader } from './area-section-header'
 import { SortableTaskRow } from './sortable-task-row'
 import { InlineTaskInput } from './inline-task-input'
+import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
 
 interface SortableAreaSectionProps {
@@ -56,7 +57,6 @@ export function SortableAreaSection({
     transition,
     opacity: isDragging ? 0.3 : 1,
     borderLeftColor: area.color,
-    backgroundColor: isOver ? 'var(--color-bg-secondary)' : undefined,
   }
 
   const taskIds = tasks.map((t) => t.id)
@@ -69,7 +69,10 @@ export function SortableAreaSection({
       }}
       style={sortableStyle}
       aria-labelledby={`area-${area.id}`}
-      className="border-l-2 pl-3 transition-colors"
+      className={cn(
+        'rounded-lg border-l-2 pl-3 transition-all',
+        isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
+      )}
     >
       {/* Area header — whole block is draggable */}
       <div

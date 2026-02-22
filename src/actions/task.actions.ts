@@ -1,7 +1,7 @@
 'use server'
 
 import { authAction, validate } from '@/lib/security'
-import { taskRepository } from '@/repositories'
+import { taskRepository, statusHistoryRepository } from '@/repositories'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createTaskSchema, updateTaskSchema } from '@/lib/validations'
@@ -138,6 +138,22 @@ export const updateTask = authAction(
   async ({ supabase, user }, id: string, input: UpdateTaskInput): Promise<ApiResponse<Task>> => {
     const v = validate(updateTaskSchema, input)
     if (!v.success) return v.response
+
+    // 상태 변경 시 히스토리 기록
+    if (v.data.status) {
+      const current = await taskRepository.getById(supabase, id, user.id)
+      if (current && current.status !== v.data.status) {
+        await statusHistoryRepository.insertTaskHistory(
+          supabase,
+          user.id,
+          id,
+          current.status,
+          v.data.status,
+          v.data.status_change_reason,
+          v.data.status_change_note
+        )
+      }
+    }
 
     const task = await taskRepository.update(supabase, id, user.id, v.data)
 

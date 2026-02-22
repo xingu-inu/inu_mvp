@@ -154,3 +154,10 @@ export {
   getAdminFeedbacks,
   updateFeedbackStatus,
 } from './feedback.actions'
+
+// Status History
+export {
+  getGoalStatusHistory,
+  getTaskStatusHistory,
+  getObstacleAnalysis,
+} from './status-history.actions'
