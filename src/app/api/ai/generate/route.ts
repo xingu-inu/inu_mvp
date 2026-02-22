@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createClient } from '@/lib/supabase/server'
-import { generateContent } from '@/lib/ai/gemini-client'
+import { authRoute } from '@/lib/security'
+import { generateContent } from '@/lib/ai/generate-client'
 import { SYSTEM_PROMPT } from '@/lib/ai/constants'
 import { buildPrompt } from '@/lib/ai/prompts'
-import { isRateLimited } from '@/lib/rate-limit'
 import { detectInjectionPatterns } from '@/lib/ai/sanitize'
+import { profileRepository } from '@/repositories/profile.repository'
+import type { AiModelId } from '@/lib/ai/provider'
 import type { AiGenerateRequest, AiGenerateResponse } from '@/lib/ai/types'
 
 const contextSchema = z.object({
@@ -328,107 +329,90 @@ function parseJsonResponse(raw: string): AiGenerateResponse {
   throw new Error('Failed to parse AI response as JSON')
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    // Auth check
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: { code: 'AUTH_REQUIRED', message: '로그인이 필요합니다.' } },
-        { status: 401 }
-      )
-    }
+export const POST = authRoute(
+  'ai.generate',
+  async (ctx): Promise<NextResponse> => {
+    try {
+      // Parse and validate
+      let body: unknown
+      try {
+        body = await ctx.request.json()
+      } catch {
+        return NextResponse.json(
+          {
+            success: false,
+            error: { code: 'INVALID_BODY', message: '요청 데이터를 읽지 못했어요.' },
+          },
+          { status: 400 }
+        )
+      }
+      const parsed = aiRequestSchema.safeParse(body)
+      if (!parsed.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해주세요.' },
+          },
+          { status: 400 }
+        )
+      }
 
-    if (isRateLimited(`${user.id}:generate`, 5)) {
+      // Sanitize user inputs before prompt construction
+      const aiRequest = parsed.data as AiGenerateRequest
+
+      // Log potential injection attempts (monitoring only, not blocking)
+      const textsToCheck: string[] = []
+      if ('input' in aiRequest && typeof aiRequest.input === 'string') {
+        textsToCheck.push(aiRequest.input)
+      }
+      if ('context' in aiRequest && aiRequest.context) {
+        const reqCtx = aiRequest.context as Record<string, unknown>
+        for (const val of Object.values(reqCtx)) {
+          if (typeof val === 'string') textsToCheck.push(val)
+        }
+      }
+      for (const text of textsToCheck) {
+        if (detectInjectionPatterns(text)) {
+          console.warn('[ai-security] Injection pattern detected in /generate request')
+          break
+        }
+      }
+
+      // Get user's preferred model
+      const profile = await profileRepository.get(ctx.supabase, ctx.user.id)
+      const modelId = (profile?.ai_model as AiModelId) ?? undefined
+
+      // Build prompt and generate
+      const userPrompt = buildPrompt(aiRequest)
+      const rawResponse = await generateContent(SYSTEM_PROMPT, userPrompt, modelId)
+
+      // Parse response
+      const aiResponse = parseJsonResponse(rawResponse)
+
+      return NextResponse.json({ success: true, data: aiResponse })
+    } catch (error) {
+      console.error('AI generate error:', error)
+
+      const message = error instanceof Error ? error.message : ''
+      const code = message.includes('blocked')
+        ? 'AI_RESPONSE_BLOCKED'
+        : message.includes('parse')
+          ? 'AI_PARSE_ERROR'
+          : message.includes('empty')
+            ? 'AI_EMPTY_RESPONSE'
+            : 'AI_GENERATION_FAILED'
+
       return NextResponse.json(
         {
           success: false,
           error: {
-            code: 'RATE_LIMITED',
-            message: '요청이 너무 많아요. 잠시 후 다시 시도해주세요.',
+            code,
+            message: 'AI 응답을 생성하지 못했어요. 잠시 후 다시 시도해주세요.',
           },
         },
-        { status: 429 }
+        { status: 500 }
       )
     }
-
-    // Parse and validate
-    let body: unknown
-    try {
-      body = await request.json()
-    } catch {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: 'INVALID_BODY', message: '요청 데이터를 읽지 못했어요.' },
-        },
-        { status: 400 }
-      )
-    }
-    const parsed = aiRequestSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: '입력값을 확인해주세요.' },
-        },
-        { status: 400 }
-      )
-    }
-
-    // Sanitize user inputs before prompt construction
-    const aiRequest = parsed.data as AiGenerateRequest
-
-    // Log potential injection attempts (monitoring only, not blocking)
-    const textsToCheck: string[] = []
-    if ('input' in aiRequest && typeof aiRequest.input === 'string') {
-      textsToCheck.push(aiRequest.input)
-    }
-    if ('context' in aiRequest && aiRequest.context) {
-      const ctx = aiRequest.context as Record<string, unknown>
-      for (const val of Object.values(ctx)) {
-        if (typeof val === 'string') textsToCheck.push(val)
-      }
-    }
-    for (const text of textsToCheck) {
-      if (detectInjectionPatterns(text)) {
-        console.warn('[ai-security] Injection pattern detected in /generate request')
-        break
-      }
-    }
-
-    // Build prompt and generate
-    const userPrompt = buildPrompt(aiRequest)
-    const rawResponse = await generateContent(SYSTEM_PROMPT, userPrompt)
-
-    // Parse response
-    const aiResponse = parseJsonResponse(rawResponse)
-
-    return NextResponse.json({ success: true, data: aiResponse })
-  } catch (error) {
-    console.error('AI generate error:', error)
-
-    const message = error instanceof Error ? error.message : ''
-    const code = message.includes('blocked')
-      ? 'AI_RESPONSE_BLOCKED'
-      : message.includes('parse')
-        ? 'AI_PARSE_ERROR'
-        : message.includes('empty')
-          ? 'AI_EMPTY_RESPONSE'
-          : 'AI_GENERATION_FAILED'
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code,
-          message: 'AI 응답을 생성하지 못했어요. 잠시 후 다시 시도해주세요.',
-        },
-      },
-      { status: 500 }
-    )
-  }
-}
+  },
+  { csrf: true, rateLimit: { limit: 5 } }
+)

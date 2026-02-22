@@ -44,6 +44,49 @@ export function detectInjectionPatterns(text: string): boolean {
   return allPatterns.some((pattern) => pattern.test(text))
 }
 
+// ---------------------------------------------------------------------------
+// Critical jailbreak patterns — explicit override / persona-swap attempts
+// ---------------------------------------------------------------------------
+
+const CRITICAL_PATTERNS_EN = [
+  /ignore\s+all\s+instructions/i,
+  /ignore\s+previous\s+instructions/i,
+  /ignore\s+your\s+instructions/i,
+  /you\s+are\s+now\s+/i,
+  /act\s+as\s+/i,
+  /jailbreak/i,
+  /DAN\s+mode/i,
+  /developer\s+mode/i,
+]
+
+const CRITICAL_PATTERNS_KO = [
+  /이전\s*지시를?\s*무시/,
+  /지시를?\s*무시/,
+  /모든\s*제한을?\s*해제/,
+  /제한\s*해제/,
+]
+
+/**
+ * Detect explicit jailbreak / persona-override attempts.
+ * Returns true for high-confidence adversarial inputs that should be blocked.
+ */
+export function detectCriticalInjection(text: string): boolean {
+  const allCritical = [...CRITICAL_PATTERNS_EN, ...CRITICAL_PATTERNS_KO]
+  return allCritical.some((pattern) => pattern.test(text))
+}
+
+/**
+ * Return a severity tier for the given text.
+ * - 'critical'    — explicit jailbreak attempt (block)
+ * - 'suspicious'  — possible injection pattern (log/monitor)
+ * - 'none'        — clean input
+ */
+export function getInjectionSeverity(text: string): 'none' | 'suspicious' | 'critical' {
+  if (detectCriticalInjection(text)) return 'critical'
+  if (detectInjectionPatterns(text)) return 'suspicious'
+  return 'none'
+}
+
 // ── Input Sanitization ──
 
 /**

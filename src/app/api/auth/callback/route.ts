@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { publicRoute } from '@/lib/security'
 
 /**
  * Allowed path prefixes for post-auth redirect.
@@ -45,38 +45,41 @@ function sanitizeRedirectPath(path: string): string {
   return isAllowed ? decoded : '/home'
 }
 
-export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = sanitizeRedirectPath(searchParams.get('next') ?? '/home')
+export const GET = publicRoute(
+  'auth.callback',
+  async (ctx): Promise<NextResponse> => {
+    const { searchParams, origin } = new URL(ctx.request.url)
+    const code = searchParams.get('code')
+    const next = sanitizeRedirectPath(searchParams.get('next') ?? '/home')
 
-  if (code) {
-    const supabase = await createClient()
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (code) {
+      const { error } = await ctx.supabase.auth.exchangeCodeForSession(code)
 
-    if (!error) {
-      // Check if user completed onboarding
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      if (!error) {
+        // Check if user completed onboarding
+        const {
+          data: { user },
+        } = await ctx.supabase.auth.getUser()
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', user.id)
-          .single()
+        if (user) {
+          const { data: profile } = await ctx.supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single()
 
-        // Redirect to onboarding if not completed
-        if (!profile?.onboarding_completed) {
-          return NextResponse.redirect(`${origin}/onboarding`)
+          // Redirect to onboarding if not completed
+          if (!profile?.onboarding_completed) {
+            return NextResponse.redirect(`${origin}/onboarding`)
+          }
         }
+
+        return NextResponse.redirect(`${origin}${next}`)
       }
-
-      return NextResponse.redirect(`${origin}${next}`)
     }
-  }
 
-  // Return the user to an error page with instructions
-  return NextResponse.redirect(`${origin}/login?error=auth_callback_error`)
-}
+    // Return the user to an error page with instructions
+    return NextResponse.redirect(`${origin}/login?error=auth_callback_error`)
+  },
+  { rateLimit: { limit: 10 } }
+)

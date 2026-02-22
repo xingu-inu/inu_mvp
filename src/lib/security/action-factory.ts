@@ -10,13 +10,13 @@
  */
 
 import type { User } from '@supabase/supabase-js'
-import { headers } from 'next/headers'
 
 import { createClient } from '@/lib/supabase/server'
 import { errorResponse } from '@/lib/api/response'
 import { ErrorCode } from '@/lib/api/errors'
 import { isRateLimited } from '@/lib/rate-limit'
 import { secureLog } from './logger'
+import { getClientIp, isNextNavigationError } from './helpers'
 import type { TypedSupabaseClient } from '@/repositories/base.repository'
 import type { ApiErrorResponse } from '@/types/api'
 
@@ -48,19 +48,6 @@ interface ActionOptions {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function getClientIp(): Promise<string> {
-  const h = await headers()
-  return h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
-}
-
-function isNextNavigationError(error: unknown): boolean {
-  const digest = (error as { digest?: string })?.digest
-  return (
-    typeof digest === 'string' &&
-    (digest.startsWith('NEXT_REDIRECT') || digest.startsWith('NEXT_NOT_FOUND'))
-  )
-}
 
 function handleCatchError(
   name: string,
@@ -101,7 +88,7 @@ export function authAction<TArgs extends unknown[], TResult>(
 
       if (options?.rateLimit) {
         const { limit, windowMs } = options.rateLimit
-        if (isRateLimited(`user:${user.id}:${name}`, limit, windowMs)) {
+        if (await isRateLimited(`user:${user.id}:${name}`, limit, windowMs)) {
           return errorResponse(ErrorCode.RATE_LIMITED)
         }
       }
@@ -129,7 +116,7 @@ export function publicAction<TArgs extends unknown[], TResult>(
 
       if (options?.rateLimit) {
         const { limit, windowMs } = options.rateLimit
-        if (isRateLimited(`ip:${ip}:${name}`, limit, windowMs)) {
+        if (await isRateLimited(`ip:${ip}:${name}`, limit, windowMs)) {
           return errorResponse(ErrorCode.RATE_LIMITED)
         }
       }
@@ -166,15 +153,15 @@ export function adminAction<TArgs extends unknown[], TResult>(
         .from('profiles')
         .select('is_admin')
         .eq('id', user.id)
-        .single()
+        .single<{ is_admin: boolean }>()
 
-      if (!(profile as unknown as { is_admin: boolean } | null)?.is_admin) {
+      if (!profile?.is_admin) {
         return errorResponse(ErrorCode.AUTH_FORBIDDEN)
       }
 
       // Rate limit (default 30/min, overridable)
       const rl = options?.rateLimit ?? DEFAULT_ADMIN_RATE_LIMIT
-      if (isRateLimited(`admin:${user.id}:${name}`, rl.limit, rl.windowMs)) {
+      if (await isRateLimited(`admin:${user.id}:${name}`, rl.limit, rl.windowMs)) {
         return errorResponse(ErrorCode.RATE_LIMITED)
       }
 

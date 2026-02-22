@@ -1,27 +1,18 @@
-import { headers } from 'next/headers'
-
-import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { publicRoute } from '@/lib/security'
 
-export async function POST(request: Request) {
-  // Origin validation — reject cross-origin signout requests (CSRF protection)
-  const headersList = await headers()
-  const origin = headersList.get('origin')
-  const { origin: requestOrigin } = new URL(request.url)
+export const POST = publicRoute(
+  'auth.signout',
+  async (ctx): Promise<NextResponse> => {
+    const { origin } = new URL(ctx.request.url)
 
-  if (origin && origin !== requestOrigin) {
-    return NextResponse.json({ error: '잘못된 요청입니다.' }, { status: 403 })
-  }
+    const { error } = await ctx.supabase.auth.signOut()
 
-  const supabase = await createClient()
+    if (error) {
+      return NextResponse.json({ error: '로그아웃에 실패했습니다.' }, { status: 500 })
+    }
 
-  const { error } = await supabase.auth.signOut()
-
-  if (error) {
-    return NextResponse.json({ error: '로그아웃에 실패했습니다.' }, { status: 500 })
-  }
-
-  return NextResponse.redirect(`${requestOrigin}/login`, {
-    status: 302,
-  })
-}
+    return NextResponse.redirect(`${origin}/login`, { status: 302 })
+  },
+  { csrf: true, rateLimit: { limit: 5 } }
+)

@@ -1,5 +1,8 @@
 export { authAction, publicAction, adminAction } from './action-factory'
 export type { AuthContext, PublicContext } from './action-factory'
+export { authRoute, publicRoute } from './route-factory'
+export type { RouteAuthContext, RoutePublicContext } from './route-factory'
 export { secureLog } from './logger'
+export { getClientIp, isNextNavigationError, validateOrigin } from './helpers'
 export { validateImageFile, type FileValidationResult } from './file-validation'
 export { validate } from './validate'

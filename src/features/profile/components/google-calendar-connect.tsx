@@ -2,9 +2,12 @@
 
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
-import { toggleGoogleCalendarSync } from '@/actions/google-calendar.actions'
+import {
+  toggleGoogleCalendarSync,
+  disconnectGoogleCalendar,
+} from '@/actions/google-calendar.actions'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +35,7 @@ function GoogleCalendarIcon({ className }: { className?: string }) {
 }
 
 export function GoogleCalendarConnect() {
-  const { data: connection, isLoading: isLoadingConnection } = useGoogleCalendarConnection()
+  const { data: connection } = useGoogleCalendarConnection()
   const queryClient = useQueryClient()
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [isTogglingSync, setIsTogglingSync] = useState(false)
@@ -44,8 +47,8 @@ export function GoogleCalendarConnect() {
   const handleDisconnect = async () => {
     setIsDisconnecting(true)
     try {
-      const res = await fetch('/api/google-calendar/disconnect', { method: 'POST' })
-      if (res.ok) {
+      const result = await disconnectGoogleCalendar()
+      if (result.success) {
         await queryClient.invalidateQueries({ queryKey: ['google-calendar'] })
         toast.success('Google Calendar 연결이 해제되었습니다')
       } else {
@@ -78,17 +81,7 @@ export function GoogleCalendarConnect() {
     }
   }
 
-  // 로딩 중: 설정 버튼과 같은 높이 유지
-  if (isLoadingConnection) {
-    return (
-      <div className="flex items-center gap-3 rounded-xl px-3 py-3">
-        <Loader2 className="h-5 w-5 animate-spin text-[var(--color-text-tertiary)]" />
-        <span className="text-sm text-[var(--color-text-tertiary)]">확인 중...</span>
-      </div>
-    )
-  }
-
-  // 미연결: 설정 링크와 동일한 스타일
+  // 미연결 또는 로딩 중: 기본 UI 즉시 표시 (로딩 완료 시 연결 상태로 자연 전환)
   if (!connection) {
     return (
       <button

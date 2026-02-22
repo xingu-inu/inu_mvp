@@ -9,6 +9,7 @@ import { HomeViewToggle } from './home-view-toggle'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
+import { exportTasksToGoogleCalendar } from '@/actions/google-calendar.actions'
 import { queryKeys } from '@/lib/query/keys'
 import { toast } from 'sonner'
 
@@ -67,16 +68,12 @@ export function HomeHeader() {
     setPopoverOpen(false)
     try {
       const dateStr = format(currentDate, 'yyyy-MM-dd')
-      const res = await fetch('/api/google-calendar/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: dateStr }),
-      })
-      if (!res.ok) {
+      const result = await exportTasksToGoogleCalendar(dateStr)
+      if (!result.success) {
         toast.error('내보내기에 실패했어요')
         return
       }
-      const data = (await res.json()) as { exported: number; skipped: number; failed: number }
+      const data = result.data
       if (data.exported > 0) {
         toast.success(`${data.exported}개 Task를 Google Calendar에 추가했어요`)
       } else if (data.skipped > 0) {
