@@ -621,11 +621,13 @@ export interface Feedback {
 // Notifications (computed, no DB table)
 // ============================================
 export type NotificationType =
-  | 'incomplete_tasks'
   | 'streak_at_risk'
   | 'goal_deadline'
   | 'all_complete'
   | 'streak_milestone'
+  | 'weekly_summary'
+  | 'streak_recovery'
+  | 'goal_progress'
 
 export interface AppNotification {
   id: string
