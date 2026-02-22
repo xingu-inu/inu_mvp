@@ -1,3 +1,6 @@
+-- Enable moddatetime extension for auto-updating updated_at
+CREATE EXTENSION IF NOT EXISTS moddatetime WITH SCHEMA extensions;
+
 -- Goal-level reflections for Review
 CREATE TABLE IF NOT EXISTS goal_reflections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -21,4 +24,4 @@ CREATE POLICY "Users can manage own goal reflections"
 -- Auto-update updated_at on row changes
 CREATE TRIGGER set_goal_reflections_updated_at
   BEFORE UPDATE ON goal_reflections
-  FOR EACH ROW EXECUTE FUNCTION moddatetime(updated_at);
+  FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime(updated_at);
