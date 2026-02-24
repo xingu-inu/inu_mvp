@@ -1,5 +1,4 @@
 export { AchievementHero } from './achievement-hero'
-export { AreaBalanceBars } from './area-balance-bars'
+export { AreaBalanceView, AreaBalanceBars, AreaBalanceUnified } from './area-balance-view'
 export { AreaBalanceDetail } from './area-balance-detail'
-export { AreaBalanceUnified } from './area-balance-unified'
 export { MilestoneSection } from './milestone-cards'

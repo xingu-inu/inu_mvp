@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { Flame, TrendingUp, MousePointerClick } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
+import { useReviewRoadmapData } from '../hooks/use-review-roadmap-data'
 import { StreakBadge } from '@/components/ui/badge'
 import { extractActiveStreaks } from '../utils/timeline-utils'
 import type { AreaReviewData } from '../hooks/use-review-roadmap-data'
@@ -103,7 +104,7 @@ function StreakRow({ streak }: { streak: ActiveStreak }) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function ReviewPanelOverview() {
-  const roadmapData = useReviewStore((s) => s.roadmapData)
+  const { data: roadmapData = [] } = useReviewRoadmapData()
   const selectArea = useReviewStore((s) => s.selectArea)
 
   const overallRate = useMemo(() => computeOverallRate(roadmapData), [roadmapData])

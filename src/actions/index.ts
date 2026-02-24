@@ -1,5 +1,5 @@
 // Existing exports (Phase 3)
-export { getHomeTasks, getWeekHomeTasks, type HomeTask } from './home.actions'
+export { getHomeTasks, getWeekHomeTasks, type HomeTaskDto } from './home.actions'
 
 export {
   createCheckIn,

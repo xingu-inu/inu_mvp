@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,9 +21,9 @@ const SPARK_PAD = 3
 // Types
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-interface AreaBalanceUnifiedProps {
+interface AreaBalanceViewProps {
   areas: AreaBalance[]
-  trends: AreaTrendData[]
+  trends?: AreaTrendData[]
   selectedAreaId: string | null
   onSelectArea: (areaId: string) => void
   expandedAreaId: string | null
@@ -125,7 +125,7 @@ function AreaRow({
             style={{ width: `${Math.max(rate, 2)}%`, backgroundColor: area.areaColor }}
           />
         </div>
-        <Sparkline points={sparkPoints} color={area.areaColor} />
+        {sparkPoints.length >= 2 && <Sparkline points={sparkPoints} color={area.areaColor} />}
         <span className="w-8 text-right font-mono text-[10px] text-[var(--color-text-secondary)]">
           {rate}%
         </span>
@@ -147,7 +147,7 @@ function AreaRow({
             style={{ width: `${Math.max(rate, 2)}%`, backgroundColor: area.areaColor }}
           />
         </div>
-        <Sparkline points={sparkPoints} color={area.areaColor} />
+        {sparkPoints.length >= 2 && <Sparkline points={sparkPoints} color={area.areaColor} />}
         <span className="w-9 text-right font-mono text-xs text-[var(--color-text-secondary)]">
           {rate}%
         </span>
@@ -179,15 +179,18 @@ function AreaRow({
 // Main Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export function AreaBalanceUnified({
+export function AreaBalanceView({
   areas,
-  trends,
+  trends = [],
   selectedAreaId,
   onSelectArea,
   expandedAreaId,
   onToggleArea,
-}: AreaBalanceUnifiedProps) {
+}: AreaBalanceViewProps) {
   const [showAll, setShowAll] = useState(false)
+
+  // Phase 7-3: build Map once instead of trends.find() inside render loop
+  const trendMap = useMemo(() => new Map(trends.map((t) => [t.areaId, t])), [trends])
 
   if (areas.length === 0) return null
 
@@ -210,7 +213,7 @@ export function AreaBalanceUnified({
           <AreaRow
             key={area.areaId}
             area={area}
-            trendData={trends.find((t) => t.areaId === area.areaId)}
+            trendData={trendMap.get(area.areaId)}
             isSelected={selectedAreaId === area.areaId}
             isExpanded={expandedAreaId === area.areaId}
             onDesktopSelect={() => onSelectArea(area.areaId)}
@@ -235,3 +238,7 @@ export function AreaBalanceUnified({
     </motion.section>
   )
 }
+
+// Re-export aliases for backward compatibility
+export { AreaBalanceView as AreaBalanceBars }
+export { AreaBalanceView as AreaBalanceUnified }

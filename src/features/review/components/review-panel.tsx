@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ArrowLeft, MousePointerClick } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
+import { useReviewRoadmapData } from '../hooks/use-review-roadmap-data'
 import { JournalDayDetail } from './journal/journal-day-detail'
 import { AreaHistoryPanel } from './area-history-panel'
 import { GoalReviewDetail } from './overview/goal-review-detail'
@@ -46,9 +47,9 @@ function usePanelHeader(): {
   const selectedDate = useReviewStore((s) => s.selectedDate)
   const selectedAreaId = useReviewStore((s) => s.selectedAreaId)
   const selectedGoalId = useReviewStore((s) => s.selectedGoalId)
-  const roadmapData = useReviewStore((s) => s.roadmapData)
   const goBackToEmpty = useReviewStore((s) => s.goBackToEmpty)
   const goBackToArea = useReviewStore((s) => s.goBackToArea)
+  const { data: roadmapData = [] } = useReviewRoadmapData()
 
   return useMemo(() => {
     switch (panelMode) {

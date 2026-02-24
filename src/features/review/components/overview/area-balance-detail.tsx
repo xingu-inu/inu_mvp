@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { differenceInDays, format, parseISO } from 'date-fns'
 import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
+import { useReviewRoadmapData } from '../../hooks/use-review-roadmap-data'
 import { StreakBadge } from '@/components/ui/badge'
 import { WhyCard } from '../why-card'
 import { STATUS_STYLES, STATUS_LABELS } from '@/lib/constants/goal-status'
@@ -238,7 +239,7 @@ function GoalAccordionRow({
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
-  const roadmapData = useReviewStore((s) => s.roadmapData)
+  const { data: roadmapData = [] } = useReviewRoadmapData()
   const selectGoal = useReviewStore((s) => s.selectGoal)
 
   const areaData = useMemo(

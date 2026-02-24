@@ -181,7 +181,6 @@ export function VisualTreeWrapper() {
             goals={goals}
             areas={activeAreas}
             layoutDirection={treeLayout}
-            zoom={zoom}
             searchQuery={searchQuery}
             searchMatchedIds={searchResult.matchedIds}
           />

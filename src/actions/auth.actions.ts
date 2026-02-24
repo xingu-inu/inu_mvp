@@ -241,11 +241,36 @@ export const resetPassword = publicAction(
 )
 
 /**
+ * 게스트(익명) 로그인
+ */
+export const signInAsGuest = publicAction(
+  'signInAsGuest',
+  async ({ supabase }): Promise<ApiResponse<AuthRedirect>> => {
+    const { error } = await supabase.auth.signInAnonymously()
+
+    if (error) {
+      return errorResponse(ErrorCode.EXTERNAL_API_ERROR)
+    }
+
+    revalidatePath('/', 'layout')
+    return successResponse({ redirectTo: '/onboarding' })
+  },
+  { rateLimit: { limit: 10 } }
+)
+
+/**
  * 로그아웃
  */
 export async function signOut(): Promise<void> {
   const supabase = await createClient()
+
+  // Check if user is anonymous (guest) before signing out
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isGuest = user?.is_anonymous === true
+
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
-  redirect('/login')
+  redirect(isGuest ? '/' : '/login')
 }

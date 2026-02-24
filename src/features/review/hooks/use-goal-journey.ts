@@ -30,6 +30,21 @@ export interface JourneyEvent {
 }
 
 // ============================================
+// Local row types (goal_status_history not yet in generated db types)
+// TODO: Remove after npm run db:types
+// ============================================
+
+interface StatusHistoryRow {
+  id: string
+  goal_id: string
+  from_status: GoalStatus
+  to_status: GoalStatus
+  reason: string | null
+  note: string | null
+  created_at: string
+}
+
+// ============================================
 // Fetch
 // ============================================
 
@@ -37,12 +52,14 @@ async function fetchGoalJourney(goalId: string): Promise<JourneyEvent[]> {
   const supabase = createClient()
 
   // 1. goal_status_history (not in generated types)
+  // TODO: Remove (supabase as any) after npm run db:types
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: statusHistory } = await (supabase as any)
     .from('goal_status_history')
     .select('id, goal_id, from_status, to_status, reason, note, created_at')
     .eq('goal_id', goalId)
     .order('created_at', { ascending: true })
+  const typedStatusHistory = (statusHistory ?? []) as StatusHistoryRow[]
 
   // 2. Goal itself
   const { data: goal } = await supabase
@@ -78,9 +95,9 @@ async function fetchGoalJourney(goalId: string): Promise<JourneyEvent[]> {
   }
 
   // Status change events
-  for (const entry of statusHistory ?? []) {
-    const fromLabel = STATUS_LABELS[entry.from_status as GoalStatus] ?? entry.from_status
-    const toLabel = STATUS_LABELS[entry.to_status as GoalStatus] ?? entry.to_status
+  for (const entry of typedStatusHistory) {
+    const fromLabel = STATUS_LABELS[entry.from_status] ?? entry.from_status
+    const toLabel = STATUS_LABELS[entry.to_status] ?? entry.to_status
     events.push({
       id: `status-change-${entry.id}`,
       date: entry.created_at,
@@ -88,8 +105,8 @@ async function fetchGoalJourney(goalId: string): Promise<JourneyEvent[]> {
       title: `${fromLabel} → ${toLabel}`,
       reason: entry.reason ?? null,
       note: entry.note ?? null,
-      fromStatus: entry.from_status as GoalStatus,
-      toStatus: entry.to_status as GoalStatus,
+      fromStatus: entry.from_status,
+      toStatus: entry.to_status,
     })
   }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useReducer } from 'react'
+import { useMemo, useCallback, useReducer, useEffect } from 'react'
 import type { VisualTreeNode } from '../components/visual-tree/tree-node-card'
 
 export interface TreeSearchResult {
@@ -69,10 +69,12 @@ function indexReducer(_state: number, action: IndexAction): number {
 export function useTreeSearch(tree: VisualTreeNode | null, query: string): TreeSearchResult {
   const [currentIndex, dispatch] = useReducer(indexReducer, 0)
 
-  const { matchedIds, orderedMatches } = useMemo(() => {
-    // Reset index when query changes — dispatch is stable (React guarantee)
+  // Reset index when query changes (must be in useEffect, not useMemo)
+  useEffect(() => {
     dispatch({ type: 'set', value: 0 })
+  }, [query])
 
+  const { matchedIds, orderedMatches } = useMemo(() => {
     if (!query || query.trim().length < 1 || !tree) {
       return { matchedIds: new Set<string>(), orderedMatches: [] as string[] }
     }

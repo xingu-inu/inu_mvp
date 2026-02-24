@@ -14,9 +14,9 @@ export interface GoalStatusConfig {
 export const GOAL_STATUS_CONFIG: Record<GoalStatus, GoalStatusConfig> = {
   active: {
     label: '진행 중',
-    bg: 'bg-[var(--color-primary-50)]',
-    text: 'text-[var(--color-primary-600)]',
-    border: 'border-[var(--color-primary-500)]',
+    bg: 'bg-[var(--color-active-bg)]',
+    text: 'text-[var(--color-active)]',
+    border: 'border-[var(--color-active)]',
   },
   backlog: {
     label: '시작 전',

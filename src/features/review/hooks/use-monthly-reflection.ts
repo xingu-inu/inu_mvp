@@ -6,6 +6,11 @@ import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import { getMonthlyReflection, saveMonthlyReflection } from '@/actions'
 import type { MonthlyReflection, CreateMonthlyReflectionInput } from '@/types/entities'
+import {
+  buildReflectionOnMutate,
+  buildReflectionOnError,
+  buildReflectionOnSettled,
+} from './reflection-mutation-helpers'
 
 /**
  * Hook for fetching a month's reflection
@@ -40,6 +45,7 @@ interface SaveMonthlyReflectionInput {
 export function useSaveMonthlyReflection(monthStart?: string) {
   const queryClient = useQueryClient()
   const computedMonthStart = monthStart ?? ''
+  const queryKey = queryKeys.review.monthlyReflection(computedMonthStart)
 
   return useMutation({
     mutationFn: async (input: SaveMonthlyReflectionInput) => {
@@ -54,54 +60,31 @@ export function useSaveMonthlyReflection(monthStart?: string) {
       return response.data
     },
 
-    onMutate: async (newReflection) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.review.monthlyReflection(computedMonthStart),
+    onMutate: buildReflectionOnMutate<MonthlyReflection, SaveMonthlyReflectionInput>(
+      queryClient,
+      queryKey,
+      (input) => ({
+        id: 'temp',
+        user_id: '',
+        month_start: computedMonthStart,
+        summary: input.summary || null,
+        highlight: input.highlight || null,
+        challenge: input.challenge || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
-      const previousData = queryClient.getQueryData<MonthlyReflection | null>(
-        queryKeys.review.monthlyReflection(computedMonthStart)
-      )
+    ),
 
-      queryClient.setQueryData(
-        queryKeys.review.monthlyReflection(computedMonthStart),
-        (old: MonthlyReflection | null | undefined) =>
-          old
-            ? { ...old, ...newReflection }
-            : {
-                id: 'temp',
-                user_id: '',
-                month_start: computedMonthStart,
-                summary: newReflection.summary || null,
-                highlight: newReflection.highlight || null,
-                challenge: newReflection.challenge || null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }
-      )
-
-      return { previousData }
-    },
-
-    onError: (_error, _variables, context) => {
-      if (context?.previousData !== undefined) {
-        queryClient.setQueryData(
-          queryKeys.review.monthlyReflection(computedMonthStart),
-          context.previousData
-        )
-      }
-      toast.error('월간 회고 저장에 실패했습니다', {
-        description: '잠시 후 다시 시도해주세요.',
-      })
-    },
+    onError: buildReflectionOnError<MonthlyReflection>(
+      queryClient,
+      queryKey,
+      '월간 회고 저장에 실패했습니다'
+    ),
 
     onSuccess: () => {
       toast.success('한마디가 저장되었습니다')
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.review.monthlyReflection(computedMonthStart),
-      })
-    },
+    onSettled: buildReflectionOnSettled(queryClient, queryKey),
   })
 }

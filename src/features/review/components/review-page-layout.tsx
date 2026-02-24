@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { parseISO } from 'date-fns'
 import { useReviewStore } from '@/stores/review.store'
 import { useCheckInHistory } from '../hooks/use-checkin-history'
@@ -67,12 +67,6 @@ export function ReviewPageLayout() {
 
   const activeStreaks = useMemo(() => extractActiveStreaks(roadmapData), [roadmapData])
   const areaBalances = useMemo(() => computeAreaBalance(roadmapData), [roadmapData])
-
-  // Sync to store for panel access
-  const setRoadmapData = useReviewStore((s) => s.setRoadmapData)
-  useEffect(() => {
-    if (roadmapData) setRoadmapData(roadmapData)
-  }, [roadmapData, setRoadmapData])
 
   // Handlers
   const handleSelectDate = useCallback((date: string) => selectDay(date), [selectDay])

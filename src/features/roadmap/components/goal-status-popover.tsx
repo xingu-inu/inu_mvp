@@ -11,7 +11,7 @@ import type { Goal, GoalStatus } from '@/types/entities'
 
 const STATUS_LIST: { value: GoalStatus; label: string; dotColor: string }[] = [
   { value: 'backlog', label: '시작 전', dotColor: 'var(--color-text-tertiary)' },
-  { value: 'active', label: '진행 중', dotColor: 'var(--color-primary-500)' },
+  { value: 'active', label: '진행 중', dotColor: 'var(--color-active)' },
   { value: 'paused', label: '일시 정지', dotColor: 'var(--color-paused)' },
   { value: 'completed', label: '완료', dotColor: 'var(--color-done)' },
   { value: 'archived', label: '나중에 하기', dotColor: 'var(--color-archived)' },

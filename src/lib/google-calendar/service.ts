@@ -41,7 +41,9 @@ export async function fetchGoogleEvents(
     const items = response.data.items ?? []
 
     return items
-      .filter((item) => item.id && item.status !== 'cancelled')
+      .filter(
+        (item) => item.id && item.status !== 'cancelled' && !item.summary?.startsWith('[inu]')
+      )
       .map((item) => {
         const isAllDay = Boolean(item.start?.date && !item.start?.dateTime)
         const startDt = item.start?.dateTime

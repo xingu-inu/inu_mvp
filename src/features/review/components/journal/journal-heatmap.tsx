@@ -102,7 +102,7 @@ export function JournalHeatmap({
       <div className="grid grid-cols-7 gap-1">
         {/* Empty padding cells */}
         {paddingCells.map((i) => (
-          <div key={`pad-${i}`} className="aspect-square" />
+          <div key={`pad-${i}`} className="h-11" />
         ))}
 
         {/* Day cells */}
@@ -118,7 +118,7 @@ export function JournalHeatmap({
               type="button"
               onClick={() => onSelectDate(day.date)}
               className={cn(
-                'relative flex aspect-square flex-col items-center justify-between rounded-lg p-1 transition-all',
+                'relative flex h-11 flex-col items-center justify-between rounded-lg p-1 transition-all',
                 getCellBg(day.completed, day.total),
                 isSelected &&
                   'bg-[var(--color-primary-50)] ring-2 ring-[var(--color-primary-500)] ring-offset-1 ring-offset-[var(--color-bg-card)] dark:bg-[var(--color-primary-950)]',

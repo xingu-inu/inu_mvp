@@ -1,5 +1,5 @@
 import type { TimeSlot, RepeatType, TaskStatus, HomeTask as EntityHomeTask } from '@/types/entities'
-import type { HomeTask as ActionHomeTask } from '@/actions/home.actions'
+import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
 import { TIME_SLOT_CONFIG, TIME_SLOT_ORDER } from '@/lib/constants/time-slots'
 
 /**

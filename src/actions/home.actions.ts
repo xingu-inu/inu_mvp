@@ -10,7 +10,7 @@ type TimeSlot = Enums<'time_slot'>
 import type { ApiListResult, ApiResponse } from '@/types/api'
 
 // Types for RPC return values
-export interface HomeTask {
+export interface HomeTaskDto {
   id: string
   name: string
   why: string | null
@@ -85,7 +85,7 @@ export const getHomeTasks = authAction(
     { supabase, user },
     date?: string,
     directionId?: string
-  ): Promise<ApiListResult<HomeTask>> => {
+  ): Promise<ApiListResult<HomeTaskDto>> => {
     const { data, error } = await supabase.rpc('get_today_tasks', {
       p_user_id: user.id,
       p_date: date,
@@ -94,7 +94,7 @@ export const getHomeTasks = authAction(
 
     if (error) throw error
 
-    return listResponse((data as unknown as HomeTask[]) || [])
+    return listResponse((data as unknown as HomeTaskDto[]) || [])
   }
 )
 
@@ -111,7 +111,7 @@ export const getWeekHomeTasks = authAction(
     startDate: string,
     endDate: string,
     directionId?: string
-  ): Promise<ApiResponse<Record<string, HomeTask[]>>> => {
+  ): Promise<ApiResponse<Record<string, HomeTaskDto[]>>> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.rpc as any)('get_week_tasks', {
       p_user_id: user.id,
@@ -122,6 +122,6 @@ export const getWeekHomeTasks = authAction(
 
     if (error) throw error
 
-    return successResponse((data as unknown as Record<string, HomeTask[]>) || {})
+    return successResponse((data as unknown as Record<string, HomeTaskDto[]>) || {})
   }
 )

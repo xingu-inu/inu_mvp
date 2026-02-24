@@ -8,6 +8,7 @@ import { HomeHeader, UnifiedCalendar, TaskList, useHomeState } from '@/features/
 import { useHomeTasks } from '@/queries/use-home'
 import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
 import { WeekViewGrid } from '@/features/home/components/week-view'
+import { DemoMobileTaskGate } from './demo-mobile-task-gate'
 
 export function DemoHomeContent() {
   return (
@@ -76,7 +77,9 @@ function DemoMobileTaskSection() {
               {getContextualGreeting(tasks)}
             </p>
           )}
-          <TaskList tasks={tasks} selectedDate={currentDate} isReadOnly enableAiSuggest={false} />
+          <DemoMobileTaskGate taskCount={tasks.length}>
+            <TaskList tasks={tasks} selectedDate={currentDate} isReadOnly enableAiSuggest={false} />
+          </DemoMobileTaskGate>
         </>
       )}
     </div>

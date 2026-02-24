@@ -6,10 +6,10 @@ import { motion } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useReviewStore } from '@/stores/review.store'
-import { useGoalJourney } from '../hooks/use-goal-journey'
+import { useReviewRoadmapData } from '../hooks/use-review-roadmap-data'
+import { useGoalJourneys } from '../hooks/use-goal-journeys'
 import { STATUS_STYLES, STATUS_LABELS } from '@/lib/constants/goal-status'
 import type { JourneyEvent } from '../hooks/use-goal-journey'
-import type { GoalStatus } from '@/types/entities'
 import type { AreaReviewData, GoalReviewData } from '../hooks/use-review-roadmap-data'
 
 const EVENT_DOT_COLORS: Record<string, string> = {
@@ -26,12 +26,12 @@ const EVENT_DOT_COLORS: Record<string, string> = {
 
 interface GoalHistoryCardProps {
   goalData: GoalReviewData
+  journeyEvents: JourneyEvent[] | undefined
   onSelectGoal: (goalId: string) => void
 }
 
-function GoalHistoryCard({ goalData, onSelectGoal }: GoalHistoryCardProps) {
+function GoalHistoryCard({ goalData, journeyEvents, onSelectGoal }: GoalHistoryCardProps) {
   const { goal } = goalData
-  const { data: journeyEvents, isLoading } = useGoalJourney(goal.id)
 
   const daysSinceStart = useMemo(() => {
     if (!goal.createdAt) return null
@@ -81,33 +81,29 @@ function GoalHistoryCard({ goalData, onSelectGoal }: GoalHistoryCardProps) {
       </div>
 
       {/* Timeline events */}
-      {(isLoading || recentEvents.length > 0) && (
+      {recentEvents.length > 0 && (
         <div className="space-y-0 border-t border-[var(--color-border)] px-4 py-3">
-          {isLoading ? (
-            <p className="text-xs text-[var(--color-text-tertiary)]">불러오는 중…</p>
-          ) : (
-            recentEvents.map((event: JourneyEvent) => (
-              <div key={event.id} className="flex items-start gap-2 py-1">
-                <span
-                  className={cn(
-                    'mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full',
-                    EVENT_DOT_COLORS[event.type] ?? 'bg-gray-400'
-                  )}
-                />
-                <div className="min-w-0 flex-1">
-                  <span className="text-xs text-[var(--color-text-primary)]">{event.title}</span>
-                  {event.reason && (
-                    <span className="ml-1 text-xs text-[var(--color-text-tertiary)]">
-                      — {event.reason}
-                    </span>
-                  )}
-                </div>
-                <span className="shrink-0 text-[10px] text-[var(--color-text-tertiary)]">
-                  {format(parseISO(event.date), 'M/d')}
-                </span>
+          {recentEvents.map((event: JourneyEvent) => (
+            <div key={event.id} className="flex items-start gap-2 py-1">
+              <span
+                className={cn(
+                  'mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full',
+                  EVENT_DOT_COLORS[event.type] ?? 'bg-gray-400'
+                )}
+              />
+              <div className="min-w-0 flex-1">
+                <span className="text-xs text-[var(--color-text-primary)]">{event.title}</span>
+                {event.reason && (
+                  <span className="ml-1 text-xs text-[var(--color-text-tertiary)]">
+                    — {event.reason}
+                  </span>
+                )}
               </div>
-            ))
-          )}
+              <span className="shrink-0 text-[10px] text-[var(--color-text-tertiary)]">
+                {format(parseISO(event.date), 'M/d')}
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -139,7 +135,7 @@ interface AreaHistoryPanelProps {
 // ============================================
 
 export function AreaHistoryPanel({ areaId }: AreaHistoryPanelProps) {
-  const roadmapData = useReviewStore((s) => s.roadmapData)
+  const { data: roadmapData = [] } = useReviewRoadmapData()
   const selectGoal = useReviewStore((s) => s.selectGoal)
 
   const areaData: AreaReviewData | undefined = useMemo(
@@ -151,6 +147,9 @@ export function AreaHistoryPanel({ areaId }: AreaHistoryPanelProps) {
     if (!areaData) return []
     return [...areaData.goals].sort((a, b) => a.goal.createdAt.localeCompare(b.goal.createdAt))
   }, [areaData])
+
+  const goalIds = useMemo(() => sortedGoals.map((g) => g.goal.id), [sortedGoals])
+  const journeyMap = useGoalJourneys(goalIds)
 
   const rate = areaData?.periodCompletionRate ?? 0
 
@@ -198,7 +197,12 @@ export function AreaHistoryPanel({ areaId }: AreaHistoryPanelProps) {
             목표 히스토리
           </h4>
           {sortedGoals.map((goalData) => (
-            <GoalHistoryCard key={goalData.goal.id} goalData={goalData} onSelectGoal={selectGoal} />
+            <GoalHistoryCard
+              key={goalData.goal.id}
+              goalData={goalData}
+              journeyEvents={journeyMap.get(goalData.goal.id)}
+              onSelectGoal={selectGoal}
+            />
           ))}
         </div>
       )}

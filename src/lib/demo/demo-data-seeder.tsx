@@ -4,7 +4,11 @@ import { useState } from 'react'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { format, startOfWeek, addDays } from 'date-fns'
 import { queryKeys } from '@/lib/query/keys'
-import { DEMO_DIRECTION, DEMO_AREAS, DEMO_GOALS } from './data'
+import {
+  DEMO_DIRECTION,
+  DEMO_AREAS_LITE as DEMO_AREAS,
+  DEMO_GOALS_LITE as DEMO_GOALS,
+} from './data'
 import { generateDemoWeekTasks, generateDemoHomeTasks } from './week-data'
 
 function seedDemoData(qc: QueryClient) {

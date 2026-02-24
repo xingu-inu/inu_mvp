@@ -2,6 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { SignupForm, OAuthButtons } from '@/features/auth/components'
+import { GuestLoginLink } from '@/features/auth/components/guest-login-link'
 
 export default function SignupPage() {
   return (
@@ -21,6 +22,10 @@ export default function SignupPage() {
       </div>
 
       <OAuthButtons />
+
+      <div className="mt-4 text-center">
+        <GuestLoginLink />
+      </div>
 
       <p className="mt-6 text-center text-sm text-[var(--color-text-secondary)]">
         이미 계정이 있으신가요?{' '}

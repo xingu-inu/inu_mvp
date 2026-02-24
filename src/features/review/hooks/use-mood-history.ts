@@ -25,6 +25,8 @@ export async function fetchMoodHistory(start: string, end: string): Promise<Mood
 
   if (error) throw error
 
+  // d.mood is typed as string | null by Supabase but filtered to non-null above.
+  // Cast at the boundary once; MoodLevel is a string union derived from the DB enum.
   return (data || []).map((d) => ({
     date: d.date,
     mood: d.mood as MoodLevel,

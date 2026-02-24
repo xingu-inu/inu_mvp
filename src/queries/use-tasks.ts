@@ -16,7 +16,7 @@ import {
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { usePanelDateStore } from '@/stores/panel-date.store'
 import type { Area, Goal, Task, HomeTask, CreateTaskInput, UpdateTaskInput } from '@/types/entities'
-import type { HomeTask as ActionHomeTask } from '@/actions/home.actions'
+import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
 
 /** Helper: optimistically patch a task inside the goals.all cache */
 function patchTaskInGoals(goals: Goal[], taskId: string, patch: Partial<Task>): Goal[] {

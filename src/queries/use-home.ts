@@ -7,7 +7,7 @@ import { unwrapListResponse, unwrapResponse } from '@/lib/api'
 import {
   getHomeTasks as getHomeTasksAction,
   getWeekHomeTasks,
-  type HomeTask,
+  type HomeTaskDto,
 } from '@/actions/home.actions'
 
 /**
@@ -59,4 +59,4 @@ export function usePrefetchHomeTasks(selectedDate: Date, directionId?: string) {
   }, [queryClient, prevStartStr, prevEndStr, nextStartStr, nextEndStr, directionId])
 }
 
-export type { HomeTask }
+export type { HomeTaskDto }

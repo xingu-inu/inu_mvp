@@ -103,7 +103,7 @@ export function useMonthSummary(currentDate: Date) {
       // Group tasks by area and count done per area
       const areaStats: Record<string, AreaDayInfo> = {}
       for (const task of tasks) {
-        const areaId = (task.goal as { area_id?: string } | undefined)?.area_id
+        const areaId = task.goal?.area_id
         if (!areaId) continue
         const color = areaColorMap[areaId]
         if (!color) continue
@@ -150,7 +150,7 @@ export function useMonthSummary(currentDate: Date) {
     for (const [dateKey, tasks] of Object.entries(tasksByDate)) {
       if (tasks.length === 0) continue
       result[dateKey] = tasks.map((task) => {
-        const areaId = (task.goal as { area_id?: string } | undefined)?.area_id
+        const areaId = task.goal?.area_id
         const status = checkinStatusByDate[dateKey]?.[task.id]
         return {
           id: task.id,
@@ -158,8 +158,8 @@ export function useMonthSummary(currentDate: Date) {
           areaColor: areaId ? (areaColorMap[areaId] ?? null) : null,
           isDone: status === 'done',
           isSkip: status === 'skip',
-          repeatType: (task as { repeat_type?: string }).repeat_type ?? null,
-          durationMinutes: (task as { duration_minutes?: number }).duration_minutes ?? 0,
+          repeatType: task.repeat_type ?? null,
+          durationMinutes: task.duration_minutes ?? 0,
         }
       })
     }

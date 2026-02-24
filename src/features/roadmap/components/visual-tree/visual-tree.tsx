@@ -1,26 +1,20 @@
 'use client'
 
 import { useMemo, useCallback, useRef, useState, memo } from 'react'
-import { DndContext, DragOverlay } from '@dnd-kit/core'
 import {
   useRoadmapStore,
   selectSelectedNodeId,
   type SelectedNodeType,
   type Selection,
 } from '@/stores/roadmap.store'
-import { useTreeDndStore, selectIsDragging, selectIsDraggingTask } from '@/stores/tree-dnd.store'
 import { TreeNode } from './tree-node'
 import { TreeQuickAdd } from './tree-quick-add'
-import { TreeNodeCard } from './tree-node-card'
 import { CrossLinkOverlay, type CrossLink } from '../cross-link-overlay'
-import { DragConnectionLine } from './drag-connection-line'
 import type { VisualTreeNode } from './tree-node-card'
 import type { Area, Goal } from '@/types/entities'
 import type { AreaType } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
 import { useFocusBranch } from '../../hooks/use-focus-branch'
-import { useVisualTreeDnd } from '../../hooks/use-visual-tree-dnd'
-import { DROP_ANIMATION } from '@/lib/dnd/dnd-config'
 import { useDeleteArea } from '@/queries/use-areas'
 import { useDeleteGoal } from '@/queries/use-goals'
 import { useDeleteGroup } from '@/queries/use-groups'
@@ -32,7 +26,6 @@ interface VisualTreeProps {
   goals: Goal[]
   areas: Area[]
   layoutDirection: TreeLayoutDirection
-  zoom: number
   searchQuery: string
   searchMatchedIds: Set<string>
 }
@@ -43,7 +36,6 @@ export const VisualTree = memo(function VisualTree({
   goals,
   areas,
   layoutDirection,
-  zoom,
   searchQuery,
   searchMatchedIds,
 }: VisualTreeProps) {
@@ -52,26 +44,11 @@ export const VisualTree = memo(function VisualTree({
   const focusGoal = useRoadmapStore((s) => s.focusGoal)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // DnD state from store (isDragging/isDraggingTask only — NOT overId to avoid pointer-move re-renders)
-  const isDragging = useTreeDndStore(selectIsDragging)
-  const isDraggingTask = useTreeDndStore(selectIsDraggingTask)
-
   // Quick Add state — which node's popover is open
   const [addingToId, setAddingToId] = useState<string | null>(null)
 
   // Focus mode: highlight selected node's branch
   const focusedIds = useFocusBranch(treeData, selectedNodeId)
-
-  // DnD
-  const {
-    sensors,
-    collisionDetection,
-    dndState,
-    handleDragStart,
-    handleDragOver,
-    handleDragEnd,
-    handleDragCancel,
-  } = useVisualTreeDnd({ tree: treeData, zoom })
 
   // Delete mutations
   const deleteArea = useDeleteArea()
@@ -212,59 +189,33 @@ export const VisualTree = memo(function VisualTree({
   if (!treeData) return null
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={collisionDetection}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
-    >
-      <div className="relative p-10" ref={containerRef}>
-        <div className="w-fit min-w-max">
-          <TreeNode
-            node={treeData}
-            selectedNodeId={selectedNodeId}
-            onNodeSelect={handleNodeSelect}
-            isFormMode={false}
-            layoutDirection={layoutDirection}
-            addingToId={addingToId}
-            onStartAdd={handleStartAdd}
-            onCancelAdd={handleCancelAdd}
-            getQuickAddContent={getQuickAddContent}
-            focusedIds={focusedIds}
-            searchMatchedIds={searchMatchedIds}
-            searchQuery={searchQuery}
-            isDndEnabled
-            onDeleteNode={handleDeleteNode}
-            parentGoalMap={parentGoalMap}
-          />
-        </div>
-        {crossLinks.length > 0 && !isDragging && (
-          <CrossLinkOverlay
-            containerRef={containerRef}
-            crossLinks={crossLinks}
-            layoutDirection={layoutDirection}
-          />
-        )}
-        {isDraggingTask && <DragConnectionLine containerRef={containerRef} />}
+    <div className="relative p-10" ref={containerRef}>
+      <div className="w-fit min-w-max">
+        <TreeNode
+          node={treeData}
+          selectedNodeId={selectedNodeId}
+          onNodeSelect={handleNodeSelect}
+          isFormMode={false}
+          layoutDirection={layoutDirection}
+          addingToId={addingToId}
+          onStartAdd={handleStartAdd}
+          onCancelAdd={handleCancelAdd}
+          getQuickAddContent={getQuickAddContent}
+          focusedIds={focusedIds}
+          searchMatchedIds={searchMatchedIds}
+          searchQuery={searchQuery}
+          onDeleteNode={handleDeleteNode}
+          parentGoalMap={parentGoalMap}
+        />
       </div>
-
-      <DragOverlay dropAnimation={DROP_ANIMATION}>
-        {dndState.activeNode && (
-          <div className="opacity-80">
-            <TreeNodeCard
-              node={dndState.activeNode}
-              isSelected={false}
-              isExpanded={false}
-              hasChildren={false}
-              onSelect={() => {}}
-              onToggle={() => {}}
-            />
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+      {crossLinks.length > 0 && (
+        <CrossLinkOverlay
+          containerRef={containerRef}
+          crossLinks={crossLinks}
+          layoutDirection={layoutDirection}
+        />
+      )}
+    </div>
   )
 })
 

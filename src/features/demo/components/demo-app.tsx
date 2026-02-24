@@ -14,6 +14,8 @@ import { DemoHomeContent } from './demo-home-content'
 import { DemoRoadmapContent } from './demo-roadmap-content'
 import { DemoReviewContent } from './demo-review-content'
 import { DemoRightPanel } from './demo-right-panel'
+import { DemoLockedOverlay } from './demo-locked-overlay'
+import { DemoContextBanner } from './demo-context-banner'
 
 export function DemoApp() {
   const [activeTab, setActiveTab] = useState<DemoTab>('home')
@@ -53,6 +55,7 @@ export function DemoApp() {
           <DemoDataSeeder>
             <div className="flex h-dvh flex-col overflow-hidden">
               <DemoDesktopTopBar />
+              <DemoContextBanner />
 
               <div className="min-h-0 flex-1 pb-16 lg:flex lg:pb-0">
                 <div className="min-w-0 flex-1 overflow-y-auto">
@@ -63,7 +66,9 @@ export function DemoApp() {
 
                 {/* Desktop right panel */}
                 <DetailPanelShell variant="secondary">
-                  <DemoRightPanel />
+                  <DemoLockedOverlay>
+                    <DemoRightPanel />
+                  </DemoLockedOverlay>
                 </DetailPanelShell>
               </div>
 

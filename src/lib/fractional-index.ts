@@ -106,3 +106,35 @@ export function getOrderAtIndex<T extends { sort_order: string }>(
 
   return safeGenerateKeyBetween(beforeItem?.sort_order ?? null, afterItem?.sort_order ?? null)
 }
+
+// ─── DnD-specific fractional key utilities ───────────────────────────────────
+// These use a stricter validity check (first char must be a–z) appropriate for
+// drag-and-drop reorder operations where legacy numeric keys may appear.
+
+/** Returns true if the key starts with a lowercase letter (valid fractional-indexing key) */
+export function isValidFractionalKey(key: string): boolean {
+  return key.length > 0 && key[0] >= 'a' && key[0] <= 'z'
+}
+
+/** Returns null for invalid or missing fractional keys (DnD variant) */
+export function dndSanitizeKey(key: string | null): string | null {
+  if (key == null) return null
+  return isValidFractionalKey(key) ? key : null
+}
+
+/**
+ * Safe wrapper around getNewOrderBetween for DnD reorder.
+ * Guards against duplicate/corrupt sort_order pairs where a >= b.
+ */
+export function safeNewOrderBetween(before: string | null, after: string | null): string {
+  const a = dndSanitizeKey(before)
+  const b = dndSanitizeKey(after)
+  // Guard: if both keys exist and a >= b (duplicate/corrupt sort_order), fall back to appending after a
+  if (a != null && b != null && a >= b) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`[DnD] sort_order 충돌: "${a}" >= "${b}". append fallback 사용`)
+    }
+    return getNewOrderBetween(a, null)
+  }
+  return getNewOrderBetween(a, b)
+}

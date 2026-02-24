@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, memo } from 'react'
+import { useState, useRef, memo, useMemo } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import {
   Check,
@@ -17,7 +17,6 @@ import { ParticleBurst } from '@/components/ui/animations/particle-burst'
 import { Confetti } from '@/components/ui/animations/confetti'
 import { InlineDeleteConfirm } from '@/features/roadmap/components/inline-forms/inline-delete-confirm'
 import { InlineTaskEdit } from '@/features/roadmap/components/inline-forms/inline-task-edit'
-import { ReadOnlyTaskDetail } from './read-only-task-detail'
 import { usePanelDateStore } from '@/stores/panel-date.store'
 import { useCheckIn, useUndoCheckIn } from '@/queries/use-checkin'
 import { useUpdateTask, useDeleteTask } from '@/queries/use-tasks'
@@ -74,13 +73,17 @@ export const CompactTaskRow = memo(
     const contextText = [task.group?.name, task.goal?.name].filter(Boolean).join(' · ') || null
     const hasStreak = task.streak_count > 0
     const showSubtitle = contextText || hasStreak
-    const isStreakAtRisk = !status && task.streak_count >= 3 && new Date().getHours() >= 18
 
-    const isTimePassed = (() => {
+    // Stable "now" reference — avoids repeated new Date() calls in render
+    const now = useMemo(() => new Date(), [])
+
+    const isStreakAtRisk = !status && task.streak_count >= 3 && now.getHours() >= 18
+
+    const isTimePassed = useMemo(() => {
       if (status || effectiveReadOnly) return false
-      if (!isSameDay(selectedDate, new Date())) return false
+      if (!isSameDay(selectedDate, now)) return false
       if (task.time_slot === 'anytime') return false
-      const now = new Date().getHours()
+      const currentHour = now.getHours()
       const slotEndHours: Record<string, number> = {
         dawn: 6,
         morning: 12,
@@ -88,8 +91,8 @@ export const CompactTaskRow = memo(
         evening: 24,
       }
       const endHour = slotEndHours[task.time_slot]
-      return endHour != null && now >= endHour
-    })()
+      return endHour != null && currentHour >= endHour
+    }, [status, effectiveReadOnly, selectedDate, now, task.time_slot])
 
     const handleCheckIn = (newStatus: CheckInStatus) => {
       const dateStr = format(selectedDate, 'yyyy-MM-dd')
@@ -367,11 +370,7 @@ export const CompactTaskRow = memo(
               transition={{ duration: 0.2, ease: 'easeInOut' }}
               className="overflow-hidden"
             >
-              {effectiveReadOnly ? (
-                <ReadOnlyTaskDetail task={task} />
-              ) : (
-                <InlineTaskEdit task={task} onDone={() => onToggle?.(task.id)} />
-              )}
+              <InlineTaskEdit task={task} onDone={() => onToggle?.(task.id)} />
             </motion.div>
           )}
         </AnimatePresence>

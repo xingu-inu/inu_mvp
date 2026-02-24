@@ -21,6 +21,8 @@ export function PriorityRankModal() {
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
   const selectTask = useHomeStore((s) => s.selectTask)
   const setPriorityRankResult = useHomeStore((s) => s.setPriorityRankResult)
+  const cachedPriorityRankResult = useHomeStore((s) => s.priorityRankResult)
+  const cachedPriorityRankDate = useHomeStore((s) => s.priorityRankDate)
 
   const [step, setStep] = useState<PriorityRankStep>('loading')
   const [result, setResult] = useState<AiPriorityRankResponse | null>(null)
@@ -59,15 +61,14 @@ export function PriorityRankModal() {
 
     isClosingRef.current = false
 
-    // Check cache first
-    const cached = useHomeStore.getState()
+    // Check cache first (reactive selectors)
     const hasCache =
-      cached.priorityRankResult &&
-      cached.priorityRankDate &&
-      isSameDay(new Date(cached.priorityRankDate), new Date())
+      cachedPriorityRankResult &&
+      cachedPriorityRankDate &&
+      isSameDay(new Date(cachedPriorityRankDate), new Date())
 
-    if (hasCache && cached.priorityRankResult) {
-      setResult(cached.priorityRankResult)
+    if (hasCache && cachedPriorityRankResult) {
+      setResult(cachedPriorityRankResult)
       setStep('review')
       setError(null)
       return
@@ -79,7 +80,7 @@ export function PriorityRankModal() {
     setError(null)
     setElapsed(0)
     requestedRef.current = false
-  }, [isPriorityRankOpen])
+  }, [isPriorityRankOpen, cachedPriorityRankResult, cachedPriorityRankDate])
 
   // When context is ready + modal is open in loading state: fire request
   useEffect(() => {

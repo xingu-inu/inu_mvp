@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import { unwrapResponse } from '@/lib/api'
 import { getWeekHomeTasks } from '@/actions/home.actions'
-import type { HomeTask } from '@/actions/home.actions'
+import type { HomeTaskDto } from '@/actions/home.actions'
 
 /**
  * Fetch tasks for all 7 days of the selected week in a single server action call.
@@ -45,7 +45,7 @@ export function useWeekTasks(selectedDate: Date, directionId?: string) {
 
   const safeTasksByDate = useMemo(() => {
     if (!tasksByDate) {
-      const empty: Record<string, HomeTask[]> = {}
+      const empty: Record<string, HomeTaskDto[]> = {}
       for (const day of weekDays) {
         empty[format(day, 'yyyy-MM-dd')] = []
       }

@@ -8,7 +8,6 @@ import {
   X,
   ArrowLeft,
   Sparkles,
-  AlertCircle,
   Circle,
   CheckCircle2,
   Stethoscope,
@@ -27,9 +26,8 @@ import { useDeleteGroup, useEnableGoalGroups, useDisableGoalGroups } from '@/que
 import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore, selectGoalId, selectInlineMode } from '@/stores/roadmap.store'
 import { cn } from '@/lib/utils'
-import { GOAL_STATUS_OPTIONS, needsTransitionDialog } from '@/lib/goal-status'
+import { needsTransitionDialog } from '@/lib/goal-status'
 import { useAiSuggest } from '@/hooks/use-ai-suggest'
-import { AiDecomposePreview } from '../ai-decompose-preview'
 import {
   InlineTaskQuickInput,
   InlineGroupCreate,
@@ -45,6 +43,8 @@ import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
 import { useUpdateTask } from '@/queries/use-tasks'
 import { CrossLinkTaskPicker } from '../shared/cross-link-task-picker'
 import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
+import { AiDecomposeSection } from './ai-decompose-section'
+import { StatusTransitionSection } from './status-transition-section'
 import type { GoalStatus } from '@/types/entities'
 import type { AiDecomposeResponse } from '@/lib/ai/types'
 
@@ -312,22 +312,7 @@ export function GoalViewMode({
         )}
 
         {/* Status Change */}
-        <div>
-          <h3 className="mb-2 text-sm font-medium text-[var(--color-text-secondary)]">상태</h3>
-          <div className="flex flex-wrap gap-2">
-            {GOAL_STATUS_OPTIONS.map((option) => (
-              <Chip
-                key={option.value}
-                variant="selection"
-                selected={goal.status === option.value}
-                onClick={() => handleStatusChange(option.value)}
-                className="cursor-pointer"
-              >
-                {option.label}
-              </Chip>
-            ))}
-          </div>
-        </div>
+        <StatusTransitionSection currentStatus={goal.status} onStatusChange={handleStatusChange} />
 
         {/* Group Progress */}
         {totalGroups > 0 && (
@@ -416,38 +401,14 @@ export function GoalViewMode({
           {!hasGroups ? (
             /* ── Groups OFF: flat task list ── */
             <>
-              {/* AI Decompose Loading */}
-              {aiSuggest.isPending && aiTarget === 'decompose' && (
-                <div className="space-y-2 py-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-14 animate-pulse rounded-lg bg-[var(--color-bg-tertiary)]"
-                      style={{ animationDelay: `${i * 150}ms` }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* AI Decompose Error */}
-              {aiSuggest.error && aiTarget === 'decompose' && !aiSuggest.isPending && (
-                <div className="flex items-center gap-2 rounded-lg bg-[var(--color-miss)]/10 px-3 py-2 text-sm text-[var(--color-miss)]">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{aiSuggest.error.message}</span>
-                </div>
-              )}
-
-              {/* AI Decompose Preview */}
-              <AnimatePresence>
-                {decomposeData?.groups && decomposeData.groups.length > 0 && (
-                  <AiDecomposePreview
-                    goalId={goalId!}
-                    groups={decomposeData.groups}
-                    onComplete={() => setDecomposeData(null)}
-                    onCancel={() => setDecomposeData(null)}
-                  />
-                )}
-              </AnimatePresence>
+              <AiDecomposeSection
+                isPending={aiSuggest.isPending && aiTarget === 'decompose'}
+                error={aiSuggest.error && aiTarget === 'decompose' ? aiSuggest.error : null}
+                decomposeData={decomposeData}
+                goalId={goalId!}
+                onComplete={() => setDecomposeData(null)}
+                onCancel={() => setDecomposeData(null)}
+              />
 
               {/* Flat task list */}
               {activeTasks.length > 0 && (
@@ -513,38 +474,14 @@ export function GoalViewMode({
           ) : (
             /* ── Groups ON: group structure with tasks ── */
             <>
-              {/* AI Decompose Loading */}
-              {aiSuggest.isPending && aiTarget === 'decompose' && (
-                <div className="space-y-2 py-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="h-14 animate-pulse rounded-lg bg-[var(--color-bg-tertiary)]"
-                      style={{ animationDelay: `${i * 150}ms` }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* AI Decompose Error */}
-              {aiSuggest.error && aiTarget === 'decompose' && !aiSuggest.isPending && (
-                <div className="flex items-center gap-2 rounded-lg bg-[var(--color-miss)]/10 px-3 py-2 text-sm text-[var(--color-miss)]">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{aiSuggest.error.message}</span>
-                </div>
-              )}
-
-              {/* AI Decompose Preview */}
-              <AnimatePresence>
-                {decomposeData?.groups && decomposeData.groups.length > 0 && (
-                  <AiDecomposePreview
-                    goalId={goalId!}
-                    groups={decomposeData.groups}
-                    onComplete={() => setDecomposeData(null)}
-                    onCancel={() => setDecomposeData(null)}
-                  />
-                )}
-              </AnimatePresence>
+              <AiDecomposeSection
+                isPending={aiSuggest.isPending && aiTarget === 'decompose'}
+                error={aiSuggest.error && aiTarget === 'decompose' ? aiSuggest.error : null}
+                decomposeData={decomposeData}
+                goalId={goalId!}
+                onComplete={() => setDecomposeData(null)}
+                onCancel={() => setDecomposeData(null)}
+              />
 
               {/* Inline Group Create */}
               <AnimatePresence>

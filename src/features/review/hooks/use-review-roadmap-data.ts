@@ -131,6 +131,7 @@ async function fetchReviewRoadmapData(
 
   const result: AreaReviewData[] = areas
     .map((area) => {
+      // g.status is typed as string by Supabase; cast to GoalStatus at the boundary
       const visibleGoals = (area.goals ?? []).filter((g) =>
         VISIBLE_STATUSES.includes(g.status as GoalStatus)
       )
@@ -154,6 +155,7 @@ async function fetchReviewRoadmapData(
             .sort((a, b) => b.date.localeCompare(a.date))
             .slice(0, RECENT_CHECKINS_LIMIT)
             .reverse()
+            // c.status is typed as string by Supabase; cast to CheckInStatus at the boundary
             .map((c) => ({ date: c.date, status: c.status as CheckInStatus }))
 
           return {
@@ -161,7 +163,7 @@ async function fetchReviewRoadmapData(
             taskName: task.name,
             why: task.why,
             groupId: task.group_id,
-            timeSlot: (task.time_slot as TimeSlot) ?? null,
+            timeSlot: (task.time_slot as TimeSlot | null) ?? null,
             streakCount: task.streak_count ?? 0,
             bestStreak: task.best_streak ?? 0,
             isActive: task.is_active ?? true,
@@ -181,7 +183,7 @@ async function fetchReviewRoadmapData(
           goal: {
             id: goal.id,
             name: goal.name,
-            status: goal.status as GoalStatus,
+            status: goal.status as GoalStatus, // Supabase returns string; cast at boundary
             why: goal.why,
             createdAt: goal.created_at ?? '',
           },

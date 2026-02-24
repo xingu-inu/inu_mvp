@@ -5,8 +5,13 @@
  */
 
 import { format, startOfWeek, addDays, isBefore, isAfter, startOfDay } from 'date-fns'
-import { type HomeTask } from '@/actions/home.actions'
-import { DEMO_TASKS, DEMO_AREA_MAP, DEMO_GOAL_MAP, DEMO_GROUP_MAP } from './data'
+import { type HomeTaskDto as HomeTask } from '@/actions/home.actions'
+import {
+  DEMO_TASKS_LITE as DEMO_TASKS,
+  DEMO_AREA_MAP_LITE as DEMO_AREA_MAP,
+  DEMO_GOAL_MAP_LITE as DEMO_GOAL_MAP,
+  DEMO_GROUP_MAP_LITE as DEMO_GROUP_MAP,
+} from './data'
 import type { Task } from '@/types/entities'
 
 // ============================================
