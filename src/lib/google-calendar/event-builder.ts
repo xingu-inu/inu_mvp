@@ -33,7 +33,7 @@ function computeEndTime(
 }
 
 /** Add one day to a YYYY-MM-DD string */
-function nextDay(dateStr: string): string {
+function addOneDay(dateStr: string): string {
   const d = new Date(dateStr + 'T00:00:00')
   d.setDate(d.getDate() + 1)
   return d.toISOString().slice(0, 10)
@@ -56,39 +56,42 @@ export function buildGoogleEventFromTask(task: EventTaskInput): GoogleEventInput
       ? task.scheduled_date || new Date().toISOString().slice(0, 10)
       : task.start_date || new Date().toISOString().slice(0, 10)
 
-  // Build recurrence rules
+  // Determine if this is a timed or all-day event
+  const isAllDay = !task.specific_time && (!task.time_slot || task.time_slot === 'anytime')
+
+  // Build recurrence rules (isAllDay affects UNTIL format per RFC 5545)
   const recurrence = buildRecurrence({
     repeat_type: task.repeat_type,
     repeat_days: task.repeat_days,
     end_date: task.end_date,
+    isAllDay,
   })
 
-  // Determine time → timed event or all-day event
   if (task.specific_time) {
-    // Exact time specified
     const startTime = task.specific_time
-    const endTime = computeEndTime(startTime, duration)
+    const { time: endTime, crossesMidnight } = computeEndTime(startTime, duration)
+    const endDate = crossesMidnight ? addOneDay(baseDate) : baseDate
     return {
       summary,
       description,
       start: { dateTime: `${baseDate}T${startTime}:00`, timeZone: TIME_ZONE },
-      end: { dateTime: `${baseDate}T${endTime}:00`, timeZone: TIME_ZONE },
-      recurrence,
+      end: { dateTime: `${endDate}T${endTime}:00`, timeZone: TIME_ZONE },
+      ...(recurrence && { recurrence }),
     }
   }
 
   if (task.time_slot && task.time_slot !== 'anytime') {
-    // Time slot → use midpoint
     const config = TIME_SLOT_CONFIG[task.time_slot]
     const midHour = Math.floor((config.hours[0] + config.hours[1]) / 2)
     const startTime = `${String(midHour).padStart(2, '0')}:00`
-    const endTime = computeEndTime(startTime, duration)
+    const { time: endTime, crossesMidnight } = computeEndTime(startTime, duration)
+    const endDate = crossesMidnight ? addOneDay(baseDate) : baseDate
     return {
       summary,
       description,
       start: { dateTime: `${baseDate}T${startTime}:00`, timeZone: TIME_ZONE },
-      end: { dateTime: `${baseDate}T${endTime}:00`, timeZone: TIME_ZONE },
-      recurrence,
+      end: { dateTime: `${endDate}T${endTime}:00`, timeZone: TIME_ZONE },
+      ...(recurrence && { recurrence }),
     }
   }
 
@@ -97,5 +100,7 @@ export function buildGoogleEventFromTask(task: EventTaskInput): GoogleEventInput
     summary,
     description,
     start: { date: baseDate },
-    end: { date: nextDay(baseDate) },
-    recurrence,
+    end: { date: addOneDay(baseDate) },
+    ...(recurrence && { recurrence }),
+  }
+}
