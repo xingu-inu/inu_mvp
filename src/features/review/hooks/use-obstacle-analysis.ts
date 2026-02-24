@@ -6,7 +6,6 @@ import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import { getObstacleAnalysis } from '@/actions/status-history.actions'
 import type { AreaReviewData } from './use-review-roadmap-data'
-import type { DayHistory } from './use-checkin-history'
 import type { TimeSlot } from '@/types/entities'
 
 // ============================================
@@ -58,7 +57,6 @@ const TIME_SLOT_ORDER: TimeSlot[] = ['dawn', 'morning', 'afternoon', 'evening', 
 
 export function useObstacleAnalysis(
   roadmapData: AreaReviewData[] | undefined,
-  _checkInHistory: DayHistory[] | undefined,
   startDate: string,
   endDate: string
 ): { data: ObstacleAnalysis | null; isLoading: boolean } {

@@ -61,19 +61,10 @@ import {
 } from '../inline-forms'
 import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
 import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
-import { Link, Link2Off } from 'lucide-react'
+import { Link } from 'lucide-react'
+import { REPEAT_LABELS } from '@/lib/constants/repeat-labels'
+import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
 import type { Area, Goal, Task, Group, RepeatType, TaskStatus } from '@/types/entities'
-
-/* ── Constants ── */
-
-const REPEAT_LABELS: Record<RepeatType, string> = {
-  once: '1회',
-  daily: '매일',
-  weekdays: '평일',
-  weekends: '주말',
-  weekly: '매주',
-  custom: '맞춤',
-}
 
 function getTaskMetaLabel(task: Task): string {
   const parts: string[] = []
@@ -579,77 +570,6 @@ const FlatTaskListWithDnd = memo(function FlatTaskListWithDnd({
         ) : null}
       </DragOverlay>
     </DndContext>
-  )
-})
-
-/* ── Cross-linked task row (inline within groups) ── */
-
-const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
-  task,
-  sourceGoalName,
-  sourceAreaEmoji,
-  sourceAreaColor,
-  onUnlink,
-  onNavigate,
-}: {
-  task: Task
-  sourceGoalName: string
-  sourceAreaEmoji: string
-  sourceAreaColor: string
-  onUnlink: () => void
-  onNavigate: () => void
-}) {
-  const metaLabel = getTaskMetaLabel(task)
-  const RepeatIcon = task.repeat_type === 'once' ? Calendar1 : Repeat
-  return (
-    <div
-      className="group/cross flex cursor-pointer items-center rounded-md border-l-2 border-dashed bg-[var(--color-bg-secondary)]/30 transition-colors hover:bg-[var(--color-bg-secondary)]"
-      style={{ borderLeftColor: sourceAreaColor || 'var(--color-border)' }}
-      onClick={onNavigate}
-    >
-      <div className="flex flex-1 flex-col px-2.5 py-2">
-        {/* Line 1: link icon + name + streak */}
-        <div className="flex w-full items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <Link className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
-            <RepeatIcon className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
-            <span className="flex-1 truncate text-sm font-medium">{task.name}</span>
-          </div>
-          {task.streak_count > 0 && (
-            <span className="shrink-0 text-xs text-[var(--color-streak)]">
-              🔥 {task.streak_count}
-            </span>
-          )}
-        </div>
-        {/* Line 2: metadata */}
-        {metaLabel && (
-          <p className="mt-0.5 truncate pl-[30px] text-xs text-[var(--color-text-secondary)]">
-            {metaLabel}
-          </p>
-        )}
-        {/* Line 3: source goal */}
-        <div className="mt-0.5 flex items-center gap-1 pl-[30px]">
-          <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">
-            ← {sourceAreaEmoji} {sourceGoalName}
-          </p>
-        </div>
-      </div>
-      {/* Unlink button (hover only) */}
-      <div className="flex shrink-0 items-center pr-1.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/cross:opacity-100">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onUnlink()
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          title="연결 해제"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-miss)]"
-        >
-          <Link2Off className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
   )
 })
 

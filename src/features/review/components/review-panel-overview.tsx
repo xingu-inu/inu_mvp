@@ -2,22 +2,18 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import { format, parseISO } from 'date-fns'
 import { Flame, TrendingUp, MousePointerClick } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
 import { StreakBadge } from '@/components/ui/badge'
 import { extractActiveStreaks } from '../utils/timeline-utils'
-import { EVENT_ICONS, EVENT_LABELS } from '../hooks/use-activity-log'
 import type { AreaReviewData } from '../hooks/use-review-roadmap-data'
-import type { AreaChangesSummary, ActiveStreak } from '../utils/timeline-utils'
-import type { ActivityEvent, ActivityEventType } from '../hooks/use-activity-log'
+import type { ActiveStreak } from '../utils/timeline-utils'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Constants
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const MAX_STREAKS = 3
-const MAX_RECENT_EVENTS = 5
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Helpers
@@ -58,18 +54,6 @@ function computeOverallRate(roadmapData: AreaReviewData[]): number {
   }
 
   return totalScheduled > 0 ? Math.round((totalDone / totalScheduled) * 100) : 0
-}
-
-function collectRecentEvents(areaChanges: AreaChangesSummary[]): ActivityEvent[] {
-  const allEvents: ActivityEvent[] = []
-
-  for (const area of areaChanges) {
-    for (const event of area.events) {
-      allEvents.push(event)
-    }
-  }
-
-  return allEvents.sort((a, b) => b.date.localeCompare(a.date)).slice(0, MAX_RECENT_EVENTS)
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -114,25 +98,6 @@ function StreakRow({ streak }: { streak: ActiveStreak }) {
   )
 }
 
-function EventRow({ event }: { event: ActivityEvent }) {
-  const dateLabel = format(parseISO(event.date.slice(0, 10)), 'M/d')
-  const icon = EVENT_ICONS[event.type as ActivityEventType] ?? ''
-  const label = EVENT_LABELS[event.type as ActivityEventType] ?? ''
-
-  return (
-    <div className="flex items-center gap-2 py-1">
-      <span className="w-8 shrink-0 text-right text-xs text-[var(--color-text-tertiary)]">
-        {dateLabel}
-      </span>
-      <span className="shrink-0 text-sm">{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-text-primary)]">
-        {event.entityName}
-      </span>
-      <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">{label}</span>
-    </div>
-  )
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Main Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -149,8 +114,6 @@ export function ReviewPanelOverview() {
     () => extractActiveStreaks(roadmapData).slice(0, MAX_STREAKS),
     [roadmapData]
   )
-
-  const recentEvents = collectRecentEvents([])
 
   return (
     <motion.div
@@ -198,20 +161,6 @@ export function ReviewPanelOverview() {
           <div className="flex flex-col">
             {topStreaks.map((streak) => (
               <StreakRow key={streak.taskId} streak={streak} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent changes */}
-      {recentEvents.length > 0 && (
-        <div>
-          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-            최근 변화
-          </span>
-          <div className="flex flex-col">
-            {recentEvents.map((event) => (
-              <EventRow key={event.id} event={event} />
             ))}
           </div>
         </div>

@@ -1,15 +1,12 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useScrollY } from '@/hooks/use-scroll-y'
-import { ProfileModal } from './profile-modal'
-import { NotificationPopover } from './notification-popover'
-import { NavProfileButton } from './nav-profile-button'
+import { TopBarActions } from './top-bar-actions'
 
 interface TopBarProps {
   variant?: 'main' | 'secondary' | 'transparent'
@@ -65,24 +62,14 @@ export function TopBar({
         )}
 
         {/* Right Section */}
-        {rightActions || (variant === 'main' && <TopBarIcons />)}
+        {rightActions ||
+          (variant === 'main' && (
+            <nav className="flex items-center gap-1" aria-label="보조 네비게이션">
+              <TopBarActions />
+            </nav>
+          ))}
         {variant === 'secondary' && !rightActions && <div className="w-10" />}
       </div>
     </header>
-  )
-}
-
-function TopBarIcons() {
-  const [profileOpen, setProfileOpen] = useState(false)
-
-  return (
-    <>
-      <nav className="flex items-center gap-1" aria-label="보조 네비게이션">
-        <NotificationPopover />
-        <NavProfileButton onClick={() => setProfileOpen(true)} />
-      </nav>
-
-      <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
-    </>
   )
 }

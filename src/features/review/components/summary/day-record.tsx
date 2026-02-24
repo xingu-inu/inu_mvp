@@ -31,14 +31,12 @@ const DAY_OF_WEEK_LABELS = ['일', '월', '화', '수', '목', '금', '토']
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function WeekDayCell({
-  date: _date,
   dayLabel,
   mood,
   completionRate,
   isSelected,
   onClick,
 }: {
-  date: string
   dayLabel: string
   mood: MoodLevel | null
   completionRate: number | null
@@ -128,7 +126,6 @@ export function DayRecord({
             {weekDays.map((day) => (
               <WeekDayCell
                 key={day.date}
-                date={day.date}
                 dayLabel={day.dayLabel}
                 mood={day.mood}
                 completionRate={day.completionRate}
@@ -140,6 +137,7 @@ export function DayRecord({
         ) : (
           <JournalHeatmap
             checkInHistory={checkInHistory}
+            moodHistory={moodHistory}
             startDate={startDate}
             endDate={endDate}
             isWeek={false}

@@ -7,15 +7,14 @@ import { ChevronDown, ChevronRight, FolderOpen } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
 import { StreakBadge } from '@/components/ui/badge'
 import { WhyCard } from '../why-card'
-import { EVENT_ICONS, EVENT_LABELS } from '../../hooks/use-activity-log'
+import { STATUS_STYLES, STATUS_LABELS } from '@/lib/constants/goal-status'
+import { CompletionBar } from '@/components/common/completion-bar'
 import type { GoalStatus } from '@/types/entities'
 import type {
   AreaReviewData,
   GoalReviewData,
   TaskReviewSummary,
 } from '../../hooks/use-review-roadmap-data'
-import type { AreaChangesSummary } from '../../utils/timeline-utils'
-import type { ActivityEvent } from '../../hooks/use-activity-log'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
@@ -29,37 +28,9 @@ interface AreaBalanceDetailProps {
 // Constants
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-const MAX_RECENT_EVENTS = 5
-
-const STATUS_STYLES: Record<GoalStatus, string> = {
-  active: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  backlog: 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400',
-  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-  maintenance: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-  paused: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  archived: 'bg-gray-100 text-gray-500 dark:bg-gray-800/50 dark:text-gray-500',
-}
-
-const STATUS_LABELS: Record<GoalStatus, string> = {
-  active: '진행중',
-  backlog: '백로그',
-  completed: '완료',
-  maintenance: '유지',
-  paused: '일시정지',
-  archived: '아카이브',
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Helpers
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function getAreaEvents(changes: AreaChangesSummary | undefined): ActivityEvent[] {
-  if (!changes || changes.events.length === 0) return []
-
-  return [...changes.events]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, MAX_RECENT_EVENTS)
-}
 
 function getAreaStats(areaData: AreaReviewData): {
   completionRate: number
@@ -122,27 +93,6 @@ function getGoalDateLabel(createdAt: string, status: GoalStatus): string {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Sub-components
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function CompletionBar({ rate, color }: { rate: number; color: string }) {
-  return (
-    <div className="space-y-1.5">
-      <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-        완료율
-      </span>
-      <div className="flex items-center gap-3">
-        <div className="h-3 flex-1 rounded-full bg-[var(--color-bg-tertiary)]">
-          <div
-            className="h-full rounded-full transition-all"
-            style={{ width: `${Math.round(rate)}%`, backgroundColor: color }}
-          />
-        </div>
-        <span className="w-10 text-right font-mono text-sm font-semibold text-[var(--color-text-primary)]">
-          {Math.round(rate)}%
-        </span>
-      </div>
-    </div>
-  )
-}
 
 function CompactTaskRow({ task }: { task: TaskReviewSummary }) {
   return (
@@ -283,25 +233,6 @@ function GoalAccordionRow({
   )
 }
 
-function EventRow({ event }: { event: ActivityEvent }) {
-  const dateLabel = format(parseISO(event.date.slice(0, 10)), 'M/d')
-
-  return (
-    <div className="flex items-center gap-2 py-1">
-      <span className="w-8 shrink-0 text-right text-xs text-[var(--color-text-tertiary)]">
-        {dateLabel}
-      </span>
-      <span className="shrink-0 text-sm">{EVENT_ICONS[event.type]}</span>
-      <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-text-primary)]">
-        &quot;{event.entityName}&quot;
-      </span>
-      <span className="shrink-0 text-xs text-[var(--color-text-secondary)]">
-        {EVENT_LABELS[event.type]}
-      </span>
-    </div>
-  )
-}
-
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Main Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -314,10 +245,6 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
     () => roadmapData.find((a) => a.area.id === areaId),
     [roadmapData, areaId]
   )
-
-  const changesData = undefined
-
-  const recentEvents = useMemo(() => getAreaEvents(changesData), [changesData])
 
   const stats = useMemo(() => (areaData ? getAreaStats(areaData) : null), [areaData])
 
@@ -396,20 +323,6 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
                 onToggle={() => toggleGoal(goalData.goal.id)}
                 onDrillDown={() => handleDrillDown(goalData.goal.id)}
               />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent events */}
-      {recentEvents.length > 0 && (
-        <div>
-          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-            최근 변화
-          </span>
-          <div className="flex flex-col">
-            {recentEvents.map((event) => (
-              <EventRow key={event.id} event={event} />
             ))}
           </div>
         </div>

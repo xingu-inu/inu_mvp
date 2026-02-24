@@ -5,24 +5,9 @@ import { motion } from 'framer-motion'
 import { eachDayOfInterval, format, parseISO, isToday } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { MOOD_EMOJIS, MOOD_VALUES } from '../../utils/review-utils'
 import type { DayHistory } from '../../hooks/use-checkin-history'
 import type { MoodEntry } from '../../hooks/use-mood-history'
-
-const MOOD_EMOJIS: Record<string, string> = {
-  terrible: '😫',
-  bad: '😕',
-  neutral: '😐',
-  good: '🙂',
-  great: '😄',
-}
-
-const MOOD_VALUES: Record<string, number> = {
-  terrible: 1,
-  bad: 2,
-  neutral: 3,
-  good: 4,
-  great: 5,
-}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Compact mood trend line

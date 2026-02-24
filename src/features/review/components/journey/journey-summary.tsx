@@ -4,7 +4,6 @@ import { motion } from 'framer-motion'
 import { differenceInMonths, parseISO } from 'date-fns'
 import { cn } from '@/lib/utils'
 import type { AreaReviewData } from '../../hooks/use-review-roadmap-data'
-import type { ActivityEvent } from '../../hooks/use-activity-log'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
@@ -12,7 +11,6 @@ import type { ActivityEvent } from '../../hooks/use-activity-log'
 
 interface JourneySummaryProps {
   roadmapData: AreaReviewData[]
-  activityEvents: ActivityEvent[]
 }
 
 interface GoalStat {
@@ -74,10 +72,7 @@ function computeLongestJourney(roadmapData: AreaReviewData[]): LongestJourney | 
 // Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export function JourneySummary({
-  roadmapData,
-  activityEvents: _activityEvents,
-}: JourneySummaryProps) {
+export function JourneySummary({ roadmapData }: JourneySummaryProps) {
   const stats = computeGoalStats(roadmapData)
   const longest = computeLongestJourney(roadmapData)
 

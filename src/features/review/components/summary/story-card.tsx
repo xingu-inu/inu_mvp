@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { StreakBadge } from '@/components/ui/badge'
+import { ProgressRing } from '@/components/common/progress-ring'
+import { DeltaChip } from '@/components/common/delta-chip'
 import { generateGreeting, generateInsightText } from '../../utils/generate-insight'
 import { useReviewInsight } from '../../hooks/use-review-insight'
 import type { OverviewStats, ActiveStreak, AreaBalance } from '../../utils/timeline-utils'
@@ -19,8 +21,6 @@ import type { WeeklyReflection } from '@/types/entities'
 
 const RING_SIZE = 88
 const RING_STROKE = 7
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2
-const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Types
@@ -44,90 +44,6 @@ interface StoryCardProps {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Sub-components
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-function ProgressRing({ rate, isZero }: { rate: number; isZero: boolean }) {
-  const offset = CIRCUMFERENCE * (1 - rate / 100)
-
-  return (
-    <div className="relative flex shrink-0 items-center justify-center">
-      <svg
-        width={RING_SIZE}
-        height={RING_SIZE}
-        viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-        aria-hidden="true"
-      >
-        <circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke="var(--color-bg-tertiary)"
-          strokeWidth={RING_STROKE}
-        />
-        <motion.circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke={isZero ? 'var(--color-bg-tertiary)' : 'var(--color-primary-500)'}
-          strokeWidth={RING_STROKE}
-          strokeLinecap="round"
-          strokeDasharray={CIRCUMFERENCE}
-          initial={{ strokeDashoffset: CIRCUMFERENCE }}
-          animate={{ strokeDashoffset: isZero ? CIRCUMFERENCE : offset }}
-          transition={{ duration: 1, ease: 'easeOut' }}
-          style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
-        />
-      </svg>
-      <span
-        className={cn(
-          'absolute font-mono text-2xl font-extrabold',
-          isZero ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-primary)]'
-        )}
-      >
-        {rate}
-        <span className="text-sm font-semibold text-[var(--color-text-tertiary)]">%</span>
-      </span>
-    </div>
-  )
-}
-
-function DeltaChip({
-  label,
-  delta,
-  suffix,
-  isMood = false,
-}: {
-  label: string
-  delta: number
-  suffix: string
-  isMood?: boolean
-}) {
-  const isPositive = delta > 0
-  const isNeutral = delta === 0
-  const displayValue = isMood ? Math.abs(delta).toFixed(1) : Math.abs(delta)
-  const sign = isPositive ? '+' : isNeutral ? '' : '-'
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium',
-        isPositive && 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-        isNeutral && 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]',
-        !isPositive &&
-          !isNeutral &&
-          'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
-      )}
-    >
-      <span>{label}</span>
-      <span>
-        {sign}
-        {displayValue}
-        {suffix}
-      </span>
-    </span>
-  )
-}
 
 function InsightShimmer() {
   return (
@@ -225,7 +141,7 @@ export function StoryCard({
     >
       {/* Horizontal layout: ring left, content right */}
       <div className="flex items-start gap-4">
-        <ProgressRing rate={stats.completionRate} isZero={isZero} />
+        <ProgressRing size={RING_SIZE} strokeWidth={RING_STROKE} rate={stats.completionRate} />
 
         <div className="min-w-0 flex-1 space-y-1.5">
           {/* AI narrative */}

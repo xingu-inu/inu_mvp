@@ -10,16 +10,10 @@ import { useReviewStore } from '@/stores/review.store'
 import { useCheckInHistory } from '../hooks/use-checkin-history'
 import { useMoodHistory } from '../hooks/use-mood-history'
 import { useReviewPeriod } from '../hooks/use-review-period'
+import { MOOD_EMOJIS } from '../utils/review-utils'
 import type { DayHistory } from '../hooks/use-checkin-history'
 import type { MoodEntry } from '../hooks/use-mood-history'
-
-const MOOD_EMOJIS: Record<string, string> = {
-  terrible: '😫',
-  bad: '😕',
-  neutral: '😐',
-  good: '🙂',
-  great: '😄',
-}
+import type { MoodLevel } from '@/types/entities'
 
 export function PanelDayNavigator() {
   const { startDate, endDate } = useReviewPeriod()
@@ -41,7 +35,7 @@ export function PanelDayNavigator() {
   }, [checkInHistory])
 
   const moodMap = useMemo(() => {
-    const map = new Map<string, string>()
+    const map = new Map<string, MoodLevel>()
     moodHistory?.forEach((m: MoodEntry) => map.set(m.date, m.mood))
     return map
   }, [moodHistory])

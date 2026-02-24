@@ -63,17 +63,19 @@ export function useMonthSummary(currentDate: Date) {
   // Areas for color lookup (area_id → color)
   const { data: areas, isLoading: areasLoading } = useAreas()
 
+  // Shared area_id → color map (used by both summary and taskPreviews)
+  const areaColorMap = useMemo<Record<string, string>>(() => {
+    if (!areas) return {}
+    const map: Record<string, string> = {}
+    for (const area of areas) {
+      map[area.id] = area.color
+    }
+    return map
+  }, [areas])
+
   // Merge: task counts + check-in status per day + per-area breakdown
   const summary = useMemo<MonthSummaryData>(() => {
     if (!tasksByDate) return {}
-
-    // Build area_id → color map
-    const areaColorMap: Record<string, string> = {}
-    if (areas) {
-      for (const area of areas) {
-        areaColorMap[area.id] = area.color
-      }
-    }
 
     // Index check-ins: date totals + per-date done task_ids
     const checkInsByDate: Record<string, { done: number; skip: number }> = {}
@@ -129,19 +131,11 @@ export function useMonthSummary(currentDate: Date) {
     }
 
     return result
-  }, [tasksByDate, checkInRows, areas])
+  }, [tasksByDate, checkInRows, areaColorMap])
 
   // Build lightweight task previews per day for calendar cell rendering
   const taskPreviews = useMemo<MonthTaskPreviewData>(() => {
     if (!tasksByDate) return {}
-
-    // Build area_id → color map
-    const areaColorMap: Record<string, string> = {}
-    if (areas) {
-      for (const area of areas) {
-        areaColorMap[area.id] = area.color
-      }
-    }
 
     // Index check-in status per task per date
     const checkinStatusByDate: Record<string, Record<string, string>> = {}
@@ -170,7 +164,7 @@ export function useMonthSummary(currentDate: Date) {
       })
     }
     return result
-  }, [tasksByDate, checkInRows, areas])
+  }, [tasksByDate, checkInRows, areaColorMap])
 
   return {
     summary,

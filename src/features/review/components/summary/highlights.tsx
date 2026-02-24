@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
-import type { AreaReviewData } from '../../hooks/use-review-roadmap-data'
 import type { ActivityEvent } from '../../hooks/use-activity-log'
 import type { ActiveStreak, AreaBalance } from '../../utils/timeline-utils'
 import type { ComparisonData } from '../../hooks/use-comparison-data'
@@ -12,7 +11,6 @@ import type { ComparisonData } from '../../hooks/use-comparison-data'
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 interface HighlightsProps {
-  roadmapData: AreaReviewData[]
   activityEvents: ActivityEvent[]
   streaks: ActiveStreak[]
   comparison: ComparisonData
@@ -86,13 +84,7 @@ function generateHighlights(
 // Main Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export function Highlights({
-  roadmapData: _roadmapData,
-  activityEvents,
-  streaks,
-  comparison,
-  areaBalances,
-}: HighlightsProps) {
+export function Highlights({ activityEvents, streaks, comparison, areaBalances }: HighlightsProps) {
   const highlights = useMemo(
     () => generateHighlights(activityEvents, streaks, comparison, areaBalances),
     [activityEvents, streaks, comparison, areaBalances]

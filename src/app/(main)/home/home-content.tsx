@@ -102,7 +102,7 @@ function MobileTaskSection() {
             </p>
           )}
 
-          {!isReadOnly && <AiQuickActions tasks={tasks} selectedDate={currentDate} />}
+          {!isReadOnly && <AiQuickActions />}
           <TaskList
             tasks={tasks}
             selectedDate={currentDate}

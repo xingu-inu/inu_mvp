@@ -9,6 +9,7 @@ import { AnimatedCollapse } from '../shared/animated-collapse'
 import { useDirectionHistory, useArchivedRoadmap } from '@/queries/use-direction'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
+import { REPEAT_LABELS as REPEAT_LABELS_TYPED } from '@/lib/constants/repeat-labels'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import type { DirectionHistoryItem, ArchivedRoadmapData, GoalStatus } from '@/types/entities'
@@ -342,14 +343,7 @@ const TIME_SLOT_LABELS: Record<string, string> = {
   anytime: '종일',
 }
 
-const REPEAT_LABELS: Record<string, string> = {
-  daily: '매일',
-  weekdays: '평일',
-  weekends: '주말',
-  weekly: '매주',
-  once: '1회',
-  custom: '커스텀',
-}
+const REPEAT_LABELS: Record<string, string> = REPEAT_LABELS_TYPED
 
 function TaskRow({ task }: { task: ArchivedRoadmapData['goals'][number]['tasks'][number] }) {
   const meta: string[] = []

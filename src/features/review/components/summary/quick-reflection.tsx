@@ -24,7 +24,6 @@ const MOOD_OPTIONS = [
 
 interface QuickReflectionProps {
   isWeek: boolean
-  periodLabel: string
   weekStart?: string
   monthStart?: string
 }
@@ -103,12 +102,7 @@ function MonthlyReflectionInput({ monthStart, prompt }: { monthStart: string; pr
 // Main Component
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-export function QuickReflection({
-  isWeek,
-  periodLabel: _periodLabel,
-  weekStart,
-  monthStart,
-}: QuickReflectionProps) {
+export function QuickReflection({ isWeek, weekStart, monthStart }: QuickReflectionProps) {
   // Pick a stable prompt based on the period seed string
   const prompt = useMemo(() => {
     const prompts = isWeek ? REFLECTION_PROMPTS.weekly : REFLECTION_PROMPTS.monthly

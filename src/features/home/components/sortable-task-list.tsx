@@ -3,15 +3,11 @@
 import { useCallback } from 'react'
 import { DndContext, DragOverlay, closestCorners, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useDroppable } from '@dnd-kit/core'
-import { SortableAreaSection } from './sortable-area-section'
-import { SortableTaskRow } from './sortable-task-row'
+import { AreaTaskSection } from './area-task-section'
 import { CompactTaskRow } from './compact-task-row'
-import { InlineTaskInput } from './inline-task-input'
-import { DailySectionHeader } from './daily-section-header'
+import { DailySection } from './daily-section'
 import { GoalPickerPopover } from './goal-picker-popover'
 import { DragOverlayCard } from '@/components/common'
-import { cn } from '@/lib/utils'
 import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
 import { useTaskDnd } from '../hooks/use-task-dnd'
 import type { HomeTask } from '@/types/entities'
@@ -91,8 +87,9 @@ export function SortableTaskList({
             const tasks = taskIds.map((id) => tasksById.get(id)).filter(Boolean) as HomeTask[]
 
             return (
-              <SortableAreaSection
+              <AreaTaskSection
                 key={areaId}
+                sortable
                 area={group.area}
                 goals={group.goals}
                 tasks={tasks}
@@ -108,7 +105,8 @@ export function SortableTaskList({
           })}
 
           {/* Daily tasks section (droppable container, not sortable as area) */}
-          <DailyDroppableSection
+          <DailySection
+            sortable
             taskIds={taskContainers['daily'] ?? []}
             tasksById={tasksById}
             isReadOnly={isReadOnly}
@@ -139,68 +137,5 @@ export function SortableTaskList({
         />
       )}
     </DndContext>
-  )
-}
-
-/** Daily tasks droppable section */
-function DailyDroppableSection({
-  taskIds,
-  tasksById,
-  isReadOnly,
-  selectedDate,
-  expandedTaskId,
-  onToggle,
-  enableAiSuggest,
-  priorityTiers,
-}: {
-  taskIds: string[]
-  tasksById: Map<string, HomeTask>
-  isReadOnly: boolean
-  selectedDate: Date
-  expandedTaskId?: string | null
-  onToggle?: (taskId: string) => void
-  enableAiSuggest?: boolean
-  priorityTiers?: Record<string, number> | null
-}) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'container-daily',
-    data: { type: 'container' as const, containerId: 'daily' },
-  })
-
-  const tasks = taskIds.map((id) => tasksById.get(id)).filter(Boolean) as HomeTask[]
-
-  return (
-    <section
-      ref={setNodeRef}
-      aria-labelledby="daily-tasks"
-      className={cn(
-        'border-l-2 pl-3 transition-all',
-        isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
-      )}
-      style={{ borderLeftColor: 'var(--color-text-tertiary)' }}
-    >
-      <DailySectionHeader taskCount={tasks.length} />
-
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="space-y-0.5">
-          {tasks.map((task) => (
-            <SortableTaskRow
-              key={task.id}
-              task={task}
-              containerId="daily"
-              isReadOnly={isReadOnly}
-              selectedDate={selectedDate}
-              isExpanded={expandedTaskId === task.id}
-              onToggle={onToggle}
-              priorityTier={priorityTiers?.[task.id]}
-            />
-          ))}
-        </div>
-      </SortableContext>
-
-      {!isReadOnly && (
-        <InlineTaskInput selectedDate={selectedDate} enableAiSuggest={enableAiSuggest} />
-      )}
-    </section>
   )
 }

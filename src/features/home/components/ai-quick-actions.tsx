@@ -3,20 +3,8 @@
 import { ListOrdered } from 'lucide-react'
 import { PriorityRankModal } from './priority-rank-modal'
 import { useHomeStore } from '@/stores/home.store'
-import type { HomeTask } from '@/types/entities'
 
-interface AiQuickActionsProps {
-  tasks: HomeTask[]
-  selectedDate: Date
-}
-
-export function AiQuickActions({
-  tasks: _tasks,
-  selectedDate: _selectedDate,
-}: AiQuickActionsProps) {
-  void _tasks // kept for interface compatibility
-  void _selectedDate
-
+export function AiQuickActions() {
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
 
   return (

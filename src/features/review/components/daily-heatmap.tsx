@@ -119,6 +119,7 @@ export function DailyHeatmap({
         ) : (
           <JournalHeatmap
             checkInHistory={checkInHistory}
+            moodHistory={moodHistory}
             startDate={startDate}
             endDate={endDate}
             isWeek={false}

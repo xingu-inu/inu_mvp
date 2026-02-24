@@ -31,6 +31,7 @@ const STATUS_ICON: Record<GoalStatus, string> = {
   archived: '📦',
 }
 
+// area-story-card uses a richer style object (bg + text + label) distinct from the shared STATUS_STYLES
 const STATUS_STYLES: Record<GoalStatus, { bg: string; text: string; label: string }> = {
   active: {
     bg: 'bg-blue-50 dark:bg-blue-900/30',

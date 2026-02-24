@@ -4,7 +4,6 @@ import { cn } from '@/lib/utils'
 import { STATUS_CHANGE_REASONS } from '@/lib/goal-status'
 import { useObstacleAnalysis } from '../../hooks/use-obstacle-analysis'
 import type { AreaReviewData } from '../../hooks/use-review-roadmap-data'
-import type { DayHistory } from '../../hooks/use-checkin-history'
 import type { TimeSlotAnalysis, SkipMissRatio } from '../../hooks/use-obstacle-analysis'
 
 // ============================================
@@ -209,18 +208,16 @@ function SkipMissInsightCard({ skipMiss }: SkipMissInsightCardProps) {
 
 interface ObstacleAnalysisSectionProps {
   roadmapData: AreaReviewData[]
-  checkInHistory: DayHistory[]
   startDate: string
   endDate: string
 }
 
 export function ObstacleAnalysisSection({
   roadmapData,
-  checkInHistory,
   startDate,
   endDate,
 }: ObstacleAnalysisSectionProps) {
-  const { data, isLoading } = useObstacleAnalysis(roadmapData, checkInHistory, startDate, endDate)
+  const { data, isLoading } = useObstacleAnalysis(roadmapData, startDate, endDate)
 
   if (isLoading || !data) return null
 

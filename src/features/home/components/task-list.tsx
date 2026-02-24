@@ -3,12 +3,10 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Flame } from 'lucide-react'
 import { format } from 'date-fns'
-import { CompactTaskRow } from './compact-task-row'
 import { EmptyTasks } from './empty-tasks'
 import { AreaTaskSection } from './area-task-section'
 import { SortableTaskList } from './sortable-task-list'
-import { InlineTaskInput } from './inline-task-input'
-import { DailySectionHeader } from './daily-section-header'
+import { DailySection } from './daily-section'
 import { PastDaySummary } from './past-day-summary'
 import { useHomeStore } from '@/stores/home.store'
 import { groupTasksByArea } from '@/lib/utils/task-utils'
@@ -198,7 +196,7 @@ export function TaskList({
               enableAiSuggest={enableAiSuggest}
             />
           ))}
-          <StaticDailySection
+          <DailySection
             tasks={dailyTasks}
             isReadOnly={isReadOnly}
             selectedDate={selectedDate}
@@ -209,47 +207,5 @@ export function TaskList({
         </>
       )}
     </div>
-  )
-}
-
-/** Static daily section (when DnD is disabled) */
-function StaticDailySection({
-  tasks,
-  isReadOnly,
-  selectedDate,
-  expandedTaskId,
-  onToggle,
-  enableAiSuggest,
-}: {
-  tasks: HomeTask[]
-  isReadOnly?: boolean
-  selectedDate: Date
-  expandedTaskId: string | null
-  onToggle: (taskId: string) => void
-  enableAiSuggest?: boolean
-}) {
-  return (
-    <section
-      aria-labelledby="daily-tasks"
-      className="border-l-2 pl-3"
-      style={{ borderLeftColor: 'var(--color-text-tertiary)' }}
-    >
-      <DailySectionHeader taskCount={tasks.length} />
-      <div className="space-y-0.5">
-        {tasks.map((task) => (
-          <CompactTaskRow
-            key={task.id}
-            task={task}
-            isReadOnly={isReadOnly}
-            selectedDate={selectedDate}
-            isExpanded={expandedTaskId === task.id}
-            onToggle={onToggle}
-          />
-        ))}
-        {!isReadOnly && (
-          <InlineTaskInput selectedDate={selectedDate} enableAiSuggest={enableAiSuggest} />
-        )}
-      </div>
-    </section>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Trash2,
   Plus,
@@ -11,10 +11,6 @@ import {
   AlertCircle,
   Circle,
   CheckCircle2,
-  Link,
-  Link2Off,
-  Calendar1,
-  Repeat,
   Stethoscope,
   Pencil,
 } from 'lucide-react'
@@ -48,68 +44,9 @@ import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
 import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
 import { useUpdateTask } from '@/queries/use-tasks'
 import { CrossLinkTaskPicker } from '../shared/cross-link-task-picker'
-import type { GoalStatus, Task } from '@/types/entities'
+import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
+import type { GoalStatus } from '@/types/entities'
 import type { AiDecomposeResponse } from '@/lib/ai/types'
-
-const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
-  task,
-  sourceGoalId: _sourceGoalId,
-  sourceGoalName,
-  sourceAreaEmoji,
-  sourceAreaColor,
-  onUnlink,
-  onNavigate,
-}: {
-  task: Task
-  sourceGoalId: string
-  sourceGoalName: string
-  sourceAreaEmoji: string
-  sourceAreaColor: string
-  onUnlink: () => void
-  onNavigate: () => void
-}) {
-  const RepeatIcon = task.repeat_type === 'once' ? Calendar1 : Repeat
-  return (
-    <div
-      className="group/cross flex cursor-pointer items-center rounded-md border-l-2 border-dashed bg-[var(--color-bg-secondary)]/30 transition-colors hover:bg-[var(--color-bg-secondary)]"
-      style={{ borderLeftColor: sourceAreaColor || 'var(--color-border)' }}
-      onClick={onNavigate}
-    >
-      <div className="flex flex-1 flex-col px-2.5 py-1.5">
-        <div className="flex w-full items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <Link className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)]" />
-            <RepeatIcon className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)]" />
-            <span className="flex-1 truncate text-xs font-medium">{task.name}</span>
-          </div>
-          {task.streak_count > 0 && (
-            <span className="shrink-0 text-[10px] text-[var(--color-streak)]">
-              🔥 {task.streak_count}
-            </span>
-          )}
-        </div>
-        <div className="mt-0.5 flex items-center gap-1 pl-[30px]">
-          <p className="truncate text-[10px] text-[var(--color-text-tertiary)]">
-            ← {sourceAreaEmoji} {sourceGoalName}
-          </p>
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center pr-1.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/cross:opacity-100">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onUnlink()
-          }}
-          title="연결 해제"
-          className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-miss)]"
-        >
-          <Link2Off className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  )
-})
 
 interface GoalViewModeProps {
   goalId?: string

@@ -9,6 +9,7 @@ import { getNewOrderBetween } from '@/lib/fractional-index'
 import { queryKeys } from '@/lib/query/keys'
 import { createTreeCollisionDetection } from '@/lib/dnd/tree-collision-detection'
 import { useTreeDndStore } from '@/stores/tree-dnd.store'
+import { findNode, findParent } from '../utils/tree-traversal'
 import type { VisualTreeNode } from '../components/visual-tree/tree-node-card'
 import type { Area, Goal, Task } from '@/types/entities'
 
@@ -222,36 +223,6 @@ function findSiblingInsertionIds(tree: VisualTreeNode, draggedId: string): Set<s
   }
 
   return ids
-}
-
-/**
- * Find the parent node of a given nodeId in the tree.
- */
-function findParent(tree: VisualTreeNode, nodeId: string): VisualTreeNode | null {
-  if (!tree.children) return null
-
-  for (const child of tree.children) {
-    if (child.id === nodeId) return tree
-    const found = findParent(child, nodeId)
-    if (found) return found
-  }
-
-  return null
-}
-
-/**
- * Find a node by its ID in the tree.
- */
-function findNode(tree: VisualTreeNode, nodeId: string): VisualTreeNode | null {
-  if (tree.id === nodeId) return tree
-  if (!tree.children) return null
-
-  for (const child of tree.children) {
-    const found = findNode(child, nodeId)
-    if (found) return found
-  }
-
-  return null
 }
 
 /**
