@@ -11,13 +11,9 @@ import { useWeekTasks } from '../hooks/use-week-tasks'
 import { useTaskLayout, assignGoogleEventsToSlots } from '../hooks/use-task-layout'
 import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 import { useHomeStore } from '@/stores/home.store'
+import { useHomeDirection } from '../hooks/use-home-direction'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
-import {
-  TIME_SLOT_CONFIG,
-  DISPLAY_SLOTS,
-  getCurrentSlot,
-  SLOT_DAWN_COLLAPSED_HEIGHT,
-} from '@/lib/constants/time-slots'
+import { TIME_SLOT_CONFIG, DISPLAY_SLOTS, getCurrentSlot } from '@/lib/constants/time-slots'
 import { SlotBlock } from './slot-block'
 import { SlotTaskRow } from './slot-task-row'
 import { SlotGoogleEventRow } from './slot-google-event-row'
@@ -41,7 +37,11 @@ function isSlotPast(slot: string, currentSlot: string): boolean {
  */
 export function WeekViewGrid() {
   const { currentDate, setCurrentDate, title } = useHomeState()
-  const { tasksByDate, weekDays, isLoading } = useWeekTasks(currentDate)
+  const { selectedDirectionId } = useHomeDirection()
+  const { tasksByDate, weekDays, isLoading } = useWeekTasks(
+    currentDate,
+    selectedDirectionId ?? undefined
+  )
   const setHighlightedTaskId = useHomeStore((s) => s.setHighlightedTaskId)
   const scrollRef = useRef<HTMLDivElement>(null)
   const isMobile = useIsMobile()
@@ -132,22 +132,7 @@ export function WeekViewGrid() {
 
   const gridColumns = `${gutterPx}px repeat(${visibleDays.length}, minmax(0, 1fr))`
 
-  // ── Slot height calculation ──
   const gridBodyRef = useRef<HTMLDivElement>(null)
-  const [gridBodyHeight, setGridBodyHeight] = useState(0)
-
-  useEffect(() => {
-    const el = gridBodyRef.current
-    if (!el) return
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const h = Math.round(entry.contentRect.height)
-        setGridBodyHeight((prev) => (Math.abs(prev - h) > 1 ? h : prev))
-      }
-    })
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
 
   // Check if dawn has any content across visible days
   const dawnHasContent = useMemo(() => {
@@ -159,19 +144,8 @@ export function WeekViewGrid() {
     })
   }, [visibleDays, layoutByDate, googleSlotsByDate])
 
-  // Compute per-slot heights: dawn gets collapsed height when empty, rest split equally
-  const slotHeights = useMemo(() => {
-    if (gridBodyHeight <= 0) return null // Not measured yet, let CSS handle it
-    if (dawnHasContent) {
-      // All 4 slots equal
-      const h = Math.floor(gridBodyHeight / 4)
-      return { dawn: h, morning: h, afternoon: h, evening: h }
-    }
-    // Dawn collapsed, rest split remaining space
-    const remaining = gridBodyHeight - SLOT_DAWN_COLLAPSED_HEIGHT
-    const h = Math.floor(remaining / 3)
-    return { dawn: SLOT_DAWN_COLLAPSED_HEIGHT, morning: h, afternoon: h, evening: h }
-  }, [gridBodyHeight, dawnHasContent])
+  // Dawn collapsed = no content in dawn slot across visible days
+  const dawnCollapsed = !dawnHasContent
 
   const handleTaskClick = useCallback(
     (taskId: string | null, d: Date) => {
@@ -333,8 +307,7 @@ export function WeekViewGrid() {
             <div className="sticky left-0 z-10 flex flex-col bg-[var(--color-bg-primary)]">
               {DISPLAY_SLOTS.map((slot) => {
                 const config = TIME_SLOT_CONFIG[slot]
-                const isDawnEmpty = slot === 'dawn' && !dawnHasContent
-                const gutterHeight = slotHeights?.[slot]
+                const isDawnEmpty = slot === 'dawn' && dawnCollapsed
 
                 return (
                   <div
@@ -348,8 +321,9 @@ export function WeekViewGrid() {
                       ...(currentSlot !== slot
                         ? { backgroundColor: `var(--color-slot-${slot})` }
                         : {}),
-                      ...(gutterHeight ? { height: `${gutterHeight}px` } : { minHeight: '40px' }),
-                      transition: 'height 200ms ease-out, min-height 200ms ease-out',
+                      flex: isDawnEmpty ? '0 0 32px' : '1 1 0',
+                      minHeight: '40px',
+                      transition: 'flex-grow 200ms ease-out, flex-basis 200ms ease-out',
                     }}
                   >
                     <span
@@ -413,7 +387,7 @@ export function WeekViewGrid() {
                         isPast={dayIsPast}
                         isPastSlot={slotIsPast}
                         day={day}
-                        slotHeight={slotHeights?.[slot]}
+                        dawnCollapsed={dawnCollapsed}
                         maxVisible={isMobile ? MOBILE_MAX_VISIBLE : undefined}
                         onTaskClick={handleTaskClick}
                       />

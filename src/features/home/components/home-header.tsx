@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { format } from 'date-fns'
 import { useHomeState } from '../hooks/use-home-state'
+import { HomeVersionFilter } from './home-version-filter'
 import { HomeViewToggle } from './home-view-toggle'
+import { GoogleCalendarExportModal } from './google-calendar-export-modal'
+import { useHomeStore } from '@/stores/home.store'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
-import { exportTasksToGoogleCalendar } from '@/actions/google-calendar.actions'
 import { queryKeys } from '@/lib/query/keys'
 import { toast } from 'sonner'
 
@@ -40,6 +41,7 @@ export function HomeHeader() {
   const {
     view,
     currentDate,
+    setCurrentDate,
     goToPreviousWeek,
     goToNextWeek,
     goToPreviousMonth,
@@ -48,12 +50,13 @@ export function HomeHeader() {
     isViewingToday,
     title,
   } = useHomeState()
+  const setSelectedDirectionId = useHomeStore((s) => s.setSelectedDirectionId)
   const { data: gcalConnection } = useGoogleCalendarConnection()
   const isGcalConnected = !!gcalConnection?.sync_enabled
   const queryClient = useQueryClient()
   const [isSyncing, setIsSyncing] = useState(false)
-  const [isExporting, setIsExporting] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
+  const [exportModalOpen, setExportModalOpen] = useState(false)
 
   const handleImport = async () => {
     setIsSyncing(true)
@@ -63,29 +66,9 @@ export function HomeHeader() {
     setIsSyncing(false)
   }
 
-  const handleExport = async () => {
-    setIsExporting(true)
+  const handleOpenExportModal = () => {
     setPopoverOpen(false)
-    try {
-      const dateStr = format(currentDate, 'yyyy-MM-dd')
-      const result = await exportTasksToGoogleCalendar(dateStr)
-      if (!result.success) {
-        toast.error('내보내기에 실패했어요')
-        return
-      }
-      const data = result.data
-      if (data.exported > 0) {
-        toast.success(`${data.exported}개 Task를 Google Calendar에 추가했어요`)
-      } else if (data.skipped > 0) {
-        toast.info('내보낼 Task가 없어요 (이미 완료됨)')
-      } else {
-        toast.info('내보낼 Task가 없어요')
-      }
-    } catch {
-      toast.error('내보내기에 실패했어요')
-    } finally {
-      setIsExporting(false)
-    }
+    setExportModalOpen(true)
   }
 
   const goToPrevious = view === 'week' ? goToPreviousWeek : goToPreviousMonth
@@ -116,6 +99,7 @@ export function HomeHeader() {
           <h1 className="ml-1 hidden text-xl font-bold text-[var(--color-text-primary)] lg:block">
             {title}
           </h1>
+          <HomeVersionFilter onNavigateToDate={setCurrentDate} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -123,13 +107,13 @@ export function HomeHeader() {
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <button
-                  disabled={isSyncing || isExporting}
+                  disabled={isSyncing}
                   className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-50"
                   aria-label="Google Calendar"
                 >
                   <GoogleIcon className="h-3.5 w-3.5 flex-shrink-0" />
                   <span className="hidden sm:inline">
-                    {isSyncing ? '가져오는 중...' : isExporting ? '내보내는 중...' : 'Calendar'}
+                    {isSyncing ? '가져오는 중...' : 'Calendar'}
                   </span>
                 </button>
               </PopoverTrigger>
@@ -145,13 +129,13 @@ export function HomeHeader() {
                   </div>
                 </button>
                 <button
-                  onClick={handleExport}
+                  onClick={handleOpenExportModal}
                   className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--color-bg-secondary)]"
                 >
                   <Upload className="h-4 w-4 text-[var(--color-done)]" />
                   <div>
                     <p className="font-medium">Task 내보내기</p>
-                    <p className="text-xs text-[var(--color-text-tertiary)]">오늘 Task → Google</p>
+                    <p className="text-xs text-[var(--color-text-tertiary)]">inu → Google</p>
                   </div>
                 </button>
               </PopoverContent>
@@ -161,7 +145,10 @@ export function HomeHeader() {
             <Button
               variant="secondary"
               size="sm"
-              onClick={goToToday}
+              onClick={() => {
+                setSelectedDirectionId(null)
+                goToToday()
+              }}
               className="text-[var(--color-primary-500)]"
             >
               오늘
@@ -172,7 +159,19 @@ export function HomeHeader() {
       </div>
 
       {/* Row 2: Title on its own line (mobile only) */}
-      <h1 className="text-xl font-bold text-[var(--color-text-primary)] lg:hidden">{title}</h1>
+      <div className="flex items-center gap-2 lg:hidden">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{title}</h1>
+        <HomeVersionFilter onNavigateToDate={setCurrentDate} />
+      </div>
+
+      {/* Export Modal */}
+      {isGcalConnected && (
+        <GoogleCalendarExportModal
+          open={exportModalOpen}
+          onOpenChange={setExportModalOpen}
+          currentDate={currentDate}
+        />
+      )}
     </div>
   )
 }

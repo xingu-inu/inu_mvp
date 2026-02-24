@@ -173,3 +173,17 @@
 .animate-shake {
   animation: shake 400ms var(--ease-default);
 }
+
+/* Dot garden grow animation for month calendar */
+@keyframes dot-grow {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-dot-grow {
+  animation: dot-grow 300ms var(--ease-spring) both;
+}

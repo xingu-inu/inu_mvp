@@ -85,7 +85,6 @@ export function useTreeSearch(tree: VisualTreeNode | null, query: string): TreeS
     collectAncestorIds(tree, directMatchIds, ancestorIds, [])
 
     const combined = new Set<string>([...directMatchIds, ...ancestorIds])
-
     return { matchedIds: combined, orderedMatches: ordered }
   }, [tree, query])
 

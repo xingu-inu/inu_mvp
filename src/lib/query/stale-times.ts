@@ -57,6 +57,7 @@ export const STALE_TIMES = {
   // ═══════════════════════════════════════════════════
   ADMIN_STATS: 60 * 1000, // 관리자 통계 - 1분
   ADMIN_USERS: 30 * 1000, // 관리자 사용자 목록 - 30초
+  ADMIN_ANALYTICS: 5 * 60 * 1000, // 관리자 분석 - 5분
   ANNOUNCEMENTS: 5 * 60 * 1000, // 공지사항 - 5분 (사용자용)
 } as const
 

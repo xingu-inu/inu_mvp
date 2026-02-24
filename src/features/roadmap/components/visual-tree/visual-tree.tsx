@@ -5,17 +5,17 @@ import { DndContext, DragOverlay } from '@dnd-kit/core'
 import {
   useRoadmapStore,
   selectSelectedNodeId,
-  selectStatusFilter,
-  type StatusFilter,
   type SelectedNodeType,
   type Selection,
 } from '@/stores/roadmap.store'
+import { useTreeDndStore, selectIsDragging, selectIsDraggingTask } from '@/stores/tree-dnd.store'
 import { TreeNode } from './tree-node'
 import { TreeQuickAdd } from './tree-quick-add'
 import { TreeNodeCard } from './tree-node-card'
 import { CrossLinkOverlay, type CrossLink } from '../cross-link-overlay'
+import { DragConnectionLine } from './drag-connection-line'
 import type { VisualTreeNode } from './tree-node-card'
-import type { Direction, Area, Goal } from '@/types/entities'
+import type { Area, Goal } from '@/types/entities'
 import type { AreaType } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
 import { useFocusBranch } from '../../hooks/use-focus-branch'
@@ -27,7 +27,8 @@ import { useDeleteGroup } from '@/queries/use-groups'
 import { useDeleteTask } from '@/queries/use-tasks'
 
 interface VisualTreeProps {
-  direction: Direction | null
+  treeData: VisualTreeNode | null
+  crossLinks: CrossLink[]
   goals: Goal[]
   areas: Area[]
   layoutDirection: TreeLayoutDirection
@@ -37,7 +38,8 @@ interface VisualTreeProps {
 }
 
 export const VisualTree = memo(function VisualTree({
-  direction,
+  treeData,
+  crossLinks,
   goals,
   areas,
   layoutDirection,
@@ -46,18 +48,16 @@ export const VisualTree = memo(function VisualTree({
   searchMatchedIds,
 }: VisualTreeProps) {
   const selectedNodeId = useRoadmapStore(selectSelectedNodeId)
-  const statusFilter = useRoadmapStore(selectStatusFilter)
   const select = useRoadmapStore((s) => s.select)
   const focusGoal = useRoadmapStore((s) => s.focusGoal)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // DnD state from store (isDragging/isDraggingTask only — NOT overId to avoid pointer-move re-renders)
+  const isDragging = useTreeDndStore(selectIsDragging)
+  const isDraggingTask = useTreeDndStore(selectIsDraggingTask)
+
   // Quick Add state — which node's popover is open
   const [addingToId, setAddingToId] = useState<string | null>(null)
-
-  const { tree: treeData, crossLinks } = useMemo(
-    () => buildVisualTreeData(direction, areas, goals, statusFilter),
-    [direction, areas, goals, statusFilter]
-  )
 
   // Focus mode: highlight selected node's branch
   const focusedIds = useFocusBranch(treeData, selectedNodeId)
@@ -72,8 +72,6 @@ export const VisualTree = memo(function VisualTree({
     handleDragEnd,
     handleDragCancel,
   } = useVisualTreeDnd({ tree: treeData, zoom })
-
-  const isDragging = dndState.activeId !== null
 
   // Delete mutations
   const deleteArea = useDeleteArea()
@@ -238,8 +236,6 @@ export const VisualTree = memo(function VisualTree({
             searchMatchedIds={searchMatchedIds}
             searchQuery={searchQuery}
             isDndEnabled
-            isDragging={isDragging}
-            dndOverId={dndState.overId}
             onDeleteNode={handleDeleteNode}
             parentGoalMap={parentGoalMap}
           />
@@ -251,6 +247,7 @@ export const VisualTree = memo(function VisualTree({
             layoutDirection={layoutDirection}
           />
         )}
+        {isDraggingTask && <DragConnectionLine containerRef={containerRef} />}
       </div>
 
       <DragOverlay dropAnimation={DROP_ANIMATION}>
@@ -276,10 +273,10 @@ export const VisualTree = memo(function VisualTree({
  * Direction → Area → Goal → Group → Task
  */
 export function buildVisualTreeData(
-  direction: Direction | null,
+  direction: { id: string; statement: string | null; why: string | null } | null,
   areas: Area[],
   goals: Goal[],
-  statusFilter: StatusFilter
+  statusFilter: string
 ): { tree: VisualTreeNode | null; crossLinks: CrossLink[] } {
   const today = new Date().toISOString().split('T')[0]
   const crossLinks: CrossLink[] = []

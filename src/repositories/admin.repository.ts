@@ -40,6 +40,63 @@ export interface AdminUserRow {
   lastActive?: string | null
 }
 
+export interface EngagementSeries {
+  date: string
+  dau: number
+  wau: number
+  mau: number
+}
+
+export interface EngagementSummary {
+  current_dau: number
+  prev_dau: number
+  current_wau: number
+  prev_wau: number
+  current_mau: number
+  prev_mau: number
+}
+
+export interface EngagementStats {
+  series: EngagementSeries[]
+  summary: EngagementSummary
+}
+
+export interface OnboardingFunnel {
+  signed_up: number
+  has_direction: number
+  has_area: number
+  has_goal: number
+  has_task: number
+  has_checkin: number
+}
+
+export interface RetentionCohort {
+  cohort_week: string
+  cohort_size: number
+  week_0: number
+  week_1: number
+  week_2: number
+  week_3: number
+  week_4: number
+  week_5: number
+  week_6: number
+  week_7: number
+  week_8: number
+}
+
+export interface FeatureAdoption {
+  total_users: number
+  time_slot_rate: number
+  why_rate: number
+  reflection_rate: number
+  group_rate: number
+}
+
+export interface StreakBucket {
+  bucket: string
+  count: number
+}
+
 export const adminRepository = {
   /**
    * 관리자 대시보드 통계 조회 (RPC)
@@ -141,5 +198,70 @@ export const adminRepository = {
       .update({ is_admin: isAdmin } as Record<string, unknown>)
       .eq('id', userId)
     if (error) handleSupabaseError(error)
+  },
+
+  /**
+   * 참여도(DAU/WAU/MAU) 시계열 + 요약 조회 (RPC)
+   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
+   */
+  async getEngagementStats(
+    supabase: TypedSupabaseClient,
+    days: number = 30
+  ): Promise<EngagementStats> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.rpc as any)('get_admin_engagement_stats', {
+      p_days: days,
+    })
+    if (error) handleSupabaseError(error)
+    return data as unknown as EngagementStats
+  },
+
+  /**
+   * 온보딩 퍼널 단계별 사용자 수 조회 (RPC)
+   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
+   */
+  async getOnboardingFunnel(supabase: TypedSupabaseClient): Promise<OnboardingFunnel> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.rpc as any)('get_admin_onboarding_funnel')
+    if (error) handleSupabaseError(error)
+    return data as unknown as OnboardingFunnel
+  },
+
+  /**
+   * 리텐션 코호트 조회 (RPC)
+   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
+   */
+  async getRetentionCohorts(
+    supabase: TypedSupabaseClient,
+    cohortCount: number = 8
+  ): Promise<RetentionCohort[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.rpc as any)('get_admin_retention_cohorts', {
+      p_cohort_count: cohortCount,
+    })
+    if (error) handleSupabaseError(error)
+    return (data ?? []) as unknown as RetentionCohort[]
+  },
+
+  /**
+   * 기능 사용률 조회 (RPC)
+   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
+   */
+  async getFeatureAdoption(supabase: TypedSupabaseClient): Promise<FeatureAdoption> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.rpc as any)('get_admin_feature_adoption')
+    if (error) handleSupabaseError(error)
+    return data as unknown as FeatureAdoption
+  },
+
+  /**
+   * 스트릭 분포 조회 (RPC)
+   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
+   */
+  async getStreakDistribution(supabase: TypedSupabaseClient): Promise<StreakBucket[]> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase.rpc as any)('get_admin_streak_distribution')
+    if (error) handleSupabaseError(error)
+    return (data ?? []) as unknown as StreakBucket[]
   },
 }

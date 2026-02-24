@@ -15,10 +15,11 @@ import {
 } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { useHomeState } from '../hooks/use-home-state'
+import { useAreas } from '@/queries/use-areas'
 import {
   useMonthSummary,
   type MonthDaySummary,
-  type AreaDayInfo,
+  type MonthSummaryData,
   type MonthTaskPreview,
 } from '../hooks/use-month-summary'
 
@@ -29,6 +30,9 @@ const RING_SIZE = 32
 const RING_RADIUS = 13
 const RING_STROKE = 2
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
+
+/** Max dots to show per cell before truncating */
+const MAX_VISIBLE_DOTS = 12
 
 /**
  * Mini SVG progress ring around the date number.
@@ -71,71 +75,62 @@ function ProgressRing({ rate, isPerfect }: { rate: number; isPerfect: boolean })
 }
 
 /**
- * Tiny horizontal bar per area. Past/today: opacity reflects completion rate.
- * Future: full opacity (no completion data yet).
+ * Renders area-colored dots for each task in a day cell.
+ * Done = filled saturated, Skip = gray, Miss = faded, Future = outlined.
  */
-function AreaBar({ area, isFuture }: { area: AreaDayInfo; isFuture: boolean }) {
-  const opacity = isFuture ? 1 : area.total > 0 ? 0.3 + 0.7 * (area.done / area.total) : 0.3
-  return <div className="h-1.5 w-2.5 rounded-sm" style={{ backgroundColor: area.color, opacity }} />
-}
-
-/** Max tasks to show inline in a month cell (3rd hidden on mobile) */
-const MAX_VISIBLE_TASKS = 3
-
-/**
- * Compact task preview list for a month cell.
- * Shows up to MAX_VISIBLE_TASKS task names with area color dots, then "+N개".
- */
-function TaskPreviewList({
+function DotGarden({
   tasks,
-  isDone,
+  isFuture: dayIsFuture,
 }: {
   tasks: MonthTaskPreview[]
-  isDone: (taskId: string) => boolean
+  isFuture: boolean
 }) {
-  const visible = tasks.slice(0, MAX_VISIBLE_TASKS)
-  const remaining = tasks.length - MAX_VISIBLE_TASKS
+  const visible = tasks.slice(0, MAX_VISIBLE_DOTS)
+  const overflow = tasks.length - MAX_VISIBLE_DOTS
 
   return (
-    <div className="mt-0.5 flex w-full flex-col gap-px px-0.5">
+    <div className="mt-1 flex flex-wrap items-start justify-center gap-0.5 px-1">
       {visible.map((task, i) => {
-        const done = isDone(task.id)
-        // 3rd task hidden on mobile, visible on desktop
-        const hiddenOnMobile = i === MAX_VISIBLE_TASKS - 1
-        return (
-          <div
-            key={task.id}
-            className={cn(
-              'flex min-w-0 items-center gap-0.5',
-              done && 'opacity-50',
-              hiddenOnMobile && 'hidden lg:flex'
-            )}
-          >
-            {/* Area color dot */}
+        const color = task.areaColor ?? 'var(--color-text-disabled)'
+
+        if (dayIsFuture) {
+          // Future: outlined dot
+          return (
             <span
-              className="h-1 w-1 shrink-0 rounded-full lg:h-1.5 lg:w-1.5"
-              style={{ backgroundColor: task.areaColor ?? 'var(--color-text-disabled)' }}
+              key={task.id}
+              className="animate-dot-grow h-[5px] w-[5px] rounded-full border lg:h-1.5 lg:w-1.5"
+              style={{
+                borderColor: color,
+                opacity: 0.4,
+                animationDelay: `${i * 15}ms`,
+              }}
+              aria-label={`${task.name}: 예정`}
             />
-            {/* Repeat indicator on desktop */}
-            {task.repeatType && task.repeatType !== 'once' && (
-              <span className="hidden text-[7px] leading-none text-[var(--color-text-disabled)] lg:inline">
-                ↻
-              </span>
-            )}
-            <span
-              className={cn(
-                'truncate text-[9px] leading-tight text-[var(--color-text-secondary)] lg:text-[10px]',
-                done && 'line-through'
-              )}
-            >
-              {task.name}
-            </span>
-          </div>
+          )
+        }
+
+        // Past/today dots
+        const isDone = task.isDone
+        const isSkip = task.isSkip
+        const bgColor = isSkip ? 'var(--color-skip)' : color
+        const opacity = isDone ? 1 : isSkip ? 0.7 : 0.2
+
+        return (
+          <span
+            key={task.id}
+            className="animate-dot-grow h-[5px] w-[5px] rounded-full lg:h-1.5 lg:w-1.5"
+            style={{
+              backgroundColor: bgColor,
+              opacity,
+              animationDelay: `${i * 15}ms`,
+            }}
+            aria-label={`${task.name}: ${isDone ? '완료' : isSkip ? '건너뜀' : '미완료'}`}
+          />
         )
       })}
-      {remaining > 0 && (
-        <span className="pl-1.5 text-[8px] leading-tight text-[var(--color-text-tertiary)]">
-          +{remaining}개
+      {overflow > 0 && (
+        <span className="text-[7px] leading-none text-[var(--color-text-disabled)] lg:text-[8px]">
+          +{overflow}
         </span>
       )}
     </div>
@@ -143,11 +138,105 @@ function TaskPreviewList({
 }
 
 /**
- * Monthly calendar — SVG progress rings for past days, task name previews for context.
+ * Compact monthly summary bar: completion rate, perfect days, area breakdown.
+ */
+function MonthSummaryHeader({
+  summary,
+  areas,
+}: {
+  summary: MonthSummaryData
+  areas: { emoji: string; color: string; id: string }[] | undefined
+}) {
+  const stats = useMemo(() => {
+    let totalTasks = 0
+    let totalDone = 0
+    let perfectDays = 0
+    const areaTaskCount: Record<string, number> = {}
+
+    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    for (const [dateKey, day] of Object.entries(summary)) {
+      if (dateKey > todayStr || day.total === 0) continue
+      totalTasks += day.total
+      totalDone += day.done
+      if (day.done === day.total) perfectDays++
+      for (const area of day.areas) {
+        // Use color as key since we don't have area id in summary
+        areaTaskCount[area.color] = (areaTaskCount[area.color] ?? 0) + area.done
+      }
+    }
+
+    const completionRate = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0
+
+    // Map area colors → emoji for top 3
+    const areaEmojiMap: Record<string, string> = {}
+    if (areas) {
+      for (const a of areas) {
+        areaEmojiMap[a.color] = a.emoji
+      }
+    }
+    const topAreas = Object.entries(areaTaskCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([color, count]) => ({
+        emoji: areaEmojiMap[color] ?? '📌',
+        count,
+        color,
+      }))
+
+    return { completionRate, totalDone, totalTasks, perfectDays, topAreas }
+  }, [summary, areas])
+
+  if (stats.totalTasks === 0) return null
+
+  return (
+    <div className="mb-3 flex items-center justify-center gap-2 text-xs text-[var(--color-text-secondary)]">
+      <span className="font-medium">
+        <span
+          className={
+            stats.completionRate >= 80
+              ? 'text-[var(--color-done)]'
+              : 'text-[var(--color-primary-500)]'
+          }
+        >
+          {stats.completionRate}%
+        </span>{' '}
+        완료
+      </span>
+
+      {stats.perfectDays > 0 && (
+        <>
+          <span className="text-[var(--color-border)]">·</span>
+          <span>
+            <span className="text-[var(--color-done)]">{stats.perfectDays}</span>일 올클리어
+          </span>
+        </>
+      )}
+
+      {stats.topAreas.length > 0 && (
+        <>
+          <span className="hidden text-[var(--color-border)] sm:inline">·</span>
+          <span className="hidden items-center gap-1.5 sm:flex">
+            {stats.topAreas.map((a) => (
+              <span key={a.color} className="flex items-center gap-0.5">
+                <span className="text-[11px]">{a.emoji}</span>
+                <span className="tabular-nums">{a.count}</span>
+              </span>
+            ))}
+          </span>
+        </>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Monthly calendar — Color Dot Garden.
+ * Each task is a colored dot (area color). Done=filled, Skip=gray, Miss=faded, Future=outlined.
  */
 export function UnifiedCalendar() {
   const { currentDate, setCurrentDate } = useHomeState()
   const { summary, taskPreviews } = useMonthSummary(currentDate)
+  const { data: areas } = useAreas()
 
   const allDays = useMemo(() => {
     const monthStart = startOfMonth(currentDate)
@@ -166,10 +255,10 @@ export function UnifiedCalendar() {
 
   return (
     <div className="rounded-2xl border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)] p-4">
-      {/* Weekday headers — today's weekday highlighted like week view */}
+      {/* Weekday headers — today's weekday highlighted */}
       <div className="mb-2 grid grid-cols-7">
         {WEEKDAYS.map((day, i) => {
-          const todayIdx = new Date().getDay() // 0=Sun
+          const todayIdx = new Date().getDay()
           return (
             <div
               key={day}
@@ -186,6 +275,9 @@ export function UnifiedCalendar() {
         })}
       </div>
 
+      {/* Monthly summary */}
+      <MonthSummaryHeader summary={summary} areas={areas} />
+
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
         {allDays.map((day) => {
@@ -201,6 +293,9 @@ export function UnifiedCalendar() {
           const completionRate = hasTasks && !dayIsFuture ? daySummary.done / daySummary.total : 0
           const isPerfect = completionRate === 1 && hasTasks
 
+          const dayTasks = taskPreviews[dateKey]
+          const hasDotsToShow = dayTasks && dayTasks.length > 0
+
           return (
             <button
               key={dateKey}
@@ -208,7 +303,7 @@ export function UnifiedCalendar() {
               className={cn(
                 'flex flex-col items-center rounded-lg py-1.5 transition-all',
                 'hover:scale-[1.04] hover:bg-[var(--color-bg-tertiary)]',
-                'min-h-[72px] min-w-[44px] lg:min-h-[88px]',
+                'min-h-[64px] min-w-[44px] lg:min-h-[76px]',
                 !isCurrentMonth && 'opacity-30',
                 isPerfect && 'bg-[var(--color-done)]/8',
                 isSelected && !isPerfect && 'bg-[var(--color-primary-50)]',
@@ -223,7 +318,6 @@ export function UnifiedCalendar() {
                 className="relative flex items-center justify-center"
                 style={{ width: RING_SIZE, height: RING_SIZE }}
               >
-                {/* SVG progress ring (past/today with tasks) */}
                 {hasTasks && !dayIsFuture && completionRate > 0 && (
                   <ProgressRing rate={completionRate} isPerfect={isPerfect} />
                 )}
@@ -240,41 +334,8 @@ export function UnifiedCalendar() {
                 </span>
               </div>
 
-              {/* Task previews or area bars fallback */}
-              {hasTasks &&
-                (() => {
-                  const dayTasks = taskPreviews[dateKey]
-                  if (dayTasks && dayTasks.length > 0) {
-                    return (
-                      <TaskPreviewList
-                        tasks={dayTasks}
-                        isDone={(taskId) => dayTasks.find((t) => t.id === taskId)?.isDone ?? false}
-                      />
-                    )
-                  }
-                  // Fallback: area bars + count
-                  return (
-                    <div className="mt-0.5 flex flex-col items-center gap-0.5">
-                      {daySummary.areas.length > 0 && (
-                        <div className="flex items-center gap-0.5">
-                          {daySummary.areas.map((area, i) => (
-                            <AreaBar key={i} area={area} isFuture={dayIsFuture} />
-                          ))}
-                        </div>
-                      )}
-                      <span
-                        className={cn(
-                          'text-[9px] leading-none tabular-nums lg:text-[10px]',
-                          !dayIsFuture && daySummary.done === daySummary.total
-                            ? 'font-medium text-[var(--color-done)]'
-                            : 'text-[var(--color-text-disabled)]'
-                        )}
-                      >
-                        {dayIsFuture ? daySummary.total : `${daySummary.done}/${daySummary.total}`}
-                      </span>
-                    </div>
-                  )
-                })()}
+              {/* Color Dot Garden */}
+              {hasDotsToShow && <DotGarden tasks={dayTasks} isFuture={dayIsFuture} />}
             </button>
           )
         })}

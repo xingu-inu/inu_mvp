@@ -25,7 +25,7 @@ interface SlotBlockProps {
   isPast: boolean
   isPastSlot?: boolean
   day: Date
-  slotHeight?: number
+  dawnCollapsed?: boolean
   maxVisible?: number
   onTaskClick: (taskId: string | null, day: Date) => void
 }
@@ -43,7 +43,7 @@ export const SlotBlock = memo(function SlotBlock({
   isPast,
   isPastSlot,
   day,
-  slotHeight,
+  dawnCollapsed,
   maxVisible,
   onTaskClick,
 }: SlotBlockProps) {
@@ -77,9 +77,9 @@ export const SlotBlock = memo(function SlotBlock({
       )}
       style={{
         ...(!(isNow && isToday) ? { backgroundColor: SLOT_BG[slot] } : {}),
-        height: slotHeight ? `${slotHeight}px` : undefined,
-        minHeight: slotHeight ? undefined : '40px',
-        transition: 'height 200ms ease-out, min-height 200ms ease-out',
+        flex: slot === 'dawn' && dawnCollapsed ? '0 0 32px' : '1 1 0',
+        minHeight: '40px',
+        transition: 'flex-grow 200ms ease-out, flex-basis 200ms ease-out',
       }}
     >
       {!isEmpty && (

@@ -14,6 +14,8 @@ import {
   getContextualGreeting,
   calculateTaskStats,
 } from '@/lib/utils/task-utils'
+import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
+import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 import { TaskList } from '@/features/home/components/task-list'
 
 import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
@@ -64,8 +66,13 @@ function HomeDailyPanel() {
 }
 
 function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
-  const { data: apiTasks = [], isLoading } = useHomeTasks(selectedDate)
   const { data: currentDirection } = useDirection()
+  const { isCurrentVersion, selectedVersion, selectedDirectionId } = useHomeDirection()
+  const { data: apiTasks = [], isLoading } = useHomeTasks(
+    selectedDate,
+    selectedDirectionId ?? undefined
+  )
+
   const tasks = useMemo(() => mapApiTasksToEntities(apiTasks), [apiTasks])
   const viewingToday = isToday(selectedDate)
   const viewingFuture = isFuture(startOfDay(selectedDate))
@@ -78,6 +85,8 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
     currentDirection?.created_at &&
     isBefore(startOfDay(selectedDate), startOfDay(parseISO(currentDirection.created_at)))
   )
+
+  const isReadOnly = !isCurrentVersion || isOldDirectionDate
 
   // Derived flags for reflection card placement
   const currentHour = new Date().getHours()
@@ -96,13 +105,13 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
               <Calendar className="h-4 w-4 text-[var(--color-text-tertiary)]" />
               <h2 className="text-sm font-semibold">{dateLabel}</h2>
             </div>
-            {viewingToday && tasks.length > 0 && (
+            {viewingToday && isCurrentVersion && tasks.length > 0 && (
               <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
                 {getContextualGreeting(tasks)}
               </p>
             )}
           </div>
-          {tasks.length > 0 && (
+          {!isReadOnly && tasks.length > 0 && (
             <button
               type="button"
               onClick={() => setIsPriorityRankOpen(true)}
@@ -121,14 +130,15 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
           <PanelSkeleton />
         ) : (
           <>
+            {!isCurrentVersion && <VersionBrowsingBanner version={selectedVersion} />}
             {showReflection && reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
             )}
             <TaskList
               tasks={tasks}
-              isReadOnly={isOldDirectionDate}
+              isReadOnly={isReadOnly}
               selectedDate={selectedDate}
-              enableAiSuggest={!isOldDirectionDate}
+              enableAiSuggest={!isReadOnly}
             />
             {showReflection && !reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
@@ -138,7 +148,7 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
       </div>
 
       {/* Priority rank modal */}
-      <PriorityRankModal />
+      {!isReadOnly && <PriorityRankModal />}
     </div>
   )
 }

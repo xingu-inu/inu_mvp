@@ -26,6 +26,10 @@ interface HomeState {
   setPriorityRankResult: (result: AiPriorityRankResponse, date: string) => void
   clearPriorityRankResult: () => void
 
+  // Version filter
+  selectedDirectionId: string | null
+  setSelectedDirectionId: (id: string | null) => void
+
   // Reset
   reset: () => void
 }
@@ -38,6 +42,7 @@ const initialState = {
   isPriorityRankOpen: false,
   priorityRankResult: null as AiPriorityRankResponse | null,
   priorityRankDate: null as string | null,
+  selectedDirectionId: null as string | null,
 }
 
 export const useHomeStore = create<HomeState>()(
@@ -77,6 +82,8 @@ export const useHomeStore = create<HomeState>()(
         set({ priorityRankResult: result, priorityRankDate: date }),
 
       clearPriorityRankResult: () => set({ priorityRankResult: null, priorityRankDate: null }),
+
+      setSelectedDirectionId: (id) => set({ selectedDirectionId: id }),
 
       reset: () => set(initialState),
     }),

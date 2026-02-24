@@ -1,65 +1,49 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { useCallback, useEffect, useMemo } from 'react'
+import { parseISO } from 'date-fns'
 import { useReviewStore } from '@/stores/review.store'
 import { useCheckInHistory } from '../hooks/use-checkin-history'
 import { useMoodHistory } from '../hooks/use-mood-history'
 import { useReviewRoadmapData } from '../hooks/use-review-roadmap-data'
 import { useReviewPeriod } from '../hooks/use-review-period'
-import { useActivityLog } from '../hooks/use-activity-log'
 import { useReviewDirection } from '../hooks/use-review-direction'
-import { useWeeklyReflection, useSaveWeeklyReflection } from '../hooks/use-weekly-reflection'
-import { useMonthlyReflection, useSaveMonthlyReflection } from '../hooks/use-monthly-reflection'
+import { useComparisonData } from '../hooks/use-comparison-data'
+import { useAreaTrend } from '../hooks/use-area-trend'
 import {
   computeOverviewStats,
   extractActiveStreaks,
   computeAreaBalance,
-  groupEventsByArea,
 } from '../utils/timeline-utils'
-import { useComparisonData } from '../hooks/use-comparison-data'
-import { useAreaTrend } from '../hooks/use-area-trend'
-import { AchievementHero } from './overview'
-import { AreaBalanceUnified } from './overview/area-balance-unified'
-import { AiReviewInsightModal } from './overview/ai-review-insight-modal'
-import { JournalDayDetail } from './journal/journal-day-detail'
-import { JournalHeatmap } from './journal/journal-heatmap'
-import { PeriodReflectionSection } from './period-reflection/period-reflection-section'
-import { ReviewDayList } from './records/review-day-list'
-import { GoalReviewDetail } from './overview/goal-review-detail'
-import { MilestoneSection } from './overview/milestone-cards'
-import { ObstacleAnalysisSection } from './overview/obstacle-analysis'
+import { CompactSummaryCard } from './compact-summary-card'
+import { DailyHeatmap } from './daily-heatmap'
+import { AreaList } from './area-list'
+import { PanelContent } from './review-panel'
 import { EmptyReview } from './empty-review'
 import { ReviewSkeleton } from './review-skeleton'
 import { ResponsiveModal, ModalBody } from '@/components/ui/responsive-modal'
 import { useIsMobile } from '@/hooks/use-is-mobile'
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Main Layout
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 export function ReviewPageLayout() {
-  const { startDate, endDate, isWeek, periodLabel, weekStartDate } = useReviewPeriod()
-  const { isCurrentVersion } = useReviewDirection()
+  const { startDate, endDate, isWeek } = useReviewPeriod()
+  useReviewDirection()
   const selectedDate = useReviewStore((s) => s.selectedDate)
   const selectedAreaId = useReviewStore((s) => s.selectedAreaId)
+  const panelMode = useReviewStore((s) => s.panelMode)
   const selectDay = useReviewStore((s) => s.selectDay)
   const selectArea = useReviewStore((s) => s.selectArea)
   const clearSelection = useReviewStore((s) => s.clearSelection)
-  const selectedGoalId = useReviewStore((s) => s.selectedGoalId)
   const isMobile = useIsMobile()
 
   // Data fetching
   const { data: checkInHistory, isLoading: l1 } = useCheckInHistory()
   const { data: moodHistory, isLoading: l2 } = useMoodHistory()
   const { data: roadmapData, isLoading: l3 } = useReviewRoadmapData()
-  const { data: activityEvents = [] } = useActivityLog()
   const { data: areaTrends = [] } = useAreaTrend()
-
-  // Weekly/Monthly reflection
-  const { data: weeklyReflection } = useWeeklyReflection(isWeek ? weekStartDate : undefined)
-  const { mutate: saveWeekly, isPending: isSavingWeekly } = useSaveWeeklyReflection(
-    isWeek ? weekStartDate : undefined
-  )
-  const monthStart = !isWeek ? format(parseISO(startDate), 'yyyy-MM-dd') : undefined
-  const { data: monthlyReflection } = useMonthlyReflection(monthStart)
-  const { mutate: saveMonthly, isPending: isSavingMonthly } = useSaveMonthlyReflection(monthStart)
 
   const isLoading = l1 || l2 || l3
 
@@ -82,45 +66,21 @@ export function ReviewPageLayout() {
   )
 
   const activeStreaks = useMemo(() => extractActiveStreaks(roadmapData), [roadmapData])
-
   const areaBalances = useMemo(() => computeAreaBalance(roadmapData), [roadmapData])
 
-  const areaChanges = useMemo(
-    () => groupEventsByArea(activityEvents, roadmapData),
-    [activityEvents, roadmapData]
-  )
-
   // Sync to store for panel access
-  const setAreaChanges = useReviewStore((s) => s.setAreaChanges)
   const setRoadmapData = useReviewStore((s) => s.setRoadmapData)
-  useEffect(() => {
-    setAreaChanges(areaChanges)
-  }, [areaChanges, setAreaChanges])
   useEffect(() => {
     if (roadmapData) setRoadmapData(roadmapData)
   }, [roadmapData, setRoadmapData])
 
-  // Mobile accordion state for areas
-  const [expandedAreaId, setExpandedAreaId] = useState<string | null>(null)
-  const handleToggleArea = useCallback((areaId: string) => {
-    setExpandedAreaId((prev) => (prev === areaId ? null : areaId))
-  }, [])
-
-  // Date selection (desktop → panel, mobile → toggle inline)
-  const handleSelectDate = useCallback(
-    (date: string) => {
-      selectDay(date)
-    },
-    [selectDay]
-  )
+  // Handlers
+  const handleSelectDate = useCallback((date: string) => selectDay(date), [selectDay])
 
   const handleToggleDate = useCallback(
     (date: string) => {
-      if (selectedDate === date) {
-        clearSelection()
-      } else {
-        selectDay(date)
-      }
+      if (selectedDate === date) clearSelection()
+      else selectDay(date)
     },
     [selectedDate, selectDay, clearSelection]
   )
@@ -130,211 +90,63 @@ export function ReviewPageLayout() {
   const hasData = (checkInHistory?.length ?? 0) > 0 || (roadmapData?.length ?? 0) > 0
   if (!hasData) return <EmptyReview />
 
-  const period = isWeek ? ('week' as const) : ('month' as const)
-  const reflectionLabel = isWeek ? '이번 주' : periodLabel
-
-  const reflectionProps = {
-    isWeek,
-    periodLabel: reflectionLabel,
-    weeklyReflection,
-    onSaveWeekly: saveWeekly,
-    isSavingWeekly,
-    monthlyReflection,
-    onSaveMonthly: saveMonthly,
-    isSavingMonthly,
-  }
-
   return (
     <div className="flex h-full flex-col">
-      {/* ═══ Desktop layout ═══ */}
-      <div className="hidden h-full lg:block">
-        <div className="h-full space-y-4 overflow-y-auto p-4 lg:p-5">
-          {/* ACT 1: At a Glance + Milestones */}
-          <div className="space-y-2">
-            <AchievementHero
-              stats={overviewStats}
-              streaks={activeStreaks}
-              checkInHistory={checkInHistory ?? []}
-              totalDays={totalDays}
-              period={period}
-              comparison={comparison}
-              actions={
-                isCurrentVersion ? (
-                  <AiReviewInsightModal
-                    overviewStats={overviewStats}
-                    activeStreaks={activeStreaks}
-                    areaBalances={areaBalances}
-                    moodHistory={moodHistory}
-                    isWeek={isWeek}
-                    periodLabel={reflectionLabel}
-                    weeklyReflection={weeklyReflection}
-                  />
-                ) : undefined
-              }
-            />
+      {/* Main Content */}
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 lg:p-5">
+        <div className="space-y-4">
+          {/* ① Compact Summary */}
+          <CompactSummaryCard
+            stats={overviewStats}
+            streaks={activeStreaks}
+            comparison={comparison}
+            moodHistory={moodHistory}
+          />
 
-            <MilestoneSection
+          {/* ② Daily Heatmap */}
+          <DailyHeatmap
+            checkInHistory={checkInHistory ?? []}
+            moodHistory={moodHistory ?? []}
+            startDate={startDate}
+            endDate={endDate}
+            isWeek={isWeek}
+            onSelectDate={isMobile ? handleToggleDate : handleSelectDate}
+            selectedDate={selectedDate}
+          />
+
+          {/* ③ Area List */}
+          {areaBalances.length > 0 && (
+            <AreaList
+              areas={areaBalances}
+              trends={areaTrends}
               roadmapData={roadmapData ?? []}
-              activityEvents={activityEvents}
-              comparison={comparison}
-              period={period}
-              startDate={startDate}
-              endDate={endDate}
-            />
-          </div>
-
-          {/* ACT 2: Areas (left) + Records (right) side by side */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="min-w-0">
-              {areaBalances.length > 0 && (
-                <AreaBalanceUnified
-                  areas={areaBalances}
-                  trends={areaTrends}
-                  selectedAreaId={selectedAreaId}
-                  onSelectArea={selectArea}
-                  expandedAreaId={null}
-                  onToggleArea={() => {}}
-                />
-              )}
-            </div>
-            <div className="min-w-0">
-              <ReviewDayList
-                checkInHistory={checkInHistory ?? []}
-                moodHistory={moodHistory ?? []}
-                startDate={startDate}
-                endDate={endDate}
-                onSelectDate={handleSelectDate}
-                selectedDate={selectedDate}
-              />
-            </div>
-          </div>
-
-          {/* ACT 3: Reflect */}
-          {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
-          {!isCurrentVersion && (
-            <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
-              회고 작성은 현재 로드맵에서만 가능합니다
-            </p>
-          )}
-
-          {/* ACT 4: Obstacle Analysis */}
-          {isCurrentVersion && (
-            <ObstacleAnalysisSection
-              roadmapData={roadmapData ?? []}
-              checkInHistory={checkInHistory ?? []}
-              startDate={startDate}
-              endDate={endDate}
+              selectedAreaId={selectedAreaId}
+              onSelectArea={selectArea}
             />
           )}
         </div>
       </div>
 
-      {/* ═══ Mobile layout ═══ */}
-      <div className="space-y-4 overflow-y-auto p-4 pb-8 lg:hidden">
-        {/* ACT 1: At a Glance */}
-        <AchievementHero
-          stats={overviewStats}
-          streaks={activeStreaks}
-          checkInHistory={checkInHistory ?? []}
-          totalDays={totalDays}
-          period={period}
-          comparison={comparison}
-          actions={
-            isCurrentVersion ? (
-              <AiReviewInsightModal
-                overviewStats={overviewStats}
-                activeStreaks={activeStreaks}
-                areaBalances={areaBalances}
-                moodHistory={moodHistory}
-                isWeek={isWeek}
-                periodLabel={reflectionLabel}
-                weeklyReflection={weeklyReflection}
-              />
-            ) : undefined
-          }
-        />
-
-        {/* Records: weekly → day list, monthly → heatmap */}
-        {isWeek ? (
-          <ReviewDayList
-            checkInHistory={checkInHistory ?? []}
-            moodHistory={moodHistory ?? []}
-            startDate={startDate}
-            endDate={endDate}
-            onSelectDate={handleToggleDate}
-            selectedDate={selectedDate}
-          />
-        ) : (
-          <JournalHeatmap
-            checkInHistory={checkInHistory ?? []}
-            startDate={startDate}
-            endDate={endDate}
-            isWeek={false}
-            onSelectDate={handleToggleDate}
-            selectedDate={selectedDate}
-          />
-        )}
-
-        {/* Inline day detail (when date selected) */}
-        {selectedDate && (
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
-            <JournalDayDetail dateStr={selectedDate} />
-          </div>
-        )}
-
-        {/* ACT 1.5: Milestones & Growth */}
-        <MilestoneSection
-          roadmapData={roadmapData ?? []}
-          activityEvents={activityEvents}
-          comparison={comparison}
-          period={period}
-          startDate={startDate}
-          endDate={endDate}
-        />
-
-        {/* Areas */}
-        {areaBalances.length > 0 && (
-          <AreaBalanceUnified
-            areas={areaBalances}
-            trends={areaTrends}
-            selectedAreaId={null}
-            onSelectArea={() => {}}
-            expandedAreaId={expandedAreaId}
-            onToggleArea={handleToggleArea}
-          />
-        )}
-
-        {/* ACT 3: Reflect */}
-        {isCurrentVersion && <PeriodReflectionSection {...reflectionProps} />}
-        {!isCurrentVersion && (
-          <p className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2 text-center text-xs text-[var(--color-text-tertiary)]">
-            회고 작성은 현재 로드맵에서만 가능합니다
-          </p>
-        )}
-
-        {/* ACT 4: Obstacle Analysis */}
-        {isCurrentVersion && (
-          <ObstacleAnalysisSection
-            roadmapData={roadmapData ?? []}
-            checkInHistory={checkInHistory ?? []}
-            startDate={startDate}
-            endDate={endDate}
-          />
-        )}
-      </div>
-
-      {/* Goal review detail drawer (mobile) */}
-      {isMobile && (
+      {/* Mobile drawer for detail panels */}
+      {isMobile && panelMode !== 'empty' && (
         <ResponsiveModal
-          open={!!selectedGoalId}
+          open
           onOpenChange={(open) => {
             if (!open) clearSelection()
           }}
-          title="목표 상세"
+          title={
+            panelMode === 'day-detail'
+              ? '일일 기록'
+              : panelMode === 'area-detail'
+                ? '영역 이력'
+                : panelMode === 'goal-detail'
+                  ? '목표 상세'
+                  : ''
+          }
           forceMode="drawer"
         >
           <ModalBody className="px-4 pb-6">
-            {selectedGoalId && <GoalReviewDetail goalId={selectedGoalId} />}
+            <PanelContent mode={panelMode} />
           </ModalBody>
         </ResponsiveModal>
       )}

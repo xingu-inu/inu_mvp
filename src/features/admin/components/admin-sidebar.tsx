@@ -3,11 +3,20 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { BarChart3, Users, Megaphone, MessageSquare, Settings, ArrowLeft } from 'lucide-react'
+import {
+  BarChart3,
+  Users,
+  Megaphone,
+  MessageSquare,
+  Settings,
+  ArrowLeft,
+  TrendingUp,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { href: '/admin', label: '대시보드', icon: BarChart3 },
+  { href: '/admin/analytics', label: '분석', icon: TrendingUp },
   { href: '/admin/users', label: '사용자', icon: Users },
   { href: '/admin/announcements', label: '공지사항', icon: Megaphone },
   { href: '/admin/feedbacks', label: '피드백', icon: MessageSquare },

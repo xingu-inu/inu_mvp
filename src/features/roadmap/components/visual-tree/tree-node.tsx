@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, memo, type ReactNode } from 'react'
+import { Fragment, useState, memo, useCallback, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
@@ -8,7 +8,9 @@ import { cn } from '@/lib/utils'
 import { TreeNodeCard, type VisualTreeNode } from './tree-node-card'
 import { TreeContextMenu } from './tree-context-menu'
 import { DraggableTreeNode } from './draggable-tree-node'
+import { DroppableGroupNode } from './droppable-group-node'
 import { TreeInsertionIndicator } from './tree-insertion-indicator'
+import { useTreeDndStore, selectIsDragging, selectIsDraggingTask } from '@/stores/tree-dnd.store'
 import type { SelectedNodeType, TreeLayoutDirection } from '@/stores/roadmap.store'
 
 interface TreeNodeProps {
@@ -26,8 +28,6 @@ interface TreeNodeProps {
   searchMatchedIds: Set<string>
   searchQuery: string
   isDndEnabled: boolean
-  isDragging: boolean
-  dndOverId: string | null
   onDeleteNode: (type: SelectedNodeType, id: string) => void
   parentGoalMap: Map<string, string>
 }
@@ -47,12 +47,14 @@ export const TreeNode = memo(function TreeNode({
   searchMatchedIds,
   searchQuery,
   isDndEnabled,
-  isDragging,
-  dndOverId,
   onDeleteNode,
   parentGoalMap,
 }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? getDefaultExpanded(node))
+
+  // DnD state from store (not props)
+  const isDragging = useTreeDndStore(selectIsDragging)
+  const isDraggingTask = useTreeDndStore(selectIsDraggingTask)
 
   const hasChildren = !!node.children && node.children.length > 0
   const isSelected = selectedNodeId === node.id
@@ -74,26 +76,57 @@ export const TreeNode = memo(function TreeNode({
   // Auto-expand when search finds matches in subtree
   const effectiveExpanded = isSearchActive && isInSearchPath ? true : isExpanded
 
+  // Stable callbacks for child components (enables memo on children)
+  const handleSelect = useCallback(
+    () => onNodeSelect(node.type, node.id),
+    [onNodeSelect, node.type, node.id]
+  )
+
+  const handleToggle = useCallback(() => setIsExpanded((prev) => !prev), [])
+
+  const handleStartAdd = useCallback(
+    () => onStartAdd?.(node.type, node.id),
+    [onStartAdd, node.type, node.id]
+  )
+
+  const handleDelete = useCallback(
+    () => onDeleteNode(node.type, node.id),
+    [onDeleteNode, node.type, node.id]
+  )
+
   // Render card (DraggableTreeNode when DnD enabled, TreeNodeCard otherwise)
   const cardElement = isDndEnabled ? (
-    <DraggableTreeNode
-      node={node}
-      isSelected={isSelected}
-      isExpanded={effectiveExpanded}
-      hasChildren={hasChildren}
-      onSelect={() => onNodeSelect(node.type, node.id)}
-      onToggle={() => setIsExpanded(!isExpanded)}
-      isSearchMatch={isSearchMatch}
-      searchQuery={searchQuery}
-    />
+    node.type === 'group' && isDraggingTask ? (
+      <DroppableGroupNode
+        node={node}
+        isSelected={isSelected}
+        isExpanded={effectiveExpanded}
+        hasChildren={hasChildren}
+        onSelect={handleSelect}
+        onToggle={handleToggle}
+        isSearchMatch={isSearchMatch}
+        searchQuery={searchQuery}
+      />
+    ) : (
+      <DraggableTreeNode
+        node={node}
+        isSelected={isSelected}
+        isExpanded={effectiveExpanded}
+        hasChildren={hasChildren}
+        onSelect={handleSelect}
+        onToggle={handleToggle}
+        isSearchMatch={isSearchMatch}
+        searchQuery={searchQuery}
+      />
+    )
   ) : (
     <TreeNodeCard
       node={node}
       isSelected={isSelected}
       isExpanded={effectiveExpanded}
       hasChildren={hasChildren}
-      onSelect={() => onNodeSelect(node.type, node.id)}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onSelect={handleSelect}
+      onToggle={handleToggle}
       isSearchMatch={isSearchMatch}
       searchQuery={searchQuery}
     />
@@ -110,9 +143,9 @@ export const TreeNode = memo(function TreeNode({
       >
         <TreeContextMenu
           node={node}
-          onEdit={() => onNodeSelect(node.type, node.id)}
-          onAddChild={() => onStartAdd?.(node.type, node.id)}
-          onDelete={node.type !== 'direction' ? () => onDeleteNode(node.type, node.id) : undefined}
+          onEdit={handleSelect}
+          onAddChild={handleStartAdd}
+          onDelete={node.type !== 'direction' ? handleDelete : undefined}
         >
           <div
             className={cn(
@@ -194,7 +227,6 @@ export const TreeNode = memo(function TreeNode({
                 <TreeInsertionIndicator
                   id={`insert-0-${node.id}`}
                   layoutDirection={layoutDirection}
-                  isActive={dndOverId === `insert-0-${node.id}`}
                 />
               )}
               {node.children!.map((child, index) => (
@@ -215,8 +247,6 @@ export const TreeNode = memo(function TreeNode({
                     searchMatchedIds={searchMatchedIds}
                     searchQuery={searchQuery}
                     isDndEnabled={isDndEnabled}
-                    isDragging={isDragging}
-                    dndOverId={dndOverId}
                     onDeleteNode={onDeleteNode}
                     parentGoalMap={parentGoalMap}
                   />
@@ -224,7 +254,6 @@ export const TreeNode = memo(function TreeNode({
                     <TreeInsertionIndicator
                       id={`insert-${index + 1}-${node.id}`}
                       layoutDirection={layoutDirection}
-                      isActive={dndOverId === `insert-${index + 1}-${node.id}`}
                     />
                   )}
                 </Fragment>
@@ -257,8 +286,6 @@ const ChildBranch = memo(function ChildBranch({
   searchMatchedIds,
   searchQuery,
   isDndEnabled,
-  isDragging,
-  dndOverId,
   onDeleteNode,
   parentGoalMap,
 }: {
@@ -277,8 +304,6 @@ const ChildBranch = memo(function ChildBranch({
   searchMatchedIds: Set<string>
   searchQuery: string
   isDndEnabled: boolean
-  isDragging: boolean
-  dndOverId: string | null
   onDeleteNode: (type: SelectedNodeType, id: string) => void
   parentGoalMap: Map<string, string>
 }) {
@@ -315,8 +340,6 @@ const ChildBranch = memo(function ChildBranch({
           searchMatchedIds={searchMatchedIds}
           searchQuery={searchQuery}
           isDndEnabled={isDndEnabled}
-          isDragging={isDragging}
-          dndOverId={dndOverId}
           onDeleteNode={onDeleteNode}
           parentGoalMap={parentGoalMap}
         />
@@ -351,8 +374,6 @@ const ChildBranch = memo(function ChildBranch({
         searchMatchedIds={searchMatchedIds}
         searchQuery={searchQuery}
         isDndEnabled={isDndEnabled}
-        isDragging={isDragging}
-        dndOverId={dndOverId}
         onDeleteNode={onDeleteNode}
         parentGoalMap={parentGoalMap}
       />

@@ -1,11 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Bell, X } from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { useNotifications, useNotificationCount } from '@/queries/use-notifications'
+import { queryKeys } from '@/lib/query/keys'
+import {
+  useNotifications,
+  useNotificationCount,
+  dismissAnnouncement,
+} from '@/queries/use-notifications'
 import type { AppNotification } from '@/types/entities'
 
 interface NotificationPopoverProps {
@@ -15,6 +21,7 @@ interface NotificationPopoverProps {
 export function NotificationPopover({ className }: NotificationPopoverProps) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const queryClient = useQueryClient()
   const { data: notifications = [], isLoading } = useNotifications()
   const badgeCount = useNotificationCount()
 
@@ -24,6 +31,15 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
       setOpen(false)
     }
   }
+
+  const handleDismiss = useCallback(
+    (notification: AppNotification) => {
+      const announcementId = notification.id.replace('announcement-', '')
+      dismissAnnouncement(announcementId)
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.today() })
+    },
+    [queryClient]
+  )
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -66,7 +82,12 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
             </div>
           ) : (
             notifications.map((n) => (
-              <NotificationItem key={n.id} notification={n} onClick={() => handleClick(n)} />
+              <NotificationItem
+                key={n.id}
+                notification={n}
+                onClick={() => handleClick(n)}
+                onDismiss={n.type === 'announcement' ? () => handleDismiss(n) : undefined}
+              />
             ))
           )}
         </div>
@@ -78,21 +99,23 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
 function NotificationItem({
   notification,
   onClick,
+  onDismiss,
 }: {
   notification: AppNotification
   onClick: () => void
+  onDismiss?: () => void
 }) {
   const isClickable = !!notification.actionPath
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={!isClickable}
+    <div
       className={cn(
         'flex w-full items-start gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left last:border-b-0',
-        isClickable && 'hover:bg-[var(--color-bg-secondary)]'
+        isClickable && 'cursor-pointer hover:bg-[var(--color-bg-secondary)]'
       )}
+      onClick={isClickable ? onClick : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
     >
       <span className="mt-0.5 text-lg leading-none">{notification.emoji}</span>
       <div className="min-w-0 flex-1">
@@ -104,9 +127,23 @@ function NotificationItem({
           </p>
         )}
       </div>
-      {notification.priority >= 4 && (
-        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-streak)]" />
+      {onDismiss ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDismiss()
+          }}
+          className="mt-0.5 shrink-0 rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
+          aria-label="알림 닫기"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      ) : (
+        notification.priority >= 4 && (
+          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-streak)]" />
+        )
       )}
-    </button>
+    </div>
   )
 }

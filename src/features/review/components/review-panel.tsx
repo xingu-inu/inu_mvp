@@ -3,13 +3,35 @@
 import { useMemo } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, MousePointerClick } from 'lucide-react'
 import { useReviewStore } from '@/stores/review.store'
-import { ReviewPanelOverview } from './review-panel-overview'
 import { JournalDayDetail } from './journal/journal-day-detail'
-import { AreaBalanceDetail } from './overview/area-balance-detail'
+import { AreaHistoryPanel } from './area-history-panel'
 import { GoalReviewDetail } from './overview/goal-review-detail'
 import type { ReviewPanelMode } from '@/stores/review.store'
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Empty State
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function ReviewPanelEmpty() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-bg-tertiary)]">
+        <MousePointerClick className="h-5 w-5 text-[var(--color-text-tertiary)]" />
+      </div>
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+          왼쪽에서 항목을 선택해보세요
+        </p>
+        <div className="space-y-0.5 text-xs text-[var(--color-text-tertiary)]">
+          <p>📅 날짜 → 일일 기록</p>
+          <p>💪 영역 → 이력 보기</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Helpers
@@ -25,13 +47,13 @@ function usePanelHeader(): {
   const selectedAreaId = useReviewStore((s) => s.selectedAreaId)
   const selectedGoalId = useReviewStore((s) => s.selectedGoalId)
   const roadmapData = useReviewStore((s) => s.roadmapData)
-  const goBackToOverview = useReviewStore((s) => s.goBackToOverview)
+  const goBackToEmpty = useReviewStore((s) => s.goBackToEmpty)
   const goBackToArea = useReviewStore((s) => s.goBackToArea)
 
   return useMemo(() => {
     switch (panelMode) {
-      case 'overview':
-        return { title: '날짜별 기록', backLabel: null, onBack: null }
+      case 'empty':
+        return { title: '', backLabel: null, onBack: null }
 
       case 'day-detail': {
         let dateLabel = ''
@@ -42,7 +64,7 @@ function usePanelHeader(): {
             dateLabel = selectedDate
           }
         }
-        return { title: dateLabel, backLabel: '뒤로', onBack: goBackToOverview }
+        return { title: dateLabel, backLabel: '뒤로', onBack: goBackToEmpty }
       }
 
       case 'area-detail': {
@@ -53,7 +75,7 @@ function usePanelHeader(): {
             areaLabel = `${areaData.area.emoji} ${areaData.area.name}`
           }
         }
-        return { title: areaLabel, backLabel: '뒤로', onBack: goBackToOverview }
+        return { title: areaLabel, backLabel: '뒤로', onBack: goBackToEmpty }
       }
 
       case 'goal-detail': {
@@ -79,7 +101,7 @@ function usePanelHeader(): {
     selectedAreaId,
     selectedGoalId,
     roadmapData,
-    goBackToOverview,
+    goBackToEmpty,
     goBackToArea,
   ])
 }
@@ -88,14 +110,14 @@ function usePanelHeader(): {
 // Panel Content
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function PanelContent({ mode }: { mode: ReviewPanelMode }) {
+export function PanelContent({ mode }: { mode: ReviewPanelMode }) {
   const selectedDate = useReviewStore((s) => s.selectedDate)
   const selectedAreaId = useReviewStore((s) => s.selectedAreaId)
   const selectedGoalId = useReviewStore((s) => s.selectedGoalId)
 
   switch (mode) {
-    case 'overview':
-      return <ReviewPanelOverview />
+    case 'empty':
+      return <ReviewPanelEmpty />
 
     case 'day-detail':
       if (!selectedDate) return null
@@ -103,11 +125,7 @@ function PanelContent({ mode }: { mode: ReviewPanelMode }) {
 
     case 'area-detail':
       if (!selectedAreaId) return null
-      return (
-        <div className="px-6 py-4">
-          <AreaBalanceDetail areaId={selectedAreaId} />
-        </div>
-      )
+      return <AreaHistoryPanel areaId={selectedAreaId} />
 
     case 'goal-detail':
       if (!selectedGoalId) return null
@@ -133,23 +151,25 @@ export function ReviewPanel() {
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-5 py-3">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>{backLabel}</span>
-          </button>
-        ) : null}
-        {title && (
-          <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">
-            {title}
-          </h3>
-        )}
-      </div>
+      {panelMode !== 'empty' && (
+        <div className="flex shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-5 py-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>{backLabel}</span>
+            </button>
+          ) : null}
+          {title && (
+            <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--color-text-primary)]">
+              {title}
+            </h3>
+          )}
+        </div>
+      )}
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-y-auto">

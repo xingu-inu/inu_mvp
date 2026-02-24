@@ -13,13 +13,14 @@ import {
 /**
  * Home tasks query hook with date selection
  * @param date - The date to fetch tasks for
+ * @param directionId - Optional direction ID for version browsing
  */
-export function useHomeTasks(date: Date = new Date()) {
+export function useHomeTasks(date: Date = new Date(), directionId?: string) {
   const dateStr = format(date, 'yyyy-MM-dd')
 
   return useQuery({
-    queryKey: queryKeys.tasks.home(dateStr),
-    queryFn: () => getHomeTasksAction(dateStr).then(unwrapListResponse),
+    queryKey: queryKeys.tasks.home(dateStr, directionId),
+    queryFn: () => getHomeTasksAction(dateStr, directionId).then(unwrapListResponse),
     staleTime: STALE_TIMES.HOME_TASKS,
   })
 }
@@ -28,7 +29,7 @@ export function useHomeTasks(date: Date = new Date()) {
  * Prefetch adjacent weeks for smoother week navigation.
  * Uses batch week fetch (1 POST per week) instead of individual day fetches.
  */
-export function usePrefetchHomeTasks(selectedDate: Date) {
+export function usePrefetchHomeTasks(selectedDate: Date, directionId?: string) {
   const queryClient = useQueryClient()
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 })
 
@@ -46,8 +47,8 @@ export function usePrefetchHomeTasks(selectedDate: Date) {
   useEffect(() => {
     const prefetchWeek = (startStr: string, endStr: string) => {
       queryClient.prefetchQuery({
-        queryKey: queryKeys.tasks.homeWeek(startStr),
-        queryFn: () => getWeekHomeTasks(startStr, endStr).then(unwrapResponse),
+        queryKey: queryKeys.tasks.homeWeek(startStr, directionId),
+        queryFn: () => getWeekHomeTasks(startStr, endStr, directionId).then(unwrapResponse),
         staleTime: STALE_TIMES.HOME_TASKS,
       })
     }
@@ -55,7 +56,7 @@ export function usePrefetchHomeTasks(selectedDate: Date) {
     // Prefetch previous and next week batches (2 POSTs max)
     prefetchWeek(prevStartStr, prevEndStr)
     prefetchWeek(nextStartStr, nextEndStr)
-  }, [queryClient, prevStartStr, prevEndStr, nextStartStr, nextEndStr])
+  }, [queryClient, prevStartStr, prevEndStr, nextStartStr, nextEndStr, directionId])
 }
 
 export type { HomeTask }

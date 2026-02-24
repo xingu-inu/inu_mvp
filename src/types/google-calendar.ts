@@ -16,6 +16,7 @@ export interface GoogleCalendarConnection {
   user_id: string
   calendar_id: string
   sync_enabled: boolean
+  auto_sync: boolean
   created_at: string
   updated_at: string
 }

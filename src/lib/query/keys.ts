@@ -53,8 +53,10 @@ export const queryKeys = {
   // ============================================
   tasks: {
     all: ['tasks'] as const,
-    home: (date: string) => [...queryKeys.tasks.all, 'home', date] as const,
-    homeWeek: (weekStart: string) => [...queryKeys.tasks.all, 'home', 'week', weekStart] as const,
+    home: (date: string, directionId?: string) =>
+      [...queryKeys.tasks.all, 'home', date, directionId] as const,
+    homeWeek: (weekStart: string, directionId?: string) =>
+      [...queryKeys.tasks.all, 'home', 'week', weekStart, directionId] as const,
     byGoal: (goalId: string) => [...queryKeys.tasks.all, { goalId }] as const,
     byGroup: (groupId: string) => [...queryKeys.tasks.all, { groupId }] as const,
     detail: (id: string) => [...queryKeys.tasks.all, 'detail', id] as const,
@@ -168,6 +170,11 @@ export const queryKeys = {
     announcements: ['admin', 'announcements'] as const,
     feedbacks: (params: { status?: string; page?: number }) =>
       ['admin', 'feedbacks', params] as const,
+    engagement: (days: number) => ['admin', 'engagement', days] as const,
+    funnel: ['admin', 'funnel'] as const,
+    retention: (cohortCount: number) => ['admin', 'retention', cohortCount] as const,
+    featureAdoption: ['admin', 'feature-adoption'] as const,
+    streakDistribution: ['admin', 'streak-distribution'] as const,
   },
 
   // ============================================

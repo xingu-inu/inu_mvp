@@ -139,7 +139,6 @@ function EventRow({ event }: { event: ActivityEvent }) {
 
 export function ReviewPanelOverview() {
   const roadmapData = useReviewStore((s) => s.roadmapData)
-  const areaChanges = useReviewStore((s) => s.areaChanges)
   const selectArea = useReviewStore((s) => s.selectArea)
 
   const overallRate = useMemo(() => computeOverallRate(roadmapData), [roadmapData])
@@ -151,7 +150,7 @@ export function ReviewPanelOverview() {
     [roadmapData]
   )
 
-  const recentEvents = useMemo(() => collectRecentEvents(areaChanges), [areaChanges])
+  const recentEvents = collectRecentEvents([])
 
   return (
     <motion.div

@@ -22,6 +22,7 @@ import { usePanelDateStore } from '@/stores/panel-date.store'
 import { useCheckIn, useUndoCheckIn } from '@/queries/use-checkin'
 import { useUpdateTask, useDeleteTask } from '@/queries/use-tasks'
 import { useDirection } from '@/queries/use-direction'
+import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
 import { cn } from '@/lib/utils'
 import { generateAiComment } from '@/lib/utils/ai-comments'
 import { isStreakMilestone } from '@/lib/constants/animations'
@@ -56,6 +57,8 @@ export const CompactTaskRow = memo(
     const undoCheckIn = useUndoCheckIn()
     const updateTask = useUpdateTask()
     const deleteTask = useDeleteTask()
+    const { data: gcalConnection } = useGoogleCalendarConnection()
+    const isGcalConnected = !!gcalConnection?.sync_enabled
     const status = task.todayCheckIn?.status
 
     // Tasks from past roadmap versions should not allow check-in actions
@@ -378,7 +381,11 @@ export const CompactTaskRow = memo(
           {isDeleting && (
             <InlineDeleteConfirm
               title={`"${task.name}" 삭제할까요?`}
-              description="삭제하면 기록도 함께 사라져요"
+              description={
+                isGcalConnected
+                  ? '삭제하면 기록과 Google Calendar 일정도 함께 사라져요'
+                  : '삭제하면 기록도 함께 사라져요'
+              }
               onCancel={() => setIsDeleting(false)}
               onConfirm={() => deleteTask.mutate(task.id)}
               isLoading={deleteTask.isPending}

@@ -10,6 +10,7 @@ import {
   updateGoogleEvent,
   deleteGoogleEvent,
 } from '@/lib/google-calendar/service'
+import { buildGoogleEventFromTask } from '@/lib/google-calendar/event-builder'
 import type { TypedSupabaseClient } from '@/repositories/base.repository'
 import type { Task, CreateTaskInput, UpdateTaskInput, ApiResponse, ApiListResult } from '@/types'
 
@@ -17,12 +18,16 @@ const NOT_FOUND_ERROR_MAP = {
   NOT_FOUND: { code: ErrorCode.NOT_FOUND, message: '할 일을 찾을 수 없습니다.' },
 } as const
 
-function addMinutesToTime(time: string, minutes: number): string {
-  const [h, m] = time.split(':').map(Number)
-  const total = (h || 0) * 60 + (m || 0) + minutes
-  const endH = Math.floor(total / 60) % 24
-  const endM = total % 60
-  return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`
+async function isGoogleSyncEnabled(
+  supabase: TypedSupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const { data } = await supabase
+    .from('google_calendar_connections')
+    .select('sync_enabled, auto_sync')
+    .eq('user_id', userId)
+    .single()
+  return !!data?.sync_enabled && !!data?.auto_sync
 }
 
 async function syncTaskToGoogleCreate(
@@ -30,18 +35,11 @@ async function syncTaskToGoogleCreate(
   userId: string,
   task: Task
 ): Promise<void> {
-  if (!task.specific_time) return
   try {
-    const date = task.scheduled_date || new Date().toISOString().slice(0, 10)
-    const duration = task.duration_minutes || 60
-    const endTime = addMinutesToTime(task.specific_time, duration)
+    if (!(await isGoogleSyncEnabled(supabase, userId))) return
 
-    const eventId = await createGoogleEvent(supabase, userId, {
-      summary: task.name,
-      description: task.why || undefined,
-      start: { dateTime: `${date}T${task.specific_time}:00` },
-      end: { dateTime: `${date}T${endTime}:00` },
-    })
+    const event = buildGoogleEventFromTask(task)
+    const eventId = await createGoogleEvent(supabase, userId, event)
 
     if (eventId) {
       await supabase.from('tasks').update({ google_event_id: eventId }).eq('id', task.id)
@@ -57,22 +55,26 @@ async function syncTaskToGoogleUpdate(
   task: Task
 ): Promise<void> {
   try {
-    if (task.specific_time && task.google_event_id) {
-      const date = task.scheduled_date || new Date().toISOString().slice(0, 10)
-      const duration = task.duration_minutes || 60
-      const endTime = addMinutesToTime(task.specific_time, duration)
+    if (!(await isGoogleSyncEnabled(supabase, userId))) return
 
-      await updateGoogleEvent(supabase, userId, task.google_event_id, {
-        summary: task.name,
-        description: task.why || undefined,
-        start: { dateTime: `${date}T${task.specific_time}:00` },
-        end: { dateTime: `${date}T${endTime}:00` },
-      })
-    } else if (task.specific_time && !task.google_event_id) {
-      await syncTaskToGoogleCreate(supabase, userId, task)
-    } else if (!task.specific_time && task.google_event_id) {
+    // Task no longer active → delete Google event
+    if (task.status !== 'active' && task.google_event_id) {
       await deleteGoogleEvent(supabase, userId, task.google_event_id)
       await supabase.from('tasks').update({ google_event_id: null }).eq('id', task.id)
+      return
+    }
+
+    const event = buildGoogleEventFromTask(task)
+
+    if (task.google_event_id) {
+      // Update existing event with new schedule/recurrence
+      await updateGoogleEvent(supabase, userId, task.google_event_id, event)
+    } else if (task.status === 'active') {
+      // No existing event — create one
+      const eventId = await createGoogleEvent(supabase, userId, event)
+      if (eventId) {
+        await supabase.from('tasks').update({ google_event_id: eventId }).eq('id', task.id)
+      }
     }
   } catch {
     // Google sync is best-effort

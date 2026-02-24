@@ -26,6 +26,14 @@ export const ANALYTICS_EVENTS = {
   ROADMAP_VERSION_CREATED: 'roadmap_version_created',
   // Feedback
   FEEDBACK_SUBMITTED: 'feedback_submitted',
+  // Task lifecycle
+  TASK_COMPLETED: 'task_completed',
+  // Goal engagement
+  GOAL_DETAIL_VIEWED: 'goal_detail_viewed',
+  // Streak milestones
+  STREAK_MILESTONE: 'streak_milestone',
+  // Priority feature
+  PRIORITY_RANK_USED: 'priority_rank_used',
 } as const
 
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[keyof typeof ANALYTICS_EVENTS]

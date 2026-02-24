@@ -81,10 +81,15 @@ export interface HomeTask {
  */
 export const getHomeTasks = authAction(
   'getHomeTasks',
-  async ({ supabase, user }, date?: string): Promise<ApiListResult<HomeTask>> => {
+  async (
+    { supabase, user },
+    date?: string,
+    directionId?: string
+  ): Promise<ApiListResult<HomeTask>> => {
     const { data, error } = await supabase.rpc('get_today_tasks', {
       p_user_id: user.id,
       p_date: date,
+      p_direction_id: directionId ?? null,
     })
 
     if (error) throw error
@@ -104,13 +109,15 @@ export const getWeekHomeTasks = authAction(
   async (
     { supabase, user },
     startDate: string,
-    endDate: string
+    endDate: string,
+    directionId?: string
   ): Promise<ApiResponse<Record<string, HomeTask[]>>> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.rpc as any)('get_week_tasks', {
       p_user_id: user.id,
       p_start_date: startDate,
       p_end_date: endDate,
+      p_direction_id: directionId ?? null,
     })
 
     if (error) throw error

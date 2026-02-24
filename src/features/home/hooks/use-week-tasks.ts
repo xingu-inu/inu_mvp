@@ -13,8 +13,11 @@ import type { HomeTask } from '@/actions/home.actions'
  * Fetch tasks for all 7 days of the selected week in a single server action call.
  * Uses get_week_tasks RPC (1 DB query) instead of 7 separate POST requests.
  * Also seeds individual day caches so useHomeTasks(date) gets cache hits.
+ *
+ * @param selectedDate - The date within the target week
+ * @param directionId - Optional direction ID for version browsing (bypasses date-based resolution)
  */
-export function useWeekTasks(selectedDate: Date) {
+export function useWeekTasks(selectedDate: Date, directionId?: string) {
   const queryClient = useQueryClient()
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 0 })
   const weekStartStr = format(weekStart, 'yyyy-MM-dd')
@@ -27,18 +30,18 @@ export function useWeekTasks(selectedDate: Date) {
   )
 
   const { data: tasksByDate, isLoading } = useQuery({
-    queryKey: queryKeys.tasks.homeWeek(weekStartStr),
-    queryFn: () => getWeekHomeTasks(weekStartStr, weekEndStr).then(unwrapResponse),
+    queryKey: queryKeys.tasks.homeWeek(weekStartStr, directionId),
+    queryFn: () => getWeekHomeTasks(weekStartStr, weekEndStr, directionId).then(unwrapResponse),
     staleTime: STALE_TIMES.HOME_TASKS,
   })
 
-  // Seed individual day caches so useHomeTasks(date) gets instant cache hits
+  // Seed individual day caches so useHomeTasks(date, directionId) gets instant cache hits
   useEffect(() => {
     if (!tasksByDate) return
     for (const [dateStr, tasks] of Object.entries(tasksByDate)) {
-      queryClient.setQueryData(queryKeys.tasks.home(dateStr), tasks)
+      queryClient.setQueryData(queryKeys.tasks.home(dateStr, directionId), tasks)
     }
-  }, [tasksByDate, queryClient])
+  }, [tasksByDate, queryClient, directionId])
 
   const safeTasksByDate = useMemo(() => {
     if (!tasksByDate) {

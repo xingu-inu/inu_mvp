@@ -630,6 +630,7 @@ export type NotificationType =
   | 'weekly_summary'
   | 'streak_recovery'
   | 'goal_progress'
+  | 'announcement'
 
 export interface AppNotification {
   id: string

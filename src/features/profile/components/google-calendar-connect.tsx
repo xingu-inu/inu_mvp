@@ -6,6 +6,7 @@ import { ChevronRight } from 'lucide-react'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
 import {
   toggleGoogleCalendarSync,
+  toggleAutoSync,
   disconnectGoogleCalendar,
 } from '@/actions/google-calendar.actions'
 import { toast } from 'sonner'
@@ -39,6 +40,7 @@ export function GoogleCalendarConnect() {
   const queryClient = useQueryClient()
   const [isDisconnecting, setIsDisconnecting] = useState(false)
   const [isTogglingSync, setIsTogglingSync] = useState(false)
+  const [isTogglingAutoSync, setIsTogglingAutoSync] = useState(false)
 
   const handleConnect = () => {
     window.location.href = '/api/google-calendar/authorize'
@@ -78,6 +80,28 @@ export function GoogleCalendarConnect() {
       toast.error('설정 변경에 실패했습니다')
     } finally {
       setIsTogglingSync(false)
+    }
+  }
+
+  const handleToggleAutoSync = async () => {
+    if (!connection) return
+    setIsTogglingAutoSync(true)
+    try {
+      const result = await toggleAutoSync(!connection.auto_sync)
+      if (result.success) {
+        await queryClient.invalidateQueries({ queryKey: ['google-calendar'] })
+        toast.success(
+          result.data.auto_sync
+            ? '자동 내보내기가 활성화되었습니다'
+            : '자동 내보내기가 비활성화되었습니다'
+        )
+      } else {
+        toast.error('설정 변경에 실패했습니다')
+      }
+    } catch {
+      toast.error('설정 변경에 실패했습니다')
+    } finally {
+      setIsTogglingAutoSync(false)
     }
   }
 
@@ -139,6 +163,36 @@ export function GoogleCalendarConnect() {
           />
         </button>
       </div>
+      {connection.sync_enabled && (
+        <div className="space-y-1 rounded-xl px-3 py-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--color-text-secondary)]">자동 내보내기</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={connection.auto_sync}
+              onClick={handleToggleAutoSync}
+              disabled={isTogglingAutoSync}
+              className={cn(
+                'relative h-6 w-11 flex-shrink-0 rounded-full transition-colors',
+                connection.auto_sync
+                  ? 'bg-[var(--color-primary-500)]'
+                  : 'bg-[var(--color-bg-tertiary)]'
+              )}
+            >
+              <span
+                className={cn(
+                  'absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform',
+                  connection.auto_sync && 'translate-x-5'
+                )}
+              />
+            </button>
+          </div>
+          <p className="text-[11px] leading-tight text-[var(--color-text-tertiary)]">
+            Task 생성/수정 시 자동으로 Google Calendar에 반영
+          </p>
+        </div>
+      )}
     </div>
   )
 }

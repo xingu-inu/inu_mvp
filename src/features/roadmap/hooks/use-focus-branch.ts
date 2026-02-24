@@ -52,7 +52,6 @@ export function useFocusBranch(
 
     const selectedNode = findNode(tree, selectedNodeId)
     const descendants = selectedNode ? collectDescendants(selectedNode) : []
-
     return new Set([...ancestors, selectedNodeId, ...descendants])
   }, [tree, selectedNodeId])
 }

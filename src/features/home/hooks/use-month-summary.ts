@@ -23,6 +23,7 @@ export interface MonthTaskPreview {
   name: string
   areaColor: string | null
   isDone: boolean
+  isSkip: boolean
   repeatType: string | null
   durationMinutes: number
 }
@@ -142,14 +143,12 @@ export function useMonthSummary(currentDate: Date) {
       }
     }
 
-    // Index done task_ids per date
-    const doneTasksByDate: Record<string, Set<string>> = {}
+    // Index check-in status per task per date
+    const checkinStatusByDate: Record<string, Record<string, string>> = {}
     if (checkInRows) {
       for (const row of checkInRows) {
-        if (row.status === 'done') {
-          if (!doneTasksByDate[row.date]) doneTasksByDate[row.date] = new Set()
-          doneTasksByDate[row.date].add(row.task_id)
-        }
+        if (!checkinStatusByDate[row.date]) checkinStatusByDate[row.date] = {}
+        checkinStatusByDate[row.date][row.task_id] = row.status
       }
     }
 
@@ -158,11 +157,13 @@ export function useMonthSummary(currentDate: Date) {
       if (tasks.length === 0) continue
       result[dateKey] = tasks.map((task) => {
         const areaId = (task.goal as { area_id?: string } | undefined)?.area_id
+        const status = checkinStatusByDate[dateKey]?.[task.id]
         return {
           id: task.id,
           name: task.name,
           areaColor: areaId ? (areaColorMap[areaId] ?? null) : null,
-          isDone: doneTasksByDate[dateKey]?.has(task.id) ?? false,
+          isDone: status === 'done',
+          isSkip: status === 'skip',
           repeatType: (task as { repeat_type?: string }).repeat_type ?? null,
           durationMinutes: (task as { duration_minutes?: number }).duration_minutes ?? 0,
         }

@@ -38,13 +38,13 @@ export function VisualTreeWrapper() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Build tree for search (same pure function used by VisualTree)
-  const { tree: searchTree } = useMemo(
+  // Build tree ONCE — shared by search and VisualTree
+  const { tree: treeData, crossLinks } = useMemo(
     () => buildVisualTreeData(direction ?? null, activeAreas, goals, statusFilter),
     [direction, activeAreas, goals, statusFilter]
   )
 
-  const searchResult = useTreeSearch(searchTree, searchQuery)
+  const searchResult = useTreeSearch(treeData, searchQuery)
 
   // Scroll to node when navigating search results
   const handleSearchNavigate = useCallback((nodeId: string) => {
@@ -100,7 +100,7 @@ export function VisualTreeWrapper() {
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return
     const target = e.target as HTMLElement
-    if (target.closest('button, a, [role="button"], input, textarea')) return
+    if (target.closest('button, a, [role="button"], input, textarea, [data-draggable]')) return
 
     const el = scrollRef.current
     if (!el) return
@@ -176,7 +176,8 @@ export function VisualTreeWrapper() {
       >
         <div style={{ zoom }} className="m-auto">
           <VisualTree
-            direction={direction ?? null}
+            treeData={treeData}
+            crossLinks={crossLinks}
             goals={goals}
             areas={activeAreas}
             layoutDirection={treeLayout}

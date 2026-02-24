@@ -1,24 +1,22 @@
 'use server'
 
-import { z } from 'zod'
 import { authAction } from '@/lib/security'
 import { successResponse, errorResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
-import { createGoogleEvent } from '@/lib/google-calendar'
-import { TIME_SLOT_CONFIG } from '@/lib/constants/time-slots'
+import { createGoogleEvent, updateGoogleEvent } from '@/lib/google-calendar/service'
+import { buildGoogleEventFromTask } from '@/lib/google-calendar/event-builder'
 import type { ApiResponse } from '@/types'
 import type { GoogleCalendarConnection } from '@/types/google-calendar'
-import type { HomeTask } from '@/actions/home.actions'
-import type { TimeSlot } from '@/types/entities'
+import type { Task } from '@/types/entities'
 
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다')
+export type ExportScope = 'today' | 'week' | 'all'
 
 export const getGoogleCalendarConnection = authAction(
   'getGoogleCalendarConnection',
   async ({ supabase }): Promise<ApiResponse<GoogleCalendarConnection | null>> => {
     const { data, error } = await supabase
       .from('google_calendar_connections')
-      .select('id, user_id, calendar_id, sync_enabled, created_at, updated_at')
+      .select('id, user_id, calendar_id, sync_enabled, auto_sync, created_at, updated_at')
       .single()
 
     if (error && error.code !== 'PGRST116') {
@@ -54,21 +52,144 @@ export const disconnectGoogleCalendar = authAction(
   }
 )
 
+// Helper: check if a task should appear on a given date
+function isTaskActiveOnDate(task: Task, dateStr: string): boolean {
+  const date = new Date(dateStr + 'T00:00:00')
+  const dayOfWeek = date.getDay() // 0=Sun, 1=Mon, ..., 6=Sat
+
+  if (task.start_date && dateStr < task.start_date) return false
+  if (task.end_date && dateStr > task.end_date) return false
+
+  switch (task.repeat_type) {
+    case 'daily':
+      return true
+    case 'weekdays':
+      return dayOfWeek >= 1 && dayOfWeek <= 5
+    case 'weekends':
+      return dayOfWeek === 0 || dayOfWeek === 6
+    case 'weekly':
+    case 'custom':
+      return task.repeat_days?.includes(dayOfWeek) ?? false
+    case 'once':
+      return task.scheduled_date === dateStr
+    default:
+      return true
+  }
+}
+
+// Helper: get dates for a week starting from a given date (Monday-based)
+function getWeekDates(dateStr: string): string[] {
+  const date = new Date(dateStr + 'T00:00:00')
+  const day = date.getDay()
+  const diff = day === 0 ? -6 : 1 - day // Monday start
+  const monday = new Date(date)
+  monday.setDate(date.getDate() + diff)
+
+  const dates: string[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday)
+    d.setDate(monday.getDate() + i)
+    dates.push(d.toISOString().slice(0, 10))
+  }
+  return dates
+}
+
+function filterTasksByScope(tasks: Task[], scope: ExportScope, date?: string): Task[] {
+  if (scope === 'all') return tasks
+
+  const targetDate = date || new Date().toISOString().slice(0, 10)
+
+  if (scope === 'today') {
+    return tasks.filter((t) => isTaskActiveOnDate(t, targetDate))
+  }
+
+  // week
+  const weekDates = getWeekDates(targetDate)
+  return tasks.filter((t) => weekDates.some((d) => isTaskActiveOnDate(t, d)))
+}
+
+// --- Preview ---
+
+export interface ExportPreviewTask {
+  id: string
+  name: string
+  areaEmoji: string | null
+  areaColor: string | null
+  isNew: boolean
+}
+
+export interface ExportPreviewResult {
+  tasks: ExportPreviewTask[]
+  newCount: number
+  updateCount: number
+}
+
+export const getExportPreview = authAction(
+  'getExportPreview',
+  async (
+    { supabase, user },
+    scope: ExportScope,
+    date?: string
+  ): Promise<ApiResponse<ExportPreviewResult>> => {
+    const { data: connection } = await supabase
+      .from('google_calendar_connections')
+      .select('sync_enabled')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!connection?.sync_enabled) {
+      return errorResponse(ErrorCode.VALIDATION_ERROR, 'Google Calendar이 연결되지 않았습니다')
+    }
+
+    const { data: rawTasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('*, goals(areas(emoji, color))')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+
+    if (tasksError || !rawTasks) {
+      return errorResponse(ErrorCode.INTERNAL_ERROR, 'Task를 불러오는데 실패했습니다')
+    }
+
+    const allTasks = rawTasks as unknown as (Task & {
+      goals: { areas: { emoji: string; color: string } } | null
+    })[]
+    const filtered = filterTasksByScope(allTasks as Task[], scope, date)
+
+    const previewTasks: ExportPreviewTask[] = filtered.map((t) => {
+      const taskWithGoal = allTasks.find((at) => at.id === t.id)
+      return {
+        id: t.id,
+        name: t.name,
+        areaEmoji: taskWithGoal?.goals?.areas?.emoji ?? null,
+        areaColor: taskWithGoal?.goals?.areas?.color ?? null,
+        isNew: !t.google_event_id,
+      }
+    })
+
+    const newCount = previewTasks.filter((t) => t.isNew).length
+    const updateCount = previewTasks.filter((t) => !t.isNew).length
+
+    return successResponse({ tasks: previewTasks, newCount, updateCount })
+  }
+)
+
+// --- Bulk Export ---
+
 interface ExportResult {
-  exported: number
-  skipped: number
+  created: number
+  updated: number
   failed: number
+  failedTasks: Array<{ name: string; error: string }>
 }
 
 export const exportTasksToGoogleCalendar = authAction(
   'exportTasksToGoogleCalendar',
-  async ({ supabase, user }, date: string): Promise<ApiResponse<ExportResult>> => {
-    const parsed = dateSchema.safeParse(date)
-    if (!parsed.success) {
-      return errorResponse(ErrorCode.VALIDATION_ERROR, '날짜 형식이 올바르지 않습니다')
-    }
-
-    // Check Google Calendar connection
+  async (
+    { supabase, user },
+    scope: ExportScope = 'all',
+    date?: string
+  ): Promise<ApiResponse<ExportResult>> => {
     const { data: connection } = await supabase
       .from('google_calendar_connections')
       .select('id, sync_enabled')
@@ -79,78 +200,113 @@ export const exportTasksToGoogleCalendar = authAction(
       return errorResponse(ErrorCode.VALIDATION_ERROR, 'Google Calendar이 연결되지 않았습니다')
     }
 
-    // Fetch user's tasks for the given date via RPC
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: rawTasks, error: tasksError } = await (supabase.rpc as any)('get_today_tasks', {
-      p_user_id: user.id,
-      p_date: date,
-    })
+    const { data: tasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
 
-    if (tasksError || !rawTasks) {
+    if (tasksError || !tasks) {
       return errorResponse(ErrorCode.INTERNAL_ERROR, 'Task를 불러오는데 실패했습니다')
     }
 
-    const tasks = rawTasks as unknown as HomeTask[]
-    const timeZone = 'Asia/Seoul'
+    const filtered = filterTasksByScope(tasks as Task[], scope, date)
 
-    let exported = 0
-    let skipped = 0
+    let created = 0
+    let updated = 0
     let failed = 0
+    const failedTasks: Array<{ name: string; error: string }> = []
 
-    for (const task of tasks) {
-      // Skip already-done tasks
-      if (task.todayCheckIn?.status === 'done' || task.todayCheckIn?.status === 'skip') {
-        skipped++
-        continue
-      }
+    for (const task of filtered) {
+      const event = buildGoogleEventFromTask(task)
 
-      const summary = `[inu] ${task.name}`
-      const description = task.why || undefined
-
-      let startDateTime: string
-      let endDateTime: string
-
-      if (task.specificTime) {
-        startDateTime = `${date}T${task.specificTime}:00`
-        const durationMs = (task.durationMinutes || 30) * 60_000
-        endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
-          .toISOString()
-          .slice(0, 19)
-      } else if (task.timeSlot && task.timeSlot !== 'anytime') {
-        const config = TIME_SLOT_CONFIG[task.timeSlot as TimeSlot]
-        if (config) {
-          const midHour = Math.floor((config.hours[0] + config.hours[1]) / 2)
-          startDateTime = `${date}T${String(midHour).padStart(2, '0')}:00:00`
-          const durationMs = (task.durationMinutes || 30) * 60_000
-          endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
-            .toISOString()
-            .slice(0, 19)
+      if (task.google_event_id) {
+        const ok = await updateGoogleEvent(supabase, user.id, task.google_event_id, event)
+        if (ok) {
+          updated++
         } else {
-          skipped++
-          continue
+          failed++
+          failedTasks.push({ name: task.name, error: '업데이트 실패' })
         }
       } else {
-        startDateTime = `${date}T09:00:00`
-        const durationMs = (task.durationMinutes || 30) * 60_000
-        endDateTime = new Date(new Date(startDateTime).getTime() + durationMs)
-          .toISOString()
-          .slice(0, 19)
-      }
-
-      const eventId = await createGoogleEvent(supabase, user.id, {
-        summary,
-        description,
-        start: { dateTime: startDateTime, timeZone },
-        end: { dateTime: endDateTime, timeZone },
-      })
-
-      if (eventId) {
-        exported++
-      } else {
-        failed++
+        const eventId = await createGoogleEvent(supabase, user.id, event)
+        if (eventId) {
+          await supabase.from('tasks').update({ google_event_id: eventId }).eq('id', task.id)
+          created++
+        } else {
+          failed++
+          failedTasks.push({ name: task.name, error: '생성 실패' })
+        }
       }
     }
 
-    return successResponse({ exported, skipped, failed })
+    return successResponse({ created, updated, failed, failedTasks })
+  }
+)
+
+interface SingleExportResult {
+  success: boolean
+  action: 'created' | 'updated'
+  error?: string
+}
+
+export const exportSingleTaskToGoogleCalendar = authAction(
+  'exportSingleTaskToGoogleCalendar',
+  async ({ supabase, user }, taskId: string): Promise<ApiResponse<SingleExportResult>> => {
+    const { data: connection } = await supabase
+      .from('google_calendar_connections')
+      .select('sync_enabled')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!connection?.sync_enabled) {
+      return errorResponse(ErrorCode.VALIDATION_ERROR, 'Google Calendar이 연결되지 않았습니다')
+    }
+
+    const { data: task, error: taskError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('id', taskId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (taskError || !task) {
+      return errorResponse(ErrorCode.NOT_FOUND, 'Task를 찾을 수 없습니다')
+    }
+
+    const typedTask = task as Task
+    const event = buildGoogleEventFromTask(typedTask)
+
+    if (typedTask.google_event_id) {
+      const ok = await updateGoogleEvent(supabase, user.id, typedTask.google_event_id, event)
+      if (!ok) {
+        return successResponse({ success: false, action: 'updated', error: '업데이트 실패' })
+      }
+      return successResponse({ success: true, action: 'updated' })
+    }
+
+    const eventId = await createGoogleEvent(supabase, user.id, event)
+    if (!eventId) {
+      return successResponse({ success: false, action: 'created', error: '생성 실패' })
+    }
+
+    await supabase.from('tasks').update({ google_event_id: eventId }).eq('id', taskId)
+    return successResponse({ success: true, action: 'created' })
+  }
+)
+
+export const toggleAutoSync = authAction(
+  'toggleAutoSync',
+  async ({ supabase, user }, enabled: boolean): Promise<ApiResponse<{ auto_sync: boolean }>> => {
+    const { error } = await supabase
+      .from('google_calendar_connections')
+      .update({ auto_sync: enabled })
+      .eq('user_id', user.id)
+
+    if (error) {
+      return errorResponse(ErrorCode.INTERNAL_ERROR)
+    }
+
+    return successResponse({ auto_sync: enabled })
   }
 )

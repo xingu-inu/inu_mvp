@@ -4,7 +4,16 @@ import { adminAction } from '@/lib/security'
 import { successResponse, listResponse, errorResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { adminRepository } from '@/repositories'
-import type { AdminStats, SignupChartRow, AdminUserRow } from '@/repositories/admin.repository'
+import type {
+  AdminStats,
+  SignupChartRow,
+  AdminUserRow,
+  EngagementStats,
+  OnboardingFunnel,
+  RetentionCohort,
+  FeatureAdoption,
+  StreakBucket,
+} from '@/repositories/admin.repository'
 import type { ApiResponse, ApiListResult } from '@/types/api'
 
 /**
@@ -77,5 +86,60 @@ export const toggleAdminStatus = adminAction(
 
     await adminRepository.setAdminStatus(supabase, userId, isAdmin)
     return successResponse(undefined)
+  }
+)
+
+/**
+ * 참여도(DAU/WAU/MAU) 시계열 + 요약
+ */
+export const getAdminEngagementStats = adminAction(
+  'getAdminEngagementStats',
+  async ({ supabase }, days: number = 30): Promise<ApiResponse<EngagementStats>> => {
+    const stats = await adminRepository.getEngagementStats(supabase, days)
+    return successResponse(stats)
+  }
+)
+
+/**
+ * 온보딩 퍼널
+ */
+export const getAdminOnboardingFunnel = adminAction(
+  'getAdminOnboardingFunnel',
+  async ({ supabase }): Promise<ApiResponse<OnboardingFunnel>> => {
+    const funnel = await adminRepository.getOnboardingFunnel(supabase)
+    return successResponse(funnel)
+  }
+)
+
+/**
+ * 리텐션 코호트
+ */
+export const getAdminRetentionCohorts = adminAction(
+  'getAdminRetentionCohorts',
+  async ({ supabase }, cohortCount: number = 8): Promise<ApiResponse<RetentionCohort[]>> => {
+    const cohorts = await adminRepository.getRetentionCohorts(supabase, cohortCount)
+    return successResponse(cohorts)
+  }
+)
+
+/**
+ * 기능 사용률
+ */
+export const getAdminFeatureAdoption = adminAction(
+  'getAdminFeatureAdoption',
+  async ({ supabase }): Promise<ApiResponse<FeatureAdoption>> => {
+    const adoption = await adminRepository.getFeatureAdoption(supabase)
+    return successResponse(adoption)
+  }
+)
+
+/**
+ * 스트릭 분포
+ */
+export const getAdminStreakDistribution = adminAction(
+  'getAdminStreakDistribution',
+  async ({ supabase }): Promise<ApiResponse<StreakBucket[]>> => {
+    const distribution = await adminRepository.getStreakDistribution(supabase)
+    return successResponse(distribution)
   }
 )

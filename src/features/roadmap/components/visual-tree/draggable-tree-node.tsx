@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { cn } from '@/lib/utils'
 import { TreeNodeCard, type VisualTreeNode } from './tree-node-card'
@@ -16,7 +17,7 @@ interface DraggableTreeNodeProps {
   searchQuery?: string
 }
 
-export function DraggableTreeNode({
+export const DraggableTreeNode = memo(function DraggableTreeNode({
   node,
   isSelected,
   isExpanded,
@@ -38,7 +39,13 @@ export function DraggableTreeNode({
   })
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes} className={cn(isDragging && 'opacity-30')}>
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      data-draggable
+      className={cn(isDragging && 'opacity-30')}
+    >
       <TreeNodeCard
         node={node}
         isSelected={isSelected}
@@ -51,4 +58,4 @@ export function DraggableTreeNode({
       />
     </div>
   )
-}
+})

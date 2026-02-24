@@ -72,11 +72,12 @@ export async function fetchGoogleEvents(
   }
 }
 
-interface GoogleEventInput {
+export interface GoogleEventInput {
   summary: string
   description?: string
-  start: { dateTime: string; timeZone?: string }
-  end: { dateTime: string; timeZone?: string }
+  start: { dateTime?: string; date?: string; timeZone?: string }
+  end: { dateTime?: string; date?: string; timeZone?: string }
+  recurrence?: string[]
 }
 
 export async function createGoogleEvent(

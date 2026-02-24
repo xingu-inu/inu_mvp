@@ -14,9 +14,10 @@ import {
 } from '@/features/home'
 import { useHomeTasks, usePrefetchHomeTasks } from '@/queries/use-home'
 import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
+import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
+import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 
 import { WeekViewGrid } from '@/features/home/components/week-view'
-import { AnnouncementBanner } from '@/features/home/components/announcement-banner'
 import { AiQuickActions } from '@/features/home/components/ai-quick-actions'
 
 export default function HomeContentPage() {
@@ -31,7 +32,8 @@ export default function HomeContentPage() {
 
 function HomeContent() {
   const { currentDate, view } = useHomeState()
-  usePrefetchHomeTasks(currentDate)
+  const { selectedDirectionId } = useHomeDirection()
+  usePrefetchHomeTasks(currentDate, selectedDirectionId ?? undefined)
   useHomeKeyboard()
 
   return (
@@ -42,7 +44,6 @@ function HomeContent() {
       )}
     >
       <HomeHeader />
-      <AnnouncementBanner />
 
       {view === 'week' && <WeekView />}
       {view === 'month' && <MonthView />}
@@ -75,10 +76,16 @@ function MonthView() {
 /** Task list section — visible on mobile only, desktop uses the right panel */
 function MobileTaskSection() {
   const { currentDate } = useHomeState()
-  const { data: apiTasks = [], isLoading } = useHomeTasks(currentDate)
+  const { isCurrentVersion, selectedVersion, selectedDirectionId } = useHomeDirection()
+  const { data: apiTasks = [], isLoading } = useHomeTasks(
+    currentDate,
+    selectedDirectionId ?? undefined
+  )
+
   const tasks = mapApiTasksToEntities(apiTasks)
   const viewingFuture = isFuture(startOfDay(currentDate))
   const viewingToday = isTodayFn(currentDate)
+  const isReadOnly = !isCurrentVersion
 
   return (
     <div className="space-y-4 lg:hidden">
@@ -86,15 +93,22 @@ function MobileTaskSection() {
         <TaskListSkeleton />
       ) : (
         <>
+          {!isCurrentVersion && <VersionBrowsingBanner version={selectedVersion} />}
+
           {/* Contextual greeting + progress for mobile */}
-          {viewingToday && tasks.length > 0 && (
+          {viewingToday && isCurrentVersion && tasks.length > 0 && (
             <p className="text-sm font-medium text-[var(--color-text-secondary)]">
               {getContextualGreeting(tasks)}
             </p>
           )}
 
-          <AiQuickActions tasks={tasks} selectedDate={currentDate} />
-          <TaskList tasks={tasks} selectedDate={currentDate} enableAiSuggest />
+          {!isReadOnly && <AiQuickActions tasks={tasks} selectedDate={currentDate} />}
+          <TaskList
+            tasks={tasks}
+            selectedDate={currentDate}
+            isReadOnly={isReadOnly}
+            enableAiSuggest={!isReadOnly}
+          />
           {!viewingFuture && <DailyReflectionCard tasks={tasks} date={currentDate} />}
         </>
       )}

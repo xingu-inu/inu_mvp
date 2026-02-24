@@ -2,13 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
-import {
-  LandingLayout,
-  LandingHeader,
-  LandingHero,
-  LandingSections,
-  LandingFooter,
-} from '@/features/landing/components'
+import { DemoApp } from '@/features/demo/components/demo-app'
 
 export const metadata: Metadata = {
   title: 'inu - 내 인생의 로드맵',
@@ -38,16 +32,5 @@ export default async function LandingPage() {
     redirect(profile?.onboarding_completed ? '/home' : '/onboarding')
   }
 
-  return (
-    <LandingLayout>
-      <div className="min-h-screen bg-[var(--color-bg-primary)]">
-        <LandingHeader transparent />
-        <main>
-          <LandingHero />
-          <LandingSections />
-        </main>
-        <LandingFooter />
-      </div>
-    </LandingLayout>
-  )
+  return <DemoApp />
 }

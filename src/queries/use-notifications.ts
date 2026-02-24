@@ -10,12 +10,54 @@ import {
   type WeeklyStats,
   type GoalWeeklyStats,
 } from '@/lib/notifications'
-import { unwrapListResponse } from '@/lib/api'
+import { unwrapListResponse, unwrapResponse } from '@/lib/api'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { getHomeTasks, getWeekHomeTasks } from '@/actions/home.actions'
 import { getActiveGoalsMinimal } from '@/actions/goal.actions'
+import { getActiveAnnouncements } from '@/actions/announcement.actions'
 import type { AppNotification } from '@/types/entities'
+import type { Announcement } from '@/repositories/announcement.repository'
 import type { MinimalGoal } from '@/repositories/goal.repository'
+
+const DISMISSED_KEY = 'inu-dismissed-announcements'
+
+function getDismissedIds(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(DISMISSED_KEY)
+    return raw ? (JSON.parse(raw) as string[]) : []
+  } catch {
+    return []
+  }
+}
+
+export function dismissAnnouncement(id: string) {
+  const ids = getDismissedIds()
+  if (!ids.includes(id)) {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids, id]))
+  }
+}
+
+const ANNOUNCEMENT_EMOJI: Record<string, string> = {
+  info: '\u{1F4E2}',
+  update: '\u{1F195}',
+  event: '\u{1F389}',
+}
+
+function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNotification[] {
+  const dismissedIds = getDismissedIds()
+  return announcements
+    .filter((a) => !dismissedIds.includes(a.id))
+    .map((a) => ({
+      id: `announcement-${a.id}`,
+      type: 'announcement' as const,
+      title: a.title,
+      message: a.content,
+      emoji: ANNOUNCEMENT_EMOJI[a.type] ?? '\u{1F4E2}',
+      priority: 5,
+      autoResolve: false,
+    }))
+}
 
 async function fetchNotifications(): Promise<AppNotification[]> {
   const today = new Date()
@@ -23,9 +65,10 @@ async function fetchNotifications(): Promise<AppNotification[]> {
   const isMonday = today.getDay() === 1
 
   // Core data — use lightweight goal query (no groups/tasks join)
-  const [tasksResponse, goalsResponse] = await Promise.all([
+  const [tasksResponse, goalsResponse, announcementsResponse] = await Promise.all([
     getHomeTasks(dateStr),
     getActiveGoalsMinimal(),
+    getActiveAnnouncements(),
   ])
 
   const apiTasks = unwrapListResponse(tasksResponse)
@@ -83,10 +126,16 @@ async function fetchNotifications(): Promise<AppNotification[]> {
     // Silently fail — goal progress is optional
   }
 
-  return computeNotifications(todayTasks, activeGoals, today, {
+  const computed = computeNotifications(todayTasks, activeGoals, today, {
     lastWeekStats,
     goalStats,
   })
+
+  // Merge announcements as high-priority notifications
+  const announcements = announcementsResponse.success ? unwrapResponse(announcementsResponse) : []
+  const announcementNotifications = mapAnnouncementsToNotifications(announcements)
+
+  return [...announcementNotifications, ...computed]
 }
 
 export function useNotifications() {

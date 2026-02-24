@@ -8,8 +8,9 @@ import { moveNode, type NodeType } from '@/actions/tree.actions'
 import { getNewOrderBetween } from '@/lib/fractional-index'
 import { queryKeys } from '@/lib/query/keys'
 import { createTreeCollisionDetection } from '@/lib/dnd/tree-collision-detection'
+import { useTreeDndStore } from '@/stores/tree-dnd.store'
 import type { VisualTreeNode } from '../components/visual-tree/tree-node-card'
-import type { Area, Goal } from '@/types/entities'
+import type { Area, Goal, Task } from '@/types/entities'
 
 interface UseVisualTreeDndOptions {
   tree: VisualTreeNode | null
@@ -19,7 +20,6 @@ interface UseVisualTreeDndOptions {
 interface DndState {
   activeId: string | null
   activeNode: VisualTreeNode | null
-  overId: string | null
 }
 
 /** Result from computing the new position after a drop */
@@ -32,7 +32,6 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
   const [dndState, setDndState] = useState<DndState>({
     activeId: null,
     activeNode: null,
-    overId: null,
   })
   const isDraggingRef = useRef(false)
   const queryClient = useQueryClient()
@@ -43,11 +42,23 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   )
 
-  // Compute valid drop targets (siblings of dragged node)
+  // Compute valid drop targets (siblings + group targets when dragging a task)
   const validTargetIds = useMemo(() => {
     if (!dndState.activeId || !tree) return new Set<string>()
-    return findSiblingInsertionIds(tree, dndState.activeId)
-  }, [dndState.activeId, tree])
+    const siblingIds = findSiblingInsertionIds(tree, dndState.activeId)
+
+    // When dragging a task, also add all group nodes as valid drop targets
+    if (dndState.activeNode?.type === 'task') {
+      const currentParent = findParent(tree, dndState.activeId)
+      const currentGroupId = currentParent?.type === 'group' ? currentParent.id : null
+      const groupIds = findAllGroupIds(tree, currentGroupId)
+      for (const id of groupIds) {
+        siblingIds.add(id)
+      }
+    }
+
+    return siblingIds
+  }, [dndState.activeId, dndState.activeNode, tree])
 
   // Collision detection with zoom compensation
   const collisionDetection = useMemo(
@@ -61,15 +72,14 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
     setDndState({
       activeId: data.id,
       activeNode: data.node,
-      overId: null,
     })
+    // Write to store for tree-wide subscriptions
+    useTreeDndStore.getState().setDragStart(data.id, data.type)
   }, [])
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
-    setDndState((prev) => ({
-      ...prev,
-      overId: (event.over?.id as string) ?? null,
-    }))
+    // Write overId directly to store — no local state update needed
+    useTreeDndStore.getState().setOverId((event.over?.id as string) ?? null)
   }, [])
 
   const handleDragEnd = useCallback(
@@ -77,8 +87,11 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
       isDraggingRef.current = false
       const { active, over } = event
 
+      // Reset store immediately
+      useTreeDndStore.getState().reset()
+
       if (!over || !tree) {
-        setDndState({ activeId: null, activeNode: null, overId: null })
+        setDndState({ activeId: null, activeNode: null })
         return
       }
 
@@ -86,37 +99,78 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
       const dropId = over.id as string
 
       try {
-        const result = computeNewPosition(tree, draggedId, dropId)
-        if (result) {
-          const nodeType = result.nodeType
+        // Check if this is a group-drop target (cross-parent move)
+        const groupDropMatch = dropId.match(/^group-drop-(.+)$/)
 
-          // Optimistic cache update based on node type
-          if (nodeType === 'area') {
-            const prevAreas = queryClient.getQueryData<Area[]>(queryKeys.areas.all)
-            if (prevAreas) {
-              queryClient.setQueryData<Area[]>(
-                queryKeys.areas.all,
-                prevAreas.map((a) =>
-                  a.id === draggedId ? { ...a, sort_order: result.newSortOrder } : a
-                )
+        if (groupDropMatch) {
+          // Cross-parent move: Task → Group
+          const targetGroupId = groupDropMatch[1]
+          const targetGroup = findNode(tree, targetGroupId)
+          if (!targetGroup) return
+
+          const targetGoalId = findParentGoalId(tree, targetGroupId)
+          if (!targetGoalId) return
+
+          // Compute sort_order: append after last child of target group
+          const lastChild = targetGroup.children?.[targetGroup.children.length - 1]
+          const newSortOrder = getNewOrderBetween(lastChild?.meta?.sortOrder ?? null, null)
+
+          // Optimistic cache update: move task between goals/groups
+          const prevGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals.all)
+          if (prevGoals) {
+            queryClient.setQueryData<Goal[]>(
+              queryKeys.goals.all,
+              updateGoalsCacheForCrossParentMove(
+                prevGoals,
+                draggedId,
+                targetGoalId,
+                targetGroupId,
+                newSortOrder
               )
-            }
-          } else {
-            // goal, group, task — all stored in goals.all cache
-            const prevGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals.all)
-            if (prevGoals) {
-              queryClient.setQueryData<Goal[]>(
-                queryKeys.goals.all,
-                updateGoalsCacheForReorder(prevGoals, draggedId, nodeType, result.newSortOrder)
-              )
-            }
+            )
           }
 
           await moveNode({
             nodeId: draggedId,
-            nodeType,
-            newOrder: result.newSortOrder,
+            nodeType: 'task',
+            newOrder: newSortOrder,
+            newParentId: targetGoalId,
+            targetGroupId,
           })
+        } else {
+          // Existing sibling reorder logic
+          const result = computeNewPosition(tree, draggedId, dropId)
+          if (result) {
+            const nodeType = result.nodeType
+
+            // Optimistic cache update based on node type
+            if (nodeType === 'area') {
+              const prevAreas = queryClient.getQueryData<Area[]>(queryKeys.areas.all)
+              if (prevAreas) {
+                queryClient.setQueryData<Area[]>(
+                  queryKeys.areas.all,
+                  prevAreas.map((a) =>
+                    a.id === draggedId ? { ...a, sort_order: result.newSortOrder } : a
+                  )
+                )
+              }
+            } else {
+              // goal, group, task — all stored in goals.all cache
+              const prevGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals.all)
+              if (prevGoals) {
+                queryClient.setQueryData<Goal[]>(
+                  queryKeys.goals.all,
+                  updateGoalsCacheForReorder(prevGoals, draggedId, nodeType, result.newSortOrder)
+                )
+              }
+            }
+
+            await moveNode({
+              nodeId: draggedId,
+              nodeType,
+              newOrder: result.newSortOrder,
+            })
+          }
         }
       } catch {
         // Rollback: invalidate queries to refetch from server
@@ -124,14 +178,15 @@ export function useVisualTreeDnd({ tree, zoom }: UseVisualTreeDndOptions) {
         queryClient.invalidateQueries({ queryKey: queryKeys.areas.all })
       }
 
-      setDndState({ activeId: null, activeNode: null, overId: null })
+      setDndState({ activeId: null, activeNode: null })
     },
     [tree, queryClient]
   )
 
   const handleDragCancel = useCallback(() => {
     isDraggingRef.current = false
-    setDndState({ activeId: null, activeNode: null, overId: null })
+    useTreeDndStore.getState().reset()
+    setDndState({ activeId: null, activeNode: null })
   }, [])
 
   return {
@@ -259,6 +314,77 @@ function mapVisualTypeToNodeType(type: string): NodeType {
     default:
       return 'task'
   }
+}
+
+/**
+ * Find all group IDs in the tree, prefixed with "group-drop-".
+ * Excludes the given group ID (task's current parent group).
+ */
+function findAllGroupIds(tree: VisualTreeNode, excludeGroupId: string | null): Set<string> {
+  const ids = new Set<string>()
+  function walk(node: VisualTreeNode) {
+    if (node.type === 'group' && node.id !== excludeGroupId) {
+      ids.add(`group-drop-${node.id}`)
+    }
+    node.children?.forEach(walk)
+  }
+  walk(tree)
+  return ids
+}
+
+/**
+ * Find the goal ID that owns a given group.
+ */
+function findParentGoalId(tree: VisualTreeNode, groupId: string): string | null {
+  function walk(node: VisualTreeNode): string | null {
+    if (node.type === 'goal' && node.children?.some((c) => c.id === groupId)) {
+      return node.id
+    }
+    for (const child of node.children ?? []) {
+      const found = walk(child)
+      if (found) return found
+    }
+    return null
+  }
+  return walk(tree)
+}
+
+/**
+ * Optimistic cache update for cross-parent move:
+ * Remove task from source goal, add to target goal under target group.
+ */
+function updateGoalsCacheForCrossParentMove(
+  goals: Goal[],
+  taskId: string,
+  targetGoalId: string,
+  targetGroupId: string,
+  newSortOrder: string
+): Goal[] {
+  let movedTask: Task | undefined
+
+  // Remove task from its current goal
+  const updated = goals.map((g) => {
+    if (!g.tasks) return g
+    const task = g.tasks.find((t) => t.id === taskId)
+    if (!task) return g
+    movedTask = { ...task }
+    return { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) }
+  })
+
+  if (!movedTask) return goals
+
+  // Update task references
+  movedTask.goal_id = targetGoalId
+  movedTask.group_id = targetGroupId
+  movedTask.sort_order = newSortOrder
+
+  // Add to target goal
+  return updated.map((g) => {
+    if (g.id === targetGoalId) {
+      return { ...g, tasks: [...(g.tasks || []), movedTask!] }
+    }
+    return g
+  })
 }
 
 /**

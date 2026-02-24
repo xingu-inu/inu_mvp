@@ -46,6 +46,8 @@ import { useCheckIn, useUndoCheckIn } from '@/queries/use-checkin'
 import { useUpdateTask, useDeleteTask } from '@/queries/use-tasks'
 import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
+import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
+import { exportSingleTaskToGoogleCalendar } from '@/actions/google-calendar.actions'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { updateTaskSchema, type UpdateTaskSchema } from '@/lib/validations'
 import { cn } from '@/lib/utils'
@@ -69,6 +71,10 @@ export function TaskDetailPanel() {
   const [aiComment, setAiComment] = useState<string | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isExportingToGcal, setIsExportingToGcal] = useState(false)
+
+  const { data: gcalConnection } = useGoogleCalendarConnection()
+  const isGcalConnected = !!gcalConnection?.sync_enabled
 
   const tasks = mapApiTasksToEntities(apiTasks)
   const task = tasks.find((t) => t.id === selectedTaskId)
@@ -274,6 +280,26 @@ export function TaskDetailPanel() {
     })
   }
 
+  const handleExportToGcal = async () => {
+    setIsExportingToGcal(true)
+    try {
+      const result = await exportSingleTaskToGoogleCalendar(task.id)
+      if (result.success && result.data.success) {
+        toast.success(
+          result.data.action === 'created'
+            ? 'Google Calendar에 추가했어요'
+            : 'Google Calendar 일정을 업데이트했어요'
+        )
+      } else {
+        toast.error('내보내기에 실패했어요')
+      }
+    } catch {
+      toast.error('내보내기에 실패했어요')
+    } finally {
+      setIsExportingToGcal(false)
+    }
+  }
+
   const handleDeactivate = () => {
     updateTask.mutate(
       { id: task.id, input: { status: 'paused' } },
@@ -320,6 +346,17 @@ export function TaskDetailPanel() {
         </button>
         {!isReadOnly && (
           <div className="flex gap-1">
+            {isGcalConnected && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleExportToGcal}
+                disabled={isExportingToGcal}
+                aria-label="Google Calendar 내보내기"
+              >
+                <CalendarDays className={cn('h-4 w-4', isExportingToGcal && 'animate-pulse')} />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -806,7 +843,11 @@ export function TaskDetailPanel() {
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="이 할 일을 삭제할까요?"
-        description="삭제하면 달성 기록도 함께 삭제됩니다."
+        description={
+          isGcalConnected
+            ? '삭제하면 달성 기록과 Google Calendar 일정도 함께 삭제됩니다.'
+            : '삭제하면 달성 기록도 함께 삭제됩니다.'
+        }
       >
         <ModalBody>
           <p className="text-sm text-[var(--color-text-secondary)]">

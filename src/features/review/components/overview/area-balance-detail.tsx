@@ -308,7 +308,6 @@ function EventRow({ event }: { event: ActivityEvent }) {
 
 export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
   const roadmapData = useReviewStore((s) => s.roadmapData)
-  const areaChanges = useReviewStore((s) => s.areaChanges)
   const selectGoal = useReviewStore((s) => s.selectGoal)
 
   const areaData = useMemo(
@@ -316,10 +315,7 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
     [roadmapData, areaId]
   )
 
-  const changesData = useMemo(
-    () => areaChanges.find((a) => a.areaId === areaId),
-    [areaChanges, areaId]
-  )
+  const changesData = undefined
 
   const recentEvents = useMemo(() => getAreaEvents(changesData), [changesData])
 

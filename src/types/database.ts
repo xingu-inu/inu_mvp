@@ -488,6 +488,7 @@ export type Database = {
       google_calendar_connections: {
         Row: {
           access_token: string
+          auto_sync: boolean
           calendar_id: string
           created_at: string
           id: string
@@ -499,6 +500,7 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          auto_sync?: boolean
           calendar_id?: string
           created_at?: string
           id?: string
@@ -510,6 +512,7 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          auto_sync?: boolean
           calendar_id?: string
           created_at?: string
           id?: string
