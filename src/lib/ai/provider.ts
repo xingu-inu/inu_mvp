@@ -10,17 +10,32 @@ export const AI_MODELS: { value: AiModelId; label: string; description: string }
 
 export const DEFAULT_MODEL: AiModelId = 'gemini-2.5-flash'
 
+// Lazy singletons — created once per server process, safe for Next.js App Router
+let _google: ReturnType<typeof createGoogleGenerativeAI> | null = null
+let _openai: ReturnType<typeof createOpenAI> | null = null
+
+function getGoogleProvider() {
+  if (!_google) _google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY })
+  return _google
+}
+
+function getOpenAIProvider() {
+  if (!_openai) _openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  return _openai
+}
+
 export function getModel(modelId: AiModelId) {
   switch (modelId) {
     case 'gpt-4.1':
-    case 'gpt-5.1': {
-      const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      return openai('gpt-5.1')
-    }
+      return getOpenAIProvider()('gpt-4.1')
+    case 'gpt-5.1':
+      return getOpenAIProvider()('gpt-5.1')
     case 'gemini-2.5-flash':
-    default: {
-      const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY })
-      return google('gemini-2.5-flash')
-    }
+    default:
+      return getGoogleProvider()('gemini-2.5-flash')
   }
+}
+
+export function isGeminiModel(modelId: AiModelId): boolean {
+  return modelId.startsWith('gemini')
 }

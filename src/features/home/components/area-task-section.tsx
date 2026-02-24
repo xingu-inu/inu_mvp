@@ -25,11 +25,13 @@ interface AreaTaskSectionBaseProps {
 
 interface StaticAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable?: false
+  isOver?: never
 }
 
 interface SortableAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable: true
   area: { id: string; name: string; emoji: string; color: string; sort_order: string }
+  isOver?: boolean
 }
 
 type AreaTaskSectionProps = StaticAreaTaskSectionProps | SortableAreaTaskSectionProps
@@ -107,7 +109,9 @@ function SortableAreaSectionInner({
   onToggle,
   enableAiSuggest,
   priorityTiers,
+  isOver,
 }: SortableAreaTaskSectionProps) {
+  // useSortable for area reorder — homeCollisionDetection filters area droppables
   const {
     attributes,
     listeners,
@@ -120,9 +124,10 @@ function SortableAreaSectionInner({
     data: { type: 'area' as const, areaId: area.id },
   })
 
-  // Make area a droppable container for cross-area task moves
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: `container-${area.id}`,
+  // useDroppable for cross-area task drops — filtered from area collision detection
+  // Attached to the task container div (separate from area sortable ref)
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: area.id,
     data: { type: 'container' as const, containerId: area.id },
   })
 
@@ -137,18 +142,12 @@ function SortableAreaSectionInner({
 
   return (
     <section
-      ref={(node) => {
-        setSortableRef(node)
-        setDroppableRef(node)
-      }}
+      ref={setSortableRef}
       style={sortableStyle}
       aria-labelledby={`area-${area.id}`}
-      className={cn(
-        'border-l-2 pl-3 transition-all',
-        isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
-      )}
+      className="border-l-2 pl-3 transition-all"
     >
-      {/* Area header — whole block is draggable */}
+      {/* Area header — drag handle for area reorder (outer context) */}
       <div
         className="mb-1.5 flex cursor-grab items-center justify-between active:cursor-grabbing"
         style={{ touchAction: 'none' }}
@@ -162,33 +161,41 @@ function SortableAreaSectionInner({
         />
       </div>
 
-      {/* Task rows (sortable within area) */}
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="space-y-0.5">
-          {tasks.map((task) => (
-            <SortableTaskRow
-              key={task.id}
-              task={task}
-              containerId={area.id}
-              isReadOnly={isReadOnly}
-              selectedDate={selectedDate}
-              isExpanded={expandedTaskId === task.id}
-              onToggle={onToggle}
-              priorityTier={priorityTiers?.[task.id]}
-            />
-          ))}
-        </div>
-      </SortableContext>
+      {/* Task container — droppable for cross-area task moves (inner context) */}
+      <div
+        ref={setDroppableRef}
+        className={cn(
+          'rounded-md transition-all',
+          isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
+        )}
+      >
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          <div className="space-y-0.5">
+            {tasks.map((task) => (
+              <SortableTaskRow
+                key={task.id}
+                task={task}
+                containerId={area.id}
+                isReadOnly={isReadOnly}
+                selectedDate={selectedDate}
+                isExpanded={expandedTaskId === task.id}
+                onToggle={onToggle}
+                priorityTier={priorityTiers?.[task.id]}
+              />
+            ))}
+          </div>
+        </SortableContext>
 
-      {/* Inline quick-add */}
-      {!isReadOnly && (
-        <InlineTaskInput
-          goals={goals.length > 0 ? goals : undefined}
-          areaId={area.id}
-          selectedDate={selectedDate}
-          enableAiSuggest={enableAiSuggest}
-        />
-      )}
+        {/* Inline quick-add */}
+        {!isReadOnly && (
+          <InlineTaskInput
+            goals={goals.length > 0 ? goals : undefined}
+            areaId={area.id}
+            selectedDate={selectedDate}
+            enableAiSuggest={enableAiSuggest}
+          />
+        )}
+      </div>
     </section>
   )
 }

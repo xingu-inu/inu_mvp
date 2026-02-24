@@ -7,10 +7,35 @@ const MAX_TOOL_RESULT_LENGTH = 4000
 
 function sanitizeToolResult(data: unknown): string {
   const json = JSON.stringify(data)
-  if (json.length > MAX_TOOL_RESULT_LENGTH) {
-    return json.slice(0, MAX_TOOL_RESULT_LENGTH) + '... [truncated]'
+  if (json.length <= MAX_TOOL_RESULT_LENGTH) return json
+
+  // For objects with array fields (most tool results), truncate arrays at item boundaries
+  if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+    const obj = data as Record<string, unknown>
+    const clone: Record<string, unknown> = { ...obj }
+    for (const key of Object.keys(clone)) {
+      if (Array.isArray(clone[key])) {
+        const arr = clone[key] as unknown[]
+        // Find how many items fit within the limit
+        for (let count = arr.length; count > 0; count--) {
+          clone[key] = arr.slice(0, count)
+          const attempt = JSON.stringify(clone)
+          if (attempt.length <= MAX_TOOL_RESULT_LENGTH) return attempt
+        }
+      }
+    }
   }
-  return json
+
+  // For plain arrays, truncate at item boundaries
+  if (Array.isArray(data)) {
+    for (let count = data.length; count > 0; count--) {
+      const attempt = JSON.stringify(data.slice(0, count))
+      if (attempt.length <= MAX_TOOL_RESULT_LENGTH) return attempt
+    }
+  }
+
+  // Fallback: raw slice (should rarely hit)
+  return json.slice(0, MAX_TOOL_RESULT_LENGTH) + '...'
 }
 
 export function createChatTools(supabase: TypedSupabaseClient, userId: string) {

@@ -1,8 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInAsGuest } from '@/actions/auth.actions'
 
 interface DemoMobileTaskGateProps {
   taskCount: number
@@ -11,17 +9,7 @@ interface DemoMobileTaskGateProps {
 
 export function DemoMobileTaskGate({ taskCount, children }: DemoMobileTaskGateProps) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const remaining = taskCount - 3
-
-  const handleGuest = () => {
-    startTransition(async () => {
-      const result = await signInAsGuest()
-      if (result.success && result.data) {
-        router.push(result.data.redirectTo)
-      }
-    })
-  }
 
   if (taskCount <= 3) {
     return <>{children}</>
@@ -46,14 +34,6 @@ export function DemoMobileTaskGate({ taskCount, children }: DemoMobileTaskGatePr
           className="rounded-xl bg-[var(--color-primary-500)] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-600)] active:scale-[0.98]"
         >
           무료로 시작하기
-        </button>
-        <button
-          type="button"
-          onClick={handleGuest}
-          disabled={isPending}
-          className="text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)] disabled:opacity-50"
-        >
-          {isPending ? '접속 중...' : '가입 없이 체험하기 →'}
         </button>
       </div>
     </div>

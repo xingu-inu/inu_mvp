@@ -302,7 +302,7 @@ export function UnifiedCalendar() {
               onClick={() => setCurrentDate(day)}
               className={cn(
                 'flex flex-col items-center rounded-lg py-1.5 transition-all',
-                'hover:scale-[1.04] hover:bg-[var(--color-bg-tertiary)]',
+                'hover:bg-[var(--color-bg-tertiary)]',
                 'min-h-[64px] min-w-[44px] lg:min-h-[76px]',
                 !isCurrentMonth && 'opacity-30',
                 isPerfect && 'bg-[var(--color-done)]/8',

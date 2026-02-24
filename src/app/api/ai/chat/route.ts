@@ -6,7 +6,7 @@ import { getModel, DEFAULT_MODEL, type AiModelId } from '@/lib/ai/provider'
 import { createChatTools } from '@/lib/ai/tools'
 import { CORE_PRINCIPLES, SECURITY_PRINCIPLES } from '@/lib/ai/constants'
 import { profileRepository } from '@/repositories/profile.repository'
-import { sanitizeUserText, detectInjectionPatterns, validateAiOutput } from '@/lib/ai/sanitize'
+import { sanitizeUserText, getInjectionSeverity, validateAiOutput } from '@/lib/ai/sanitize'
 
 function buildSystemPrompt(userName: string, todayDate: string): string {
   return `당신은 inu(이누) 앱의 AI 동행자 '이누'입니다.
@@ -111,8 +111,20 @@ export const POST = authRoute(
         ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
         .map((p) => p.text)
         .join('')
-      if (lastText && detectInjectionPatterns(lastText)) {
-        console.warn('[ai-security] Injection pattern detected in /chat request')
+      if (lastText) {
+        const severity = getInjectionSeverity(lastText)
+        if (severity === 'critical') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: { code: 'INJECTION_BLOCKED', message: '해당 요청은 처리할 수 없어요.' },
+            },
+            { status: 400 }
+          )
+        }
+        if (severity === 'suspicious') {
+          console.warn('[ai-security] Suspicious pattern detected in /chat request')
+        }
       }
     }
 

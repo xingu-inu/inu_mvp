@@ -315,6 +315,119 @@ export const toggleAutoSync = authAction(
   }
 )
 
+// --- Import ---
+
+export interface ImportEventInput {
+  id: string
+  summary: string
+  startTime: string | null
+  dateStr: string
+  isAllDay: boolean
+  durationMinutes: number
+}
+
+export interface ImportResult {
+  imported: number
+  skipped: number
+  failed: number
+}
+
+function inferTimeSlot(
+  startTime: string | null,
+  isAllDay: boolean
+): 'dawn' | 'morning' | 'afternoon' | 'evening' | 'anytime' {
+  if (isAllDay || !startTime) return 'anytime'
+  const hour = parseInt(startTime.split(':')[0], 10)
+  if (hour < 6) return 'dawn'
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
+}
+
+export const importGoogleEventsAsTasks = authAction(
+  'importGoogleEventsAsTasks',
+  async (
+    { supabase, user },
+    input: { events: ImportEventInput[] }
+  ): Promise<ApiResponse<ImportResult>> => {
+    const { data: connection } = await supabase
+      .from('google_calendar_connections')
+      .select('sync_enabled')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!connection?.sync_enabled) {
+      return errorResponse(ErrorCode.VALIDATION_ERROR, 'Google Calendar이 연결되지 않았습니다')
+    }
+
+    if (input.events.length === 0) {
+      return successResponse({ imported: 0, skipped: 0, failed: 0 })
+    }
+
+    // Check which google_event_ids already exist to avoid duplicates
+    const eventIds = input.events.map((e) => e.id)
+    const { data: existingTasks } = await supabase
+      .from('tasks')
+      .select('google_event_id')
+      .eq('user_id', user.id)
+      .in('google_event_id', eventIds)
+
+    const existingEventIds = new Set(existingTasks?.map((t) => t.google_event_id) ?? [])
+
+    let imported = 0
+    let skipped = 0
+    let failed = 0
+
+    // Get last sort_order for appending
+    const { data: lastTask } = await supabase
+      .from('tasks')
+      .select('sort_order')
+      .eq('user_id', user.id)
+      .order('sort_order', { ascending: false, nullsFirst: false })
+      .limit(1)
+      .single()
+
+    let lastSortOrder = lastTask?.sort_order ?? null
+
+    for (const event of input.events) {
+      if (existingEventIds.has(event.id)) {
+        skipped++
+        continue
+      }
+
+      try {
+        // Generate next sort_order
+        const { generateKeyBetween } = await import('fractional-indexing')
+        const sortOrder = generateKeyBetween(lastSortOrder, null)
+
+        const { error } = await supabase.from('tasks').insert({
+          user_id: user.id,
+          name: event.summary,
+          repeat_type: 'once',
+          scheduled_date: event.dateStr,
+          time_slot: inferTimeSlot(event.startTime, event.isAllDay),
+          specific_time: event.isAllDay ? null : event.startTime,
+          duration_minutes: event.durationMinutes || 30,
+          google_event_id: event.id,
+          status: 'active',
+          sort_order: sortOrder,
+        })
+
+        if (error) {
+          failed++
+        } else {
+          lastSortOrder = sortOrder
+          imported++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    return successResponse({ imported, skipped, failed })
+  }
+)
+
 // --- Import Preview ---
 
 export interface ImportPreviewEvent {

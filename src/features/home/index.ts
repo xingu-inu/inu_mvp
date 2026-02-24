@@ -9,6 +9,7 @@ export { MoodSelector } from './components/mood-selector'
 export { DailyReflectionCard } from './components/daily-reflection-card'
 export { UnifiedCalendar } from './components/unified-calendar'
 export { WeekViewGrid } from './components/week-view'
+export { CompactWeekStrip } from './components/compact-week-strip'
 
 // Hooks
 export { useHomeState, type HomeView } from './hooks/use-home-state'

@@ -68,7 +68,7 @@ export function AiChatPanel() {
   const [input, setInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const isSendingRef = useRef(false)
 
   // DB queries
@@ -144,6 +144,8 @@ export function AiChatPanel() {
     isSendingRef.current = true
     const trimmed = text.trim()
     setInput('')
+    // Reset textarea height after clearing
+    if (inputRef.current) inputRef.current.style.height = 'auto'
 
     try {
       let convId = activeConversationId
@@ -323,17 +325,23 @@ export function AiChatPanel() {
 
         {/* Input */}
         <div className="border-t border-[var(--color-border)] px-4 py-3">
-          <div className="flex items-center gap-2">
-            <input
+          <div className="flex items-end gap-2">
+            <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value)
+                e.target.style.height = 'auto'
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
+              }}
               onKeyDown={handleKeyDown}
               onCompositionStart={() => setIsComposing(true)}
               onCompositionEnd={() => setIsComposing(false)}
               placeholder="메시지를 입력하세요..."
               disabled={isStreaming}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
+              rows={1}
+              className="flex-1 resize-none overflow-y-auto bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
+              style={{ minHeight: '24px', maxHeight: '120px' }}
             />
             {isStreaming ? (
               <button

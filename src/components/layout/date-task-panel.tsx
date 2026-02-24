@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
-import { format, isToday, isFuture, startOfDay, isBefore, parseISO } from 'date-fns'
+import { format, isToday, isFuture, startOfDay, startOfWeek, isBefore, parseISO } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { Calendar, Sparkles } from 'lucide-react'
 import { usePanelDateStore } from '@/stores/panel-date.store'
@@ -17,6 +17,8 @@ import {
 import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 import { TaskList } from '@/features/home/components/task-list'
+import { GCalEventSection } from '@/features/home/components/gcal-event-section'
+import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 
 import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
 import { TaskDetailPanel } from '@/features/home/components/panel-modes/task-detail-panel'
@@ -88,6 +90,15 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
 
   const isReadOnly = !isCurrentVersion || isOldDirectionDate
 
+  // Google Calendar events for selected date
+  const weekStartStr = format(startOfWeek(selectedDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
+  const { data: googleEvents = [] } = useGoogleCalendarEvents(weekStartStr)
+  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd')
+  const dayGCalEvents = useMemo(
+    () => googleEvents.filter((e) => e.dateStr === selectedDateStr),
+    [googleEvents, selectedDateStr]
+  )
+
   // Derived flags for reflection card placement
   const currentHour = new Date().getHours()
   const showReflection = !viewingFuture
@@ -140,6 +151,7 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
               selectedDate={selectedDate}
               enableAiSuggest={!isReadOnly}
             />
+            <GCalEventSection events={dayGCalEvents} />
             {showReflection && !reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
             )}

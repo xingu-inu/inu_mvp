@@ -186,7 +186,6 @@ export function WeekViewGrid() {
               '--chip-line-height': '1.3',
               '--chip-time-font-size': '9px',
               '--chip-time-color': 'var(--color-text-disabled)',
-              '--chip-status-size': '4px',
               '--chip-radius': '6px',
             } as React.CSSProperties)
           : undefined

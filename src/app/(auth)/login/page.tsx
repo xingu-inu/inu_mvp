@@ -2,7 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { LoginForm, OAuthButtons } from '@/features/auth/components'
-import { GuestLoginLink } from '@/features/auth/components/guest-login-link'
 
 export default function LoginPage() {
   return (
@@ -22,10 +21,6 @@ export default function LoginPage() {
       </div>
 
       <OAuthButtons />
-
-      <div className="mt-4 text-center">
-        <GuestLoginLink />
-      </div>
 
       <div className="mt-6 space-y-2 text-center text-sm">
         <Link

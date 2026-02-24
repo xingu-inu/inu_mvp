@@ -89,15 +89,6 @@ export const SlotTaskRow = memo(function SlotTaskRow({ task, isPast, onClick }: 
         backgroundColor: `color-mix(in oklch, ${areaColor} var(--chip-tint-opacity, 10%), transparent)`,
       }}
     >
-      {/* Status dot */}
-      <span
-        className={cn(
-          'h-[var(--chip-status-size,5px)] w-[var(--chip-status-size,5px)] flex-shrink-0 rounded-full',
-          isDone && 'bg-[var(--color-done)]',
-          isSkip && 'bg-[var(--color-skip)]',
-          !isDone && !isSkip && 'border border-[var(--color-border)]'
-        )}
-      />
       {/* Time badge - conditional */}
       {task.specific_time && (
         <span className="flex-shrink-0 text-[length:var(--chip-time-font-size,10px)] text-[var(--chip-time-color)] tabular-nums">

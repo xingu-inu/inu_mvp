@@ -170,7 +170,6 @@
   --chip-tint-opacity: 12%;
   --chip-time-font-size: 10px;
   --chip-time-color: var(--color-text-disabled);
-  --chip-status-size: 5px;
 
   /* Google event chip */
   --color-google-event: oklch(60% 0.02 50);

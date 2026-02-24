@@ -4,9 +4,9 @@ import { authRoute } from '@/lib/security'
 import { generateContent } from '@/lib/ai/generate-client'
 import { SYSTEM_PROMPT } from '@/lib/ai/constants'
 import { buildPrompt } from '@/lib/ai/prompts'
-import { detectInjectionPatterns } from '@/lib/ai/sanitize'
+import { getInjectionSeverity } from '@/lib/ai/sanitize'
 import { profileRepository } from '@/repositories/profile.repository'
-import type { AiModelId } from '@/lib/ai/provider'
+import { DEFAULT_MODEL, type AiModelId } from '@/lib/ai/provider'
 import type { AiGenerateRequest, AiGenerateResponse } from '@/lib/ai/types'
 
 const contextSchema = z.object({
@@ -360,31 +360,47 @@ export const POST = authRoute(
       // Sanitize user inputs before prompt construction
       const aiRequest = parsed.data as AiGenerateRequest
 
-      // Log potential injection attempts (monitoring only, not blocking)
+      // Check for injection attempts — block critical, log suspicious
       const textsToCheck: string[] = []
       if ('input' in aiRequest && typeof aiRequest.input === 'string') {
         textsToCheck.push(aiRequest.input)
       }
       if ('context' in aiRequest && aiRequest.context) {
-        const reqCtx = aiRequest.context as Record<string, unknown>
-        for (const val of Object.values(reqCtx)) {
-          if (typeof val === 'string') textsToCheck.push(val)
+        // Recursively extract all string values from nested context objects/arrays
+        const extractStrings = (value: unknown): void => {
+          if (typeof value === 'string') {
+            textsToCheck.push(value)
+          } else if (Array.isArray(value)) {
+            for (const item of value) extractStrings(item)
+          } else if (typeof value === 'object' && value !== null) {
+            for (const v of Object.values(value)) extractStrings(v)
+          }
         }
+        extractStrings(aiRequest.context)
       }
       for (const text of textsToCheck) {
-        if (detectInjectionPatterns(text)) {
-          console.warn('[ai-security] Injection pattern detected in /generate request')
-          break
+        const severity = getInjectionSeverity(text)
+        if (severity === 'critical') {
+          return NextResponse.json(
+            {
+              success: false,
+              error: { code: 'INJECTION_BLOCKED', message: '해당 요청은 처리할 수 없어요.' },
+            },
+            { status: 400 }
+          )
+        }
+        if (severity === 'suspicious') {
+          console.warn('[ai-security] Suspicious pattern detected in /generate request')
         }
       }
 
       // Get user's preferred model
       const profile = await profileRepository.get(ctx.supabase, ctx.user.id)
-      const modelId = (profile?.ai_model as AiModelId) ?? undefined
+      const modelId = (profile?.ai_model as AiModelId) ?? DEFAULT_MODEL
 
-      // Build prompt and generate
+      // Build prompt and generate (JSON mode for structured output)
       const userPrompt = buildPrompt(aiRequest)
-      const rawResponse = await generateContent(SYSTEM_PROMPT, userPrompt, modelId)
+      const rawResponse = await generateContent(SYSTEM_PROMPT, userPrompt, modelId, { json: true })
 
       // Parse response
       const aiResponse = parseJsonResponse(rawResponse)

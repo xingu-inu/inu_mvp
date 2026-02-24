@@ -7,23 +7,12 @@ import {
   DateTaskPanel,
 } from '@/components/layout'
 import { FloatingAIButton } from '@/components/layout/floating-ai-button'
-import { GuestBanner } from '@/components/layout/guest-banner'
-import { createClient } from '@/lib/supabase/server'
-import { isGuestUser } from '@/lib/utils/guest'
 
-export default async function MainLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const isGuest = isGuestUser(user)
-
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       {/* Desktop viewport lock — prevents body scroll */}
       <div className="lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
-        {isGuest && <GuestBanner />}
-
         {/* Desktop: Top bar with segment control */}
         <DesktopTopBar />
 

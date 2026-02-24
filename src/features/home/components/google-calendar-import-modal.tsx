@@ -5,7 +5,7 @@ import { CalendarDays, Check, ChevronDown, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ResponsiveModal, ModalBody, ModalFooter } from '@/components/ui/responsive-modal'
 import { Button } from '@/components/ui/button'
-import { getImportPreview } from '@/actions/google-calendar.actions'
+import { getImportPreview, importGoogleEventsAsTasks } from '@/actions/google-calendar.actions'
 import type { ExportScope, ImportPreviewEvent } from '@/actions/google-calendar.actions'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -153,8 +153,27 @@ export function GoogleCalendarImportModal({
   const handleImport = async () => {
     setPhase('importing')
     try {
+      const selectedEvents = previewEvents
+        .filter((e) => checkedIds.has(e.id) && !e.isInuEvent)
+        .map(({ id, summary, startTime, dateStr, isAllDay, durationMinutes }) => ({
+          id,
+          summary,
+          startTime,
+          dateStr,
+          isAllDay,
+          durationMinutes,
+        }))
+
+      const res = await importGoogleEventsAsTasks({ events: selectedEvents })
+
+      if (res.success) {
+        setImportedCount(res.data.imported)
+      } else {
+        setImportedCount(0)
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       await queryClient.invalidateQueries({ queryKey: queryKeys.googleCalendar.all })
-      setImportedCount(activeCount)
     } catch {
       setImportedCount(0)
     } finally {

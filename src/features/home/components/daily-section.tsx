@@ -21,12 +21,14 @@ interface DailySectionBaseProps {
 interface StaticDailySectionProps extends DailySectionBaseProps {
   sortable?: false
   tasks: HomeTask[]
+  isOver?: never
 }
 
 interface SortableDailySectionProps extends DailySectionBaseProps {
   sortable: true
   taskIds: string[]
   tasksById: Map<string, HomeTask>
+  isOver?: boolean
 }
 
 type DailySectionProps = StaticDailySectionProps | SortableDailySectionProps
@@ -81,9 +83,11 @@ function SortableDailySectionInner({
   onToggle,
   enableAiSuggest,
   priorityTiers,
+  isOver,
 }: SortableDailySectionProps) {
-  const { setNodeRef, isOver } = useDroppable({
-    id: 'container-daily',
+  // useDroppable for cross-area task drops — filtered from area collision detection
+  const { setNodeRef } = useDroppable({
+    id: 'daily',
     data: { type: 'container' as const, containerId: 'daily' },
   })
 

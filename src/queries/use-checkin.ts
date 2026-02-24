@@ -33,18 +33,22 @@ function patchTaskCheckIn(
     },
   }
 
-  // Streak: handle both field naming conventions
+  // Once-type task completion: handle both field naming conventions
+  const repeatType = (record.repeat_type ?? record.repeatType) as string | undefined
+
+  // Streak: handle both field naming conventions (skip for once-type tasks)
   if ('streak_count' in record) {
     patched.streak_count =
-      status === 'done' ? (record.streak_count as number) + 1 : record.streak_count
+      status === 'done' && repeatType !== 'once'
+        ? (record.streak_count as number) + 1
+        : record.streak_count
   }
   if ('streakCount' in record) {
     patched.streakCount =
-      status === 'done' ? (record.streakCount as number) + 1 : record.streakCount
+      status === 'done' && repeatType !== 'once'
+        ? (record.streakCount as number) + 1
+        : record.streakCount
   }
-
-  // Once-type task completion: handle both field naming conventions
-  const repeatType = (record.repeat_type ?? record.repeatType) as string | undefined
   if (repeatType === 'once' && status === 'done') {
     if ('status' in record) patched.status = 'completed'
     if ('taskStatus' in record) patched.taskStatus = 'completed'

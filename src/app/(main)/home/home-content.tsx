@@ -18,6 +18,7 @@ import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 
 import { WeekViewGrid } from '@/features/home/components/week-view'
+import { CompactWeekStrip } from '@/features/home/components/compact-week-strip'
 import { AiQuickActions } from '@/features/home/components/ai-quick-actions'
 
 export default function HomeContentPage() {
@@ -51,24 +52,36 @@ function HomeContent() {
   )
 }
 
-/** Week view: 7-day grid with time slot rows */
+/** Week view: compact strip (mobile) or full time-slot grid (desktop) */
 function WeekView() {
   return (
-    <div className="lg:min-h-0 lg:flex-1">
-      {/* Mobile only: task list ABOVE grid for immediate action access */}
-      <MobileTaskSection />
-      <WeekViewGrid />
-    </div>
+    <>
+      {/* Mobile: compact week strip on top → tasks below (Todomate-style) */}
+      <div className="space-y-4 lg:hidden">
+        <CompactWeekStrip />
+        <MobileTaskSection />
+      </div>
+      {/* Desktop: full 7-day time-slot grid (unchanged) */}
+      <div className="hidden lg:flex lg:min-h-0 lg:flex-1">
+        <WeekViewGrid />
+      </div>
+    </>
   )
 }
 
-/** Month view: full calendar + selected date's task list */
+/** Month view: calendar on top → tasks below (mobile), calendar only (desktop) */
 function MonthView() {
   return (
     <>
-      {/* Mobile only: task list above calendar for immediate access */}
-      <MobileTaskSection />
-      <UnifiedCalendar />
+      {/* Mobile: month calendar on top → tasks below (Todomate-style) */}
+      <div className="space-y-4 lg:hidden">
+        <UnifiedCalendar />
+        <MobileTaskSection />
+      </div>
+      {/* Desktop: just calendar (right panel has tasks) */}
+      <div className="hidden lg:block">
+        <UnifiedCalendar />
+      </div>
     </>
   )
 }
@@ -88,7 +101,7 @@ function MobileTaskSection() {
   const isReadOnly = !isCurrentVersion
 
   return (
-    <div className="space-y-4 lg:hidden">
+    <div className="space-y-4">
       {isLoading ? (
         <TaskListSkeleton />
       ) : (

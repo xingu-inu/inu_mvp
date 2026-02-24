@@ -68,7 +68,9 @@ export function computeNotifications(
  * Count only actionable notifications (for badge display).
  */
 export function countActionableNotifications(notifications: AppNotification[]): number {
-  return notifications.filter((n) => n.autoResolve && n.priority >= 3).length
+  return notifications.filter(
+    (n) => n.type === 'announcement' || (n.autoResolve && n.priority >= 3)
+  ).length
 }
 
 // ─── Individual Notification Computers ─────────────────────────
@@ -117,7 +119,7 @@ function computeGoalDeadlines(goals: NotificationGoal[], today: Date): AppNotifi
 
 function computeAllComplete(tasks: HomeTask[], dateStr: string): AppNotification | null {
   const stats = calculateTaskStats(tasks)
-  if (!stats.isAllDone || stats.total === 0) return null
+  if (!stats.isAllDone || stats.total === 0 || stats.completed === 0) return null
 
   return {
     id: `all-complete-${dateStr}`,

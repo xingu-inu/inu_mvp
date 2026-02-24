@@ -20,21 +20,50 @@ import type { Announcement } from '@/repositories/announcement.repository'
 import type { MinimalGoal } from '@/repositories/goal.repository'
 
 const DISMISSED_KEY = 'inu-dismissed-announcements'
+const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
+
+interface DismissedEntry {
+  id: string
+  at: number
+}
+
+function parseDismissedEntries(raw: string | null): DismissedEntry[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as DismissedEntry[] | string[]
+    if (parsed.length === 0) return []
+    // Migrate legacy string[] format
+    if (typeof parsed[0] === 'string') {
+      return (parsed as string[]).map((id) => ({ id, at: Date.now() }))
+    }
+    return parsed as DismissedEntry[]
+  } catch {
+    return []
+  }
+}
 
 function getDismissedIds(): string[] {
   if (typeof window === 'undefined') return []
   try {
-    const raw = localStorage.getItem(DISMISSED_KEY)
-    return raw ? (JSON.parse(raw) as string[]) : []
+    const entries = parseDismissedEntries(localStorage.getItem(DISMISSED_KEY))
+    if (entries.length === 0) return []
+    // Auto-prune entries older than 30 days
+    const now = Date.now()
+    const valid = entries.filter((e) => now - e.at < THIRTY_DAYS)
+    if (valid.length < entries.length) {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(valid))
+    }
+    return valid.map((e) => e.id)
   } catch {
     return []
   }
 }
 
 export function dismissAnnouncement(id: string) {
-  const ids = getDismissedIds()
-  if (!ids.includes(id)) {
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids, id]))
+  const entries = parseDismissedEntries(localStorage.getItem(DISMISSED_KEY))
+  if (!entries.some((e) => e.id === id)) {
+    entries.push({ id, at: Date.now() })
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(entries))
   }
 }
 

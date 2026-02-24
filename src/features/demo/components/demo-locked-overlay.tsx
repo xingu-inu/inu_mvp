@@ -1,9 +1,7 @@
 'use client'
 
-import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { useDemoMode } from '@/lib/demo/demo-context'
-import { signInAsGuest } from '@/actions/auth.actions'
 
 const TAB_MESSAGES: Record<string, { title: string; desc: string }> = {
   home: {
@@ -23,17 +21,7 @@ const TAB_MESSAGES: Record<string, { title: string; desc: string }> = {
 export function DemoLockedOverlay({ children }: { children: React.ReactNode }) {
   const { activeTab } = useDemoMode()
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const msg = TAB_MESSAGES[activeTab] ?? TAB_MESSAGES.home
-
-  const handleGuest = () => {
-    startTransition(async () => {
-      const result = await signInAsGuest()
-      if (result.success && result.data) {
-        router.push(result.data.redirectTo)
-      }
-    })
-  }
 
   return (
     <div className="relative h-full">
@@ -56,15 +44,6 @@ export function DemoLockedOverlay({ children }: { children: React.ReactNode }) {
             className="w-full rounded-xl bg-[var(--color-primary-500)] py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-600)] active:scale-[0.98]"
           >
             무료로 시작하기
-          </button>
-
-          <button
-            type="button"
-            onClick={handleGuest}
-            disabled={isPending}
-            className="mt-3 text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)] disabled:opacity-50"
-          >
-            {isPending ? '접속 중...' : '가입 없이 체험하기'}
           </button>
         </div>
       </div>
