@@ -3,7 +3,11 @@
 import { authAction } from '@/lib/security'
 import { successResponse, errorResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
-import { createGoogleEvent, updateGoogleEvent } from '@/lib/google-calendar/service'
+import {
+  createGoogleEvent,
+  updateGoogleEvent,
+  fetchGoogleEvents,
+} from '@/lib/google-calendar/service'
 import { buildGoogleEventFromTask } from '@/lib/google-calendar/event-builder'
 import type { ApiResponse } from '@/types'
 import type { GoogleCalendarConnection } from '@/types/google-calendar'
@@ -308,5 +312,123 @@ export const toggleAutoSync = authAction(
     }
 
     return successResponse({ auto_sync: enabled })
+  }
+)
+
+// --- Import Preview ---
+
+export interface ImportPreviewEvent {
+  id: string
+  summary: string
+  startTime: string | null
+  dateStr: string
+  isAllDay: boolean
+  durationMinutes: number
+  isInuEvent: boolean
+  linkedTaskId: string | null
+  linkedTaskName: string | null
+}
+
+export interface ImportPreviewResult {
+  events: ImportPreviewEvent[]
+  totalCount: number
+  inuCount: number
+  externalCount: number
+}
+
+function getImportTimeRange(
+  scope: ExportScope,
+  date?: string
+): { timeMin: string; timeMax: string } {
+  const targetDate = date || new Date().toISOString().slice(0, 10)
+
+  if (scope === 'today') {
+    return {
+      timeMin: targetDate + 'T00:00:00',
+      timeMax: targetDate + 'T23:59:59',
+    }
+  }
+
+  if (scope === 'week') {
+    const weekDates = getWeekDates(targetDate)
+    return {
+      timeMin: weekDates[0] + 'T00:00:00',
+      timeMax: weekDates[6] + 'T23:59:59',
+    }
+  }
+
+  // all: from today to 30 days ahead
+  const start = new Date(targetDate + 'T00:00:00')
+  const end = new Date(start)
+  end.setDate(end.getDate() + 30)
+  return {
+    timeMin: start.toISOString().slice(0, 10) + 'T00:00:00',
+    timeMax: end.toISOString().slice(0, 10) + 'T23:59:59',
+  }
+}
+
+function formatTimeFromDateTime(dateTime: string): string {
+  const d = new Date(dateTime)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+export const getImportPreview = authAction(
+  'getImportPreview',
+  async (
+    { supabase, user },
+    scope: ExportScope,
+    date?: string
+  ): Promise<ApiResponse<ImportPreviewResult>> => {
+    const { data: connection } = await supabase
+      .from('google_calendar_connections')
+      .select('sync_enabled')
+      .eq('user_id', user.id)
+      .single()
+
+    if (!connection?.sync_enabled) {
+      return errorResponse(ErrorCode.VALIDATION_ERROR, 'Google Calendar이 연결되지 않았습니다')
+    }
+
+    const { timeMin, timeMax } = getImportTimeRange(scope, date)
+    const rawEvents = await fetchGoogleEvents(supabase, user.id, timeMin, timeMax, {
+      includeInuEvents: true,
+    })
+
+    // Build a map of google_event_id → task for [inu] events
+    const { data: linkedTasks } = await supabase
+      .from('tasks')
+      .select('id, name, google_event_id')
+      .eq('user_id', user.id)
+      .not('google_event_id', 'is', null)
+
+    const eventIdToTask = new Map<string, { id: string; name: string }>()
+    if (linkedTasks) {
+      for (const t of linkedTasks) {
+        if (t.google_event_id) {
+          eventIdToTask.set(t.google_event_id, { id: t.id, name: t.name })
+        }
+      }
+    }
+
+    const events: ImportPreviewEvent[] = rawEvents.map((e) => {
+      const isInuEvent = e.summary.startsWith('[inu]')
+      const linked = eventIdToTask.get(e.id)
+      return {
+        id: e.id,
+        summary: e.summary,
+        startTime: e.start.dateTime ? formatTimeFromDateTime(e.start.dateTime) : null,
+        dateStr: e.dateStr,
+        isAllDay: e.isAllDay,
+        durationMinutes: e.durationMinutes,
+        isInuEvent,
+        linkedTaskId: linked?.id ?? null,
+        linkedTaskName: linked?.name ?? null,
+      }
+    })
+
+    const inuCount = events.filter((e) => e.isInuEvent).length
+    const externalCount = events.length - inuCount
+
+    return successResponse({ events, totalCount: events.length, inuCount, externalCount })
   }
 )

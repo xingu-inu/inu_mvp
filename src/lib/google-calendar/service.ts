@@ -22,7 +22,8 @@ export async function fetchGoogleEvents(
   supabase: TypedSupabaseClient,
   userId: string,
   timeMin: string,
-  timeMax: string
+  timeMax: string,
+  options?: { includeInuEvents?: boolean }
 ): Promise<GoogleCalendarEvent[]> {
   try {
     const auth = await getAuthenticatedClient(supabase, userId)
@@ -42,7 +43,10 @@ export async function fetchGoogleEvents(
 
     return items
       .filter(
-        (item) => item.id && item.status !== 'cancelled' && !item.summary?.startsWith('[inu]')
+        (item) =>
+          item.id &&
+          item.status !== 'cancelled' &&
+          (options?.includeInuEvents || !item.summary?.startsWith('[inu]'))
       )
       .map((item) => {
         const isAllDay = Boolean(item.start?.date && !item.start?.dateTime)

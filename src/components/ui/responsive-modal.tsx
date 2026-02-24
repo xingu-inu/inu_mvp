@@ -37,6 +37,8 @@ interface ResponsiveModalProps {
   description?: string
   /** Force a specific mode regardless of screen size */
   forceMode?: 'drawer' | 'dialog'
+  /** Extra classes for the dialog content (e.g. wider max-width) */
+  className?: string
 }
 
 export function ResponsiveModal({
@@ -46,6 +48,7 @@ export function ResponsiveModal({
   title,
   description,
   forceMode,
+  className,
 }: ResponsiveModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const useDialog = forceMode === 'dialog' || (forceMode !== 'drawer' && isDesktop)
@@ -58,6 +61,7 @@ export function ResponsiveModal({
           <DialogPrimitive.Content
             className={cn(
               'fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2',
+              className,
               'max-h-[85vh] overflow-hidden rounded-2xl bg-[var(--color-bg-primary)] shadow-xl',
               'data-[state=open]:animate-in data-[state=closed]:animate-out',
               'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

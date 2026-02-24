@@ -2,17 +2,15 @@
 
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, Upload } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useHomeState } from '../hooks/use-home-state'
 import { HomeVersionFilter } from './home-version-filter'
 import { HomeViewToggle } from './home-view-toggle'
 import { GoogleCalendarExportModal } from './google-calendar-export-modal'
+import { GoogleCalendarImportModal } from './google-calendar-import-modal'
 import { useHomeStore } from '@/stores/home.store'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
-import { queryKeys } from '@/lib/query/keys'
-import { toast } from 'sonner'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -53,17 +51,13 @@ export function HomeHeader() {
   const setSelectedDirectionId = useHomeStore((s) => s.setSelectedDirectionId)
   const { data: gcalConnection } = useGoogleCalendarConnection()
   const isGcalConnected = !!gcalConnection?.sync_enabled
-  const queryClient = useQueryClient()
-  const [isSyncing, setIsSyncing] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
   const [exportModalOpen, setExportModalOpen] = useState(false)
+  const [importModalOpen, setImportModalOpen] = useState(false)
 
-  const handleImport = async () => {
-    setIsSyncing(true)
+  const handleOpenImportModal = () => {
     setPopoverOpen(false)
-    await queryClient.invalidateQueries({ queryKey: queryKeys.googleCalendar.all })
-    toast.success('Google 일정을 가져왔어요')
-    setIsSyncing(false)
+    setImportModalOpen(true)
   }
 
   const handleOpenExportModal = () => {
@@ -107,19 +101,16 @@ export function HomeHeader() {
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
                 <button
-                  disabled={isSyncing}
-                  className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-50"
+                  className="flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
                   aria-label="Google Calendar"
                 >
                   <GoogleIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="hidden sm:inline">
-                    {isSyncing ? '가져오는 중...' : 'Calendar'}
-                  </span>
+                  <span className="hidden sm:inline">Calendar</span>
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-52 p-1.5">
                 <button
-                  onClick={handleImport}
+                  onClick={handleOpenImportModal}
                   className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--color-bg-secondary)]"
                 >
                   <Download className="h-4 w-4 text-[var(--color-primary-500)]" />
@@ -164,13 +155,20 @@ export function HomeHeader() {
         <HomeVersionFilter onNavigateToDate={setCurrentDate} />
       </div>
 
-      {/* Export Modal */}
+      {/* Import / Export Modals */}
       {isGcalConnected && (
-        <GoogleCalendarExportModal
-          open={exportModalOpen}
-          onOpenChange={setExportModalOpen}
-          currentDate={currentDate}
-        />
+        <>
+          <GoogleCalendarImportModal
+            open={importModalOpen}
+            onOpenChange={setImportModalOpen}
+            currentDate={currentDate}
+          />
+          <GoogleCalendarExportModal
+            open={exportModalOpen}
+            onOpenChange={setExportModalOpen}
+            currentDate={currentDate}
+          />
+        </>
       )}
     </div>
   )
