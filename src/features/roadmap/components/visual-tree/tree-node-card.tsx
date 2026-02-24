@@ -76,6 +76,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
       role="button"
       tabIndex={0}
       data-node-id={node.id}
+      data-node-card
       title={node.type === 'group' && node.why ? node.why : undefined}
       className={cn(
         'group relative flex cursor-pointer items-center gap-2 overflow-hidden rounded-xl border-2 px-4 py-2.5 shadow-sm transition-all select-none',

@@ -19,6 +19,7 @@ function clampZoom(value: number): number {
 
 export function VisualTreeWrapper() {
   const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
+  const clearSelection = useRoadmapStore((s) => s.clearSelection)
   const treeLayout = useRoadmapStore((s) => s.treeLayout)
   const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
   const statusFilter = useRoadmapStore(selectStatusFilter)
@@ -64,13 +65,17 @@ export function VisualTreeWrapper() {
         e.preventDefault()
         setIsSearchOpen(true)
       }
-      if (e.key === 'Escape' && isSearchOpen) {
-        handleSearchClose()
+      if (e.key === 'Escape') {
+        if (isSearchOpen) {
+          handleSearchClose()
+        } else {
+          clearSelection()
+        }
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isSearchOpen, handleSearchClose])
+  }, [isSearchOpen, handleSearchClose, clearSelection])
 
   const zoomIn = useCallback(() => setZoom((z) => clampZoom(z + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setZoom((z) => clampZoom(z - ZOOM_STEP)), [])
@@ -129,9 +134,22 @@ export function VisualTreeWrapper() {
     [isPanning]
   )
 
-  const handlePointerUp = useCallback(() => {
-    setIsPanning(false)
-  }, [])
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
+      setIsPanning(false)
+      // Click vs pan: less than 5px movement = click on background → clear focus
+      const dx = e.clientX - panStart.current.x
+      const dy = e.clientY - panStart.current.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      if (distance < 5) {
+        const target = e.target as HTMLElement
+        if (!target.closest('button, a, [role="button"], [data-node-card]')) {
+          clearSelection()
+        }
+      }
+    },
+    [clearSelection]
+  )
 
   if (isLoading) {
     return <VisualTreeSkeleton />

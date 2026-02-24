@@ -114,14 +114,14 @@ export const TreeNode = memo(function TreeNode({
         >
           <div
             className={cn(
-              'group/node relative',
-              isFocusDimmed && 'pointer-events-none opacity-[0.15]'
+              'group/node relative transition-opacity duration-200',
+              isFocusDimmed && 'opacity-[0.35] hover:opacity-[0.55]'
             )}
           >
             {cardElement}
 
             {/* [+] button — appears on hover, positioned at right edge */}
-            {canAdd && onStartAdd && (
+            {canAdd && onStartAdd && !isFocusDimmed && (
               <Popover.Trigger asChild>
                 <button
                   className="absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-bg-primary)] text-[var(--color-primary-500)] opacity-0 shadow-sm transition-all group-hover/node:opacity-100 hover:bg-[var(--color-primary-50)] hover:shadow-md"
