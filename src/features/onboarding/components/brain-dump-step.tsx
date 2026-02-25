@@ -1,14 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ChevronLeft, X } from 'lucide-react'
-import { Button, Chip, Input } from '@/components/ui'
+import { ChevronLeft, X } from 'lucide-react'
+import { Button, Chip } from '@/components/ui'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
-import { GOAL_CHIP_OPTIONS } from '@/lib/constants/onboarding'
+import { GOAL_CHIP_OPTIONS, GOAL_CHIP_CATEGORIES } from '@/lib/constants/onboarding'
 import { useStepKeyboard } from '../hooks/use-step-keyboard'
-import { cn } from '@/lib/utils'
 
 export function BrainDumpStep() {
   const {
@@ -17,41 +16,39 @@ export function BrainDumpStep() {
     toggleGoalChip,
     addCustomGoal,
     removeCustomGoal,
-    organizeGoals,
+    organizeAndPrepareGoals,
     nextStep,
     prevStep,
-    switchToGuidedMode,
   } = useOnboardingStore()
 
-  const [showCustomInput, setShowCustomInput] = useState(false)
-  const [customInput, setCustomInput] = useState('')
+  const [freeText, setFreeText] = useState('')
 
-  const totalCount = selectedGoalChips.length + customGoals.length
-  const canProceed = totalCount >= 3
+  // Parse textarea lines into goal count for display
+  const freeTextGoals = useMemo(
+    () =>
+      freeText
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean),
+    [freeText]
+  )
 
-  const commitCustomGoal = () => {
-    const trimmed = customInput.trim()
-    if (trimmed) {
-      addCustomGoal(trimmed)
-      setCustomInput('')
-      setShowCustomInput(false)
-    }
-  }
-
-  const handleCustomKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      commitCustomGoal()
-    } else if (e.key === 'Escape') {
-      setCustomInput('')
-      setShowCustomInput(false)
-    }
-  }
+  const totalCount = selectedGoalChips.length + customGoals.length + freeTextGoals.length
+  const canProceed = totalCount >= 1
 
   const handleNext = () => {
+    // Add free text lines as custom goals before organizing
+    for (const line of freeTextGoals) {
+      if (!customGoals.includes(line)) {
+        addCustomGoal(line)
+      }
+    }
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'brain-dump' })
-    organizeGoals()
-    nextStep()
+    // Use setTimeout to let addCustomGoal state updates settle
+    setTimeout(() => {
+      organizeAndPrepareGoals()
+      nextStep()
+    }, 0)
   }
 
   useStepKeyboard({ onNext: canProceed ? handleNext : undefined, onBack: prevStep, canProceed })
@@ -59,66 +56,70 @@ export function BrainDumpStep() {
   return (
     <div className="flex flex-1 flex-col">
       <h2 className="mb-1 text-xl font-bold text-[var(--color-text-primary)]">
-        하고 싶은 것들, 다 골라보세요!
+        하고 싶은 것들을 쏟아내 보세요!
       </h2>
       <p className="mb-5 text-sm text-[var(--color-text-secondary)]">
-        탭하면 끝! 3개 이상 선택해주세요
+        골라도 좋고, 자유롭게 적어도 좋아요
       </p>
 
-      {/* Chip grid */}
-      <div className="flex flex-wrap gap-2">
-        {GOAL_CHIP_OPTIONS.map((option, i) => (
-          <motion.span
-            key={option.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Chip
-              variant="selection"
-              selected={selectedGoalChips.includes(option.id)}
-              onClick={() => toggleGoalChip(option.id)}
-              emoji={option.emoji}
-            >
-              {option.label}
-            </Chip>
-          </motion.span>
-        ))}
+      {/* Chip grid - grouped by category */}
+      <div className="space-y-4">
+        {GOAL_CHIP_CATEGORIES.map((category) => {
+          const categoryChips = GOAL_CHIP_OPTIONS.filter(
+            (option) => option.areaType === category.areaType
+          )
+          let runningIndex = 0
+          for (const cat of GOAL_CHIP_CATEGORIES) {
+            if (cat.areaType === category.areaType) break
+            runningIndex += GOAL_CHIP_OPTIONS.filter((o) => o.areaType === cat.areaType).length
+          }
 
-        {/* Direct input chip */}
-        {!showCustomInput ? (
-          <motion.span
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: GOAL_CHIP_OPTIONS.length * 0.04 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Chip
-              variant="selection"
-              selected={false}
-              onClick={() => setShowCustomInput(true)}
-              className="border-dashed"
-            >
-              <Plus className="h-4 w-4" />
-              직접 입력
-            </Chip>
-          </motion.span>
-        ) : (
-          <Input
-            value={customInput}
-            onChange={(e) => setCustomInput(e.target.value)}
-            onKeyDown={handleCustomKeyDown}
-            onBlur={commitCustomGoal}
-            placeholder="직접 입력..."
-            className={cn(
-              'h-10 w-40 rounded-full',
-              customInput.trim()
-                ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-50)]'
-                : ''
-            )}
-            autoFocus
-          />
+          return (
+            <div key={category.areaType}>
+              <p className="mb-1.5 text-xs font-medium text-[var(--color-text-tertiary)]">
+                {category.emoji} {category.label}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {categoryChips.map((option, i) => (
+                  <motion.span
+                    key={option.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: (runningIndex + i) * 0.04 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Chip
+                      variant="selection"
+                      selected={selectedGoalChips.includes(option.id)}
+                      onClick={() => toggleGoalChip(option.id)}
+                      emoji={option.emoji}
+                    >
+                      {option.label}
+                    </Chip>
+                  </motion.span>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Free text input */}
+      <div className="mt-6">
+        <p className="mb-2 text-xs font-medium text-[var(--color-text-tertiary)]">
+          또는 자유롭게 적어보세요
+        </p>
+        <textarea
+          value={freeText}
+          onChange={(e) => setFreeText(e.target.value)}
+          placeholder={'운동 꾸준히 하고 싶다\n영어 공부 다시 시작하기\n매일 책 30분 읽기'}
+          rows={4}
+          className="w-full resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] focus:border-[var(--color-primary-500)] focus:outline-none"
+        />
+        {freeTextGoals.length > 0 && (
+          <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+            {freeTextGoals.length}개 입력됨
+          </p>
         )}
       </div>
 
@@ -158,7 +159,7 @@ export function BrainDumpStep() {
             exit={{ opacity: 0, scale: 0.9 }}
             className="mt-4 text-sm text-[var(--color-text-secondary)]"
           >
-            ✨ {totalCount}개 선택했어요!
+            {totalCount}개 선택했어요!
           </motion.p>
         )}
       </AnimatePresence>
@@ -171,14 +172,6 @@ export function BrainDumpStep() {
         <Button variant="ghost" size="sm" onClick={prevStep} className="w-full gap-1">
           <ChevronLeft className="h-4 w-4" />
           이전으로
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={switchToGuidedMode}
-          className="w-full text-[var(--color-text-tertiary)]"
-        >
-          잘 모르겠어요
         </Button>
       </div>
     </div>

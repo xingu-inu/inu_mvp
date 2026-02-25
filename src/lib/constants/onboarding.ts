@@ -1,46 +1,7 @@
 import type { AreaType } from '@/types/entities'
 
 // ============================================
-// Lifestyle Options (Step 1-1)
-// ============================================
-export interface LifestyleOption {
-  id: string
-  label: string
-  emoji: string
-}
-
-export const LIFESTYLE_OPTIONS: LifestyleOption[] = [
-  { id: 'family', label: '가족과 함께하는', emoji: '👨‍👩‍👧‍👦' },
-  { id: 'growth', label: '성장하는', emoji: '📈' },
-  { id: 'freedom', label: '자유로운', emoji: '🦅' },
-  { id: 'stability', label: '안정적인', emoji: '🏠' },
-  { id: 'challenge', label: '도전하는', emoji: '🚀' },
-  { id: 'creative', label: '창작하는', emoji: '🎨' },
-  { id: 'connected', label: '사람들과 연결된', emoji: '🤝' },
-]
-
-// ============================================
-// Value Options (Step 1-2)
-// ============================================
-export interface ValueOption {
-  id: string
-  label: string
-  emoji: string
-}
-
-export const VALUE_OPTIONS: ValueOption[] = [
-  { id: 'health', label: '건강', emoji: '💪' },
-  { id: 'love', label: '사랑', emoji: '❤️' },
-  { id: 'achievement', label: '성취', emoji: '🏆' },
-  { id: 'freedom', label: '자유', emoji: '🕊️' },
-  { id: 'stability', label: '안정', emoji: '🛡️' },
-  { id: 'growth', label: '성장', emoji: '🌱' },
-  { id: 'contribution', label: '기여', emoji: '🤲' },
-  { id: 'joy', label: '즐거움', emoji: '😊' },
-]
-
-// ============================================
-// Default Area Options (Step 3)
+// Default Area Options
 // ============================================
 export interface DefaultAreaOption {
   name: string
@@ -254,126 +215,238 @@ export interface GoalChipOption {
 }
 
 export const GOAL_CHIP_OPTIONS: GoalChipOption[] = [
-  // 건강
+  // 건강 (4개)
   { id: 'lose-weight', label: '살 빼기', emoji: '🏃', areaType: 'health' },
   { id: 'exercise-daily', label: '매일 운동', emoji: '💪', areaType: 'health' },
   { id: 'sleep-early', label: '일찍 자기', emoji: '😴', areaType: 'health' },
-  { id: 'stretching', label: '스트레칭', emoji: '🧘‍♀️', areaType: 'health' },
   { id: 'diet-manage', label: '식단 관리', emoji: '🥗', areaType: 'health' },
-  // 커리어
+  // 커리어 (4개)
   { id: 'job-change', label: '이직 준비', emoji: '💼', areaType: 'career' },
   { id: 'side-project', label: '사이드프로젝트', emoji: '🚀', areaType: 'career' },
   { id: 'certification', label: '자격증', emoji: '📜', areaType: 'career' },
-  // 학습
+  { id: 'skill-up', label: '역량 키우기', emoji: '📈', areaType: 'career' },
+  // 학습 (4개)
   { id: 'english', label: '영어 공부', emoji: '🇺🇸', areaType: 'learning' },
   { id: 'coding', label: '코딩 공부', emoji: '💻', areaType: 'learning' },
   { id: 'reading', label: '독서', emoji: '📖', areaType: 'learning' },
-  // 재정
+  { id: 'online-course', label: '온라인 강의', emoji: '🎓', areaType: 'learning' },
+  // 재정 (4개)
   { id: 'saving', label: '저축하기', emoji: '💰', areaType: 'finance' },
   { id: 'investing', label: '재테크', emoji: '📊', areaType: 'finance' },
   { id: 'side-income', label: '부업', emoji: '💵', areaType: 'finance' },
-  // 관계
+  { id: 'expense-manage', label: '지출 관리', emoji: '🧾', areaType: 'finance' },
+  // 관계 (4개)
   { id: 'family-time', label: '가족과 시간', emoji: '👨‍👩‍👧', areaType: 'relationships' },
   { id: 'networking', label: '인간관계', emoji: '🤝', areaType: 'relationships' },
-  // 마음
+  { id: 'meet-friends', label: '친구 만나기', emoji: '👋', areaType: 'relationships' },
+  { id: 'partner-time', label: '연인과 시간', emoji: '💑', areaType: 'relationships' },
+  // 마음 (4개)
   { id: 'meditation', label: '명상', emoji: '🧘', areaType: 'mental' },
   { id: 'journaling', label: '일기 쓰기', emoji: '✍️', areaType: 'mental' },
-  // 취미
+  { id: 'gratitude', label: '감사 연습', emoji: '🙏', areaType: 'mental' },
+  { id: 'digital-detox', label: '디지털 디톡스', emoji: '📵', areaType: 'mental' },
+  // 취미 (4개)
   { id: 'cooking', label: '요리 배우기', emoji: '🍳', areaType: 'hobbies' },
   { id: 'travel', label: '여행', emoji: '✈️', areaType: 'hobbies' },
-  // 일상
+  { id: 'learn-sport', label: '운동 배우기', emoji: '🏊', areaType: 'hobbies' },
+  { id: 'instrument', label: '악기 연습', emoji: '🎸', areaType: 'hobbies' },
+  // 일상 (4개)
   { id: 'morning-routine', label: '아침 루틴', emoji: '☀️', areaType: 'daily' },
+  { id: 'organize', label: '정리정돈', emoji: '🧹', areaType: 'daily' },
+  { id: 'drink-water', label: '물 마시기', emoji: '💧', areaType: 'daily' },
+  { id: 'walking', label: '산책하기', emoji: '🚶', areaType: 'daily' },
 ]
 
 // ============================================
-// Step Configuration (legacy v1 - kept for migration)
+// Custom Goal Area Classifier (keyword-based)
 // ============================================
-export const ONBOARDING_STEPS = ['values', 'direction', 'first-goal'] as const
-export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]
+const AREA_KEYWORDS: Record<Exclude<AreaType, 'custom'>, string[]> = {
+  health: [
+    '운동',
+    '살',
+    '다이어트',
+    '체중',
+    '헬스',
+    '건강',
+    '수면',
+    '잠',
+    '자기',
+    '식단',
+    '먹',
+    '영양',
+    '체력',
+    '스트레칭',
+    '필라테스',
+    '요가',
+    '근력',
+    '금연',
+    '금주',
+  ],
+  career: [
+    '이직',
+    '취업',
+    '회사',
+    '업무',
+    '커리어',
+    '승진',
+    '포트폴리오',
+    '면접',
+    '자격증',
+    '사이드프로젝트',
+    '창업',
+    '프리랜서',
+    '역량',
+    '스킬',
+  ],
+  learning: [
+    '공부',
+    '영어',
+    '코딩',
+    '프로그래밍',
+    '독서',
+    '책',
+    '강의',
+    '학습',
+    '자격',
+    '시험',
+    '외국어',
+    '일본어',
+    '중국어',
+    '수학',
+    '교육',
+  ],
+  finance: [
+    '저축',
+    '돈',
+    '재테크',
+    '투자',
+    '주식',
+    '부동산',
+    '절약',
+    '지출',
+    '가계부',
+    '부업',
+    '수입',
+    '연금',
+    '보험',
+    '자산',
+  ],
+  relationships: [
+    '가족',
+    '친구',
+    '연인',
+    '사람',
+    '관계',
+    '데이트',
+    '부모',
+    '아이',
+    '소통',
+    '대화',
+    '인간관계',
+    '모임',
+    '만남',
+  ],
+  mental: [
+    '명상',
+    '일기',
+    '마음',
+    '감사',
+    '디톡스',
+    '스트레스',
+    '멘탈',
+    '감정',
+    '심리',
+    '힐링',
+    '불안',
+    '우울',
+    '자존감',
+    '셀프케어',
+  ],
+  hobbies: [
+    '요리',
+    '여행',
+    '악기',
+    '기타',
+    '피아노',
+    '그림',
+    '사진',
+    '게임',
+    '등산',
+    '캠핑',
+    '수영',
+    '자전거',
+    '춤',
+    '노래',
+    '영화',
+    '드라마',
+    '취미',
+  ],
+  daily: [
+    '루틴',
+    '정리',
+    '청소',
+    '물',
+    '산책',
+    '아침',
+    '저녁',
+    '습관',
+    '일찍',
+    '규칙',
+    '기상',
+    '생활',
+    '세탁',
+    '요일',
+  ],
+}
 
-export const STEP_CONFIG = {
-  values: { index: 0, label: '가치' },
-  direction: { index: 1, label: '방향' },
-  'first-goal': { index: 2, label: '목표' },
-} as const
+/** Classify a custom goal text into the best-matching area type */
+export function classifyCustomGoalArea(goalText: string): AreaType {
+  const text = goalText.toLowerCase()
+  let bestArea: AreaType = 'custom'
+  let bestScore = 0
 
-// ============================================
-// Onboarding Step Configuration (v2 - 5 steps)
-// ============================================
-export const ONBOARDING_STEPS_V2 = [
-  'welcome',
-  'values',
-  'direction',
-  'areas',
-  'first-goal',
-] as const
-export type OnboardingStepV2 = (typeof ONBOARDING_STEPS_V2)[number] | 'completion'
+  for (const [area, keywords] of Object.entries(AREA_KEYWORDS)) {
+    let score = 0
+    for (const keyword of keywords) {
+      if (text.includes(keyword)) score++
+    }
+    if (score > bestScore) {
+      bestScore = score
+      bestArea = area as AreaType
+    }
+  }
+
+  return bestArea
+}
 
 // ============================================
 // Onboarding Step Configuration (v3 - brain dump flow)
 // ============================================
-export const ONBOARDING_STEPS_V3 = [
-  'welcome',
-  'brain-dump',
-  'organize',
-  'prioritize',
-  'actions',
-  'direction',
-] as const
-export type OnboardingStepV3 = (typeof ONBOARDING_STEPS_V3)[number] | 'completion'
+export const ONBOARDING_STEPS_V3 = ['welcome', 'brain-dump', 'life-organized'] as const
+export type OnboardingStepV3 = (typeof ONBOARDING_STEPS_V3)[number]
 
-/** Steps shown in the progress indicator - v3 (excludes welcome and completion) */
-export const INDICATOR_STEPS_V3 = [
-  'brain-dump',
-  'organize',
-  'prioritize',
-  'actions',
-  'direction',
-] as const
+/** Steps shown in the progress indicator (excludes welcome) */
+export const INDICATOR_STEPS_V3 = ['brain-dump', 'life-organized'] as const
 export type IndicatorStepV3 = (typeof INDICATOR_STEPS_V3)[number]
 
 export const STEP_CONFIG_V3: Record<IndicatorStepV3, { index: number; label: string }> = {
   'brain-dump': { index: 0, label: '쏟아내기' },
-  organize: { index: 1, label: '정리' },
-  prioritize: { index: 2, label: '우선순위' },
-  actions: { index: 3, label: '실천' },
-  direction: { index: 4, label: '방향' },
-}
-
-/** Steps shown in the progress indicator - v2 legacy (excludes welcome and completion) */
-export const INDICATOR_STEPS = ['values', 'direction', 'areas', 'first-goal'] as const
-export type IndicatorStep = (typeof INDICATOR_STEPS)[number]
-
-export const STEP_CONFIG_V2: Record<IndicatorStep, { index: number; label: string }> = {
-  values: { index: 0, label: '가치' },
-  direction: { index: 1, label: '방향' },
-  areas: { index: 2, label: '영역' },
-  'first-goal': { index: 3, label: '목표' },
+  'life-organized': { index: 1, label: '정리' },
 }
 
 // ============================================
-// Value → Area Mapping (smart pre-selection)
+// Goal Chip Categories (for grouped display in BrainDump)
 // ============================================
-export const VALUE_AREA_MAPPING: Record<string, AreaType[]> = {
-  health: ['health'],
-  love: ['relationships'],
-  achievement: ['career'],
-  freedom: ['hobbies'],
-  stability: ['finance'],
-  growth: ['learning', 'career'],
-  contribution: ['relationships'],
-  joy: ['hobbies'],
-}
-
-export const LIFESTYLE_AREA_MAPPING: Record<string, AreaType[]> = {
-  family: ['relationships'],
-  growth: ['career', 'learning'],
-  freedom: ['hobbies', 'finance'],
-  stability: ['finance', 'health'],
-  challenge: ['career'],
-  creative: ['hobbies'],
-  connected: ['relationships'],
-}
+export const GOAL_CHIP_CATEGORIES: Array<{ areaType: AreaType; label: string; emoji: string }> = [
+  { areaType: 'health', label: '건강', emoji: '💪' },
+  { areaType: 'career', label: '커리어', emoji: '💼' },
+  { areaType: 'learning', label: '학습', emoji: '📚' },
+  { areaType: 'finance', label: '재정', emoji: '💰' },
+  { areaType: 'relationships', label: '관계', emoji: '❤️' },
+  { areaType: 'mental', label: '마음', emoji: '🧘' },
+  { areaType: 'hobbies', label: '취미', emoji: '🎨' },
+  { areaType: 'daily', label: '일상', emoji: '☀️' },
+]
 
 // ============================================
 // Sample Tasks by Area (onboarding first task)
