@@ -121,20 +121,20 @@ export interface DiagnosisAction {
 }
 
 export interface DiagnosisSummary {
-  emoji: string
+  icon: string
   label: string
   description: string
 }
 
 export interface DiagnosisStrength {
-  emoji: string
+  icon: string
   text: string
 }
 
 export interface DiagnosisObservation {
   id: string
   title: string
-  emoji: string
+  icon: string
   description: string
   findings: Array<{
     text: string
@@ -314,7 +314,7 @@ export interface AiPriorityGoal {
 export interface AiPriorityTier {
   tier: number
   label: string
-  emoji: string
+  icon: string
   goals: AiPriorityGoal[]
 }
 
@@ -346,12 +346,51 @@ export interface AiReviewInsightRequest {
 }
 
 export interface AiReviewInsightPatternItem {
-  emoji: string
+  icon: string
   text: string
 }
 
 export interface AiReviewInsightResponse {
   type: 'review-insight'
+  patterns: AiReviewInsightPatternItem[]
+  coaching: AiReviewInsightPatternItem[]
+  encouragement: string
+}
+
+// ── Area Analysis Types (Review 영역별 AI 분석) ──
+
+export interface AiAreaAnalysisContext {
+  period: 'week' | 'month'
+  periodLabel: string
+  areaName: string
+  areaEmoji: string
+  areaWhy: string | null
+  periodCompletionRate: number
+  goals: Array<{
+    name: string
+    status: string
+    why: string | null
+    completionRate: number
+    taskCount: number
+  }>
+  tasks: Array<{
+    name: string
+    why: string | null
+    completionRate: number
+    totalDone: number
+    totalScheduled: number
+    streakCount: number
+    bestStreak: number
+  }>
+}
+
+export interface AiAreaAnalysisRequest {
+  type: 'area-analysis'
+  context: AiAreaAnalysisContext
+}
+
+export interface AiAreaAnalysisResponse {
+  type: 'area-analysis'
   patterns: AiReviewInsightPatternItem[]
   coaching: AiReviewInsightPatternItem[]
   encouragement: string
@@ -367,6 +406,7 @@ export type AiGenerateRequest =
   | AiTaskSuggestRequest
   | AiPriorityRankRequest
   | AiReviewInsightRequest
+  | AiAreaAnalysisRequest
 
 // ── Response Types ──
 
@@ -422,3 +462,4 @@ export type AiGenerateResponse =
   | AiTaskSuggestResponse
   | AiPriorityRankResponse
   | AiReviewInsightResponse
+  | AiAreaAnalysisResponse

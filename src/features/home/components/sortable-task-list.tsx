@@ -16,7 +16,7 @@ import { AreaTaskSection } from './area-task-section'
 import { CompactTaskRow } from './compact-task-row'
 import { DailySection } from './daily-section'
 import { GoalPickerPopover } from './goal-picker-popover'
-import { DragOverlayCard } from '@/components/common'
+import { DragOverlayCard, SortableAreaItem } from '@/components/common'
 import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
 import { useAreaDnd } from '../hooks/use-area-dnd'
 import { useTaskDnd } from '../hooks/use-task-dnd'
@@ -29,7 +29,7 @@ import type { AreaGroup } from '@/lib/utils/task-utils'
  *  - Task drags: exclude area droppables, keep task/container (closestCorners)
  *
  * This prevents area and task droppables from interfering with each other's
- * collision detection, which was the root cause of the original DnD bugs.
+ * collision detection.
  */
 const homeCollisionDetection: CollisionDetection = (args) => {
   const activeData = args.active.data.current as { type?: string } | undefined
@@ -78,7 +78,6 @@ export function SortableTaskList({
   const {
     activeTaskId,
     pendingCrossMove,
-    overContainerId,
     taskContainers,
     tasksById,
     onDragStart,
@@ -157,21 +156,28 @@ export function SortableTaskList({
               const tasks = taskIds.map((id) => tasksById.get(id)).filter(Boolean) as HomeTask[]
 
               return (
-                <AreaTaskSection
+                <SortableAreaItem
                   key={areaId}
-                  sortable
-                  area={group.area}
-                  goals={group.goals}
-                  tasks={tasks}
-                  stats={group.stats}
-                  isReadOnly={isReadOnly}
-                  selectedDate={selectedDate}
-                  expandedTaskId={expandedTaskId}
-                  onToggle={onToggle}
-                  enableAiSuggest={enableAiSuggest}
-                  priorityTiers={priorityTiers}
-                  isOver={overContainerId === areaId}
-                />
+                  id={`area-${areaId}`}
+                  data={{ type: 'area' as const, areaId }}
+                >
+                  {(dragHandleProps) => (
+                    <AreaTaskSection
+                      sortable
+                      area={group.area}
+                      goals={group.goals}
+                      tasks={tasks}
+                      stats={group.stats}
+                      isReadOnly={isReadOnly}
+                      selectedDate={selectedDate}
+                      expandedTaskId={expandedTaskId}
+                      onToggle={onToggle}
+                      enableAiSuggest={enableAiSuggest}
+                      priorityTiers={priorityTiers}
+                      dragHandleProps={dragHandleProps}
+                    />
+                  )}
+                </SortableAreaItem>
               )
             })}
 
@@ -185,7 +191,6 @@ export function SortableTaskList({
               onToggle={onToggle}
               enableAiSuggest={enableAiSuggest}
               priorityTiers={priorityTiers}
-              isOver={overContainerId === 'daily'}
             />
           </div>
         </SortableContext>

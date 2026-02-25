@@ -2,6 +2,7 @@
 
 import { ChevronDown, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { AiIcon } from '@/components/common/ai-icon'
 import type { DiagnosisObservation, DiagnosisAction } from '@/lib/ai/types'
 
 interface DiagnosisObservationCardProps {
@@ -49,7 +50,7 @@ export function DiagnosisObservationCard({
         onClick={onToggle}
         className="flex w-full items-center gap-2.5 px-3 py-3 transition-colors hover:bg-[var(--color-bg-secondary)]"
       >
-        <span className="text-base">{observation.emoji}</span>
+        <AiIcon name={observation.icon} className="h-5 w-5 text-[var(--color-primary-500)]" />
         <div className="min-w-0 flex-1 text-left">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">
             {observation.title}

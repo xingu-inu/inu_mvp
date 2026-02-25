@@ -5,6 +5,7 @@ import type {
   AiTaskSuggestRequest,
   AiPriorityRankRequest,
   AiReviewInsightRequest,
+  AiAreaAnalysisRequest,
   AiGenerateRequest,
 } from './types'
 import { sanitizeUserText } from './sanitize'
@@ -165,23 +166,23 @@ function buildRoadmapDiagnosisPrompt(request: AiRoadmapDiagnosisRequest): string
 
   const observationGuide: Record<string, string> = {
     full: `관찰 테마 (반드시 이 5개를 observations로 사용):
-1. id: "area-balance", title: "영역 균형", emoji: "⚖️" — 영역이 골고루 구성되어 있는지, 어떤 영역에 에너지가 집중되어 있는지
-2. id: "why-chain", title: "Why Chain", emoji: "🔗" — 각 레벨의 Why가 연결되어 있는지, 동기 부여 맥락이 잘 갖춰져 있는지
-3. id: "goal-feasibility", title: "목표 현실성", emoji: "🎯" — Active 목표 수가 적절한지, 기한 설정이 되어 있는지
-4. id: "task-design", title: "실천 설계", emoji: "📋" — Task가 구체적이고 반복 가능한지, 적절한 수인지
-5. id: "momentum", title: "실천 동력", emoji: "🔥" — 스트릭, 실제 실천 상태, 꾸준함의 흐름`,
+1. id: "area-balance", title: "영역 균형", icon: "scale" — 영역이 골고루 구성되어 있는지, 어떤 영역에 에너지가 집중되어 있는지
+2. id: "why-chain", title: "동기 연결", icon: "link-2" — 각 레벨의 Why가 연결되어 있는지, 동기 부여 맥락이 잘 갖춰져 있는지
+3. id: "goal-feasibility", title: "목표 현실성", icon: "target" — Active 목표 수가 적절한지, 기한 설정이 되어 있는지
+4. id: "task-design", title: "실천 설계", icon: "list-todo" — Task가 구체적이고 반복 가능한지, 적절한 수인지
+5. id: "momentum", title: "실천 동력", icon: "flame" — 스트릭, 실제 실천 상태, 꾸준함의 흐름`,
 
     area: `관찰 테마 (반드시 이 4개를 observations로 사용):
-1. id: "goal-composition", title: "목표 구성", emoji: "🎯" — 이 영역의 목표가 잘 구성되어 있는지, Active/Backlog 균형
-2. id: "why-completeness", title: "Why 완성도", emoji: "🔗" — 목표와 할 일의 Why가 채워져 있는지
-3. id: "task-design", title: "실천 설계", emoji: "📋" — Task가 구체적이고 반복 가능한지
-4. id: "momentum", title: "실천 동력", emoji: "🔥" — 스트릭, 실제 실천 상태`,
+1. id: "goal-composition", title: "목표 구성", icon: "target" — 이 영역의 목표가 잘 구성되어 있는지, Active/Backlog 균형
+2. id: "why-completeness", title: "Why 완성도", icon: "link-2" — 목표와 할 일의 Why가 채워져 있는지
+3. id: "task-design", title: "실천 설계", icon: "list-todo" — Task가 구체적이고 반복 가능한지
+4. id: "momentum", title: "실천 동력", icon: "flame" — 스트릭, 실제 실천 상태`,
 
     goal: `관찰 테마 (반드시 이 4개를 observations로 사용):
-1. id: "structure", title: "구조 살펴보기", emoji: "🏗️" — 그룹과 할 일이 잘 나뉘어 있는지
-2. id: "why-completeness", title: "Why 완성도", emoji: "🔗" — 목표와 할 일의 Why가 채워져 있는지
-3. id: "task-design", title: "실천 설계", emoji: "📋" — 각 Task가 잘 설계되어 있는지
-4. id: "momentum", title: "실천 동력", emoji: "🔥" — 스트릭, 실천 현황`,
+1. id: "structure", title: "구조 살펴보기", icon: "layout-list" — 그룹과 할 일이 잘 나뉘어 있는지
+2. id: "why-completeness", title: "Why 완성도", icon: "link-2" — 목표와 할 일의 Why가 채워져 있는지
+3. id: "task-design", title: "실천 설계", icon: "list-todo" — 각 Task가 잘 설계되어 있는지
+4. id: "momentum", title: "실천 동력", icon: "flame" — 스트릭, 실천 현황`,
   }
 
   const scopeLabel: Record<string, string> = {
@@ -198,13 +199,13 @@ function buildRoadmapDiagnosisPrompt(request: AiRoadmapDiagnosisRequest): string
 - 성장 마인드셋: 잘하고 있는 점을 먼저 발견하고, 개선점은 부드럽고 건설적으로 전달하세요.
 
 규칙:
-1. summary: 반드시 긍정적 관찰로 시작하세요. emoji 기준:
-   - 시작 단계이거나 데이터가 적을 때 → emoji: "🌱", label: "한 걸음씩 만들어가고 있어요"
-   - 기본 구조가 갖춰져 있을 때 → emoji: "🌿", label: "기본이 잡혀가고 있어요"
-   - 잘 구성되어 있을 때 → emoji: "🌳", label: "잘 구성되어 있어요"
-   - 훌륭할 때 → emoji: "✨", label: "훌륭하게 만들어가고 있어요"
+1. summary: 반드시 긍정적 관찰로 시작하세요. icon 기준:
+   - 시작 단계이거나 데이터가 적을 때 → icon: "sprout", label: "한 걸음씩 만들어가고 있어요"
+   - 기본 구조가 갖춰져 있을 때 → icon: "leaf", label: "기본이 잡혀가고 있어요"
+   - 잘 구성되어 있을 때 → icon: "tree-pine", label: "잘 구성되어 있어요"
+   - 훌륭할 때 → icon: "sparkles", label: "훌륭하게 만들어가고 있어요"
    description은 1-2문장으로, 긍정적 관찰로 시작하세요.
-2. strengths: 최소 2개, 최대 4개. 데이터에 기반한 구체적 칭찬만 (빈 칭찬 금지). 각 항목에 적절한 이모지를 사용하세요.
+2. strengths: 최소 2개, 최대 4개. 데이터에 기반한 구체적 칭찬만 (빈 칭찬 금지). 각 항목에 허용된 icon 값을 사용하세요.
 3. observations: 각 테마별 description 1줄 + findings 2-4개. findings 텍스트는 부드럽고 건설적으로 작성하세요.
 4. nextSteps: 1-3개, 가장 임팩트가 큰 것부터 순서대로. 구체적이고 바로 실행 가능한 제안.
 5. action의 targetId, targetName은 반드시 아래 컨텍스트에 있는 실제 엔티티 ID와 이름을 사용하세요. 임의로 만들지 마세요.
@@ -215,24 +216,26 @@ ${observationGuide[request.scope]}
 
 ${contextBlock}
 
+사용 가능한 icon 값: "bar-chart-2", "trending-up", "target", "lightbulb", "sparkles", "flame", "pin", "leaf", "sprout", "tree-pine", "award", "check-circle-2", "zap", "heart", "brain", "scale", "link-2", "list-todo", "layout-list", "activity", "eye", "shield", "star", "arrow-up-right", "calendar", "clock"
+
 JSON 형식으로 반환:
 {
   "type": "roadmap-diagnosis",
   "scope": "${request.scope}",${request.targetId ? `\n  "targetName": "대상 이름",` : ''}
   "summary": {
-    "emoji": "🌿",
+    "icon": "leaf",
     "label": "기본이 잡혀가고 있어요",
     "description": "긍정적 관찰로 시작하는 1-2문장 요약"
   },
   "strengths": [
-    { "emoji": "💪", "text": "데이터 기반 구체적 칭찬" },
-    { "emoji": "🔗", "text": "또 다른 구체적 칭찬" }
+    { "icon": "check-circle-2", "text": "데이터 기반 구체적 칭찬" },
+    { "icon": "award", "text": "또 다른 구체적 칭찬" }
   ],
   "observations": [
     {
       "id": "테마 id",
       "title": "테마 제목",
-      "emoji": "🔗",
+      "icon": "link-2",
       "description": "이 테마에 대한 1줄 요약",
       "findings": [
         {
@@ -408,7 +411,7 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
 우선순위 기준 (가중치 순):
 
 [높은 가중치]
-- 가치 정렬 (Value Alignment): Direction/Why Chain과 얼마나 강하게 연결되어 있는가. Why가 명확하고 Direction까지 이어지는 Goal → 높은 순위.
+- 가치 정렬 (Value Alignment): Direction/동기 연결과 얼마나 강하게 연결되어 있는가. Why가 명확하고 Direction까지 이어지는 Goal → 높은 순위.
 - 임팩트/노력 비율 (Impact/Effort): 적은 시간 투자로 큰 성과. 매일 짧은 습관이 장기적으로 복리 효과를 만드는 경우 높게 평가.
 
 [중간 가중치]
@@ -419,9 +422,9 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
 - 기한/긴급성 (Urgency): 기한이 다가오는 목표. 단, 긴급하다고 반드시 1순위는 아님 — 가치 정렬이 낮으면 2순위도 가능.
 
 분류 결과:
-- Tier 1 "지금 집중할 것" (🔥): 가치 정렬 높음 + 임팩트/노력 비율 높음. 또는 연쇄 효과가 큰 기반 활동.
-- Tier 2 "이번 주 중요" (📌): 가치 정렬 보통, 꾸준히 진행해야 할 것. 모멘텀 유지가 필요한 것.
-- Tier 3 "여유 있을 때" (🌿): 보조적 활동, 새로 시작한 것, 탐색 중인 것. 여유 시간에 돌아볼 것.
+- Tier 1 "지금 집중할 것" (icon: "flame"): 가치 정렬 높음 + 임팩트/노력 비율 높음. 또는 연쇄 효과가 큰 기반 활동.
+- Tier 2 "이번 주 중요" (icon: "pin"): 가치 정렬 보통, 꾸준히 진행해야 할 것. 모멘텀 유지가 필요한 것.
+- Tier 3 "여유 있을 때" (icon: "leaf"): 보조적 활동, 새로 시작한 것, 탐색 중인 것. 여유 시간에 돌아볼 것.
 
 규칙:
 1. 반드시 3개 tier로 분류하세요 (tier: 1, 2, 3).
@@ -438,6 +441,8 @@ function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
 
 ${contextBlock}
 
+사용 가능한 icon 값: "bar-chart-2", "trending-up", "target", "lightbulb", "sparkles", "flame", "pin", "leaf", "sprout", "tree-pine", "award", "check-circle-2", "zap", "heart", "brain", "scale", "link-2", "list-todo", "layout-list", "activity", "eye", "shield", "star", "arrow-up-right", "calendar", "clock"
+
 JSON 형식으로 반환:
 {
   "type": "priority-rank",
@@ -446,7 +451,7 @@ JSON 형식으로 반환:
     {
       "tier": 1,
       "label": "지금 집중할 것",
-      "emoji": "🔥",
+      "icon": "flame",
       "goals": [
         {
           "goalId": "실제 목표 UUID 또는 null",
@@ -467,13 +472,13 @@ JSON 형식으로 반환:
     {
       "tier": 2,
       "label": "이번 주 중요",
-      "emoji": "📌",
+      "icon": "pin",
       "goals": [...]
     },
     {
       "tier": 3,
       "label": "여유 있을 때",
-      "emoji": "🌿",
+      "icon": "leaf",
       "goals": [...]
     }
   ],
@@ -509,16 +514,71 @@ function buildReviewInsightPrompt(request: AiReviewInsightRequest): string {
 - 활성 스트릭: ${streakStr || '없음'}
 - 영역별 실천율: ${areaStr || '없음'}${reflectionStr}
 
+사용 가능한 icon 값: "bar-chart-2", "trending-up", "target", "lightbulb", "sparkles", "flame", "pin", "leaf", "sprout", "tree-pine", "award", "check-circle-2", "zap", "heart", "brain", "scale", "link-2", "list-todo", "layout-list", "activity", "eye", "shield", "star", "arrow-up-right", "calendar", "clock"
+
 ## 응답 형식 (JSON)
 {
   "type": "review-insight",
   "patterns": [
-    { "emoji": "📊", "text": "데이터에서 발견한 패턴 설명" }
+    { "icon": "bar-chart-2", "text": "데이터에서 발견한 패턴 설명" }
   ],
   "coaching": [
-    { "emoji": "💡", "text": "다음 기간에 시도해볼 구체적 제안" }
+    { "icon": "lightbulb", "text": "다음 기간에 시도해볼 구체적 제안" }
   ],
   "encouragement": "마무리 격려 한 문장 (성장 마인드셋)"
+}
+
+patterns는 2-3개, coaching은 1-2개로 간결하게.
+데이터가 부족하면 억지로 패턴을 만들지 말고 "아직 데이터가 쌓이는 중이에요"라고 솔직하게.`
+}
+
+function buildAreaAnalysisPrompt(request: AiAreaAnalysisRequest): string {
+  const ctx = request.context
+  const goalsStr = ctx.goals
+    .map(
+      (g) =>
+        `- ${sanitizeUserText(g.name)} (status: ${g.status}, 달성률: ${g.completionRate}%, 할일: ${g.taskCount}개${g.why ? `, why: "${sanitizeUserText(g.why)}"` : ''})`
+    )
+    .join('\n')
+
+  const tasksStr = ctx.tasks
+    .map(
+      (t) =>
+        `- ${sanitizeUserText(t.name)} (달성률: ${t.completionRate}%, 완료: ${t.totalDone}/${t.totalScheduled}, 스트릭: ${t.streakCount}일, 최고: ${t.bestStreak}일${t.why ? `, why: "${sanitizeUserText(t.why)}"` : ''})`
+    )
+    .join('\n')
+
+  return `당신은 inu 앱의 AI 어드바이저입니다. 사용자의 "${sanitizeUserText(ctx.areaName)}" 영역에 대한 ${ctx.period === 'week' ? '주간' : '월간'} 실천 데이터를 분석해주세요.
+
+## 원칙
+- "no guilt" 철학: 절대 비난하지 않음. 못한 것보다 한 것에 집중
+- 데이터에 근거한 구체적 패턴만 언급 (빈말 금지)
+- 이 영역에 특화된 구체적 제안 위주
+- 따뜻하지만 현실적인 톤
+
+## 데이터
+- 영역: ${ctx.areaEmoji} ${sanitizeUserText(ctx.areaName)}${ctx.areaWhy ? ` (Why: "${sanitizeUserText(ctx.areaWhy)}")` : ''}
+- 기간: ${ctx.periodLabel}
+- 영역 실천율: ${ctx.periodCompletionRate}%
+
+목표 목록:
+${goalsStr || '없음'}
+
+할 일 목록:
+${tasksStr || '없음'}
+
+사용 가능한 icon 값: "bar-chart-2", "trending-up", "target", "lightbulb", "sparkles", "flame", "pin", "leaf", "sprout", "tree-pine", "award", "check-circle-2", "zap", "heart", "brain", "scale", "link-2", "list-todo", "layout-list", "activity", "eye", "shield", "star", "arrow-up-right", "calendar", "clock"
+
+## 응답 형식 (JSON)
+{
+  "type": "area-analysis",
+  "patterns": [
+    { "icon": "bar-chart-2", "text": "이 영역에서 발견한 패턴 설명" }
+  ],
+  "coaching": [
+    { "icon": "lightbulb", "text": "이 영역에서 시도해볼 구체적 제안" }
+  ],
+  "encouragement": "이 영역에 대한 마무리 격려 한 문장 (성장 마인드셋)"
 }
 
 patterns는 2-3개, coaching은 1-2개로 간결하게.
@@ -544,6 +604,10 @@ export function buildPrompt(request: AiGenerateRequest): string {
 
   if (request.type === 'review-insight') {
     return buildReviewInsightPrompt(request)
+  }
+
+  if (request.type === 'area-analysis') {
+    return buildAreaAnalysisPrompt(request)
   }
 
   const contextBlock = buildContextBlock(request.context)

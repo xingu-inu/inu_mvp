@@ -10,6 +10,7 @@ import { InlineGoalCreate } from './inline-forms/inline-goal-create'
 import { useAreas } from '@/queries/use-areas'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import { useAiChatStore } from '@/stores/ai-chat.store'
+import { useDemoMode } from '@/lib/demo/demo-context'
 import type { AreaType } from '@/types/entities'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -17,11 +18,29 @@ import type { AreaType } from '@/types/entities'
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const MENU_ITEMS = [
-  { id: 'area', label: '영역 추가', icon: FolderPlus, color: 'var(--color-primary-500)' },
-  { id: 'goal', label: '목표 추가', icon: Target, color: 'var(--color-primary-500)' },
-  { id: 'braindump', label: '쏟아내기', icon: Sparkles, color: 'var(--color-ai)' },
-  { id: 'diagnosis', label: '진단', icon: Stethoscope, color: 'var(--color-ai)' },
-  { id: 'ai-chat', label: '이누와 대화', icon: BotMessageSquare, color: 'var(--color-ai)' },
+  {
+    id: 'area',
+    label: '영역 추가',
+    icon: FolderPlus,
+    color: 'var(--color-primary-500)',
+    group: 'create',
+  },
+  {
+    id: 'goal',
+    label: '목표 추가',
+    icon: Target,
+    color: 'var(--color-primary-500)',
+    group: 'create',
+  },
+  { id: 'braindump', label: '쏟아내기', icon: Sparkles, color: 'var(--color-ai)', group: 'ai' },
+  { id: 'diagnosis', label: '진단', icon: Stethoscope, color: 'var(--color-ai)', group: 'ai' },
+  {
+    id: 'ai-chat',
+    label: '이누와 대화',
+    icon: BotMessageSquare,
+    color: 'var(--color-ai)',
+    group: 'ai',
+  },
 ] as const
 
 type MenuId = (typeof MENU_ITEMS)[number]['id']
@@ -31,6 +50,7 @@ type MenuId = (typeof MENU_ITEMS)[number]['id']
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function MobileRoadmapFab() {
+  const { isDemoMode } = useDemoMode()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAreaDrawerOpen, setIsAreaDrawerOpen] = useState(false)
   const [isGoalDrawerOpen, setIsGoalDrawerOpen] = useState(false)
@@ -78,6 +98,8 @@ export function MobileRoadmapFab() {
     setGoalDrawerAreaId(null)
   }, [])
 
+  if (isDemoMode) return null
+
   return (
     <>
       {/* Backdrop */}
@@ -99,25 +121,39 @@ export function MobileRoadmapFab() {
         {/* Menu Items */}
         <AnimatePresence>
           {isMenuOpen &&
-            MENU_ITEMS.map((item, index) => (
-              <motion.button
-                key={item.id}
-                initial={{ opacity: 0, y: 20, scale: 0.8 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.8 }}
-                transition={{
-                  duration: 0.2,
-                  delay: (MENU_ITEMS.length - 1 - index) * 0.04,
-                }}
-                onClick={() => handleMenuSelect(item.id)}
-                className="flex items-center gap-2.5 rounded-full bg-[var(--color-bg-primary)] px-4 py-3 shadow-lg active:scale-95"
-              >
-                <item.icon className="h-5 w-5" style={{ color: item.color }} />
-                <span className="text-sm font-medium text-[var(--color-text-primary)]">
-                  {item.label}
-                </span>
-              </motion.button>
-            ))}
+            MENU_ITEMS.map((item, index) => {
+              const prevItem = index > 0 ? MENU_ITEMS[index - 1] : null
+              const isNewGroup = prevItem && prevItem.group !== item.group
+
+              return (
+                <motion.div key={item.id} className="flex flex-col items-end gap-1.5">
+                  {isNewGroup && (
+                    <div className="flex items-center gap-2 self-end pr-1">
+                      <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+                        AI
+                      </span>
+                      <div className="h-px w-12 bg-[var(--color-border)]" />
+                    </div>
+                  )}
+                  <motion.button
+                    initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                    transition={{
+                      duration: 0.2,
+                      delay: (MENU_ITEMS.length - 1 - index) * 0.04,
+                    }}
+                    onClick={() => handleMenuSelect(item.id)}
+                    className="flex items-center gap-2.5 rounded-full bg-[var(--color-bg-primary)] px-4 py-3 shadow-lg active:scale-95"
+                  >
+                    <item.icon className="h-5 w-5" style={{ color: item.color }} />
+                    <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                      {item.label}
+                    </span>
+                  </motion.button>
+                </motion.div>
+              )
+            })}
         </AnimatePresence>
 
         {/* FAB Button */}

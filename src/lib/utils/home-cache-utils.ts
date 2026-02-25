@@ -1,20 +1,37 @@
-import type { QueryClient } from '@tanstack/react-query'
+import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
 import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
 
-/** Snapshot both daily and weekly caches for rollback */
+/** Snapshot entries for rollback — flat array of [queryKey, data] pairs */
+export type HomeCacheSnapshot = Array<[QueryKey, unknown]>
+
+/**
+ * Snapshot all daily and weekly home caches for rollback.
+ * Uses prefix matching to capture ALL direction variants
+ * (e.g. both ['tasks','home','2026-02-25',undefined] and ['tasks','home','2026-02-25','dir-id']).
+ */
 export function snapshotHomeCaches(
   qc: QueryClient,
   dateStr: string,
   weekStartStr: string
-): { daily: unknown; weekly: unknown } {
-  return {
-    daily: qc.getQueryData(queryKeys.tasks.home(dateStr)),
-    weekly: qc.getQueryData(queryKeys.tasks.homeWeek(weekStartStr)),
+): HomeCacheSnapshot {
+  return [
+    ...qc.getQueriesData({ queryKey: [...queryKeys.tasks.all, 'home', dateStr] }),
+    ...qc.getQueriesData({ queryKey: [...queryKeys.tasks.all, 'home', 'week', weekStartStr] }),
+  ]
+}
+
+/** Restore home caches from snapshot */
+export function restoreHomeCaches(qc: QueryClient, snapshot: HomeCacheSnapshot): void {
+  for (const [key, data] of snapshot) {
+    qc.setQueryData(key, data)
   }
 }
 
-/** Patch a single task in both daily and weekly caches (camelCase fields) */
+/**
+ * Patch a single task in all daily and weekly home caches (camelCase fields).
+ * Uses prefix matching to hit ALL direction variants at once.
+ */
 export function patchTaskInHomeCaches(
   qc: QueryClient,
   dateStr: string,
@@ -22,28 +39,33 @@ export function patchTaskInHomeCaches(
   taskId: string,
   patch: Partial<ActionHomeTask>
 ): void {
-  // 1. Daily cache
-  const dateKey = queryKeys.tasks.home(dateStr)
-  qc.setQueryData<ActionHomeTask[]>(dateKey, (prev) =>
-    prev?.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+  // 1. Daily caches — all direction variants
+  qc.setQueriesData<ActionHomeTask[]>(
+    { queryKey: [...queryKeys.tasks.all, 'home', dateStr] },
+    (prev) => prev?.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
   )
 
-  // 2. Weekly cache
-  const weekKey = queryKeys.tasks.homeWeek(weekStartStr)
-  qc.setQueryData<Record<string, ActionHomeTask[]>>(weekKey, (prev) => {
-    if (!prev) return prev
-    const next = { ...prev }
-    for (const [d, tasks] of Object.entries(next)) {
-      if (tasks.some((t) => t.id === taskId)) {
-        next[d] = tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
-        break // task appears in only one date
+  // 2. Weekly caches — all direction variants
+  qc.setQueriesData<Record<string, ActionHomeTask[]>>(
+    { queryKey: [...queryKeys.tasks.all, 'home', 'week', weekStartStr] },
+    (prev) => {
+      if (!prev) return prev
+      const next = { ...prev }
+      for (const [d, tasks] of Object.entries(next)) {
+        if (tasks.some((t) => t.id === taskId)) {
+          next[d] = tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t))
+          break // task appears in only one date
+        }
       }
+      return next
     }
-    return next
-  })
+  )
 }
 
-/** Patch area sort order across both daily and weekly caches */
+/**
+ * Patch area sort order across all daily and weekly home caches.
+ * Uses prefix matching to hit ALL direction variants at once.
+ */
 export function patchAreaInHomeCaches(
   qc: QueryClient,
   dateStr: string,
@@ -51,17 +73,25 @@ export function patchAreaInHomeCaches(
   areaId: string,
   newSortOrder: string
 ): void {
-  const patchFn = (t: ActionHomeTask): ActionHomeTask =>
-    t.goal?.area?.id === areaId
-      ? { ...t, goal: { ...t.goal!, area: { ...t.goal!.area, sortOrder: newSortOrder } } }
-      : t
+  const patchFn = (t: ActionHomeTask): ActionHomeTask => {
+    if (t.goal?.area?.id === areaId) {
+      return { ...t, goal: { ...t.goal!, area: { ...t.goal!.area, sortOrder: newSortOrder } } }
+    }
+    if (t.directArea?.id === areaId) {
+      return { ...t, directArea: { ...t.directArea, sortOrder: newSortOrder } }
+    }
+    return t
+  }
 
-  // Daily cache
-  qc.setQueryData<ActionHomeTask[]>(queryKeys.tasks.home(dateStr), (prev) => prev?.map(patchFn))
+  // Daily caches — all direction variants
+  qc.setQueriesData<ActionHomeTask[]>(
+    { queryKey: [...queryKeys.tasks.all, 'home', dateStr] },
+    (prev) => prev?.map(patchFn)
+  )
 
-  // Weekly cache — area sort order affects all days
-  qc.setQueryData<Record<string, ActionHomeTask[]>>(
-    queryKeys.tasks.homeWeek(weekStartStr),
+  // Weekly caches — all direction variants
+  qc.setQueriesData<Record<string, ActionHomeTask[]>>(
+    { queryKey: [...queryKeys.tasks.all, 'home', 'week', weekStartStr] },
     (prev) => {
       if (!prev) return prev
       const next: Record<string, ActionHomeTask[]> = {}

@@ -66,7 +66,7 @@ export function AreaList({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         영역별 현황
       </span>
       <div className="divide-y divide-[var(--color-border)] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)]">
@@ -81,12 +81,13 @@ export function AreaList({
           const isSelected = area.areaId === selectedAreaId
 
           return (
-            <button
+            <motion.button
               key={area.areaId}
               type="button"
               onClick={() => onSelectArea(area.areaId)}
+              whileTap={{ scale: 0.98 }}
               className={cn(
-                'flex w-full flex-col gap-1 px-4 py-3 text-left transition-colors first:rounded-t-xl last:rounded-b-xl',
+                'flex w-full flex-col gap-1 px-4 py-3.5 text-left transition-colors first:rounded-t-xl last:rounded-b-xl',
                 isSelected
                   ? 'bg-[var(--color-primary-50)] dark:bg-[var(--color-primary-950)]'
                   : 'hover:bg-[var(--color-bg-secondary)]'
@@ -95,7 +96,7 @@ export function AreaList({
               {/* Row 1: emoji + name + progress bar + trend + percentage */}
               <div className="flex items-center gap-2.5">
                 <span className="shrink-0 text-base">{area.areaEmoji}</span>
-                <span className="max-w-[100px] min-w-[60px] truncate text-sm font-medium text-[var(--color-text-primary)]">
+                <span className="max-w-[140px] min-w-[60px] truncate text-sm font-medium text-[var(--color-text-primary)]">
                   {area.areaName}
                 </span>
                 <div className="h-2 flex-1 rounded-full bg-[var(--color-bg-tertiary)]">
@@ -111,9 +112,9 @@ export function AreaList({
               </div>
               {/* Row 2: goal status summary */}
               <div className="pl-8">
-                <span className="text-xs text-[var(--color-text-tertiary)]">{statusSummary}</span>
+                <span className="text-sm text-[var(--color-text-tertiary)]">{statusSummary}</span>
               </div>
-            </button>
+            </motion.button>
           )
         })}
 
@@ -121,7 +122,7 @@ export function AreaList({
           <button
             type="button"
             onClick={() => setShowAll((prev) => !prev)}
-            className="flex w-full items-center justify-center gap-1 py-2.5 text-xs text-[var(--color-text-tertiary)] transition-colors last:rounded-b-xl hover:bg-[var(--color-bg-secondary)]"
+            className="flex w-full items-center justify-center gap-1 py-3 text-xs text-[var(--color-text-tertiary)] transition-colors last:rounded-b-xl hover:bg-[var(--color-bg-secondary)]"
           >
             <ChevronDown
               className={cn('h-3.5 w-3.5 transition-transform', showAll && 'rotate-180')}

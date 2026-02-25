@@ -10,7 +10,7 @@ const TAB_MESSAGES: Record<string, { title: string; desc: string }> = {
   },
   roadmap: {
     title: '나만의 로드맵을 만드세요',
-    desc: '방향 → 목표 → 실천, Why Chain으로 연결',
+    desc: '방향 → 목표 → 실천이 이유로 연결',
   },
   review: {
     title: '성장 기록을 확인하세요',

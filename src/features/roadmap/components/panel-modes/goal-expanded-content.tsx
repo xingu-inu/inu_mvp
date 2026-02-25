@@ -44,7 +44,7 @@ import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
 import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
 import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
 import { TaskRow } from './task-row'
-import { SortableGroupItem } from './sortable-wrappers'
+import { SortableGroupItem } from '@/components/common'
 import { TaskList, FlatTaskListWithDnd } from './goal-task-list'
 import type { Goal, Task, Group } from '@/types/entities'
 
@@ -536,7 +536,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                 <>
                                   {/* Group Header — entire row is drag handle */}
                                   <div
-                                    ref={dragHandleProps.ref}
+                                    ref={dragHandleProps.setActivatorRef}
                                     {...dragHandleProps.attributes}
                                     {...dragHandleProps.listeners}
                                     className="group/grp flex cursor-grab items-center rounded-md bg-[var(--color-bg-tertiary)] transition-colors hover:bg-[var(--color-bg-canvas)] active:cursor-grabbing"

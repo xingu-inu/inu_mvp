@@ -95,6 +95,11 @@ interface RoadmapState {
   deleteTargetDirectionId: string | null
   setDeleteTargetDirectionId: (id: string | null) => void
 
+  // Mobile goal detail drawer
+  mobileDrawerGoalId: string | null
+  openMobileDrawer: (goalId: string) => void
+  closeMobileDrawer: () => void
+
   // Reset
   reset: () => void
 }
@@ -116,6 +121,7 @@ const initialState = {
   isNewVersionWizardOpen: false,
   restoreSourceDirectionId: null as string | null,
   deleteTargetDirectionId: null as string | null,
+  mobileDrawerGoalId: null as string | null,
 }
 
 export const useRoadmapStore = create<RoadmapState>()(
@@ -225,6 +231,9 @@ export const useRoadmapStore = create<RoadmapState>()(
       setRestoreSourceDirectionId: (id) => set({ restoreSourceDirectionId: id }),
       setDeleteTargetDirectionId: (id) => set({ deleteTargetDirectionId: id }),
 
+      openMobileDrawer: (goalId) => set({ mobileDrawerGoalId: goalId }),
+      closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
+
       reset: () => set(initialState),
     }),
     {
@@ -255,3 +264,4 @@ export const selectSelectedNodeId = (s: RoadmapState): string | null =>
 export const selectPanelMode = (s: RoadmapState) => s.panelMode
 export const selectInlineMode = (s: RoadmapState) => s.inlineMode
 export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
+export const selectMobileDrawerGoalId = (s: RoadmapState) => s.mobileDrawerGoalId

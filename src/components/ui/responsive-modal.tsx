@@ -5,6 +5,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Drawer } from 'vaul'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useIsInsideDrawer } from '@/features/roadmap/contexts/goal-drawer-context'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Hook: useMediaQuery
@@ -51,7 +52,9 @@ export function ResponsiveModal({
   className,
 }: ResponsiveModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)')
-  const useDialog = forceMode === 'dialog' || (forceMode !== 'drawer' && isDesktop)
+  const isInsideDrawer = useIsInsideDrawer()
+  const useDialog =
+    forceMode === 'dialog' || isInsideDrawer || (forceMode !== 'drawer' && isDesktop)
 
   if (useDialog) {
     return (

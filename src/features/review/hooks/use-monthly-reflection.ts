@@ -82,7 +82,7 @@ export function useSaveMonthlyReflection(monthStart?: string) {
     ),
 
     onSuccess: () => {
-      toast.success('한마디가 저장되었습니다')
+      toast.success('월간 회고가 저장되었습니다')
     },
 
     onSettled: buildReflectionOnSettled(queryClient, queryKey),

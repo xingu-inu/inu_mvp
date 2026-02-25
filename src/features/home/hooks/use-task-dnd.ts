@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format, startOfWeek } from 'date-fns'
@@ -9,7 +9,11 @@ import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core'
 import { safeNewOrderBetween } from '@/lib/fractional-index'
 import { moveNode, type MoveNodeInput } from '@/actions/tree.actions'
 import { queryKeys } from '@/lib/query/keys'
-import { snapshotHomeCaches, patchTaskInHomeCaches } from '@/lib/utils/home-cache-utils'
+import {
+  snapshotHomeCaches,
+  restoreHomeCaches,
+  patchTaskInHomeCaches,
+} from '@/lib/utils/home-cache-utils'
 import type { HomeTask } from '@/types/entities'
 import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
 import type { AreaGroup } from '@/lib/utils/task-utils'
@@ -29,10 +33,59 @@ interface DndMutationVars {
   optimistic?: { type: 'task'; taskId: string; patch: Partial<ActionHomeTask> }
 }
 
+// ─── Sort Order Calculation ────────────────────────────────────────────────────
+
 /**
- * Hook for task DnD — used in the INNER DndContext (closestCorners).
- * Handles same-area reorder, cross-area moves, and daily↔area moves.
- * Area reorder is handled separately by useAreaDnd in the outer DndContext.
+ * Calculate the correct sort_order for a task within a container,
+ * using the container's CURRENT visual order (ID list).
+ *
+ * Key fix: uses the reordered container ID list to determine neighbors,
+ * then looks up their sort_order from tasksById. This ensures we always
+ * calculate relative to the correct visual position, not stale DB order.
+ */
+function getContainerSortOrder(
+  containerTaskIds: string[],
+  taskId: string,
+  tasksById: Map<string, HomeTask>
+): string {
+  // Get neighbor IDs excluding the moved task itself
+  const neighborIds = containerTaskIds.filter((id) => id !== taskId)
+
+  if (neighborIds.length === 0) return safeNewOrderBetween(null, null)
+
+  const taskIndex = containerTaskIds.indexOf(taskId)
+  // Adjust index for the excluded task
+  const excludeIdx = containerTaskIds.indexOf(taskId)
+  const adjustedIndex = excludeIdx < taskIndex ? taskIndex - 1 : taskIndex
+
+  if (adjustedIndex <= 0) {
+    const first = tasksById.get(neighborIds[0])
+    return safeNewOrderBetween(null, first?.sort_order ?? null)
+  }
+
+  if (adjustedIndex >= neighborIds.length) {
+    const last = tasksById.get(neighborIds[neighborIds.length - 1])
+    return safeNewOrderBetween(last?.sort_order ?? null, null)
+  }
+
+  const before = tasksById.get(neighborIds[adjustedIndex - 1])
+  const after = tasksById.get(neighborIds[adjustedIndex])
+  return safeNewOrderBetween(before?.sort_order ?? null, after?.sort_order ?? null)
+}
+
+// ─── Hook ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Home task DnD hook — handles same-area reorder, cross-area moves,
+ * and daily<->area moves.
+ *
+ * State pattern:
+ * - serverContainers (useMemo): always up-to-date from props
+ * - localContainers (useState): override during drag, null otherwise
+ * - taskContainers (computed): local override when frozen, else server
+ *
+ * The "frozen" gate (activeTaskId || pendingCrossMove || mutation.isPending)
+ * ensures containers don't re-derive from props mid-drag.
  */
 export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], selectedDate: Date) {
   const queryClient = useQueryClient()
@@ -42,7 +95,7 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
   // ── Drag state ──
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const [pendingCrossMove, setPendingCrossMove] = useState<PendingCrossMove | null>(null)
-  const [overContainerId, setOverContainerId] = useState<string | null>(null)
+  const dragSourceContainer = useRef<string | null>(null)
 
   // ── tasksById lookup map ──
   const tasksById = useMemo(() => {
@@ -58,8 +111,8 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     return map
   }, [areaGroups, dailyTasks])
 
-  // ── Base containers from props (ID-only, roadmap pattern) ──
-  const baseContainers = useMemo(() => {
+  // ── Server-derived containers (stable via useMemo) ──
+  const serverContainers = useMemo(() => {
     const containers: Record<string, string[]> = {}
     for (const group of areaGroups) {
       containers[group.area.id] = group.tasks.map((t) => t.id)
@@ -68,22 +121,8 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     return containers
   }, [areaGroups, dailyTasks])
 
-  // ── Drag overlay state (set during drag, null otherwise) ──
-  const [dragContainers, setDragContainers] = useState<Record<string, string[]> | null>(null)
-
-  // Active state = drag overlay ?? base
-  const taskContainers = dragContainers ?? baseContainers
-
-  // Source container ref — tracks where a task originated at drag start
-  const dragSourceContainer = useRef<string | null>(null)
-
-  // Auto-clear drag overlay once base containers catch up from cache update.
-  useEffect(() => {
-    if (!activeTaskId && !pendingCrossMove && dragContainers) {
-      setDragContainers(null)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseContainers])
+  // Local override during drag — null means "use server containers"
+  const [localContainers, setLocalContainers] = useState<Record<string, string[]> | null>(null)
 
   // ── Server mutation ──
   const mutation = useMutation({
@@ -109,42 +148,30 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     },
     onError: (_err, _vars, context) => {
       if (context) {
-        queryClient.setQueryData(queryKeys.tasks.home(dateStr), context.daily)
-        queryClient.setQueryData(queryKeys.tasks.homeWeek(weekStartStr), context.weekly)
+        restoreHomeCaches(queryClient, context)
       }
       toast.error('이동에 실패했어요. 다시 시도해주세요.')
     },
     onSettled: () => {
+      // Clear local override so next render uses fresh server data
+      setLocalContainers(null)
       queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
     },
   })
 
+  // Effective containers: local override when frozen, else server
+  const isFrozen = !!activeTaskId || !!pendingCrossMove || mutation.isPending
+  const taskContainers = isFrozen && localContainers ? localContainers : serverContainers
+
   // ── Find which container holds a given ID ──
   const findContainer = useCallback(
-    (id: string | number): string | undefined => {
-      const sid = String(id)
-      if (sid in taskContainers) return sid
-      return Object.keys(taskContainers).find((key) => taskContainers[key].includes(sid))
+    (id: string): string | undefined => {
+      if (id in taskContainers) return id
+      return Object.keys(taskContainers).find((key) => taskContainers[key].includes(id))
     },
     [taskContainers]
-  )
-
-  // ── Calculate new sort_order based on position in target container ──
-  const calculateNewOrder = useCallback(
-    (containerId: string, targetIndex: number, excludeTaskId?: string): string => {
-      const ids = (taskContainers[containerId] ?? []).filter((id) => id !== excludeTaskId)
-      const tasks = ids.map((id) => tasksById.get(id)).filter(Boolean) as HomeTask[]
-
-      if (tasks.length === 0) return safeNewOrderBetween(null, null)
-      if (targetIndex <= 0) return safeNewOrderBetween(null, tasks[0].sort_order)
-      if (targetIndex >= tasks.length)
-        return safeNewOrderBetween(tasks[tasks.length - 1].sort_order, null)
-
-      return safeNewOrderBetween(tasks[targetIndex - 1].sort_order, tasks[targetIndex].sort_order)
-    },
-    [taskContainers, tasksById]
   )
 
   // ═══════════════════════════════════════
@@ -155,52 +182,60 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
     (event: DragStartEvent) => {
       const id = String(event.active.id)
       setActiveTaskId(id)
+      // Snapshot current server state into local override
+      setLocalContainers({ ...serverContainers })
       dragSourceContainer.current = findContainer(id) ?? null
-      setDragContainers({ ...baseContainers })
     },
-    [findContainer, baseContainers]
+    [findContainer, serverContainers]
   )
 
   const onDragOver = useCallback(
     (event: DragOverEvent) => {
       const { active, over } = event
-      if (!over || !dragContainers) return
+      if (!over) return
 
       const activeId = String(active.id)
       const overId = String(over.id)
 
-      const activeContainer = findContainer(activeId)
-      if (!activeContainer) return
-
-      // Determine target container from over data
+      // Get containerId hint from event data (avoids stale closure)
       const overData = over.data.current as { type?: string; containerId?: string } | undefined
-      let overContainer: string | undefined
+      const overContainerHint = overData?.containerId
 
-      if (overData?.type === 'container') {
-        // Droppable container (useDroppable on area task list or daily section)
-        overContainer = overData.containerId
-      } else if (overData?.type === 'task') {
-        // Task sortable — find its container
-        overContainer = overData.containerId ?? findContainer(overId)
-      } else {
-        // Fallback: check if overId itself is a known container
-        overContainer = findContainer(overId)
-      }
+      // Read source container ref (stable, no stale closure)
+      const sourceRef = dragSourceContainer.current
 
-      if (!overContainer || activeContainer === overContainer) {
-        // No container change — clear hover indicator
-        if (overContainer && activeContainer === overContainer) {
-          setOverContainerId(null)
-        }
-        return
-      }
-
-      // Set hover indicator for target container
-      setOverContainerId(overContainer)
-
-      // Cross-container preview: move task ID between containers
-      setDragContainers((prev) => {
+      // Functional updater — stale-closure safe
+      setLocalContainers((prev) => {
         if (!prev) return prev
+
+        const findInPrev = (id: string): string | undefined => {
+          if (id in prev) return id
+          return Object.keys(prev).find((key) => prev[key].includes(id))
+        }
+
+        const activeContainer = findInPrev(activeId)
+        if (!activeContainer) return prev
+
+        const overContainer = overContainerHint ?? findInPrev(overId)
+        if (!overContainer) return prev
+
+        if (activeContainer === overContainer) {
+          // Same container: reposition only for cross-moved items.
+          // Native same-container drags use dnd-kit CSS transforms,
+          // so we must NOT touch state for those — onDragEnd uses over.id.
+          if (sourceRef != null && sourceRef !== activeContainer) {
+            const items = [...(prev[activeContainer] ?? [])]
+            const activeIdx = items.indexOf(activeId)
+            const overIdx = items.indexOf(overId)
+            if (activeIdx === -1 || overIdx === -1 || activeIdx === overIdx) return prev
+            items.splice(activeIdx, 1)
+            items.splice(overIdx, 0, activeId)
+            return { ...prev, [activeContainer]: items }
+          }
+          return prev
+        }
+
+        // Cross-container: splice between containers
         const sourceItems = [...(prev[activeContainer] ?? [])]
         const destItems = [...(prev[overContainer] ?? [])]
         const activeIndex = sourceItems.indexOf(activeId)
@@ -218,28 +253,27 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
         }
       })
     },
-    [dragContainers, findContainer]
+    [] // No closure dependencies — all state via functional updater, event data, or ref
   )
 
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event
       setActiveTaskId(null)
-      setOverContainerId(null)
 
-      if (!over || !dragContainers) {
+      if (!over) {
         dragSourceContainer.current = null
-        setDragContainers(null)
+        setLocalContainers(null)
         return
       }
 
       const taskId = String(active.id)
-      const currentContainer = findContainer(taskId)
       const sourceContainer = dragSourceContainer.current
       dragSourceContainer.current = null
 
+      const currentContainer = findContainer(taskId)
       if (!currentContainer) {
-        setDragContainers(null)
+        setLocalContainers(null)
         return
       }
 
@@ -253,27 +287,22 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
         const oldIndex = containerIds.indexOf(taskId)
         let overIndex = containerIds.indexOf(overId)
 
-        // Dropped on the container itself (not a task) → treat as "drop at end"
-        if (overIndex === -1 && overId in taskContainers) {
+        // Dropped on the container itself (not a specific task) → treat as "drop at end"
+        if (overIndex === -1 && (overId in taskContainers || overId === currentContainer)) {
           overIndex = containerIds.length - 1
         }
 
+        // If over target not resolved or no actual move, no-op
         if (overIndex === -1 || oldIndex === -1 || oldIndex === overIndex) {
-          setDragContainers(null)
+          setLocalContainers(null)
           return
         }
 
         const reordered = arrayMove(containerIds, oldIndex, overIndex)
-        setDragContainers((prev) => (prev ? { ...prev, [currentContainer]: reordered } : prev))
+        setLocalContainers((prev) => (prev ? { ...prev, [currentContainer]: reordered } : prev))
 
-        const targetIdx = reordered.indexOf(taskId)
-        const prevTask = targetIdx > 0 ? tasksById.get(reordered[targetIdx - 1]) : null
-        const nextTask =
-          targetIdx < reordered.length - 1 ? tasksById.get(reordered[targetIdx + 1]) : null
-        const newOrder = safeNewOrderBetween(
-          prevTask?.sort_order ?? null,
-          nextTask?.sort_order ?? null
-        )
+        // Calculate sort_order from the REORDERED list
+        const newOrder = getContainerSortOrder(reordered, taskId, tasksById)
 
         mutation.mutate({
           input: { nodeId: taskId, nodeType: 'task', newOrder },
@@ -284,8 +313,7 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
 
       // ─── Cross-container move ───
       const containerIds = taskContainers[currentContainer] ?? []
-      const taskIndex = containerIds.indexOf(taskId)
-      const newOrder = calculateNewOrder(currentContainer, taskIndex, taskId)
+      const newOrder = getContainerSortOrder(containerIds, taskId, tasksById)
 
       if (currentContainer === DAILY_CONTAINER) {
         // Moving to daily → goalId = null
@@ -309,6 +337,12 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
       // Moving to an area — need to determine goal
       const targetAreaGroup = areaGroups.find((g) => g.area.id === currentContainer)
       const goals = targetAreaGroup?.goals ?? []
+
+      if (goals.length === 0) {
+        setLocalContainers(null)
+        toast.info('이 영역에 활성 목표가 없어요. 로드맵에서 목표를 먼저 만들어주세요.')
+        return
+      }
 
       if (goals.length === 1) {
         const targetGoal = goals[0]
@@ -344,37 +378,21 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
         return
       }
 
-      if (goals.length > 1) {
-        // Multiple goals — show picker, keep drag containers frozen for preview
-        setPendingCrossMove({
-          taskId,
-          targetContainerId: currentContainer,
-          targetGoals: goals,
-          newOrder,
-        })
-        return
-      }
-
-      // No active goals in this area
-      toast.info('이 영역에 활성 목표가 없어요. 로드맵에서 목표를 먼저 만들어주세요.')
-      setDragContainers(null)
+      // Multiple goals — show picker, containers stay frozen via pendingCrossMove
+      setPendingCrossMove({
+        taskId,
+        targetContainerId: currentContainer,
+        targetGoals: goals,
+        newOrder,
+      })
     },
-    [
-      dragContainers,
-      taskContainers,
-      areaGroups,
-      tasksById,
-      findContainer,
-      calculateNewOrder,
-      mutation,
-    ]
+    [taskContainers, areaGroups, tasksById, findContainer, mutation]
   )
 
   const onDragCancel = useCallback(() => {
     setActiveTaskId(null)
-    setOverContainerId(null)
     dragSourceContainer.current = null
-    setDragContainers(null)
+    setLocalContainers(null)
   }, [])
 
   // ─── Goal selection handlers (for cross-area popup) ───
@@ -428,14 +446,13 @@ export function useTaskDnd(areaGroups: AreaGroup[], dailyTasks: HomeTask[], sele
 
   const cancelCrossMove = useCallback(() => {
     setPendingCrossMove(null)
-    setDragContainers(null)
+    setLocalContainers(null)
   }, [])
 
   return {
     // Drag state
     activeTaskId,
     pendingCrossMove,
-    overContainerId,
     // ID-only containers + lookup map
     taskContainers,
     tasksById,

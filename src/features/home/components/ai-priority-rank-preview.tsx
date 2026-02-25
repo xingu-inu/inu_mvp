@@ -3,6 +3,7 @@
 import { X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { AiIcon } from '@/components/common/ai-icon'
 import type { AiPriorityRankResponse, AiPriorityTier, AiPriorityGoal } from '@/lib/ai/types'
 
 interface AiPriorityRankPreviewProps {
@@ -67,8 +68,14 @@ export function TierSection({
   return (
     <div className="space-y-1">
       {/* Tier Header */}
-      <div className={cn('rounded-lg px-3 py-1.5 text-sm font-medium', bgClass)}>
-        {tier.emoji} {tier.label}
+      <div
+        className={cn(
+          'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium',
+          bgClass
+        )}
+      >
+        <AiIcon name={tier.icon} className="h-4 w-4" />
+        {tier.label}
       </div>
 
       {/* Goal Groups */}
@@ -118,9 +125,9 @@ export function AiPriorityRankPreview({ data, onClose, onTaskClick }: AiPriority
 
       {/* AI Insight */}
       <div className="rounded-lg bg-[var(--color-primary-50)] px-3 py-2">
-        <p className="text-sm text-[var(--color-ai)]">
-          <span className="mr-1">💡</span>
-          {data.insight}
+        <p className="flex items-start gap-1.5 text-sm text-[var(--color-ai)]">
+          <AiIcon name="lightbulb" className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{data.insight}</span>
         </p>
       </div>
     </motion.div>

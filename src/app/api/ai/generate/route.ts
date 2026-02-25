@@ -172,6 +172,35 @@ const reviewInsightContextSchema = z.object({
     .optional(),
 })
 
+const areaAnalysisContextSchema = z.object({
+  period: z.enum(['week', 'month']),
+  periodLabel: z.string(),
+  areaName: z.string(),
+  areaEmoji: z.string(),
+  areaWhy: z.string().nullable(),
+  periodCompletionRate: z.number(),
+  goals: z.array(
+    z.object({
+      name: z.string(),
+      status: z.string(),
+      why: z.string().nullable(),
+      completionRate: z.number(),
+      taskCount: z.number(),
+    })
+  ),
+  tasks: z.array(
+    z.object({
+      name: z.string(),
+      why: z.string().nullable(),
+      completionRate: z.number(),
+      totalDone: z.number(),
+      totalScheduled: z.number(),
+      streakCount: z.number(),
+      bestStreak: z.number(),
+    })
+  ),
+})
+
 const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('goal-brainstorm'),
@@ -213,6 +242,10 @@ const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('review-insight'),
     context: reviewInsightContextSchema,
+  }),
+  z.object({
+    type: z.literal('area-analysis'),
+    context: areaAnalysisContextSchema,
   }),
 ])
 

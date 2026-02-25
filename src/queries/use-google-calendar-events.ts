@@ -13,7 +13,8 @@ export function useGoogleCalendarEvents(weekStartStr: string) {
   const { data: connection } = useGoogleCalendarConnection()
   const isConnected = !!connection?.sync_enabled
 
-  const weekEndStr = format(addDays(new Date(weekStartStr), 6), 'yyyy-MM-dd')
+  // +7 days (not +6): Google Calendar timeMax is exclusive, so we need the day AFTER the week
+  const weekEndStr = format(addDays(new Date(weekStartStr), 7), 'yyyy-MM-dd')
 
   return useQuery({
     queryKey: queryKeys.googleCalendar.events(weekStartStr),

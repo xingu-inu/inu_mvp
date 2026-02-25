@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useReviewPeriod } from '../hooks/use-review-period'
 import { cn } from '@/lib/utils'
@@ -19,30 +20,44 @@ export function PeriodSelector() {
   return (
     <div className="space-y-3">
       {/* Period Type Toggle */}
-      <div className="border-border flex overflow-hidden rounded-lg border">
+      <div className="relative flex rounded-xl bg-[var(--color-bg-secondary)] p-1">
         <button
           onClick={() => setPeriod('week')}
           className={cn(
-            'min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
+            'relative z-10 min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
             period === 'week'
-              ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-600)]'
-              : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+              ? 'text-[var(--color-primary-600)]'
+              : 'text-[var(--color-text-secondary)]'
           )}
           aria-pressed={period === 'week'}
         >
-          주간
+          {period === 'week' && (
+            <motion.div
+              layoutId="review-period-pill"
+              className="absolute inset-0 rounded-lg bg-white shadow-sm dark:bg-[var(--color-bg-card)]"
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+            />
+          )}
+          <span className="relative z-10">주간</span>
         </button>
         <button
           onClick={() => setPeriod('month')}
           className={cn(
-            'min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
+            'relative z-10 min-h-[44px] flex-1 px-4 py-2 text-sm font-medium transition-colors',
             period === 'month'
-              ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-600)]'
-              : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+              ? 'text-[var(--color-primary-600)]'
+              : 'text-[var(--color-text-secondary)]'
           )}
           aria-pressed={period === 'month'}
         >
-          월간
+          {period === 'month' && (
+            <motion.div
+              layoutId="review-period-pill"
+              className="absolute inset-0 rounded-lg bg-white shadow-sm dark:bg-[var(--color-bg-card)]"
+              transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
+            />
+          )}
+          <span className="relative z-10">월간</span>
         </button>
       </div>
 

@@ -3,9 +3,9 @@
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CompactTaskRow } from './compact-task-row'
-import { SortableTaskRow } from './sortable-task-row'
 import { InlineTaskInput } from './inline-task-input'
 import { DailySectionHeader } from './daily-section-header'
+import { SortableTaskItem } from '@/components/common'
 import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
 
@@ -21,14 +21,12 @@ interface DailySectionBaseProps {
 interface StaticDailySectionProps extends DailySectionBaseProps {
   sortable?: false
   tasks: HomeTask[]
-  isOver?: never
 }
 
 interface SortableDailySectionProps extends DailySectionBaseProps {
   sortable: true
   taskIds: string[]
   tasksById: Map<string, HomeTask>
-  isOver?: boolean
 }
 
 type DailySectionProps = StaticDailySectionProps | SortableDailySectionProps
@@ -83,10 +81,9 @@ function SortableDailySectionInner({
   onToggle,
   enableAiSuggest,
   priorityTiers,
-  isOver,
 }: SortableDailySectionProps) {
-  // useDroppable for cross-area task drops — filtered from area collision detection
-  const { setNodeRef } = useDroppable({
+  // useDroppable for cross-area task drops
+  const { setNodeRef, isOver } = useDroppable({
     id: 'daily',
     data: { type: 'container' as const, containerId: 'daily' },
   })
@@ -108,16 +105,20 @@ function SortableDailySectionInner({
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
         <div className="space-y-0.5">
           {tasks.map((task) => (
-            <SortableTaskRow
+            <SortableTaskItem
               key={task.id}
-              task={task}
-              containerId="daily"
-              isReadOnly={isReadOnly}
-              selectedDate={selectedDate}
-              isExpanded={expandedTaskId === task.id}
-              onToggle={onToggle}
-              priorityTier={priorityTiers?.[task.id]}
-            />
+              id={task.id}
+              data={{ type: 'task' as const, containerId: 'daily' }}
+            >
+              <CompactTaskRow
+                task={task}
+                isReadOnly={isReadOnly}
+                selectedDate={selectedDate}
+                isExpanded={expandedTaskId === task.id}
+                onToggle={onToggle}
+                priorityTier={priorityTiers?.[task.id]}
+              />
+            </SortableTaskItem>
           ))}
         </div>
       </SortableContext>

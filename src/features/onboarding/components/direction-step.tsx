@@ -6,11 +6,15 @@ import { Button, Card, Textarea } from '@/components/ui'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useStepKeyboard } from '../hooks/use-step-keyboard'
-import { Check, Pencil, Search, ChevronLeft } from 'lucide-react'
+import { Check, Pencil, Search, ChevronLeft, Sparkles } from 'lucide-react'
 
 function ShimmerSkeleton() {
   return (
     <div className="space-y-3 p-6">
+      <div className="flex items-center justify-center gap-1.5 text-xs text-[var(--color-ai)]">
+        <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+        <span>AI가 분석하고 있어요...</span>
+      </div>
       {[80, 65, 50].map((width, i) => (
         <motion.div
           key={i}
@@ -94,15 +98,16 @@ export function DirectionStep() {
       })
   }, [isGuidedMode, generatedDirection, organizedGoals, activeGoalIds, setGeneratedDirection])
 
-  // Shimmer → reveal sequence (first visit only)
+  // Shimmer → reveal sequence (wait for AI + minimum 800ms)
   useEffect(() => {
     if (!isLoading) return
+    if (!generatedDirection) return
     const timer = setTimeout(() => {
       setIsLoading(false)
       setShowDirection(true)
     }, 800)
     return () => clearTimeout(timer)
-  }, [isLoading])
+  }, [isLoading, generatedDirection])
 
   const handleAccept = () => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'direction' })

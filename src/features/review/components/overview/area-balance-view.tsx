@@ -116,7 +116,7 @@ function AreaRow({
         )}
       >
         <span className="shrink-0 text-sm">{area.areaEmoji}</span>
-        <span className="max-w-[88px] min-w-[60px] truncate text-left text-xs font-medium text-[var(--color-text-primary)]">
+        <span className="max-w-[88px] min-w-[60px] truncate text-left text-sm font-medium text-[var(--color-text-primary)]">
           {area.areaName}
         </span>
         <div className="h-1.5 flex-1 rounded-full bg-[var(--color-bg-tertiary)]">
@@ -204,7 +204,7 @@ export function AreaBalanceView({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         영역별 균형
       </span>
 

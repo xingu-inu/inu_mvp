@@ -15,3 +15,5 @@ export { GoalViewMode, GroupEditForm, GroupCreateForm } from './components/panel
 
 // Mobile
 export { MobileRoadmapFab } from './components/mobile-roadmap-fab'
+export { MobileRoadmapView } from './components/mobile-roadmap-view'
+export { GoalDetailDrawer } from './components/goal-detail-drawer'

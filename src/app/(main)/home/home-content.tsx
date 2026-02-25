@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense } from 'react'
-import { isToday as isTodayFn, isFuture, startOfDay } from 'date-fns'
+import { Suspense, useMemo } from 'react'
+import { isFuture, startOfDay, startOfWeek, format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/layout'
 import {
@@ -13,13 +13,14 @@ import {
   useHomeKeyboard,
 } from '@/features/home'
 import { useHomeTasks, usePrefetchHomeTasks } from '@/queries/use-home'
-import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
+import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
+import { GCalEventSection } from '@/features/home/components/gcal-event-section'
+import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 
 import { WeekViewGrid } from '@/features/home/components/week-view'
 import { CompactWeekStrip } from '@/features/home/components/compact-week-strip'
-import { AiQuickActions } from '@/features/home/components/ai-quick-actions'
 
 export default function HomeContentPage() {
   return (
@@ -40,7 +41,7 @@ function HomeContent() {
   return (
     <div
       className={cn(
-        'space-y-6 px-4 py-6 lg:px-6',
+        'space-y-2 px-4 py-2 lg:space-y-6 lg:px-6 lg:py-6',
         view === 'week' && 'lg:flex lg:h-full lg:flex-col lg:gap-4 lg:space-y-0'
       )}
     >
@@ -57,7 +58,7 @@ function WeekView() {
   return (
     <>
       {/* Mobile: compact week strip on top → tasks below (Todomate-style) */}
-      <div className="space-y-4 lg:hidden">
+      <div className="space-y-2 lg:hidden">
         <CompactWeekStrip />
         <MobileTaskSection />
       </div>
@@ -97,8 +98,16 @@ function MobileTaskSection() {
 
   const tasks = mapApiTasksToEntities(apiTasks)
   const viewingFuture = isFuture(startOfDay(currentDate))
-  const viewingToday = isTodayFn(currentDate)
   const isReadOnly = !isCurrentVersion
+
+  // Google Calendar events for selected date
+  const weekStartStr = format(startOfWeek(currentDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
+  const { data: googleEvents = [] } = useGoogleCalendarEvents(weekStartStr)
+  const selectedDateStr = format(currentDate, 'yyyy-MM-dd')
+  const dayGCalEvents = useMemo(
+    () => googleEvents.filter((e) => e.dateStr === selectedDateStr),
+    [googleEvents, selectedDateStr]
+  )
 
   return (
     <div className="space-y-4">
@@ -108,20 +117,13 @@ function MobileTaskSection() {
         <>
           {!isCurrentVersion && <VersionBrowsingBanner version={selectedVersion} />}
 
-          {/* Contextual greeting + progress for mobile */}
-          {viewingToday && isCurrentVersion && tasks.length > 0 && (
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-              {getContextualGreeting(tasks)}
-            </p>
-          )}
-
-          {!isReadOnly && <AiQuickActions />}
           <TaskList
             tasks={tasks}
             selectedDate={currentDate}
             isReadOnly={isReadOnly}
             enableAiSuggest={!isReadOnly}
           />
+          <GCalEventSection events={dayGCalEvents} />
           {!viewingFuture && <DailyReflectionCard tasks={tasks} date={currentDate} />}
         </>
       )}
@@ -141,7 +143,7 @@ function TaskListSkeleton() {
 
 function HomePageSkeleton() {
   return (
-    <div className="space-y-6 px-4 py-6 lg:px-6">
+    <div className="space-y-2 px-4 py-2 lg:space-y-6 lg:px-6 lg:py-6">
       {/* Header skeleton */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">

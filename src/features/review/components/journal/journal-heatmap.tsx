@@ -87,11 +87,11 @@ export function JournalHeatmap({
       className="space-y-1"
     >
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {DAY_LABELS.map((label) => (
           <span
             key={label}
-            className="flex h-5 items-center justify-center text-[10px] font-medium text-[var(--color-text-tertiary)]"
+            className="flex h-5 items-center justify-center text-xs font-medium text-[var(--color-text-tertiary)]"
           >
             {label}
           </span>
@@ -99,10 +99,10 @@ export function JournalHeatmap({
       </div>
 
       {/* Calendar cells */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1.5">
         {/* Empty padding cells */}
         {paddingCells.map((i) => (
-          <div key={`pad-${i}`} className="h-11" />
+          <div key={`pad-${i}`} className="h-12" />
         ))}
 
         {/* Day cells */}
@@ -113,12 +113,13 @@ export function JournalHeatmap({
           const hasData = day.total > 0
 
           return (
-            <button
+            <motion.button
               key={day.date}
               type="button"
               onClick={() => onSelectDate(day.date)}
+              whileTap={{ scale: 0.93 }}
               className={cn(
-                'relative flex h-11 flex-col items-center justify-between rounded-lg p-1 transition-all',
+                'relative flex h-12 flex-col items-center justify-center gap-1 rounded-lg p-1 transition-all',
                 getCellBg(day.completed, day.total),
                 isSelected &&
                   'bg-[var(--color-primary-50)] ring-2 ring-[var(--color-primary-500)] ring-offset-1 ring-offset-[var(--color-bg-card)] dark:bg-[var(--color-primary-950)]',
@@ -130,7 +131,7 @@ export function JournalHeatmap({
               {/* Date number */}
               <span
                 className={cn(
-                  'text-[11px] leading-none font-medium',
+                  'text-xs leading-none font-medium',
                   isSelected
                     ? 'text-[var(--color-primary-600)] dark:text-[var(--color-primary-400)]'
                     : today
@@ -160,17 +161,7 @@ export function JournalHeatmap({
                   <span className="inline-block h-1.5 w-1.5" />
                 )}
               </span>
-
-              {/* Completion count */}
-              <span
-                className={cn(
-                  'text-[9px] leading-none tabular-nums',
-                  hasData ? 'text-[var(--color-text-tertiary)]' : 'text-transparent'
-                )}
-              >
-                {hasData ? `${day.completed}/${day.total}` : '·'}
-              </span>
-            </button>
+            </motion.button>
           )
         })}
       </div>

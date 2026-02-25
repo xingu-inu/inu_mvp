@@ -25,7 +25,7 @@ function subscribeTheme(callback: () => void) {
 }
 
 function getThemeSnapshot(): Theme {
-  return (localStorage.getItem('theme') as Theme) ?? 'system'
+  return (localStorage.getItem('theme') as Theme) ?? 'light'
 }
 
 function getServerSnapshot(): Theme {

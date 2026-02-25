@@ -19,7 +19,7 @@ import { type InlineMode } from '@/stores/roadmap.store'
 import { InlineTaskEdit, InlineDeleteConfirm } from '../inline-forms'
 import { useDeleteConfirm } from '@/features/roadmap/hooks'
 import { TaskRow } from './task-row'
-import { SortableTaskItem } from './sortable-wrappers'
+import { SortableTaskItem } from '@/components/common'
 import type { Area, Task, TaskStatus } from '@/types/entities'
 
 /* ── Task list (presentation only, no DndContext) ── */

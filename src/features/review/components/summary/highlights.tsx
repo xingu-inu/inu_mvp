@@ -99,7 +99,7 @@ export function Highlights({ activityEvents, streaks, comparison, areaBalances }
       transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
       className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3"
     >
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         이번 기간 하이라이트
       </span>
       <div className="space-y-1.5">

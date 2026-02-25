@@ -116,9 +116,12 @@ export function GuideModal({ open, onOpenChange }: GuideModalProps) {
             >
               {/* Title + Description */}
               <div className="space-y-1.5 px-1">
-                <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                  {step.title}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <step.icon className="h-5 w-5 shrink-0 text-[var(--color-primary-500)]" />
+                  <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">
+                    {step.title}
+                  </h3>
+                </div>
                 <p className="text-sm leading-relaxed text-[var(--color-text-secondary)]">
                   {step.description}
                 </p>
@@ -168,7 +171,7 @@ export function GuideModal({ open, onOpenChange }: GuideModalProps) {
               onClick={() => handleOpenChange(false)}
               aria-label="가이드 닫고 시작하기"
             >
-              시작하기 ✨
+              시작하기
             </Button>
           )}
         </div>

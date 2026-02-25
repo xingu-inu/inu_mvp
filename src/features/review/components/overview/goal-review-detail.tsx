@@ -85,7 +85,7 @@ function TaskDetailRow({ task }: { task: TaskReviewSummary }) {
         </span>
         {task.streakCount > 0 && <StreakBadge count={task.streakCount} />}
         {task.bestStreak > 0 && (
-          <span className="shrink-0 text-[10px] text-[var(--color-text-tertiary)]">
+          <span className="shrink-0 text-xs text-[var(--color-text-tertiary)]">
             best: {task.bestStreak}
           </span>
         )}
@@ -134,7 +134,7 @@ function CrossLinkedSection({ tasks }: { tasks: TaskReviewSummary[] }) {
 
   return (
     <div className="mt-4">
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         연결된 Task
       </span>
       <div className="rounded-lg border-2 border-dashed border-[var(--color-border)] p-3">
@@ -151,7 +151,7 @@ function CrossLinkedSection({ tasks }: { tasks: TaskReviewSummary[] }) {
               {task.streakCount > 0 && <StreakBadge count={task.streakCount} />}
             </div>
             {task.sourceGoal && (
-              <p className="mt-0.5 pl-5 text-[10px] text-[var(--color-text-tertiary)]">
+              <p className="mt-0.5 pl-5 text-xs text-[var(--color-text-tertiary)]">
                 from: {task.sourceGoal.name}
               </p>
             )}
@@ -211,7 +211,7 @@ export function GoalReviewDetail({ goalId }: GoalReviewDetailProps) {
           {goal.name}
         </h3>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_STYLES[goal.status]}`}
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[goal.status]}`}
         >
           {STATUS_LABELS[goal.status]}
         </span>
@@ -231,7 +231,7 @@ export function GoalReviewDetail({ goalId }: GoalReviewDetailProps) {
       {/* Group sections */}
       {sortedGroups.length > 0 && (
         <div>
-          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             그룹별 현황
           </span>
           {sortedGroups.map((group) => (
@@ -248,7 +248,7 @@ export function GoalReviewDetail({ goalId }: GoalReviewDetailProps) {
       {/* Ungrouped tasks */}
       {ungroupedTasks.length > 0 && (
         <div>
-          <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             {sortedGroups.length > 0 ? '그룹 없는 Task' : 'Task 현황'}
           </span>
           <div className="border-l-2 border-[var(--color-border)] pl-3">

@@ -3,7 +3,7 @@
 import { useMemo, useCallback } from 'react'
 import { differenceInDays, format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
-import { ChevronRight, Sparkles } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useReviewStore } from '@/stores/review.store'
 import { useReviewRoadmapData } from '../hooks/use-review-roadmap-data'
@@ -11,6 +11,7 @@ import { useGoalJourneys } from '../hooks/use-goal-journeys'
 import { STATUS_STYLES, STATUS_LABELS } from '@/lib/constants/goal-status'
 import type { JourneyEvent } from '../hooks/use-goal-journey'
 import type { AreaReviewData, GoalReviewData } from '../hooks/use-review-roadmap-data'
+import { AreaAiAnalysisInline } from './area-ai-analysis-inline'
 
 const EVENT_DOT_COLORS: Record<string, string> = {
   'goal-created': 'bg-emerald-400',
@@ -62,7 +63,7 @@ function GoalHistoryCard({ goalData, journeyEvents, onSelectGoal }: GoalHistoryC
           </h4>
           <span
             className={cn(
-              'shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium',
+              'shrink-0 rounded-full px-2 py-0.5 text-xs font-medium',
               STATUS_STYLES[goal.status]
             )}
           >
@@ -99,7 +100,7 @@ function GoalHistoryCard({ goalData, journeyEvents, onSelectGoal }: GoalHistoryC
                   </span>
                 )}
               </div>
-              <span className="shrink-0 text-[10px] text-[var(--color-text-tertiary)]">
+              <span className="shrink-0 text-[11px] text-[var(--color-text-tertiary)]">
                 {format(parseISO(event.date), 'M/d')}
               </span>
             </div>
@@ -193,7 +194,7 @@ export function AreaHistoryPanel({ areaId }: AreaHistoryPanelProps) {
       {/* Section 2: Goal cards */}
       {sortedGoals.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-xs font-semibold tracking-wide text-[var(--color-text-tertiary)] uppercase">
+          <h4 className="text-sm font-semibold tracking-wide text-[var(--color-text-tertiary)] uppercase">
             목표 히스토리
           </h4>
           {sortedGoals.map((goalData) => (
@@ -207,23 +208,8 @@ export function AreaHistoryPanel({ areaId }: AreaHistoryPanelProps) {
         </div>
       )}
 
-      {/* Section 3: AI analysis placeholder */}
-      <div className="rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-[var(--color-primary-500)]" />
-          <span className="text-sm font-medium text-[var(--color-text-primary)]">AI 분석</span>
-        </div>
-        <p className="text-xs text-[var(--color-text-tertiary)]">
-          이 영역의 패턴과 코칭 제안을 AI가 분석해드려요
-        </p>
-        <button
-          type="button"
-          disabled
-          className="mt-3 w-full cursor-not-allowed rounded-lg bg-[var(--color-primary-500)] px-3 py-2 text-sm font-medium text-white opacity-50"
-        >
-          분석 생성하기 (준비 중)
-        </button>
-      </div>
+      {/* Section 3: AI area analysis */}
+      <AreaAiAnalysisInline areaData={areaData} />
     </motion.div>
   )
 }

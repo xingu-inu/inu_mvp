@@ -1,12 +1,11 @@
 'use client'
 
-import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useDroppable } from '@dnd-kit/core'
-import { CSS } from '@dnd-kit/utilities'
 import { AreaSectionHeader } from './area-section-header'
 import { CompactTaskRow } from './compact-task-row'
-import { SortableTaskRow } from './sortable-task-row'
 import { InlineTaskInput } from './inline-task-input'
+import { SortableTaskItem, type DragHandleProps } from '@/components/common'
 import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
 
@@ -25,13 +24,13 @@ interface AreaTaskSectionBaseProps {
 
 interface StaticAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable?: false
-  isOver?: never
+  dragHandleProps?: never
 }
 
 interface SortableAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable: true
   area: { id: string; name: string; emoji: string; color: string; sort_order: string }
-  isOver?: boolean
+  dragHandleProps: DragHandleProps
 }
 
 type AreaTaskSectionProps = StaticAreaTaskSectionProps | SortableAreaTaskSectionProps
@@ -109,50 +108,36 @@ function SortableAreaSectionInner({
   onToggle,
   enableAiSuggest,
   priorityTiers,
-  isOver,
+  dragHandleProps,
 }: SortableAreaTaskSectionProps) {
-  // useSortable for area reorder — homeCollisionDetection filters area droppables
+  // Destructure to avoid react-hooks/refs lint rule on property access
   const {
-    attributes,
-    listeners,
-    setNodeRef: setSortableRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: `area-${area.id}`,
-    data: { type: 'area' as const, areaId: area.id },
-  })
+    setActivatorRef,
+    listeners: handleListeners,
+    attributes: handleAttributes,
+  } = dragHandleProps
 
   // useDroppable for cross-area task drops — filtered from area collision detection
-  // Attached to the task container div (separate from area sortable ref)
-  const { setNodeRef: setDroppableRef } = useDroppable({
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: area.id,
     data: { type: 'container' as const, containerId: area.id },
   })
-
-  const sortableStyle = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.3 : 1,
-    borderLeftColor: area.color,
-  }
 
   const taskIds = tasks.map((t) => t.id)
 
   return (
     <section
-      ref={setSortableRef}
-      style={sortableStyle}
       aria-labelledby={`area-${area.id}`}
       className="border-l-2 pl-3 transition-all"
+      style={{ borderLeftColor: area.color }}
     >
-      {/* Area header — drag handle for area reorder (outer context) */}
+      {/* Area header — drag handle for area reorder (activator ref pattern) */}
       <div
+        ref={setActivatorRef}
         className="mb-1.5 flex cursor-grab items-center justify-between active:cursor-grabbing"
         style={{ touchAction: 'none' }}
-        {...attributes}
-        {...listeners}
+        {...handleAttributes}
+        {...handleListeners}
       >
         <AreaSectionHeader
           area={area}
@@ -161,7 +146,7 @@ function SortableAreaSectionInner({
         />
       </div>
 
-      {/* Task container — droppable for cross-area task moves (inner context) */}
+      {/* Task container — droppable for cross-area task moves */}
       <div
         ref={setDroppableRef}
         className={cn(
@@ -172,16 +157,20 @@ function SortableAreaSectionInner({
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-0.5">
             {tasks.map((task) => (
-              <SortableTaskRow
+              <SortableTaskItem
                 key={task.id}
-                task={task}
-                containerId={area.id}
-                isReadOnly={isReadOnly}
-                selectedDate={selectedDate}
-                isExpanded={expandedTaskId === task.id}
-                onToggle={onToggle}
-                priorityTier={priorityTiers?.[task.id]}
-              />
+                id={task.id}
+                data={{ type: 'task' as const, containerId: area.id }}
+              >
+                <CompactTaskRow
+                  task={task}
+                  isReadOnly={isReadOnly}
+                  selectedDate={selectedDate}
+                  isExpanded={expandedTaskId === task.id}
+                  onToggle={onToggle}
+                  priorityTier={priorityTiers?.[task.id]}
+                />
+              </SortableTaskItem>
             ))}
           </div>
         </SortableContext>

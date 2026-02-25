@@ -92,6 +92,9 @@ export function DemoReviewContent() {
               hasPrevData: false,
             }}
             moodHistory={moodHistory}
+            areaBalances={areaBalances}
+            isWeek={false}
+            periodLabel="최근 30일"
           />
 
           {/* Daily Heatmap */}

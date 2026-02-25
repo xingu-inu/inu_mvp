@@ -4,6 +4,7 @@ import { ListOrdered } from 'lucide-react'
 import { PriorityRankModal } from './priority-rank-modal'
 import { useHomeStore } from '@/stores/home.store'
 
+/** Full-width button variant (used on desktop panel, etc.) */
 export function AiQuickActions() {
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
 
@@ -21,5 +22,24 @@ export function AiQuickActions() {
       {/* Priority rank modal */}
       <PriorityRankModal />
     </div>
+  )
+}
+
+/** Compact icon button for embedding in other components (e.g. PastDaySummary) */
+export function AiQuickActionInline() {
+  const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsPriorityRankOpen(true)}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-95"
+        aria-label="우선순위 정리"
+      >
+        <ListOrdered className="h-3.5 w-3.5" />
+      </button>
+      <PriorityRankModal />
+    </>
   )
 }

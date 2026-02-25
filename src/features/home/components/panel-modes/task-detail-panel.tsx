@@ -625,7 +625,7 @@ export function TaskDetailPanel() {
         {/* Why Chain */}
         {task.goal && (
           <div className="space-y-2 rounded-lg bg-[var(--color-bg-secondary)] p-3">
-            <p className="text-xs font-medium text-[var(--color-text-tertiary)]">Why Chain</p>
+            <p className="text-xs font-medium text-[var(--color-text-tertiary)]">이 일의 이유</p>
             <div className="space-y-1.5 text-sm">
               {task.why && (
                 <div className="flex items-start gap-2">

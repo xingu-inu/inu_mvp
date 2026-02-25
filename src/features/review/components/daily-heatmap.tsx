@@ -41,23 +41,24 @@ function WeekView({ days, onSelectDate, selectedDate }: WeekViewProps) {
       {days.map((day) => {
         const isSelected = selectedDate === day.date
         return (
-          <button
+          <motion.button
             key={day.date}
             type="button"
             onClick={() => onSelectDate(day.date)}
+            whileTap={{ scale: 0.96 }}
             className={cn(
-              'flex flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-colors',
+              'flex min-h-[72px] flex-1 flex-col items-center gap-1 rounded-lg p-2 transition-colors',
               isSelected
                 ? 'bg-[var(--color-primary-50)] ring-2 ring-[var(--color-primary-400)]'
                 : 'hover:bg-[var(--color-bg-secondary)]'
             )}
           >
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">{day.dayLabel}</span>
+            <span className="text-xs text-[var(--color-text-tertiary)]">{day.dayLabel}</span>
             <span className="text-sm leading-none">{day.mood ? MOOD_EMOJIS[day.mood] : '·'}</span>
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">
+            <span className="text-xs text-[var(--color-text-tertiary)] tabular-nums">
               {day.completionRate !== null ? `${day.completionRate}%` : '—'}
             </span>
-          </button>
+          </motion.button>
         )
       })}
     </div>
@@ -110,7 +111,7 @@ export function DailyHeatmap({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         일별 기록
       </span>
       <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">

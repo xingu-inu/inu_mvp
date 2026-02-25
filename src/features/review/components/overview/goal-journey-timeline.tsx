@@ -67,22 +67,22 @@ function EventCard({ event }: { event: JourneyEvent }) {
 
       {/* Description */}
       {event.description && (
-        <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">{event.description}</p>
+        <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{event.description}</p>
       )}
 
       {/* Status change: reason chip + note */}
       {event.type === 'status-change' && (
         <>
           {event.reason && (
-            <span className="mt-1.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <span className="mt-1.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
               {event.reason}
             </span>
           )}
           {event.note && (
-            <p className="mt-1 text-xs text-[var(--color-text-secondary)] italic">{event.note}</p>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)] italic">{event.note}</p>
           )}
           {noGuiltMsg && (
-            <p className="mt-1.5 text-[10px] text-[var(--color-text-tertiary)]">{noGuiltMsg}</p>
+            <p className="mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">{noGuiltMsg}</p>
           )}
         </>
       )}
@@ -121,7 +121,9 @@ export function GoalJourneyTimeline({ goalId }: GoalJourneyTimelineProps) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-3">
-      <h4 className="mb-3 text-xs font-semibold text-[var(--color-text-primary)]">목표 여정</h4>
+      <h4 className="mb-3 text-xs font-semibold tracking-wider text-[var(--color-text-primary)] uppercase">
+        목표 여정
+      </h4>
 
       <div className="relative">
         {/* Vertical line */}
@@ -143,7 +145,7 @@ export function GoalJourneyTimeline({ goalId }: GoalJourneyTimelineProps) {
 
               {/* Content */}
               <div className="min-w-0 flex-1 pb-1">
-                <p className="mb-1 text-[10px] text-[var(--color-text-tertiary)]">
+                <p className="mb-1 text-[11px] text-[var(--color-text-tertiary)]">
                   {formatDate(event.date)}
                 </p>
                 <EventCard event={event} />

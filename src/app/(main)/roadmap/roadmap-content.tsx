@@ -5,12 +5,12 @@ import dynamic from 'next/dynamic'
 import { PageContainer } from '@/components/layout'
 import {
   RoadmapHeader,
-  GoalList,
   GoalListSkeleton,
   VisualTreeWrapper,
   VisualTreeSkeleton,
 } from '@/features/roadmap'
 import { MobileRoadmapFab } from '@/features/roadmap/components/mobile-roadmap-fab'
+import { MobileRoadmapView } from '@/features/roadmap/components/mobile-roadmap-view'
 import { RoadmapAiModals } from './roadmap-ai-modals'
 
 const NewVersionWizard = dynamic(
@@ -55,12 +55,12 @@ export default function RoadmapContent() {
         </Suspense>
       </div>
 
-      {/* Mobile: Single Column */}
+      {/* Mobile: Card-based layout */}
       <PageContainer className="pb-24 lg:hidden">
         <div className="space-y-6">
           <RoadmapHeader />
           <Suspense fallback={<GoalListSkeleton />}>
-            <GoalList isMobile />
+            <MobileRoadmapView />
           </Suspense>
         </div>
       </PageContainer>

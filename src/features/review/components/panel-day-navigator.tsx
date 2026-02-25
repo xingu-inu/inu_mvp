@@ -50,7 +50,7 @@ export function PanelDayNavigator() {
       {/* Header */}
       <div className="mb-3 flex items-center gap-2">
         <Calendar className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-        <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+        <span className="text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
           날짜별 기록
         </span>
       </div>
@@ -79,7 +79,7 @@ export function PanelDayNavigator() {
                 <span className="text-sm font-medium text-[var(--color-text-primary)]">
                   {format(day, 'M/d')}
                 </span>
-                <span className="ml-1 text-[10px] text-[var(--color-text-tertiary)]">
+                <span className="ml-1 text-xs text-[var(--color-text-tertiary)]">
                   {format(day, 'EEE', { locale: ko })}
                 </span>
               </div>
@@ -96,7 +96,7 @@ export function PanelDayNavigator() {
                       style={{ width: `${Math.max(rate, 2)}%` }}
                     />
                   </div>
-                  <span className="w-8 text-right font-mono text-[10px] text-[var(--color-text-secondary)]">
+                  <span className="w-8 text-right font-mono text-xs text-[var(--color-text-secondary)]">
                     {dayData.completed}/{dayData.total}
                   </span>
                 </>

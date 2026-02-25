@@ -3,8 +3,14 @@
 import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft } from 'lucide-react'
-import { Button, Card } from '@/components/ui'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui'
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import { AREA_PRESETS_EXTENDED } from '@/lib/constants/onboarding'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -74,7 +80,7 @@ export function OrganizeStep() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: groupIdx * 0.1 }}
           >
-            <Card className="overflow-hidden p-0">
+            <div className="glass-2 overflow-hidden rounded-xl shadow-[var(--shadow-card)]">
               {/* Area header */}
               <div className="flex items-center gap-2 px-4 pt-4 pb-2">
                 <span
@@ -99,27 +105,43 @@ export function OrganizeStep() {
                       <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-text-primary)]">
                         {goal.name}
                       </span>
-                      <select
+                      <Select
                         value={effectiveArea}
-                        onChange={(e) => overrideGoalArea(goal.id, e.target.value as AreaType)}
-                        className={cn(
-                          'rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)]',
-                          'px-2 py-1 text-xs text-[var(--color-text-secondary)]',
-                          'focus:border-[var(--color-primary-500)] focus:outline-none'
-                        )}
+                        onValueChange={(v) => overrideGoalArea(goal.id, v as AreaType)}
                       >
-                        {AREA_PRESETS_EXTENDED.map((area) => (
-                          <option key={area.type} value={area.type}>
-                            {area.emoji} {area.name}
-                          </option>
-                        ))}
-                        <option value="custom">📌 미분류</option>
-                      </select>
+                        <SelectTrigger className="h-8 w-auto min-w-0 gap-1.5 rounded-lg px-2.5 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AREA_PRESETS_EXTENDED.map((area) => (
+                            <SelectItem key={area.type} value={area.type}>
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="h-2 w-2 shrink-0 rounded-full"
+                                  style={{ backgroundColor: area.color }}
+                                />
+                                <span>
+                                  {area.emoji} {area.name}
+                                </span>
+                              </span>
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="h-2 w-2 shrink-0 rounded-full"
+                                style={{ backgroundColor: '#8a7a65' }}
+                              />
+                              <span>📌 미분류</span>
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )
                 })}
               </div>
-            </Card>
+            </div>
           </motion.div>
         ))}
       </div>

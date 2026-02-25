@@ -30,10 +30,14 @@ export async function fetchGoogleEvents(
     if (!auth) return []
 
     const cal = calendar({ version: 'v3', auth })
+    // Bare date strings (YYYY-MM-DD) must append T00:00:00 to parse as local time.
+    // Without it, new Date('YYYY-MM-DD') parses as UTC midnight → timezone offset bug in KST.
+    const toISO = (d: string) =>
+      d.includes('T') ? new Date(d).toISOString() : new Date(d + 'T00:00:00').toISOString()
     const response = await cal.events.list({
       calendarId: 'primary',
-      timeMin: new Date(timeMin).toISOString(),
-      timeMax: new Date(timeMax).toISOString(),
+      timeMin: toISO(timeMin),
+      timeMax: toISO(timeMax),
       singleEvents: true,
       orderBy: 'startTime',
       maxResults: 250,

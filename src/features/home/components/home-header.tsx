@@ -71,32 +71,31 @@ export function HomeHeader() {
   const nextLabel = view === 'week' ? '다음 주' : '다음 달'
 
   return (
-    <div className="space-y-1">
-      {/* Row 1: Navigation arrows + controls */}
+    <div>
+      {/* Single row: arrows + title + controls */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1">
           <button
             onClick={goToPrevious}
-            className="touch-target rounded-lg p-2 transition-colors hover:bg-[var(--color-bg-secondary)]"
+            className="touch-target shrink-0 rounded-lg p-2 transition-colors hover:bg-[var(--color-bg-secondary)]"
             aria-label={prevLabel}
           >
             <ChevronLeft className="h-5 w-5 text-[var(--color-text-secondary)]" />
           </button>
           <button
             onClick={goToNext}
-            className="touch-target rounded-lg p-2 transition-colors hover:bg-[var(--color-bg-secondary)]"
+            className="touch-target shrink-0 rounded-lg p-2 transition-colors hover:bg-[var(--color-bg-secondary)]"
             aria-label={nextLabel}
           >
             <ChevronRight className="h-5 w-5 text-[var(--color-text-secondary)]" />
           </button>
-          {/* Desktop: title inline with arrows */}
-          <h1 className="ml-1 hidden text-xl font-bold text-[var(--color-text-primary)] lg:block">
+          <h1 className="ml-1 truncate text-lg font-bold text-[var(--color-text-primary)] lg:text-xl">
             {title}
           </h1>
           <HomeVersionFilter onNavigateToDate={setCurrentDate} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {isGcalConnected && (
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
               <PopoverTrigger asChild>
@@ -147,12 +146,6 @@ export function HomeHeader() {
           )}
           <HomeViewToggle />
         </div>
-      </div>
-
-      {/* Row 2: Title on its own line (mobile only) */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{title}</h1>
-        <HomeVersionFilter onNavigateToDate={setCurrentDate} />
       </div>
 
       {/* Import / Export Modals */}

@@ -52,7 +52,7 @@ function MilestoneCardItem({ card, index }: { card: MilestoneCard; index: number
       <p className="mt-0.5 line-clamp-2 text-xs leading-snug font-semibold text-[var(--color-text-primary)]">
         {card.title}
       </p>
-      <p className="text-[11px] leading-snug text-[var(--color-text-secondary)]">{card.subtitle}</p>
+      <p className="text-xs leading-snug text-[var(--color-text-secondary)]">{card.subtitle}</p>
     </motion.div>
   )
 }
@@ -145,7 +145,7 @@ export function MilestoneSection({
 
   return (
     <section className="space-y-2">
-      <p className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <p className="text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         성장 기록
       </p>
       {/* Mobile: horizontal scroll | Desktop: flex-wrap */}

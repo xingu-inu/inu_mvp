@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronRight } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { AiIcon } from '@/components/common/ai-icon'
 import { useReviewInsight } from '../../hooks/use-review-insight'
 import type { AreaReviewData, GoalReviewData } from '../../hooks/use-review-roadmap-data'
 import type { GoalStatus } from '@/types/entities'
@@ -144,7 +145,7 @@ function GoalPeriod({ goal }: { goal: GoalReviewData['goal'] }) {
   if (!start) return null
 
   return (
-    <span className="mt-0.5 block text-[10px] text-[var(--color-text-tertiary)]">
+    <span className="mt-0.5 block text-[11px] text-[var(--color-text-tertiary)]">
       {start} {end}
     </span>
   )
@@ -164,7 +165,7 @@ function GoalItem({ goalData }: { goalData: GoalReviewData }) {
           </span>
           <span
             className={cn(
-              'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+              'shrink-0 rounded-full px-1.5 py-0.5 text-[11px] font-medium',
               statusStyle.bg,
               statusStyle.text
             )}
@@ -238,22 +239,33 @@ function AiInsightSection({ areaData }: { areaData: AreaReviewData }) {
 
   return (
     <div className="mt-3 border-t border-[var(--color-border)] pt-3">
-      <p className="mb-1.5 text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-        💡 AI 분석
+      <p className="mb-1.5 text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+        AI 분석
       </p>
       <div className="space-y-1">
         {data.patterns.map((p, i) => (
-          <p key={i} className="text-xs text-[var(--color-text-secondary)]">
-            {p.emoji} {p.text}
-          </p>
+          <div
+            key={i}
+            className="flex items-start gap-1.5 text-xs text-[var(--color-text-secondary)]"
+          >
+            <AiIcon
+              name={p.icon}
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]"
+            />
+            <span>{p.text}</span>
+          </div>
         ))}
       </div>
       {data.coaching.length > 0 && (
         <div className="mt-2 space-y-1">
           {data.coaching.map((c, i) => (
-            <p key={i} className="text-xs text-[var(--color-text-tertiary)] italic">
-              {c.emoji} {c.text}
-            </p>
+            <div
+              key={i}
+              className="flex items-start gap-1.5 text-xs text-[var(--color-text-tertiary)] italic"
+            >
+              <AiIcon name={c.icon} className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>{c.text}</span>
+            </div>
           ))}
         </div>
       )}
@@ -280,7 +292,7 @@ export function AreaStoryCard({ areaData, isExpanded, onToggle }: AreaStoryCardP
         <div className="min-w-0 flex-1 text-left">
           <span className="text-sm font-medium text-[var(--color-text-primary)]">{area.name}</span>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-[var(--color-text-tertiary)]">{goals.length}개 목표</span>
+            <span className="text-sm text-[var(--color-text-tertiary)]">{goals.length}개 목표</span>
             <StatusDots goals={goals} />
           </div>
         </div>

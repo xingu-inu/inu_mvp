@@ -36,7 +36,7 @@ export function CompactWeekStrip() {
   }
 
   return (
-    <div className="grid grid-cols-7 rounded-2xl bg-[var(--color-bg-secondary)]/50 px-1 py-2">
+    <div className="grid grid-cols-7 rounded-2xl bg-[var(--color-bg-secondary)]/50 px-1 py-1.5">
       {weekDays.map((day) => {
         const dateStr = format(day, 'yyyy-MM-dd')
         const isSelected = isSameDay(day, currentDate)
@@ -52,7 +52,7 @@ export function CompactWeekStrip() {
             key={dateStr}
             onClick={() => setCurrentDate(day)}
             className={cn(
-              'flex flex-col items-center gap-1 rounded-xl px-0.5 py-2 transition-colors',
+              'flex flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition-colors',
               'active:scale-95',
               isSelected && !isDayToday && 'bg-[var(--color-primary-50)]'
             )}
@@ -119,7 +119,7 @@ export function CompactWeekStrip() {
 
 function WeekStripSkeleton() {
   return (
-    <div className="grid grid-cols-7 rounded-2xl bg-[var(--color-bg-secondary)]/50 px-1 py-2">
+    <div className="grid grid-cols-7 rounded-2xl bg-[var(--color-bg-secondary)]/50 px-1 py-1.5">
       {Array.from({ length: 7 }, (_, i) => (
         <div key={i} className="flex flex-col items-center gap-1 px-0.5 py-2">
           <div className="h-3 w-4 animate-pulse rounded bg-[var(--color-bg-secondary)]" />

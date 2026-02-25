@@ -100,7 +100,7 @@ export function JournalDayDetail({ dateStr }: JournalDayDetailProps) {
       key={dateStr}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-6 p-4"
+      className="space-y-6"
     >
       {/* Date header */}
       <div className="flex items-center justify-between">
@@ -124,7 +124,7 @@ export function JournalDayDetail({ dateStr }: JournalDayDetailProps) {
       {/* Task Records — grouped by area */}
       {sortedTasks.length > 0 && (
         <section className="space-y-2">
-          <p className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <p className="text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             이 날의 기록
           </p>
           <div className="space-y-4">
@@ -132,7 +132,7 @@ export function JournalDayDetail({ dateStr }: JournalDayDetailProps) {
               <div key={area.id} className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm">{area.emoji}</span>
-                  <span className="text-xs font-medium text-[var(--color-text-secondary)]">
+                  <span className="text-sm font-medium text-[var(--color-text-secondary)]">
                     {area.name}
                   </span>
                 </div>
@@ -222,7 +222,7 @@ function DetailTaskRow({ task }: { task: HomeTask }) {
         <div className="flex shrink-0 items-center gap-1.5">
           {task.streak_count > 0 && <StreakBadge count={task.streak_count} />}
           {status === 'skip' && (
-            <span className="text-[10px] text-[var(--color-text-tertiary)]">건너뜀</span>
+            <span className="text-xs text-[var(--color-text-tertiary)]">건너뜀</span>
           )}
         </div>
       </div>

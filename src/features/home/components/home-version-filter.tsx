@@ -12,8 +12,9 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...'
 }
 
-function getVersionLabel(item: DirectionHistoryItem): string {
+function getVersionLabel(item: DirectionHistoryItem, compact = false): string {
   const prefix = `v${item.version}`
+  if (compact) return prefix
   if (item.status === 'active') return `${prefix} 현재 로드맵`
   const label = item.name || truncate(item.statement, 20)
   return `${prefix} ${label}`
@@ -77,6 +78,9 @@ export function HomeVersionFilter({ onNavigateToDate }: HomeVersionFilterProps) 
   const buttonLabel = selectedItem
     ? getVersionLabel(selectedItem)
     : `v${currentDirection.version} 현재 로드맵`
+  const compactLabel = selectedItem
+    ? getVersionLabel(selectedItem, true)
+    : `v${currentDirection.version}`
 
   return (
     <div ref={containerRef} className="relative inline-block">
@@ -84,13 +88,14 @@ export function HomeVersionFilter({ onNavigateToDate }: HomeVersionFilterProps) 
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+          'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
           isViewingPast
             ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
             : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
         )}
       >
-        <span>{buttonLabel}</span>
+        <span className="lg:hidden">{compactLabel}</span>
+        <span className="hidden lg:inline">{buttonLabel}</span>
         <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />
       </button>
 

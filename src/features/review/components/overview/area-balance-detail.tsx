@@ -216,7 +216,7 @@ function GoalAccordionRow({
         </button>
 
         <span
-          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${STATUS_STYLES[goal.status]}`}
+          className={`shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${STATUS_STYLES[goal.status]}`}
         >
           {STATUS_LABELS[goal.status]}
         </span>
@@ -312,7 +312,7 @@ export function AreaBalanceDetail({ areaId }: AreaBalanceDetailProps) {
       {/* Goal accordion sections (sorted by creation date) */}
       {areaData.goals.length > 0 && (
         <div>
-          <span className="mb-2 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <span className="mb-2 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             목표별 현황
           </span>
           <div className="flex flex-col gap-2">

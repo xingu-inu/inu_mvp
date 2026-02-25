@@ -54,11 +54,11 @@ function WeekDayCell({
           : 'hover:bg-[var(--color-bg-secondary)]'
       )}
     >
-      <span className="text-[10px] text-[var(--color-text-tertiary)]">{dayLabel}</span>
+      <span className="text-xs text-[var(--color-text-tertiary)]">{dayLabel}</span>
       <span className="text-sm leading-none" aria-label={mood ?? '기분 없음'}>
         {mood ? MOOD_EMOJIS[mood] : '·'}
       </span>
-      <span className="text-[10px] text-[var(--color-text-tertiary)]">
+      <span className="text-xs text-[var(--color-text-tertiary)]">
         {completionRate !== null ? `${completionRate}%` : '—'}
       </span>
     </button>
@@ -116,7 +116,7 @@ export function DayRecord({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <span className="mb-1.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+      <span className="mb-1.5 block text-xs font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
         일별 기록
       </span>
 

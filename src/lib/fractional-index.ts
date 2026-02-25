@@ -111,9 +111,12 @@ export function getOrderAtIndex<T extends { sort_order: string }>(
 // These use a stricter validity check (first char must be a–z) appropriate for
 // drag-and-drop reorder operations where legacy numeric keys may appear.
 
-/** Returns true if the key starts with a lowercase letter (valid fractional-indexing key) */
+/** Returns true if the key starts with a letter (valid fractional-indexing key).
+ *  The library uses a-z for non-negative integers and A-Z for negative integers. */
 export function isValidFractionalKey(key: string): boolean {
-  return key.length > 0 && key[0] >= 'a' && key[0] <= 'z'
+  if (key.length === 0) return false
+  const c = key[0]
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
 /** Returns null for invalid or missing fractional keys (DnD variant) */

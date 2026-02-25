@@ -8,6 +8,8 @@ import {
   DEMO_DIRECTION,
   DEMO_AREAS_LITE as DEMO_AREAS,
   DEMO_GOALS_LITE as DEMO_GOALS,
+  DEMO_GROUPS_LITE as DEMO_GROUPS,
+  DEMO_TASKS_LITE as DEMO_TASKS,
 } from './data'
 import { generateDemoWeekTasks, generateDemoHomeTasks } from './week-data'
 
@@ -38,11 +40,17 @@ function seedDemoData(qc: QueryClient) {
     qc.setQueryData(queryKeys.tasks.home(dateStr), generateDemoHomeTasks(d))
   }
 
-  // Roadmap tab: areas, goals, direction
+  // Roadmap tab: areas, goals (with groups/tasks relations), direction
   // queryKeys.areas.all = ['areas'] (plain array), queryKeys.areas.active() = function
   qc.setQueryData(queryKeys.areas.all, DEMO_AREAS)
   qc.setQueryData(queryKeys.areas.active(), DEMO_AREAS)
-  qc.setQueryData(queryKeys.goals.all, DEMO_GOALS)
+
+  const enrichedGoals = DEMO_GOALS.map((goal) => ({
+    ...goal,
+    groups: DEMO_GROUPS.filter((g) => g.goal_id === goal.id),
+    tasks: DEMO_TASKS.filter((t) => t.goal_id === goal.id),
+  }))
+  qc.setQueryData(queryKeys.goals.all, enrichedGoals)
   qc.setQueryData(queryKeys.direction.all, DEMO_DIRECTION)
   qc.setQueryData(queryKeys.direction.history, [DEMO_DIRECTION])
 

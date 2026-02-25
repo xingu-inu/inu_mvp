@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ModalBody, ModalFooter } from '@/components/ui/responsive-modal'
 import { DiagnosisObservationCard } from './diagnosis-observation-card'
+import { AiIcon } from '@/components/common/ai-icon'
 import type { AiRoadmapDiagnosisResponse, DiagnosisAction } from '@/lib/ai/types'
 
 interface DiagnosisResultStepProps {
@@ -50,7 +51,10 @@ export function DiagnosisResultStep({
           <span className="rounded-full bg-[var(--color-bg-tertiary)] px-3 py-1 text-xs font-medium text-[var(--color-text-tertiary)]">
             {targetDisplay}
           </span>
-          <span className="text-4xl">{diagnosis.summary.emoji}</span>
+          <AiIcon
+            name={diagnosis.summary.icon}
+            className="h-12 w-12 text-[var(--color-primary-500)]"
+          />
           <p className="text-base font-semibold text-[var(--color-text-primary)]">
             {diagnosis.summary.label}
           </p>
@@ -79,7 +83,7 @@ export function DiagnosisResultStep({
                   transition={{ delay: 0.15 + idx * 0.05 }}
                   className="flex items-start gap-2 rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2"
                 >
-                  <span className="mt-0.5 text-sm">{strength.emoji}</span>
+                  <AiIcon name={strength.icon} className="mt-0.5 text-[var(--color-primary-500)]" />
                   <span className="text-sm text-[var(--color-text-secondary)]">
                     {strength.text}
                   </span>

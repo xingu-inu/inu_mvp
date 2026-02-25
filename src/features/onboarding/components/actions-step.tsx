@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Check, X } from 'lucide-react'
+import { ChevronLeft, Check, X, Sparkles } from 'lucide-react'
 import { Button, Card } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { useOnboardingStore } from '@/stores/onboarding.store'
@@ -72,14 +72,28 @@ export function ActionsStep() {
               body: JSON.stringify({
                 type: 'task-suggest',
                 context: {
+                  direction: null,
                   areas: [
                     {
+                      id: effectiveArea,
                       name: areaPreset?.name ?? effectiveArea,
-                      type: effectiveArea,
                       emoji: areaPreset?.emoji ?? '',
+                      type: effectiveArea,
+                      why: null,
                     },
                   ],
-                  goals: [{ name: goal.name, areaType: effectiveArea }],
+                  goals: [
+                    {
+                      id: goal.id,
+                      name: goal.name,
+                      areaId: effectiveArea,
+                      areaName: areaPreset?.name ?? effectiveArea,
+                      areaEmoji: areaPreset?.emoji ?? '',
+                      status: 'active',
+                      why: null,
+                    },
+                  ],
+                  existingTasks: [],
                 },
               }),
             })
@@ -89,16 +103,13 @@ export function ActionsStep() {
             const data = await res.json()
             let taskNames: string[] = []
 
-            try {
-              const parsed = JSON.parse(data.content)
-              if (Array.isArray(parsed.tasks)) {
-                taskNames = parsed.tasks.map((t: { name: string }) => t.name).slice(0, 2)
-              } else if (Array.isArray(parsed)) {
-                taskNames = parsed.map((t: { name: string }) => t.name).slice(0, 2)
+            if (data.success && data.data?.suggestions) {
+              const goalSuggestion = data.data.suggestions.find(
+                (s: { goalId: string }) => s.goalId === goal.id
+              )
+              if (goalSuggestion?.tasks && Array.isArray(goalSuggestion.tasks)) {
+                taskNames = goalSuggestion.tasks.map((t: { name: string }) => t.name).slice(0, 2)
               }
-            } catch {
-              // Try to extract from raw content
-              taskNames = []
             }
 
             const goalTasks: SuggestedTask[] = taskNames.map((name) => ({
@@ -145,7 +156,9 @@ export function ActionsStep() {
       <h2 className="mb-1 text-xl font-bold text-[var(--color-text-primary)]">
         내일부터 바로 시작해볼까요?
       </h2>
-      <p className="mb-5 text-sm text-[var(--color-text-secondary)]">작은 실천부터 시작하면 돼요</p>
+      <p className="mb-5 text-sm text-[var(--color-text-secondary)]">
+        AI가 제안하는 시작 리스트예요. 나중에 자유롭게 추가하거나 바꿀 수 있어요.
+      </p>
 
       {/* Per-goal task cards */}
       <div className="mb-4 space-y-3">
@@ -174,6 +187,10 @@ export function ActionsStep() {
                 {/* Loading skeleton */}
                 {goalState?.status === 'loading' && (
                   <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs text-[var(--color-ai)]">
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+                      <span>AI가 실천을 만들고 있어요...</span>
+                    </div>
                     {[75, 60].map((width, i) => (
                       <motion.div
                         key={i}
@@ -244,7 +261,9 @@ export function ActionsStep() {
         })}
       </div>
 
-      <p className="mb-4 text-xs text-[var(--color-text-tertiary)]">하나만 해도 충분해요</p>
+      <p className="mb-4 text-xs text-[var(--color-text-tertiary)]">
+        하나만 해도 충분해요. 나중에 언제든 추가할 수 있어요.
+      </p>
 
       {/* Navigation */}
       <div className="mt-auto space-y-2 pt-6">

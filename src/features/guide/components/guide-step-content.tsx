@@ -1,7 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, SkipForward, Repeat, Target, Compass } from 'lucide-react'
+import {
+  Check,
+  SkipForward,
+  Repeat,
+  Target,
+  Compass,
+  TrendingUp,
+  Sprout,
+  HeartHandshake,
+  RefreshCw,
+  Coffee,
+} from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Chip } from '@/components/ui/chip'
 import { StreakBadge } from '@/components/ui/badge'
@@ -290,14 +301,20 @@ function ReviewDemo() {
     <DemoFrame>
       <div className="space-y-3">
         <div className="grid grid-cols-3 gap-2">
-          {[
-            { icon: '📈', label: '완료율', value: '78%' },
-            { icon: '🔥', label: '스트릭', value: '12일' },
-            { icon: '🙂', label: '기분', value: '좋음' },
-          ].map((s) => (
+          {(
+            [
+              {
+                icon: <TrendingUp className="h-4 w-4 text-[var(--color-done)]" />,
+                label: '완료율',
+                value: '78%',
+              },
+              { icon: <span className="text-sm">🔥</span>, label: '스트릭', value: '12일' },
+              { icon: <span className="text-sm">🙂</span>, label: '기분', value: '좋음' },
+            ] as const
+          ).map((s) => (
             <Card key={s.label} padding="sm" variant="list">
               <div className="flex flex-col items-center gap-0.5">
-                <span className="text-sm">{s.icon}</span>
+                {s.icon}
                 <span className="text-xs font-semibold">{s.value}</span>
                 <span className="text-[10px] text-[var(--color-text-tertiary)]">{s.label}</span>
               </div>
@@ -339,19 +356,46 @@ function ReviewDemo() {
 
 /* ── Philosophy ── */
 function PhilosophyDemo() {
+  const philosophies = [
+    {
+      Icon: Sprout,
+      text: '매일 조금씩, 내 페이스대로',
+      fg: 'var(--color-done)',
+      bg: 'var(--color-done-bg)',
+    },
+    {
+      Icon: HeartHandshake,
+      text: '못 해도 비난하지 않아요',
+      fg: 'var(--color-primary-500)',
+      bg: 'var(--color-primary-50)',
+    },
+    {
+      Icon: RefreshCw,
+      text: '방향이 바뀌어도 괜찮아요',
+      fg: 'var(--color-ai)',
+      bg: 'var(--color-ai-bg)',
+    },
+    {
+      Icon: Coffee,
+      text: '쉬는 것도 과정의 일부예요',
+      fg: 'var(--color-streak)',
+      bg: 'var(--color-streak-bg)',
+    },
+  ]
+
   return (
     <DemoFrame>
       <div className="space-y-2">
-        {[
-          { emoji: '🌱', text: '매일 조금씩, 내 페이스대로' },
-          { emoji: '🤝', text: '못 해도 비난하지 않아요' },
-          { emoji: '🔄', text: '방향이 바뀌어도 괜찮아요' },
-          { emoji: '☕', text: '쉬는 것도 과정의 일부예요' },
-        ].map((p) => (
+        {philosophies.map((p) => (
           <Card key={p.text} padding="sm" variant="list">
-            <div className="flex items-center gap-2.5">
-              <span className="text-lg">{p.emoji}</span>
-              <span className="text-sm font-medium">{p.text}</span>
+            <div className="flex items-center gap-3">
+              <div
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                style={{ backgroundColor: p.bg, color: p.fg }}
+              >
+                <p.Icon className="h-4 w-4" />
+              </div>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">{p.text}</span>
             </div>
           </Card>
         ))}

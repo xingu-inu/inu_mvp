@@ -8,6 +8,7 @@ import { AreaTaskSection } from './area-task-section'
 import { SortableTaskList } from './sortable-task-list'
 import { DailySection } from './daily-section'
 import { PastDaySummary } from './past-day-summary'
+import { AiQuickActionInline } from './ai-quick-actions'
 import { useHomeStore } from '@/stores/home.store'
 import { groupTasksByArea } from '@/lib/utils/task-utils'
 import { useActiveAreas } from '@/queries/use-areas'
@@ -118,7 +119,7 @@ export function TaskList({
   )
 
   // DnD enabled only when not read-only and filter is 'all' (to prevent sort order confusion)
-  const isDndEnabled = !isReadOnly
+  const isDndEnabled = !isReadOnly && filter === 'all'
 
   // Empty state
   if (tasks.length === 0) {
@@ -128,7 +129,7 @@ export function TaskList({
   return (
     <div ref={listRef} className="space-y-4">
       {/* Day summary */}
-      <PastDaySummary tasks={tasks} selectedDate={selectedDate} />
+      <PastDaySummary tasks={tasks} selectedDate={selectedDate} isReadOnly={isReadOnly} />
 
       {/* Streak at-risk nudge */}
       {streakAtRiskTasks.length > 0 && (
@@ -151,7 +152,7 @@ export function TaskList({
         </button>
       )}
 
-      {/* Filter pills */}
+      {/* Filter pills + priority rank button */}
       <div className="flex items-center gap-1">
         {FILTER_OPTIONS.map((opt) => (
           <button
@@ -167,6 +168,11 @@ export function TaskList({
             {opt.label}
           </button>
         ))}
+        {!isReadOnly && (
+          <div className="ml-auto lg:hidden">
+            <AiQuickActionInline />
+          </div>
+        )}
       </div>
 
       {isDndEnabled ? (

@@ -1,5 +1,3 @@
-export { StoryCard } from './story-card'
 export { Highlights } from './highlights'
 export { AreaOverview } from './area-overview'
 export { DayRecord } from './day-record'
-export { QuickReflection } from './quick-reflection'

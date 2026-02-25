@@ -9,7 +9,11 @@ import type { DragEndEvent } from '@dnd-kit/core'
 import { safeNewOrderBetween } from '@/lib/fractional-index'
 import { moveNode } from '@/actions/tree.actions'
 import { queryKeys } from '@/lib/query/keys'
-import { snapshotHomeCaches, patchAreaInHomeCaches } from '@/lib/utils/home-cache-utils'
+import {
+  snapshotHomeCaches,
+  restoreHomeCaches,
+  patchAreaInHomeCaches,
+} from '@/lib/utils/home-cache-utils'
 import type { AreaGroup } from '@/lib/utils/task-utils'
 
 /**
@@ -17,23 +21,24 @@ import type { AreaGroup } from '@/lib/utils/task-utils'
  * Called from the shared DndContext when the dragged item has type: 'area'.
  * Custom collision detection (homeCollisionDetection) ensures area drags
  * only see area droppables, preventing interference with task DnD.
+ *
+ * Uses Roadmap's localGroups pattern: single local state synced from server.
  */
 export function useAreaDnd(areaGroups: AreaGroup[], selectedDate: Date) {
   const queryClient = useQueryClient()
   const dateStr = format(selectedDate, 'yyyy-MM-dd')
   const weekStartStr = format(startOfWeek(selectedDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
 
-  const baseAreaOrder = useMemo(() => areaGroups.map((g) => g.area.id), [areaGroups])
-  const [dragAreaOrder, setDragAreaOrder] = useState<string[] | null>(null)
-  const areaOrder = dragAreaOrder ?? baseAreaOrder
+  // Server-derived area order (stable via useMemo)
+  const serverAreaOrder = useMemo(() => areaGroups.map((g) => g.area.id), [areaGroups])
 
-  // Auto-clear drag overlay when base order updates (cache propagated)
+  // Local state synced from server (Roadmap localGroups pattern)
+  const [localAreaOrder, setLocalAreaOrder] = useState(serverAreaOrder)
+
+  // Sync from server when data changes (after mutation settles or external update)
   useEffect(() => {
-    if (dragAreaOrder) {
-      setDragAreaOrder(null)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseAreaOrder])
+    setLocalAreaOrder(serverAreaOrder)
+  }, [serverAreaOrder])
 
   const mutation = useMutation({
     mutationFn: (vars: { nodeId: string; newOrder: string; areaId: string }) =>
@@ -47,8 +52,7 @@ export function useAreaDnd(areaGroups: AreaGroup[], selectedDate: Date) {
     },
     onError: (_err, _vars, context) => {
       if (context) {
-        queryClient.setQueryData(queryKeys.tasks.home(dateStr), context.daily)
-        queryClient.setQueryData(queryKeys.tasks.homeWeek(weekStartStr), context.weekly)
+        restoreHomeCaches(queryClient, context)
       }
       toast.error('순서 변경에 실패했어요.')
     },
@@ -71,15 +75,16 @@ export function useAreaDnd(areaGroups: AreaGroup[], selectedDate: Date) {
       const activeId = String(active.id).replace('area-', '')
       const overId = String(over.id).replace('area-', '')
 
-      const oldIndex = baseAreaOrder.indexOf(activeId)
-      const newIndex = baseAreaOrder.indexOf(overId)
+      const oldIndex = serverAreaOrder.indexOf(activeId)
+      const newIndex = serverAreaOrder.indexOf(overId)
       if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
 
-      const newOrderArr = arrayMove(baseAreaOrder, oldIndex, newIndex)
-      setDragAreaOrder(newOrderArr)
+      // Immediate visual update (Roadmap pattern)
+      const newOrderArr = arrayMove(serverAreaOrder, oldIndex, newIndex)
+      setLocalAreaOrder(newOrderArr)
 
       // Compute sort_order from ORIGINAL items (before arrayMove)
-      const originalItems = baseAreaOrder.map((id) => {
+      const originalItems = serverAreaOrder.map((id) => {
         const group = areaGroups.find((g) => g.area.id === id)
         return { id, sort_order: group?.area.sort_order ?? '' }
       })
@@ -87,14 +92,15 @@ export function useAreaDnd(areaGroups: AreaGroup[], selectedDate: Date) {
 
       mutation.mutate({ nodeId: activeId, newOrder: newSortOrder, areaId: activeId })
     },
-    [baseAreaOrder, areaGroups, mutation]
+    [serverAreaOrder, areaGroups, mutation]
   )
 
   const onAreaDragCancel = useCallback(() => {
-    setDragAreaOrder(null)
-  }, [])
+    // Reset to server state
+    setLocalAreaOrder(serverAreaOrder)
+  }, [serverAreaOrder])
 
-  return { areaOrder, onAreaDragEnd, onAreaDragCancel }
+  return { areaOrder: localAreaOrder, onAreaDragEnd, onAreaDragCancel }
 }
 
 /**
