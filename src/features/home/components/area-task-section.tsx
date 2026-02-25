@@ -1,12 +1,14 @@
 'use client'
 
+import { useCallback } from 'react'
+import { DndContext, closestCenter, DragOverlay, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import { useDroppable } from '@dnd-kit/core'
 import { AreaSectionHeader } from './area-section-header'
 import { CompactTaskRow } from './compact-task-row'
 import { InlineTaskInput } from './inline-task-input'
-import { SortableTaskItem, type DragHandleProps } from '@/components/common'
-import { cn } from '@/lib/utils'
+import { SortableTaskItem, DragOverlayCard, type DragHandleProps } from '@/components/common'
+import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
+import { useSectionTaskDnd } from '../hooks/use-section-task-dnd'
 import type { HomeTask } from '@/types/entities'
 
 interface AreaTaskSectionBaseProps {
@@ -25,12 +27,14 @@ interface AreaTaskSectionBaseProps {
 interface StaticAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable?: false
   dragHandleProps?: never
+  onDragStart?: never
 }
 
 interface SortableAreaTaskSectionProps extends AreaTaskSectionBaseProps {
   sortable: true
   area: { id: string; name: string; emoji: string; color: string; sort_order: string }
   dragHandleProps: DragHandleProps
+  onDragStart?: () => void
 }
 
 type AreaTaskSectionProps = StaticAreaTaskSectionProps | SortableAreaTaskSectionProps
@@ -52,7 +56,7 @@ function StaticAreaSectionInner({
   expandedTaskId,
   onToggle,
   enableAiSuggest,
-  priorityTiers,
+  priorityTiers: _priorityTiers,
 }: AreaTaskSectionBaseProps) {
   return (
     <section
@@ -79,7 +83,6 @@ function StaticAreaSectionInner({
             selectedDate={selectedDate}
             isExpanded={expandedTaskId === task.id}
             onToggle={onToggle}
-            priorityTier={priorityTiers?.[task.id]}
           />
         ))}
 
@@ -109,21 +112,27 @@ function SortableAreaSectionInner({
   enableAiSuggest,
   priorityTiers,
   dragHandleProps,
+  onDragStart: onDragStartProp,
 }: SortableAreaTaskSectionProps) {
-  // Destructure to avoid react-hooks/refs lint rule on property access
   const {
     setActivatorRef,
     listeners: handleListeners,
     attributes: handleAttributes,
   } = dragHandleProps
 
-  // useDroppable for cross-area task drops — filtered from area collision detection
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: area.id,
-    data: { type: 'container' as const, containerId: area.id },
-  })
+  const sensors = useStandardSensors()
+  const { localTasks, activeTask, handleDragStart, handleDragEnd, handleDragCancel } =
+    useSectionTaskDnd(tasks, selectedDate)
 
-  const taskIds = tasks.map((t) => t.id)
+  const wrappedDragStart = useCallback(
+    (event: DragStartEvent) => {
+      onDragStartProp?.()
+      handleDragStart(event)
+    },
+    [onDragStartProp, handleDragStart]
+  )
+
+  const taskIds = localTasks.map((t) => t.id)
 
   return (
     <section
@@ -146,22 +155,18 @@ function SortableAreaSectionInner({
         />
       </div>
 
-      {/* Task container — droppable for cross-area task moves */}
-      <div
-        ref={setDroppableRef}
-        className={cn(
-          'rounded-md transition-all',
-          isOver && 'bg-[var(--color-bg-secondary)] ring-1 ring-[var(--color-primary-200)]'
-        )}
+      {/* Task DnD — own DndContext (isolated from area reorder) */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={wrappedDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-0.5">
-            {tasks.map((task) => (
-              <SortableTaskItem
-                key={task.id}
-                id={task.id}
-                data={{ type: 'task' as const, containerId: area.id }}
-              >
+            {localTasks.map((task) => (
+              <SortableTaskItem key={task.id} id={task.id}>
                 <CompactTaskRow
                   task={task}
                   isReadOnly={isReadOnly}
@@ -175,16 +180,24 @@ function SortableAreaSectionInner({
           </div>
         </SortableContext>
 
-        {/* Inline quick-add */}
-        {!isReadOnly && (
-          <InlineTaskInput
-            goals={goals.length > 0 ? goals : undefined}
-            areaId={area.id}
-            selectedDate={selectedDate}
-            enableAiSuggest={enableAiSuggest}
-          />
-        )}
-      </div>
+        <DragOverlay dropAnimation={DROP_ANIMATION}>
+          {activeTask ? (
+            <DragOverlayCard>
+              <CompactTaskRow task={activeTask} isReadOnly selectedDate={selectedDate} />
+            </DragOverlayCard>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Inline quick-add */}
+      {!isReadOnly && (
+        <InlineTaskInput
+          goals={goals.length > 0 ? goals : undefined}
+          areaId={area.id}
+          selectedDate={selectedDate}
+          enableAiSuggest={enableAiSuggest}
+        />
+      )}
     </section>
   )
 }

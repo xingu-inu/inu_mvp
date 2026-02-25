@@ -7,6 +7,7 @@ import { EmptyTasks } from './empty-tasks'
 import { AreaTaskSection } from './area-task-section'
 import { SortableTaskList } from './sortable-task-list'
 import { DailySection } from './daily-section'
+import { GCalEventSection } from './gcal-event-section'
 import { PastDaySummary } from './past-day-summary'
 import { AiQuickActionInline } from './ai-quick-actions'
 import { useHomeStore } from '@/stores/home.store'
@@ -15,6 +16,7 @@ import { useActiveAreas } from '@/queries/use-areas'
 import { useGoals } from '@/queries/use-goals'
 import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
+import type { GoogleCalendarEvent } from '@/types/google-calendar'
 
 type TaskFilter = 'all' | 'pending' | 'done'
 
@@ -29,6 +31,7 @@ interface TaskListProps {
   isReadOnly?: boolean
   selectedDate: Date
   enableAiSuggest?: boolean
+  googleEvents?: GoogleCalendarEvent[]
 }
 
 export function TaskList({
@@ -36,6 +39,7 @@ export function TaskList({
   isReadOnly = false,
   selectedDate,
   enableAiSuggest,
+  googleEvents,
 }: TaskListProps) {
   const { data: activeAreas = [] } = useActiveAreas()
   const { data: allGoals = [] } = useGoals()
@@ -134,7 +138,7 @@ export function TaskList({
   return (
     <div ref={listRef} className="space-y-4">
       {/* Day summary */}
-      <PastDaySummary tasks={tasks} selectedDate={selectedDate} isReadOnly={isReadOnly} />
+      <PastDaySummary tasks={tasks} selectedDate={selectedDate} />
 
       {/* Streak at-risk nudge */}
       {streakAtRiskTasks.length > 0 && (
@@ -190,6 +194,7 @@ export function TaskList({
           onToggle={handleToggle}
           onDragStart={handleDragStart}
           enableAiSuggest={enableAiSuggest}
+          googleEvents={googleEvents}
         />
       ) : (
         <>
@@ -215,6 +220,7 @@ export function TaskList({
             onToggle={handleToggle}
             enableAiSuggest={enableAiSuggest}
           />
+          {googleEvents && <GCalEventSection events={googleEvents} />}
         </>
       )}
     </div>

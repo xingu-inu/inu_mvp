@@ -18,9 +18,9 @@ import type { AreaGroup } from '@/lib/utils/task-utils'
 
 /**
  * Hook for area reorder DnD.
- * Called from the shared DndContext when the dragged item has type: 'area'.
- * Custom collision detection (homeCollisionDetection) ensures area drags
- * only see area droppables, preventing interference with task DnD.
+ * Called from the outer area-only DndContext in SortableTaskList.
+ * Task DnD is handled by per-section DndContexts (useSectionTaskDnd),
+ * so no collision detection filtering is needed.
  *
  * Uses Roadmap's localGroups pattern: single local state synced from server.
  */

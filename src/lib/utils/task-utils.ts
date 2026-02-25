@@ -171,8 +171,10 @@ export function sortTasksByPriority(tasks: HomeTask[]): HomeTask[] {
       return b.streak_count - a.streak_count
     }
 
-    // Then by sort_order (lexicographic for fractional indexing)
-    return a.sort_order.localeCompare(b.sort_order)
+    // Then by sort_order (byte-order for fractional indexing — NOT localeCompare)
+    if (a.sort_order < b.sort_order) return -1
+    if (a.sort_order > b.sort_order) return 1
+    return 0
   })
 }
 
@@ -441,8 +443,16 @@ export function groupTasksByArea(
   // Sort tasks within each area by sort_order only (no check-in status reordering)
   // Then sort areas by area sort_order
   // Stable tiebreaker by id to prevent order flickering when sort_orders are identical
-  const safeCompare = (x: string | null | undefined, y: string | null | undefined) =>
-    (x ?? '').localeCompare(y ?? '')
+  // IMPORTANT: Use byte-order comparison (</>), NOT localeCompare.
+  // fractional-indexing keys use uppercase (Z=negative) before lowercase (a=positive),
+  // but localeCompare treats 'Z' > 'a' in most locales, breaking key ordering.
+  const safeCompare = (x: string | null | undefined, y: string | null | undefined) => {
+    const a = x ?? ''
+    const b = y ?? ''
+    if (a < b) return -1
+    if (a > b) return 1
+    return 0
+  }
 
   const stableTaskCompare = (a: HomeTask, b: HomeTask) => {
     const cmp = safeCompare(a.sort_order, b.sort_order)

@@ -1,52 +1,17 @@
 'use client'
 
 import { useCallback } from 'react'
-import {
-  DndContext,
-  DragOverlay,
-  closestCenter,
-  closestCorners,
-  type CollisionDetection,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-} from '@dnd-kit/core'
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { AreaTaskSection } from './area-task-section'
-import { CompactTaskRow } from './compact-task-row'
 import { DailySection } from './daily-section'
-import { GoalPickerPopover } from './goal-picker-popover'
-import { DragOverlayCard, SortableAreaItem } from '@/components/common'
-import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
+import { GCalEventSection } from './gcal-event-section'
+import { SortableAreaItem } from '@/components/common'
+import { useStandardSensors } from '@/lib/dnd/dnd-config'
 import { useAreaDnd } from '../hooks/use-area-dnd'
-import { useTaskDnd } from '../hooks/use-task-dnd'
 import type { HomeTask } from '@/types/entities'
+import type { GoogleCalendarEvent } from '@/types/google-calendar'
 import type { AreaGroup } from '@/lib/utils/task-utils'
-
-/**
- * Custom collision detection — filters droppables by active drag type:
- *  - Area drags: only consider area droppables (closestCenter)
- *  - Task drags: exclude area droppables, keep task/container (closestCorners)
- *
- * This prevents area and task droppables from interfering with each other's
- * collision detection.
- */
-const homeCollisionDetection: CollisionDetection = (args) => {
-  const activeData = args.active.data.current as { type?: string } | undefined
-
-  if (activeData?.type === 'area') {
-    const areaDroppables = args.droppableContainers.filter(
-      (c) => (c.data.current as Record<string, unknown> | undefined)?.type === 'area'
-    )
-    return closestCenter({ ...args, droppableContainers: areaDroppables })
-  }
-
-  // Task drag — exclude area sortable droppables
-  const taskDroppables = args.droppableContainers.filter(
-    (c) => (c.data.current as Record<string, unknown> | undefined)?.type !== 'area'
-  )
-  return closestCorners({ ...args, droppableContainers: taskDroppables })
-}
 
 interface SortableTaskListProps {
   areaGroups: AreaGroup[]
@@ -58,6 +23,7 @@ interface SortableTaskListProps {
   onDragStart?: () => void
   enableAiSuggest?: boolean
   priorityTiers?: Record<string, number> | null
+  googleEvents?: GoogleCalendarEvent[]
 }
 
 export function SortableTaskList({
@@ -70,90 +36,35 @@ export function SortableTaskList({
   onDragStart: onDragStartProp,
   enableAiSuggest,
   priorityTiers,
+  googleEvents,
 }: SortableTaskListProps) {
-  // ── Area DnD ──
+  // ── Area DnD (reorder area sections) ──
   const { areaOrder, onAreaDragEnd, onAreaDragCancel } = useAreaDnd(areaGroups, selectedDate)
-
-  // ── Task DnD ──
-  const {
-    activeTaskId,
-    pendingCrossMove,
-    taskContainers,
-    tasksById,
-    onDragStart,
-    onDragOver,
-    onDragEnd,
-    onDragCancel,
-    confirmCrossMove,
-    cancelCrossMove,
-  } = useTaskDnd(areaGroups, dailyTasks, selectedDate)
-
   const sensors = useStandardSensors()
 
-  // ── Dispatch handlers by drag type ──
-
-  const handleDragStart = useCallback(
-    (event: DragStartEvent) => {
-      onDragStartProp?.()
-      const activeData = event.active.data.current as { type?: string } | undefined
-      if (activeData?.type !== 'area') {
-        onDragStart(event)
-      }
-    },
-    [onDragStartProp, onDragStart]
-  )
-
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const activeData = event.active.data.current as { type?: string } | undefined
-      if (activeData?.type === 'area') return
-      onDragOver(event)
-    },
-    [onDragOver]
-  )
+  const areaSortableIds = areaOrder.map((id) => `area-${id}`)
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const activeData = event.active.data.current as { type?: string } | undefined
-      if (activeData?.type === 'area') {
-        onAreaDragEnd(event)
-        return
-      }
-      onDragEnd(event)
+      onAreaDragEnd(event)
     },
-    [onAreaDragEnd, onDragEnd]
+    [onAreaDragEnd]
   )
-
-  const handleDragCancel = useCallback(() => {
-    // Clean up both area and task state — safe to call both since they're no-ops if inactive
-    onAreaDragCancel()
-    onDragCancel()
-  }, [onAreaDragCancel, onDragCancel])
-
-  // Area sortable IDs (prefixed to avoid collision with container droppable IDs)
-  const areaSortableIds = areaOrder.map((id) => `area-${id}`)
-
-  // Active dragged task (for DragOverlay)
-  const activeTask = activeTaskId ? (tasksById.get(activeTaskId) ?? null) : null
 
   return (
     <>
+      {/* Area-only DndContext — task DnD is handled per-section inside each component */}
       <DndContext
         sensors={sensors}
-        collisionDetection={homeCollisionDetection}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
+        collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
+        onDragCancel={onAreaDragCancel}
       >
         <SortableContext items={areaSortableIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-4">
             {areaOrder.map((areaId) => {
               const group = areaGroups.find((g) => g.area.id === areaId)
               if (!group) return null
-
-              const taskIds = taskContainers[areaId] ?? []
-              const tasks = taskIds.map((id) => tasksById.get(id)).filter(Boolean) as HomeTask[]
 
               return (
                 <SortableAreaItem
@@ -166,12 +77,13 @@ export function SortableTaskList({
                       sortable
                       area={group.area}
                       goals={group.goals}
-                      tasks={tasks}
+                      tasks={group.tasks}
                       stats={group.stats}
                       isReadOnly={isReadOnly}
                       selectedDate={selectedDate}
                       expandedTaskId={expandedTaskId}
                       onToggle={onToggle}
+                      onDragStart={onDragStartProp}
                       enableAiSuggest={enableAiSuggest}
                       priorityTiers={priorityTiers}
                       dragHandleProps={dragHandleProps}
@@ -183,34 +95,21 @@ export function SortableTaskList({
 
             <DailySection
               sortable
-              taskIds={taskContainers['daily'] ?? []}
-              tasksById={tasksById}
+              tasks={dailyTasks}
               isReadOnly={isReadOnly}
               selectedDate={selectedDate}
               expandedTaskId={expandedTaskId}
               onToggle={onToggle}
+              onDragStart={onDragStartProp}
               enableAiSuggest={enableAiSuggest}
               priorityTiers={priorityTiers}
             />
           </div>
         </SortableContext>
-
-        <DragOverlay dropAnimation={DROP_ANIMATION}>
-          {activeTask ? (
-            <DragOverlayCard>
-              <CompactTaskRow task={activeTask} isReadOnly selectedDate={selectedDate} />
-            </DragOverlayCard>
-          ) : null}
-        </DragOverlay>
       </DndContext>
 
-      {pendingCrossMove && (
-        <GoalPickerPopover
-          goals={pendingCrossMove.targetGoals}
-          onSelect={confirmCrossMove}
-          onCancel={cancelCrossMove}
-        />
-      )}
+      {/* Google Calendar — outside DnD */}
+      {googleEvents && <GCalEventSection events={googleEvents} />}
     </>
   )
 }

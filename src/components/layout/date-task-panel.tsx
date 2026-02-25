@@ -13,7 +13,6 @@ import { getContextualGreeting, calculateTaskStats } from '@/lib/utils/task-util
 import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 import { TaskList } from '@/features/home/components/task-list'
-import { GCalEventSection } from '@/features/home/components/gcal-event-section'
 import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 
 import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
@@ -145,8 +144,8 @@ function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
               isReadOnly={isReadOnly}
               selectedDate={selectedDate}
               enableAiSuggest={!isReadOnly}
+              googleEvents={dayGCalEvents}
             />
-            <GCalEventSection events={dayGCalEvents} />
             {showReflection && !reflectionAbove && (
               <DailyReflectionCard tasks={tasks} date={selectedDate} />
             )}

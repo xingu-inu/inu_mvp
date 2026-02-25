@@ -2,14 +2,13 @@
 
 import { isToday as isTodayFn, isFuture, startOfDay } from 'date-fns'
 import { Mascot } from '@/components/common/mascot'
-import { AiQuickActionInline } from './ai-quick-actions'
+
 import type { MascotMood } from '@/components/common/mascot'
 import type { HomeTask } from '@/types/entities'
 
 interface PastDaySummaryProps {
   tasks: HomeTask[]
   selectedDate?: Date
-  isReadOnly?: boolean
 }
 
 function getPastMessage(rate: number): string {
@@ -43,7 +42,7 @@ function getMascotMood(rate: number): MascotMood {
   return 'encouraging'
 }
 
-export function PastDaySummary({ tasks, selectedDate, isReadOnly }: PastDaySummaryProps) {
+export function PastDaySummary({ tasks, selectedDate }: PastDaySummaryProps) {
   if (tasks.length === 0) return null
 
   const doneCount = tasks.filter((t) => t.todayCheckIn?.status === 'done').length
@@ -52,17 +51,14 @@ export function PastDaySummary({ tasks, selectedDate, isReadOnly }: PastDaySumma
 
   return (
     <div className="mt-2 hidden space-y-2 rounded-xl bg-[var(--color-bg-secondary)] px-4 py-3 lg:block">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Mascot mood={getMascotMood(rate)} size="xs" />
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-            {doneCount}/{totalCount} 완료
-          </span>
-          <span className="text-xs text-[var(--color-text-tertiary)]">
-            {getEncouragingMessage(rate, selectedDate)}
-          </span>
-        </div>
-        {!isReadOnly && <AiQuickActionInline />}
+      <div className="flex items-center gap-2">
+        <Mascot mood={getMascotMood(rate)} size="xs" />
+        <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+          {doneCount}/{totalCount} 완료
+        </span>
+        <span className="text-xs text-[var(--color-text-tertiary)]">
+          {getEncouragingMessage(rate, selectedDate)}
+        </span>
       </div>
       {/* Full-width progress bar */}
       <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-border)]">

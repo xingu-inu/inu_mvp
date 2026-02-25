@@ -63,6 +63,39 @@ export function patchTaskInHomeCaches(
 }
 
 /**
+ * Patch a single task's sortOrder ONLY for a specific date in home caches.
+ * Used for date-specific sort order updates (per-date DnD reorder).
+ * Unlike patchTaskInHomeCaches, this does NOT touch other dates in the weekly cache.
+ */
+export function patchTaskSortOrderForDate(
+  qc: QueryClient,
+  dateStr: string,
+  weekStartStr: string,
+  taskId: string,
+  newSortOrder: string
+): void {
+  // 1. Daily caches — all direction variants for this specific date
+  qc.setQueriesData<ActionHomeTask[]>(
+    { queryKey: [...queryKeys.tasks.all, 'home', dateStr] },
+    (prev) => prev?.map((t) => (t.id === taskId ? { ...t, sortOrder: newSortOrder } : t))
+  )
+
+  // 2. Weekly caches — ONLY patch the specific date entry, not other dates
+  qc.setQueriesData<Record<string, ActionHomeTask[]>>(
+    { queryKey: [...queryKeys.tasks.all, 'home', 'week', weekStartStr] },
+    (prev) => {
+      if (!prev || !prev[dateStr]) return prev
+      return {
+        ...prev,
+        [dateStr]: prev[dateStr].map((t) =>
+          t.id === taskId ? { ...t, sortOrder: newSortOrder } : t
+        ),
+      }
+    }
+  )
+}
+
+/**
  * Patch area sort order across all daily and weekly home caches.
  * Uses prefix matching to hit ALL direction variants at once.
  */
