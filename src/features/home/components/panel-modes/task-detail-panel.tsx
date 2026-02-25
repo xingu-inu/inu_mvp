@@ -48,7 +48,6 @@ import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
 import { useGoogleCalendarConnection } from '@/queries/use-google-calendar-connection'
 import { exportSingleTaskToGoogleCalendar } from '@/actions/google-calendar.actions'
-import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { updateTaskSchema, type UpdateTaskSchema } from '@/lib/validations'
 import { cn } from '@/lib/utils'
 import { generateAiComment } from '@/lib/utils/ai-comments'
@@ -59,7 +58,7 @@ export function TaskDetailPanel() {
   const selectedTaskId = useHomeStore((s) => s.selectedTaskId)
   const clearPanelSelection = useHomeStore((s) => s.clearPanelSelection)
   const { currentDate } = useHomeState()
-  const { data: apiTasks = [] } = useHomeTasks(currentDate)
+  const { data: tasks = [] } = useHomeTasks(currentDate)
   const { data: directionData } = useDirection()
   const checkIn = useCheckIn()
   const undoCheckIn = useUndoCheckIn()
@@ -75,8 +74,6 @@ export function TaskDetailPanel() {
 
   const { data: gcalConnection } = useGoogleCalendarConnection()
   const isGcalConnected = !!gcalConnection?.sync_enabled
-
-  const tasks = mapApiTasksToEntities(apiTasks)
   const task = tasks.find((t) => t.id === selectedTaskId)
 
   const form = useForm<UpdateTaskSchema>({

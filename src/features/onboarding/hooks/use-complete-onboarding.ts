@@ -13,6 +13,7 @@ import type {
   TaskInputV2,
 } from '@/actions/onboarding.actions'
 import type { AreaType } from '@/types/entities'
+import { isApiError } from '@/types/api'
 
 export function useCompleteOnboarding() {
   const [isPending, setIsPending] = useState(false)
@@ -78,7 +79,10 @@ export function useCompleteOnboarding() {
           task = { name: firstTask.name }
         }
 
-        await completeOnboarding(direction, areas, goal, task)
+        const result = await completeOnboarding(direction, areas, goal, task)
+        if (isApiError(result as never)) {
+          throw new Error((result as unknown as { error: { message: string } }).error.message)
+        }
 
         trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
           areas_count: areas.length,
@@ -109,7 +113,10 @@ export function useCompleteOnboarding() {
             return { name: t.name, goalName: goal?.name || '' }
           })
 
-        await completeOnboardingV2(direction, areas, goals, tasks)
+        const resultV2 = await completeOnboardingV2(direction, areas, goals, tasks)
+        if (isApiError(resultV2 as never)) {
+          throw new Error((resultV2 as unknown as { error: { message: string } }).error.message)
+        }
 
         trackEvent(ANALYTICS_EVENTS.ONBOARDING_COMPLETED, {
           areas_count: areas.length,

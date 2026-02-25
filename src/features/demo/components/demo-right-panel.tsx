@@ -1,13 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
 import { isToday, format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { Calendar } from 'lucide-react'
 import { useDemoMode } from '@/lib/demo/demo-context'
 import { usePanelDateStore } from '@/stores/panel-date.store'
 import { useHomeTasks } from '@/queries/use-home'
-import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
+import { getContextualGreeting } from '@/lib/utils/task-utils'
 import { TaskList } from '@/features/home/components/task-list'
 import { GoalBrowsePanel } from '@/features/roadmap/components/panel-modes'
 import { ReviewPanel } from '@/features/review/components/review-panel'
@@ -29,9 +28,7 @@ export function DemoRightPanel() {
 /** Simplified version of HomeDailyPanel for demo mode (read-only) */
 function DemoHomeDailyPanel() {
   const selectedDate = usePanelDateStore((s) => s.selectedDate)
-  const { data: apiTasks = [], isLoading } = useHomeTasks(selectedDate)
-
-  const tasks = useMemo(() => mapApiTasksToEntities(apiTasks), [apiTasks])
+  const { data: tasks = [], isLoading } = useHomeTasks(selectedDate)
   const viewingToday = isToday(selectedDate)
   const dateLabel = format(selectedDate, 'M월 d일 EEEE', { locale: ko })
 

@@ -31,7 +31,7 @@ export function EmptyRoadmap({ onAddGoal, isMobile = false }: EmptyRoadmapProps)
     <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
       {/* Icon */}
       <div className="mb-6">
-        <Mascot mood="curious" size="lg" />
+        <Mascot mood="encouraging" size="lg" />
       </div>
 
       {/* Text */}

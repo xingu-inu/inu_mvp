@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 import { PageContainer } from '@/components/layout'
 import { HomeHeader, UnifiedCalendar, TaskList, useHomeState } from '@/features/home'
 import { useHomeTasks } from '@/queries/use-home'
-import { mapApiTasksToEntities, getContextualGreeting } from '@/lib/utils/task-utils'
+import { getContextualGreeting } from '@/lib/utils/task-utils'
 import { WeekViewGrid } from '@/features/home/components/week-view'
 import { DemoMobileTaskGate } from './demo-mobile-task-gate'
 
@@ -61,9 +61,7 @@ function DemoMonthView() {
 /** Task list section -- visible on mobile only, desktop uses the right panel */
 function DemoMobileTaskSection() {
   const { currentDate } = useHomeState()
-  const { data: apiTasks = [], isLoading } = useHomeTasks(currentDate)
-
-  const tasks = mapApiTasksToEntities(apiTasks)
+  const { data: tasks = [], isLoading } = useHomeTasks(currentDate)
   const viewingToday = isTodayFn(currentDate)
 
   return (

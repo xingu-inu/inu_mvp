@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useRef, useEffect, useState } from 'react'
+import { memo, useMemo, useCallback, useRef, useEffect, useState } from 'react'
 import { format, addDays, subDays, isBefore, isSameDay, isToday, startOfToday } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -12,12 +12,10 @@ import { useTaskLayout, assignGoogleEventsToSlots } from '../hooks/use-task-layo
 import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 import { useHomeStore } from '@/stores/home.store'
 import { useHomeDirection } from '../hooks/use-home-direction'
-import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { TIME_SLOT_CONFIG, DISPLAY_SLOTS, getCurrentSlot } from '@/lib/constants/time-slots'
 import { SlotBlock } from './slot-block'
 import { SlotTaskRow } from './slot-task-row'
 import { SlotGoogleEventRow } from './slot-google-event-row'
-import type { HomeTask } from '@/types/entities'
 import type { GoogleCalendarEvent } from '@/types/google-calendar'
 import type { SlotGoogleEvents } from '../hooks/use-task-layout'
 
@@ -30,6 +28,69 @@ function isSlotPast(slot: string, currentSlot: string): boolean {
   const order = ['dawn', 'morning', 'afternoon', 'evening']
   return order.indexOf(slot) < order.indexOf(currentSlot)
 }
+
+/** Memo'd gutter — isolates currentSlot 60s interval re-renders from day columns */
+const SlotLabelGutter = memo(function SlotLabelGutter({
+  currentSlot,
+  dawnCollapsed,
+  isMobile,
+}: {
+  currentSlot: string
+  dawnCollapsed: boolean
+  isMobile: boolean
+}) {
+  return (
+    <div className="sticky left-0 z-10 flex flex-col bg-[var(--color-bg-primary)]">
+      {DISPLAY_SLOTS.map((slot) => {
+        const config = TIME_SLOT_CONFIG[slot]
+        const isDawnEmpty = slot === 'dawn' && dawnCollapsed
+
+        return (
+          <div
+            key={slot}
+            className={cn(
+              'flex flex-col items-center justify-center gap-0.5 border-b border-[var(--color-border)]/50 px-1',
+              currentSlot === slot && 'bg-[var(--color-primary-50)]/40',
+              isDawnEmpty && 'opacity-50'
+            )}
+            style={{
+              ...(currentSlot !== slot ? { backgroundColor: `var(--color-slot-${slot})` } : {}),
+              flex: isDawnEmpty ? '0 0 32px' : '1 1 0',
+              minHeight: '40px',
+              transition: 'flex-grow 200ms ease-out, flex-basis 200ms ease-out',
+            }}
+          >
+            <span
+              className={cn(
+                'text-center leading-tight text-[var(--color-text-disabled)]',
+                isMobile ? 'text-xs' : 'text-sm'
+              )}
+            >
+              {config.emoji}
+            </span>
+            {!isDawnEmpty && (
+              <span
+                className={cn(
+                  'text-[9px] leading-none',
+                  currentSlot === slot
+                    ? 'text-[var(--color-primary-500)]'
+                    : 'text-[var(--color-text-disabled)]'
+                )}
+              >
+                {config.hours[0]}-{config.hours[1]}
+              </span>
+            )}
+            {currentSlot === slot && (
+              <span className="mt-0.5 text-[8px] leading-none font-semibold text-[var(--color-primary-500)]">
+                지금
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+})
 
 /**
  * Week view — 4-block time-slot layout with tasks as simple list rows.
@@ -58,17 +119,8 @@ export function WeekViewGrid() {
     return weekDays.slice(start, start + 3)
   }, [isMobile, weekDays, currentDate])
 
-  // Map API tasks to entities for each day
-  const entityTasksByDate = useMemo(() => {
-    const result: Record<string, HomeTask[]> = {}
-    for (const [dateStr, tasks] of Object.entries(tasksByDate)) {
-      result[dateStr] = mapApiTasksToEntities(tasks)
-    }
-    return result
-  }, [tasksByDate])
-
-  // Compute slot-based layouts for all days
-  const layoutByDate = useTaskLayout(entityTasksByDate)
+  // Compute slot-based layouts for all days (tasksByDate already contains entities via useWeekTasks)
+  const layoutByDate = useTaskLayout(tasksByDate)
 
   // Google Calendar events
   const weekStartStr = format(weekDays[0] ?? new Date(), 'yyyy-MM-dd')
@@ -99,21 +151,19 @@ export function WeekViewGrid() {
     return () => clearInterval(interval)
   }, [])
 
-  // Anytime row: check visible days for anytime tasks or all-day events
-  const hasAnyAnytime = visibleDays.some((day) => {
-    const dateStr = format(day, 'yyyy-MM-dd')
-    return (layoutByDate[dateStr]?.anytime ?? []).length > 0
-  })
-  const hasAnyAllDay = visibleDays.some((day) => {
-    const dateStr = format(day, 'yyyy-MM-dd')
-    return (googleSlotsByDate[dateStr]?.allDay ?? []).length > 0
-  })
-  const showAnytimeRow = hasAnyAnytime || hasAnyAllDay
-
-  const hasAnyTasks = useMemo(
-    () => Object.values(entityTasksByDate).some((tasks) => tasks.length > 0),
-    [entityTasksByDate]
-  )
+  // Anytime row + empty state flags (memoized to avoid per-render .some() + format())
+  const { showAnytimeRow, hasAnyTasks } = useMemo(() => {
+    const anyAnytime = visibleDays.some((day) => {
+      const dateStr = format(day, 'yyyy-MM-dd')
+      return (layoutByDate[dateStr]?.anytime ?? []).length > 0
+    })
+    const anyAllDay = visibleDays.some((day) => {
+      const dateStr = format(day, 'yyyy-MM-dd')
+      return (googleSlotsByDate[dateStr]?.allDay ?? []).length > 0
+    })
+    const anyTasks = Object.values(tasksByDate).some((tasks) => tasks.length > 0)
+    return { showAnytimeRow: anyAnytime || anyAllDay, hasAnyTasks: anyTasks }
+  }, [visibleDays, layoutByDate, googleSlotsByDate, tasksByDate])
 
   const gridColumns = `${gutterPx}px repeat(${visibleDays.length}, minmax(0, 1fr))`
 
@@ -148,6 +198,29 @@ export function WeekViewGrid() {
   const goForward3Days = useCallback(() => {
     setCurrentDate(addDays(currentDate, 3))
   }, [currentDate, setCurrentDate])
+
+  // Precompute day header data to avoid per-render format/filter/isSameDay calls in JSX
+  const dayHeaderData = useMemo(() => {
+    const today = startOfToday()
+    return visibleDays.map((day) => {
+      const dateStr = format(day, 'yyyy-MM-dd')
+      const dayTasks = tasksByDate[dateStr] ?? []
+      const doneCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'done').length
+      const skipCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'skip').length
+      return {
+        day,
+        dateStr,
+        isSelected: isSameDay(day, currentDate),
+        isDayToday: isToday(day),
+        isDayPast: isBefore(day, today),
+        dayLabel: format(day, 'EEE', { locale: ko }),
+        dayNum: format(day, 'd'),
+        doneCount,
+        skipCount,
+        totalCount: dayTasks.length,
+      }
+    })
+  }, [visibleDays, tasksByDate, currentDate])
 
   if (isLoading) {
     return (
@@ -205,75 +278,64 @@ export function WeekViewGrid() {
           <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
               <div className="sticky left-0 z-30 bg-[var(--color-bg-primary)] p-2" />
-              {visibleDays.map((day) => {
-                const dateStr = format(day, 'yyyy-MM-dd')
-                const isSelected = isSameDay(day, currentDate)
-                const isDayToday = isToday(day)
-                const dayTasks = entityTasksByDate[dateStr] ?? []
-                const isDayPast = isBefore(day, startOfToday())
-                const doneCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'done').length
-                const skipCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'skip').length
-                const totalCount = dayTasks.length
-
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => setCurrentDate(day)}
+              {dayHeaderData.map((hd) => (
+                <button
+                  key={hd.dateStr}
+                  onClick={() => setCurrentDate(hd.day)}
+                  className={cn(
+                    'flex flex-col items-center px-1 py-2.5 text-center transition-colors',
+                    'hover:bg-[var(--color-bg-tertiary)]',
+                    hd.isSelected && !hd.isDayToday && 'bg-[var(--color-primary-50)]'
+                  )}
+                >
+                  <span
                     className={cn(
-                      'flex flex-col items-center px-1 py-2.5 text-center transition-colors',
-                      'hover:bg-[var(--color-bg-tertiary)]',
-                      isSelected && !isDayToday && 'bg-[var(--color-primary-50)]'
+                      'text-xs font-medium tracking-wide',
+                      hd.isDayToday
+                        ? 'text-[var(--color-primary-500)]'
+                        : 'text-[var(--color-text-tertiary)]'
                     )}
                   >
-                    <span
-                      className={cn(
-                        'text-xs font-medium tracking-wide',
-                        isDayToday
-                          ? 'text-[var(--color-primary-500)]'
-                          : 'text-[var(--color-text-tertiary)]'
-                      )}
-                    >
-                      {format(day, 'EEE', { locale: ko })}
-                    </span>
-                    <span
-                      className={cn(
-                        'mt-1 flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium',
-                        isDayToday && 'bg-[var(--color-primary-500)] text-white',
-                        isSelected &&
-                          !isDayToday &&
-                          'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
-                        !isDayToday && !isSelected && 'text-[var(--color-text-primary)]'
-                      )}
-                    >
-                      {format(day, 'd')}
-                    </span>
-                    {totalCount > 0 && (
-                      <div className="mt-1.5 flex flex-col items-center gap-1">
-                        {/* Segmented progress bar */}
-                        <div className="flex h-[3px] w-6 overflow-hidden rounded-full bg-[var(--color-border)]">
-                          {doneCount > 0 && (
-                            <span
-                              className="h-full bg-[var(--color-done)]"
-                              style={{ width: `${(doneCount / totalCount) * 100}%` }}
-                            />
-                          )}
-                          {skipCount > 0 && (
-                            <span
-                              className="h-full bg-[var(--color-skip)]"
-                              style={{ width: `${(skipCount / totalCount) * 100}%` }}
-                            />
-                          )}
-                        </div>
-                        {isDayPast && (
-                          <span className="text-[10px] text-[var(--color-text-disabled)] tabular-nums">
-                            {doneCount}/{totalCount}
-                          </span>
+                    {hd.dayLabel}
+                  </span>
+                  <span
+                    className={cn(
+                      'mt-1 flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium',
+                      hd.isDayToday && 'bg-[var(--color-primary-500)] text-white',
+                      hd.isSelected &&
+                        !hd.isDayToday &&
+                        'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
+                      !hd.isDayToday && !hd.isSelected && 'text-[var(--color-text-primary)]'
+                    )}
+                  >
+                    {hd.dayNum}
+                  </span>
+                  {hd.totalCount > 0 && (
+                    <div className="mt-1.5 flex flex-col items-center gap-1">
+                      {/* Segmented progress bar */}
+                      <div className="flex h-[3px] w-6 overflow-hidden rounded-full bg-[var(--color-border)]">
+                        {hd.doneCount > 0 && (
+                          <span
+                            className="h-full bg-[var(--color-done)]"
+                            style={{ width: `${(hd.doneCount / hd.totalCount) * 100}%` }}
+                          />
+                        )}
+                        {hd.skipCount > 0 && (
+                          <span
+                            className="h-full bg-[var(--color-skip)]"
+                            style={{ width: `${(hd.skipCount / hd.totalCount) * 100}%` }}
+                          />
                         )}
                       </div>
-                    )}
-                  </button>
-                )
-              })}
+                      {hd.isDayPast && (
+                        <span className="text-[10px] text-[var(--color-text-disabled)] tabular-nums">
+                          {hd.doneCount}/{hd.totalCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -283,60 +345,12 @@ export function WeekViewGrid() {
             className="grid flex-1"
             style={{ gridTemplateColumns: gridColumns }}
           >
-            {/* Slot labels gutter */}
-            <div className="sticky left-0 z-10 flex flex-col bg-[var(--color-bg-primary)]">
-              {DISPLAY_SLOTS.map((slot) => {
-                const config = TIME_SLOT_CONFIG[slot]
-                const isDawnEmpty = slot === 'dawn' && dawnCollapsed
-
-                return (
-                  <div
-                    key={slot}
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-0.5 border-b border-[var(--color-border)]/50 px-1',
-                      currentSlot === slot && 'bg-[var(--color-primary-50)]/40',
-                      isDawnEmpty && 'opacity-50'
-                    )}
-                    style={{
-                      ...(currentSlot !== slot
-                        ? { backgroundColor: `var(--color-slot-${slot})` }
-                        : {}),
-                      flex: isDawnEmpty ? '0 0 32px' : '1 1 0',
-                      minHeight: '40px',
-                      transition: 'flex-grow 200ms ease-out, flex-basis 200ms ease-out',
-                    }}
-                  >
-                    <span
-                      className={cn(
-                        'text-center leading-tight text-[var(--color-text-disabled)]',
-                        isMobile ? 'text-xs' : 'text-sm'
-                      )}
-                    >
-                      {config.emoji}
-                    </span>
-                    {/* Hide hour range text when dawn is collapsed to save space */}
-                    {!isDawnEmpty && (
-                      <span
-                        className={cn(
-                          'text-[9px] leading-none',
-                          currentSlot === slot
-                            ? 'text-[var(--color-primary-500)]'
-                            : 'text-[var(--color-text-disabled)]'
-                        )}
-                      >
-                        {config.hours[0]}-{config.hours[1]}
-                      </span>
-                    )}
-                    {/* "Now" indicator for current slot */}
-                    {currentSlot === slot && (
-                      <span className="mt-0.5 text-[8px] leading-none font-semibold text-[var(--color-primary-500)]">
-                        지금
-                      </span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            {/* Slot labels gutter (memo'd to isolate currentSlot interval re-renders) */}
+            <SlotLabelGutter
+              currentSlot={currentSlot}
+              dawnCollapsed={dawnCollapsed}
+              isMobile={isMobile}
+            />
 
             {/* Day columns — each with 4 SlotBlocks */}
             {visibleDays.map((day) => {
@@ -407,10 +421,7 @@ export function WeekViewGrid() {
                         key={task.id}
                         task={task}
                         isPast={isDayPast}
-                        onClick={() => {
-                          setCurrentDate(day)
-                          setHighlightedTaskId(task.id)
-                        }}
+                        onClick={() => handleTaskClick(task.id, day)}
                       />
                     ))}
                     {allDayEvents.map((event) => (

@@ -1,6 +1,6 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import { cn } from '@/lib/utils'
 import { SLOT_MAX_VISIBLE, type DisplaySlot } from '@/lib/constants/time-slots'
 import { parseTime } from '../hooks/use-task-layout'
@@ -50,18 +50,19 @@ export const SlotBlock = memo(function SlotBlock({
   const isEmpty = tasks.length === 0 && googleEvents.length === 0
   const limit = maxVisible ?? SLOT_MAX_VISIBLE
 
-  // Merge tasks and events into a single time-sorted list
-  const items: SlotItem[] = []
-
-  for (const task of tasks) {
-    const sortKey = task.specific_time ? parseTime(task.specific_time) : Infinity
-    items.push({ type: 'task', task, sortKey })
-  }
-  for (const event of googleEvents) {
-    items.push({ type: 'event', event, sortKey: event.startMinutes })
-  }
-
-  items.sort((a, b) => a.sortKey - b.sortKey)
+  // Merge tasks and events into a single time-sorted list (memoized)
+  const items = useMemo(() => {
+    const merged: SlotItem[] = []
+    for (const task of tasks) {
+      const sortKey = task.specific_time ? parseTime(task.specific_time) : Infinity
+      merged.push({ type: 'task', task, sortKey })
+    }
+    for (const event of googleEvents) {
+      merged.push({ type: 'event', event, sortKey: event.startMinutes })
+    }
+    merged.sort((a, b) => a.sortKey - b.sortKey)
+    return merged
+  }, [tasks, googleEvents])
 
   const visibleItems = items.slice(0, limit)
   const hiddenCount = Math.max(0, items.length - limit)

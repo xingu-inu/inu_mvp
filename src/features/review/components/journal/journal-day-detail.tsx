@@ -10,7 +10,6 @@ import { StreakBadge } from '@/components/ui/badge'
 import { VersionBadge } from '@/features/home/components/version-badge'
 import { useHomeTasks } from '@/queries/use-home'
 import { useReflection } from '@/queries/use-reflection'
-import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { MOOD_EMOJIS, MOOD_LABELS } from '../../utils/review-utils'
 import { parseCheckInNote } from '@/lib/utils/checkin-note'
 import { generateDayNarrative } from '../../utils/generate-insight'
@@ -46,10 +45,8 @@ export function JournalDayDetail({ dateStr }: JournalDayDetailProps) {
   const dateObj = useMemo(() => parseISO(dateStr), [dateStr])
   const dateLabel = format(dateObj, 'M월 d일 EEEE', { locale: ko })
 
-  const { data: apiTasks = [], isLoading: tasksLoading } = useHomeTasks(dateObj)
+  const { data: tasks = [], isLoading: tasksLoading } = useHomeTasks(dateObj)
   const { data: reflection } = useReflection(dateStr)
-
-  const tasks = useMemo(() => mapApiTasksToEntities(apiTasks), [apiTasks])
   const directionVersion = tasks[0]?.directionVersion ?? null
 
   // Sort: done first, then skip, then miss, then pending. Secondary: time slot

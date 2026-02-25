@@ -4,6 +4,7 @@ import { format, startOfWeek } from 'date-fns'
 import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import { unwrapListResponse, unwrapResponse } from '@/lib/api'
+import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import {
   getHomeTasks as getHomeTasksAction,
   getWeekHomeTasks,
@@ -11,7 +12,10 @@ import {
 } from '@/actions/home.actions'
 
 /**
- * Home tasks query hook with date selection
+ * Home tasks query hook with date selection.
+ * Uses `select` to transform raw DTOs into HomeTask entities at the query level.
+ * TQ's structural sharing ensures the select result reference is stable when data hasn't changed.
+ *
  * @param date - The date to fetch tasks for
  * @param directionId - Optional direction ID for version browsing
  */
@@ -22,6 +26,7 @@ export function useHomeTasks(date: Date = new Date(), directionId?: string) {
     queryKey: queryKeys.tasks.home(dateStr, directionId),
     queryFn: () => getHomeTasksAction(dateStr, directionId).then(unwrapListResponse),
     staleTime: STALE_TIMES.HOME_TASKS,
+    select: mapApiTasksToEntities,
   })
 }
 

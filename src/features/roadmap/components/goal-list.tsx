@@ -6,7 +6,7 @@ import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import { TreeView } from './tree-view'
-import { EmptyRoadmap } from './empty-roadmap'
+
 import { GoalListSkeleton } from './goal-list-skeleton'
 import { ErrorCard } from '@/components/ui/error-card'
 
@@ -16,7 +16,6 @@ interface GoalListProps {
 
 export function GoalList({ isMobile = false }: GoalListProps) {
   const select = useRoadmapStore((s) => s.select)
-  const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
 
   const handleGoalSelect = useCallback(
     (goalId: string | null) => {
@@ -66,12 +65,6 @@ export function GoalList({ isMobile = false }: GoalListProps) {
 
   // Filter areas that are active
   const activeAreas = areas.filter((area) => area.is_active)
-
-  const hasAnyGoals = goals.length > 0
-
-  if (!hasAnyGoals) {
-    return <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} isMobile={isMobile} />
-  }
 
   // Tree View - 계층 구조 (Direction → Status → Area → Goal → Group → Task)
   return (

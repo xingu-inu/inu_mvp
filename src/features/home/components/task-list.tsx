@@ -78,13 +78,18 @@ export function TaskList({
     return tasks.filter((t) => !!t.todayCheckIn?.status)
   }, [tasks, filter])
 
+  // Compute currentHour and todayStr once at mount (stable across re-renders within same session)
+  const { currentHour, todayStr } = useMemo(
+    () => ({ currentHour: new Date().getHours(), todayStr: format(new Date(), 'yyyy-MM-dd') }),
+    []
+  )
+
   const streakAtRiskTasks = useMemo(() => {
-    if (new Date().getHours() < 18) return []
-    const todayStr = format(new Date(), 'yyyy-MM-dd')
+    if (currentHour < 18) return []
     const selectedStr = format(selectedDate, 'yyyy-MM-dd')
     if (todayStr !== selectedStr) return []
     return tasks.filter((t) => !t.todayCheckIn?.status && t.streak_count >= 3)
-  }, [tasks, selectedDate])
+  }, [tasks, selectedDate, currentHour, todayStr])
 
   const allAreasForGrouping = useMemo(
     () =>

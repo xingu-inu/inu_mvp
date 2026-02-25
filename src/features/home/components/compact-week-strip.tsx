@@ -1,14 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
 import { format, isBefore, isSameDay, isToday, startOfToday } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { useHomeState } from '../hooks/use-home-state'
 import { useWeekTasks } from '../hooks/use-week-tasks'
 import { useHomeDirection } from '../hooks/use-home-direction'
-import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
-import type { HomeTask } from '@/types/entities'
 
 /**
  * Compact 7-day week strip for mobile — Todomate-style.
@@ -23,14 +20,6 @@ export function CompactWeekStrip() {
     selectedDirectionId ?? undefined
   )
 
-  const entityTasksByDate = useMemo(() => {
-    const map: Record<string, HomeTask[]> = {}
-    for (const [dateStr, tasks] of Object.entries(tasksByDate)) {
-      map[dateStr] = mapApiTasksToEntities(tasks)
-    }
-    return map
-  }, [tasksByDate])
-
   if (isLoading) {
     return <WeekStripSkeleton />
   }
@@ -42,7 +31,7 @@ export function CompactWeekStrip() {
         const isSelected = isSameDay(day, currentDate)
         const isDayToday = isToday(day)
         const isDayPast = isBefore(day, startOfToday())
-        const dayTasks = entityTasksByDate[dateStr] ?? []
+        const dayTasks = tasksByDate[dateStr] ?? []
         const totalCount = dayTasks.length
         const doneCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'done').length
         const skipCount = dayTasks.filter((t) => t.todayCheckIn?.status === 'skip').length

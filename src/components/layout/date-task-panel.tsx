@@ -9,11 +9,7 @@ import { Calendar, Sparkles } from 'lucide-react'
 import { usePanelDateStore } from '@/stores/panel-date.store'
 import { useHomeStore } from '@/stores/home.store'
 import { useHomeTasks } from '@/queries/use-home'
-import {
-  mapApiTasksToEntities,
-  getContextualGreeting,
-  calculateTaskStats,
-} from '@/lib/utils/task-utils'
+import { getContextualGreeting, calculateTaskStats } from '@/lib/utils/task-utils'
 import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 import { TaskList } from '@/features/home/components/task-list'
@@ -70,16 +66,15 @@ function HomeDailyPanel() {
 function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
   const { data: currentDirection } = useDirection()
   const { isCurrentVersion, selectedVersion, selectedDirectionId } = useHomeDirection()
-  const { data: apiTasks = [], isLoading } = useHomeTasks(
+  const { data: tasks = [], isLoading } = useHomeTasks(
     selectedDate,
     selectedDirectionId ?? undefined
   )
 
-  const tasks = useMemo(() => mapApiTasksToEntities(apiTasks), [apiTasks])
   const viewingToday = isToday(selectedDate)
   const viewingFuture = isFuture(startOfDay(selectedDate))
   const dateLabel = format(selectedDate, 'M월 d일 EEEE', { locale: ko })
-  const stats = calculateTaskStats(tasks)
+  const stats = useMemo(() => calculateTaskStats(tasks), [tasks])
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
 
   // Detect if selected date is before the current direction was created

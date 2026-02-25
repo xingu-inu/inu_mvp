@@ -12,8 +12,8 @@ import {
   useHomeState,
   useHomeKeyboard,
 } from '@/features/home'
+import { useIsMobile } from '@/hooks/use-is-mobile'
 import { useHomeTasks, usePrefetchHomeTasks } from '@/queries/use-home'
-import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
 import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
 import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
 import { GCalEventSection } from '@/features/home/components/gcal-event-section'
@@ -55,48 +55,48 @@ function HomeContent() {
 
 /** Week view: compact strip (mobile) or full time-slot grid (desktop) */
 function WeekView() {
-  return (
-    <>
-      {/* Mobile: compact week strip on top → tasks below (Todomate-style) */}
-      <div className="space-y-2 lg:hidden">
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <div className="space-y-2">
         <CompactWeekStrip />
         <MobileTaskSection />
       </div>
-      {/* Desktop: full 7-day time-slot grid (unchanged) */}
-      <div className="hidden lg:flex lg:min-h-0 lg:flex-1">
-        <WeekViewGrid />
-      </div>
-    </>
+    )
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1">
+      <WeekViewGrid />
+    </div>
   )
 }
 
 /** Month view: calendar on top → tasks below (mobile), calendar only (desktop) */
 function MonthView() {
-  return (
-    <>
-      {/* Mobile: month calendar on top → tasks below (Todomate-style) */}
-      <div className="space-y-4 lg:hidden">
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return (
+      <div className="space-y-4">
         <UnifiedCalendar />
         <MobileTaskSection />
       </div>
-      {/* Desktop: just calendar (right panel has tasks) */}
-      <div className="hidden lg:block">
-        <UnifiedCalendar />
-      </div>
-    </>
-  )
+    )
+  }
+
+  return <UnifiedCalendar />
 }
 
 /** Task list section — visible on mobile only, desktop uses the right panel */
 function MobileTaskSection() {
   const { currentDate } = useHomeState()
   const { isCurrentVersion, selectedVersion, selectedDirectionId } = useHomeDirection()
-  const { data: apiTasks = [], isLoading } = useHomeTasks(
+  const { data: tasks = [], isLoading } = useHomeTasks(
     currentDate,
     selectedDirectionId ?? undefined
   )
-
-  const tasks = mapApiTasksToEntities(apiTasks)
   const viewingFuture = isFuture(startOfDay(currentDate))
   const isReadOnly = !isCurrentVersion
 

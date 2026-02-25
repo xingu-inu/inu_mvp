@@ -8,7 +8,7 @@ import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore, selectStatusFilter } from '@/stores/roadmap.store'
 import { MIN_ZOOM, MAX_ZOOM, ZOOM_STEP, DEFAULT_ZOOM } from '@/lib/constants/visual-tree'
 import { VisualTree, buildVisualTreeData } from './visual-tree'
-import { EmptyRoadmap } from '../empty-roadmap'
+
 import { VisualTreeSkeleton } from '../visual-tree-skeleton'
 import { TreeSearchBar } from './tree-search-bar'
 import { useTreeSearch } from '../../hooks/use-tree-search'
@@ -18,7 +18,6 @@ function clampZoom(value: number): number {
 }
 
 export function VisualTreeWrapper() {
-  const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
   const clearSelection = useRoadmapStore((s) => s.clearSelection)
   const treeLayout = useRoadmapStore((s) => s.treeLayout)
   const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
@@ -153,16 +152,6 @@ export function VisualTreeWrapper() {
 
   if (isLoading) {
     return <VisualTreeSkeleton />
-  }
-
-  const hasAnyGoals = goals.length > 0
-
-  if (!hasAnyGoals) {
-    return (
-      <div className="flex flex-1 items-center justify-center bg-[var(--color-bg-canvas)]">
-        <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} />
-      </div>
-    )
   }
 
   const zoomPercent = Math.round(zoom * 100)

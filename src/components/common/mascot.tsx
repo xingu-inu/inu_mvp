@@ -5,7 +5,6 @@ import Image from 'next/image'
 export type MascotMood =
   | 'happy'
   | 'proud'
-  | 'curious'
   | 'sleepy'
   | 'encouraging'
   | 'celebrating'

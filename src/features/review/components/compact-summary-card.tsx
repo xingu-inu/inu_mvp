@@ -262,17 +262,11 @@ export function CompactSummaryCard({
         </p>
         <button
           type="button"
-          onClick={handleAiToggle}
-          className={cn(
-            'flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-            aiExpanded
-              ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-500)] dark:bg-[var(--color-primary-900)]/10'
-              : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-primary-400)]'
-          )}
+          disabled
+          className="flex cursor-not-allowed items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[var(--color-text-tertiary)] opacity-40"
         >
           <Sparkles className="h-3 w-3" />
           AI 분석
-          {aiExpanded && <ChevronUp className="h-3 w-3" />}
         </button>
       </div>
 

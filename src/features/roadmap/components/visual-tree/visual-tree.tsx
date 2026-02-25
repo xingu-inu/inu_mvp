@@ -243,68 +243,20 @@ export function buildVisualTreeData(
     goalsByArea.set(goal.area_id, [...existing, goal])
   })
 
-  // Build area nodes (only areas that have goals after filtering)
-  const areaNodes: VisualTreeNode[] = areas
-    .filter((area) => goalsByArea.has(area.id))
-    .map((area) => {
-      const areaGoals = goalsByArea.get(area.id) || []
+  // Build area nodes (all active areas, even without goals)
+  const areaNodes: VisualTreeNode[] = areas.map((area) => {
+    const areaGoals = goalsByArea.get(area.id) || []
 
-      // Build goal nodes
-      const goalNodes: VisualTreeNode[] = areaGoals.map((goal) => {
-        const groups = goal.groups || []
-        const tasks = goal.tasks || []
+    // Build goal nodes
+    const goalNodes: VisualTreeNode[] = areaGoals.map((goal) => {
+      const groups = goal.groups || []
+      const tasks = goal.tasks || []
 
-        // Build group nodes
-        const groupNodes: VisualTreeNode[] = groups.map((group) => {
-          const groupTasks = tasks.filter((t) => t.group_id === group.id)
+      // Build group nodes
+      const groupNodes: VisualTreeNode[] = groups.map((group) => {
+        const groupTasks = tasks.filter((t) => t.group_id === group.id)
 
-          const taskNodes: VisualTreeNode[] = groupTasks.map((task) => {
-            // Collect cross-links
-            if (task.related_goal_ids?.length) {
-              for (const relatedGoalId of task.related_goal_ids) {
-                const targetGroupId = task.cross_link_group_map?.[relatedGoalId]
-                crossLinks.push({
-                  sourceTaskId: task.id,
-                  targetGoalId: relatedGoalId,
-                  targetNodeId: targetGroupId ?? relatedGoalId,
-                  areaColor: area.color ?? '#8a8078',
-                })
-              }
-            }
-            return {
-              type: 'task' as const,
-              id: task.id,
-              name: task.name,
-              why: task.why,
-              meta: {
-                streak: task.streak_count,
-                isDone: task.check_ins?.some((c) => c.date === today && c.status === 'done'),
-                isPaused: task.status === 'paused',
-                isCompletedTask: task.status === 'completed',
-                repeatType: task.repeat_type,
-                hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
-                sortOrder: task.sort_order,
-              },
-            }
-          })
-
-          return {
-            type: 'group' as const,
-            id: group.id,
-            name: group.name,
-            why: group.why,
-            meta: {
-              count: groupTasks.length || undefined,
-              isCompleted: group.is_completed,
-              sortOrder: group.sort_order,
-            },
-            children: taskNodes.length > 0 ? taskNodes : undefined,
-          }
-        })
-
-        // Tasks directly under goal (no group)
-        const directTasks = tasks.filter((t) => !t.group_id)
-        const directTaskNodes: VisualTreeNode[] = directTasks.map((task) => {
+        const taskNodes: VisualTreeNode[] = groupTasks.map((task) => {
           // Collect cross-links
           if (task.related_goal_ids?.length) {
             for (const relatedGoalId of task.related_goal_ids) {
@@ -334,37 +286,83 @@ export function buildVisualTreeData(
           }
         })
 
-        const allChildren = [...groupNodes, ...directTaskNodes]
-        const totalStreak = tasks.reduce((sum, t) => sum + t.streak_count, 0)
-
         return {
-          type: 'goal' as const,
-          id: goal.id,
-          name: goal.name,
-          why: goal.why,
-          status: goal.status,
-          areaColor: area.color,
+          type: 'group' as const,
+          id: group.id,
+          name: group.name,
+          why: group.why,
           meta: {
-            count: tasks.length || undefined,
-            totalStreak: totalStreak || undefined,
-            targetDate: goal.target_date ?? undefined,
-            sortOrder: goal.sort_order,
+            count: groupTasks.length || undefined,
+            isCompleted: group.is_completed,
+            sortOrder: group.sort_order,
           },
-          children: allChildren.length > 0 ? allChildren : undefined,
+          children: taskNodes.length > 0 ? taskNodes : undefined,
         }
       })
 
+      // Tasks directly under goal (no group)
+      const directTasks = tasks.filter((t) => !t.group_id)
+      const directTaskNodes: VisualTreeNode[] = directTasks.map((task) => {
+        // Collect cross-links
+        if (task.related_goal_ids?.length) {
+          for (const relatedGoalId of task.related_goal_ids) {
+            const targetGroupId = task.cross_link_group_map?.[relatedGoalId]
+            crossLinks.push({
+              sourceTaskId: task.id,
+              targetGoalId: relatedGoalId,
+              targetNodeId: targetGroupId ?? relatedGoalId,
+              areaColor: area.color ?? '#8a8078',
+            })
+          }
+        }
+        return {
+          type: 'task' as const,
+          id: task.id,
+          name: task.name,
+          why: task.why,
+          meta: {
+            streak: task.streak_count,
+            isDone: task.check_ins?.some((c) => c.date === today && c.status === 'done'),
+            isPaused: task.status === 'paused',
+            isCompletedTask: task.status === 'completed',
+            repeatType: task.repeat_type,
+            hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
+            sortOrder: task.sort_order,
+          },
+        }
+      })
+
+      const allChildren = [...groupNodes, ...directTaskNodes]
+      const totalStreak = tasks.reduce((sum, t) => sum + t.streak_count, 0)
+
       return {
-        type: 'area' as const,
-        id: area.id,
-        name: area.name,
-        emoji: area.emoji,
-        color: area.color,
-        why: area.why,
-        meta: { count: areaGoals.length, sortOrder: area.sort_order },
-        children: goalNodes.length > 0 ? goalNodes : undefined,
+        type: 'goal' as const,
+        id: goal.id,
+        name: goal.name,
+        why: goal.why,
+        status: goal.status,
+        areaColor: area.color,
+        meta: {
+          count: tasks.length || undefined,
+          totalStreak: totalStreak || undefined,
+          targetDate: goal.target_date ?? undefined,
+          sortOrder: goal.sort_order,
+        },
+        children: allChildren.length > 0 ? allChildren : undefined,
       }
     })
+
+    return {
+      type: 'area' as const,
+      id: area.id,
+      name: area.name,
+      emoji: area.emoji,
+      color: area.color,
+      why: area.why,
+      meta: { count: areaGoals.length, sortOrder: area.sort_order },
+      children: goalNodes.length > 0 ? goalNodes : undefined,
+    }
+  })
 
   // Root: Direction
   const tree: VisualTreeNode = {

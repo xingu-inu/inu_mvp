@@ -9,7 +9,7 @@ import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore, selectStatusFilter } from '@/stores/roadmap.store'
-import { EmptyRoadmap } from './empty-roadmap'
+
 import { GoalListSkeleton } from './goal-list-skeleton'
 import { ErrorCard } from '@/components/ui/error-card'
 import { MobileGoalCard } from './mobile-goal-card'
@@ -153,7 +153,6 @@ function AreaSection({ area, goalCount, children }: AreaSectionProps) {
 export function MobileRoadmapView() {
   const statusFilter = useRoadmapStore(selectStatusFilter)
   const openMobileDrawer = useRoadmapStore((s) => s.openMobileDrawer)
-  const setPanelMode = useRoadmapStore((s) => s.setPanelMode)
 
   const { data: direction } = useDirection()
   const {
@@ -235,10 +234,6 @@ export function MobileRoadmapView() {
     return <GoalListSkeleton />
   }
 
-  if (goals.length === 0) {
-    return <EmptyRoadmap onAddGoal={() => setPanelMode('browse')} isMobile />
-  }
-
   return (
     <>
       <div className="space-y-4">
@@ -267,10 +262,14 @@ export function MobileRoadmapView() {
           </StatusSection>
         ))}
 
-        {/* When filter active but no results */}
-        {groupedData.length === 0 && statusFilter !== 'all' && (
+        {/* When no goals to display */}
+        {groupedData.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-sm text-[var(--color-text-tertiary)]">해당 상태의 목표가 없어요</p>
+            <p className="text-sm text-[var(--color-text-tertiary)]">
+              {statusFilter !== 'all'
+                ? '해당 상태의 목표가 없어요'
+                : '아직 목표가 없어요. 영역에 목표를 추가해보세요'}
+            </p>
           </div>
         )}
       </div>
