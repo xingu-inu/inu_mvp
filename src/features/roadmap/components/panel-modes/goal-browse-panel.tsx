@@ -30,6 +30,7 @@ import {
 } from '../inline-forms'
 import { useDeleteConfirm } from '../../hooks'
 import { cn } from '@/lib/utils'
+import { useDemoMode } from '@/lib/demo/demo-context'
 import { toast } from 'sonner'
 import type { Goal, GoalStatus } from '@/types/entities'
 
@@ -67,6 +68,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null)
   const [isCreatingArea, setIsCreatingArea] = useState(false)
   const [creatingGoalInAreaId, setCreatingGoalInAreaId] = useState<string | null>(null)
+  const { isDemoMode } = useDemoMode()
   const setIsBrainDumpOpen = useRoadmapStore((s) => s.setIsBrainDumpOpen)
   const setIsDiagnosisOpen = useRoadmapStore((s) => s.setIsDiagnosisOpen)
   const areaDelete = useDeleteConfirm()
@@ -362,22 +364,24 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsDiagnosisOpen(true)}
-              className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--color-primary-200)] px-2.5 py-2 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:bg-[var(--color-primary-50)] active:scale-[0.97]"
-            >
-              <Stethoscope className="h-3.5 w-3.5" />
-              진단
-            </button>
-            <button
-              onClick={() => setIsBrainDumpOpen(true)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              쏟아내기
-            </button>
-          </div>
+          {!isDemoMode && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsDiagnosisOpen(true)}
+                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--color-primary-200)] px-2.5 py-2 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:bg-[var(--color-primary-50)] active:scale-[0.97]"
+              >
+                <Stethoscope className="h-3.5 w-3.5" />
+                진단
+              </button>
+              <button
+                onClick={() => setIsBrainDumpOpen(true)}
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                쏟아내기
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -390,6 +394,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
           isEditing={editingDirection}
           onEdit={() => setEditingDirection(true)}
           onDoneEdit={() => setEditingDirection(false)}
+          isDemoMode={isDemoMode}
         />
       )}
 
@@ -437,48 +442,52 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
                     {areaGoals.length}
                   </span>
                 </button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
-                  onClick={() => setCreatingGoalInAreaId(area.id)}
-                  title="목표 추가"
-                >
-                  <Plus className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    'h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100',
-                    isAreaExpanded &&
-                      editingAreaId === area.id &&
-                      'bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-100'
-                  )}
-                  onClick={() => {
-                    if (areaDetailId === area.id && editingAreaId === area.id) {
-                      setAreaDetailId(null)
-                      setEditingAreaId(null)
-                    } else {
-                      setAreaDetailId(area.id)
-                      setEditingAreaId(area.id)
-                      setEditingGoalId(null)
-                      select({ type: 'area', id: area.id })
-                    }
-                  }}
-                  title="영역 수정"
-                >
-                  <Edit2 className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
-                  onClick={() => areaDelete.toggleDelete(area.id)}
-                  title="영역 삭제"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-[var(--color-miss)]" />
-                </Button>
+                {!isDemoMode && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
+                      onClick={() => setCreatingGoalInAreaId(area.id)}
+                      title="목표 추가"
+                    >
+                      <Plus className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className={cn(
+                        'h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100',
+                        isAreaExpanded &&
+                          editingAreaId === area.id &&
+                          'bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-100'
+                      )}
+                      onClick={() => {
+                        if (areaDetailId === area.id && editingAreaId === area.id) {
+                          setAreaDetailId(null)
+                          setEditingAreaId(null)
+                        } else {
+                          setAreaDetailId(area.id)
+                          setEditingAreaId(area.id)
+                          setEditingGoalId(null)
+                          select({ type: 'area', id: area.id })
+                        }
+                      }}
+                      title="영역 수정"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/area:opacity-100"
+                      onClick={() => areaDelete.toggleDelete(area.id)}
+                      title="영역 삭제"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-[var(--color-miss)]" />
+                    </Button>
+                  </>
+                )}
               </div>
 
               {/* Area delete confirmation */}
@@ -549,26 +558,27 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
                         />
                       ))}
 
-                      {creatingGoalInAreaId === area.id ? (
-                        <div data-goal-create={area.id}>
-                          <InlineGoalCreate
-                            areaId={area.id}
-                            onDone={(newGoalId) => {
-                              setCreatingGoalInAreaId(null)
-                              if (newGoalId)
-                                setExpandedGoalIds((prev) => new Set(prev).add(newGoalId))
-                            }}
-                          />
-                        </div>
-                      ) : (
-                        <button
-                          className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] px-3 py-2.5 text-xs text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
-                          onClick={() => setCreatingGoalInAreaId(area.id)}
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                          목표 추가
-                        </button>
-                      )}
+                      {!isDemoMode &&
+                        (creatingGoalInAreaId === area.id ? (
+                          <div data-goal-create={area.id}>
+                            <InlineGoalCreate
+                              areaId={area.id}
+                              onDone={(newGoalId) => {
+                                setCreatingGoalInAreaId(null)
+                                if (newGoalId)
+                                  setExpandedGoalIds((prev) => new Set(prev).add(newGoalId))
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <button
+                            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] px-3 py-2.5 text-xs text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
+                            onClick={() => setCreatingGoalInAreaId(area.id)}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            목표 추가
+                          </button>
+                        ))}
                     </div>
                   </motion.div>
                 )}
@@ -578,33 +588,37 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
         })}
 
         {/* Add Area Button / Inline Form */}
-        <AnimatePresence>
-          {isCreatingArea && (
-            <InlineAreaCreate
-              existingAreaTypes={areas.filter((a) => a.is_active).map((a) => a.type)}
-              onDone={(newAreaId) => {
-                setIsCreatingArea(false)
-                if (newAreaId) {
-                  setCollapsedAreaIds((prev) => {
-                    const next = new Set(prev)
-                    next.delete(newAreaId)
-                    return next
-                  })
-                  // 연속 흐름: 영역 생성 후 자동으로 목표 추가 폼 열기
-                  setCreatingGoalInAreaId(newAreaId)
-                }
-              }}
-            />
-          )}
-        </AnimatePresence>
-        {!isCreatingArea && (
-          <button
-            className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] px-3 py-3 text-sm text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
-            onClick={() => setIsCreatingArea(true)}
-          >
-            <Plus className="h-4 w-4" />
-            영역 추가
-          </button>
+        {!isDemoMode && (
+          <>
+            <AnimatePresence>
+              {isCreatingArea && (
+                <InlineAreaCreate
+                  existingAreaTypes={areas.filter((a) => a.is_active).map((a) => a.type)}
+                  onDone={(newAreaId) => {
+                    setIsCreatingArea(false)
+                    if (newAreaId) {
+                      setCollapsedAreaIds((prev) => {
+                        const next = new Set(prev)
+                        next.delete(newAreaId)
+                        return next
+                      })
+                      // 연속 흐름: 영역 생성 후 자동으로 목표 추가 폼 열기
+                      setCreatingGoalInAreaId(newAreaId)
+                    }
+                  }}
+                />
+              )}
+            </AnimatePresence>
+            {!isCreatingArea && (
+              <button
+                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-border)] px-3 py-3 text-sm text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]"
+                onClick={() => setIsCreatingArea(true)}
+              >
+                <Plus className="h-4 w-4" />
+                영역 추가
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -646,6 +660,7 @@ function DirectionBar({
   isEditing,
   onEdit,
   onDoneEdit,
+  isDemoMode,
 }: {
   statement: string
   why?: string | null
@@ -653,6 +668,7 @@ function DirectionBar({
   isEditing: boolean
   onEdit: () => void
   onDoneEdit: () => void
+  isDemoMode: boolean
 }) {
   if (isEditing) {
     return (
@@ -678,15 +694,17 @@ function DirectionBar({
           </span>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 shrink-0 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/direction:opacity-100"
-        onClick={onEdit}
-        title="방향 수정"
-      >
-        <Edit2 className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-      </Button>
+      {!isDemoMode && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-6 w-6 shrink-0 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/direction:opacity-100"
+          onClick={onEdit}
+          title="방향 수정"
+        >
+          <Edit2 className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
+        </Button>
+      )}
     </div>
   )
 }

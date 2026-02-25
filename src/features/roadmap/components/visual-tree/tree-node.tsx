@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import * as Popover from '@radix-ui/react-popover'
 import { cn } from '@/lib/utils'
+import { useDemoMode } from '@/lib/demo/demo-context'
 import { TreeNodeCard, type VisualTreeNode } from './tree-node-card'
 import { TreeContextMenu } from './tree-context-menu'
 import type { SelectedNodeType, TreeLayoutDirection } from '@/stores/roadmap.store'
@@ -44,6 +45,7 @@ export const TreeNode = memo(function TreeNode({
   onDeleteNode,
   parentGoalMap,
 }: TreeNodeProps) {
+  const { isDemoMode } = useDemoMode()
   const [isExpanded, setIsExpanded] = useState(defaultExpanded ?? getDefaultExpanded(node))
 
   const hasChildren = !!node.children && node.children.length > 0
@@ -121,7 +123,7 @@ export const TreeNode = memo(function TreeNode({
             {cardElement}
 
             {/* [+] button — appears on hover, positioned at right edge */}
-            {canAdd && onStartAdd && !isFocusDimmed && (
+            {canAdd && onStartAdd && !isFocusDimmed && !isDemoMode && (
               <Popover.Trigger asChild>
                 <button
                   className="absolute top-1/2 -right-3 z-10 flex h-6 w-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-[var(--color-primary-200)] bg-[var(--color-bg-primary)] text-[var(--color-primary-500)] opacity-0 shadow-sm transition-all group-hover/node:opacity-100 hover:bg-[var(--color-primary-50)] hover:shadow-md"
