@@ -1,6 +1,16 @@
 // AI Security — Input sanitization & output validation utilities
 // Defense-in-depth against prompt injection (OWASP LLM Top 10 #1)
 
+// ── Text Normalization ──
+
+/**
+ * Strip zero-width and invisible Unicode characters that can bypass pattern detection.
+ * Normalizes to NFC form to collapse homoglyph variants.
+ */
+function normalizeForDetection(text: string): string {
+  return text.normalize('NFC').replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\u00AD]/g, '')
+}
+
 // ── Injection Pattern Detection ──
 
 const INJECTION_PATTERNS_EN = [
@@ -40,8 +50,9 @@ const INJECTION_PATTERNS_KO = [
  * Used for logging/monitoring — NOT for blocking (to avoid false positives).
  */
 export function detectInjectionPatterns(text: string): boolean {
+  const normalized = normalizeForDetection(text)
   const allPatterns = [...INJECTION_PATTERNS_EN, ...INJECTION_PATTERNS_KO]
-  return allPatterns.some((pattern) => pattern.test(text))
+  return allPatterns.some((pattern) => pattern.test(normalized))
 }
 
 // ---------------------------------------------------------------------------
@@ -71,8 +82,9 @@ const CRITICAL_PATTERNS_KO = [
  * Returns true for high-confidence adversarial inputs that should be blocked.
  */
 export function detectCriticalInjection(text: string): boolean {
+  const normalized = normalizeForDetection(text)
   const allCritical = [...CRITICAL_PATTERNS_EN, ...CRITICAL_PATTERNS_KO]
-  return allCritical.some((pattern) => pattern.test(text))
+  return allCritical.some((pattern) => pattern.test(normalized))
 }
 
 /**
@@ -129,6 +141,16 @@ const CRITICAL_LEAK_PATTERNS = [
   /sk-[0-9A-Za-z]{48,}/,
   /API[_\s]?KEY\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/i,
   /GEMINI[_\s]?API[_\s]?KEY\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}/i,
+  // Supabase service role key (eyJ... JWT format, typically 200+ chars)
+  /service_role[_\s]?key\s*[:=]\s*["']?eyJ[A-Za-z0-9_-]{50,}/i,
+  /SUPABASE_SERVICE_ROLE[_\s]?KEY\s*[:=]\s*["']?eyJ[A-Za-z0-9_-]{50,}/i,
+  // PostgreSQL / database connection strings
+  /postgresql:\/\/[^\s"']{10,}/i,
+  /postgres:\/\/[^\s"']{10,}/i,
+  // Upstash Redis credentials
+  /UPSTASH[_\s]?REDIS[_\s]?REST[_\s]?(URL|TOKEN)\s*[:=]\s*["']?[A-Za-z0-9_:/.@-]{20,}/i,
+  // Google OAuth client secret
+  /GOCSPX-[A-Za-z0-9_-]{20,}/,
 ]
 
 const SUSPICIOUS_LEAK_PATTERNS = [

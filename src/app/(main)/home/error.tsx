@@ -11,7 +11,7 @@ export default function TodayError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    console.error('[error-boundary:home]', error.message)
   }, [error])
 
   return (

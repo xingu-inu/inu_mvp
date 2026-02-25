@@ -11,7 +11,7 @@ export default function CalendarError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    console.error('[error-boundary:calendar]', error.message)
   }, [error])
 
   return (

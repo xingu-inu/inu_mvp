@@ -11,7 +11,7 @@ export default function ReviewError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    console.error('[error-boundary:review]', error.message)
   }, [error])
 
   return (

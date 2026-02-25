@@ -440,7 +440,7 @@ export const POST = authRoute(
 
       return NextResponse.json({ success: true, data: aiResponse })
     } catch (error) {
-      console.error('AI generate error:', error)
+      console.error('[ai-generate]', error instanceof Error ? error.message : 'Unknown error')
 
       const message = error instanceof Error ? error.message : ''
       const code = message.includes('blocked')

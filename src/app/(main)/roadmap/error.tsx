@@ -11,7 +11,7 @@ export default function RoadmapError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    console.error('[error-boundary:roadmap]', error.message)
   }, [error])
 
   return (
