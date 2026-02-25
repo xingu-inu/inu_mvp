@@ -75,7 +75,7 @@ export const completeOnboarding = authAction(
 
     if (error) throw error
 
-    revalidatePath('/')
+    revalidatePath('/', 'layout')
 
     return data as unknown as OnboardingResult
   }
@@ -107,7 +107,7 @@ export const completeOnboardingV2 = authAction(
 
     if (error) throw error
 
-    revalidatePath('/')
+    revalidatePath('/', 'layout')
 
     return data as unknown as OnboardingResult
   }

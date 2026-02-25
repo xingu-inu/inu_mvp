@@ -99,21 +99,6 @@ export function WeekViewGrid() {
     return () => clearInterval(interval)
   }, [])
 
-  // Measure distance from grid top to viewport for height calc
-  useEffect(() => {
-    const el = scrollRef.current
-    if (!el || isLoading) return
-
-    const measure = () => {
-      const { top } = el.getBoundingClientRect()
-      el.style.setProperty('--grid-top', `${top}px`)
-    }
-    measure()
-
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
-  }, [isLoading])
-
   // Anytime row: check visible days for anytime tasks or all-day events
   const hasAnyAnytime = visibleDays.some((day) => {
     const dateStr = format(day, 'yyyy-MM-dd')
@@ -214,11 +199,7 @@ export function WeekViewGrid() {
         </div>
       )}
 
-      <div
-        ref={scrollRef}
-        className="overflow-auto lg:min-h-0 lg:flex-1"
-        style={{ height: 'calc(100dvh - var(--grid-top, 200px))' }}
-      >
+      <div ref={scrollRef} className="overflow-auto lg:min-h-0 lg:flex-1">
         <div className={cn('flex h-full flex-col', !isMobile && 'min-w-[840px]')}>
           {/* ── Sticky day headers ── */}
           <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
