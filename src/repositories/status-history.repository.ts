@@ -204,7 +204,6 @@ export const statusHistoryRepository = {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).rpc('get_reason_counts', {
-        p_user_id: userId,
         p_start_date: startDate,
         p_end_date: endDate,
       })

@@ -94,6 +94,10 @@ export async function isRateLimited(
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
+    // In production, fail closed (deny) when Redis is not configured
+    if (process.env.NODE_ENV === 'production') {
+      return true
+    }
     return isRateLimitedMemory(key, limit, windowMs)
   }
 

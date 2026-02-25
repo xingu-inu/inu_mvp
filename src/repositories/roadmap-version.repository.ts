@@ -29,7 +29,6 @@ export const roadmapVersionRepository = {
   ): Promise<RoadmapVersionResult> {
     const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc
     const { data, error } = await rpc('create_new_roadmap_version', {
-      p_user_id: userId,
       p_statement: input.statement,
       p_why: input.why ?? null,
       p_name: input.name ?? null,
@@ -43,11 +42,12 @@ export const roadmapVersionRepository = {
   /**
    * 로드맵 히스토리 조회
    */
-  async getHistory(supabase: TypedSupabaseClient, userId: string): Promise<DirectionHistoryItem[]> {
+  async getHistory(
+    supabase: TypedSupabaseClient,
+    _userId: string
+  ): Promise<DirectionHistoryItem[]> {
     const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc
-    const { data, error } = await rpc('get_direction_history', {
-      p_user_id: userId,
-    })
+    const { data, error } = await rpc('get_direction_history', {})
 
     if (error) handleSupabaseError(error)
     return (data ?? []) as DirectionHistoryItem[]
@@ -63,7 +63,6 @@ export const roadmapVersionRepository = {
   ): Promise<ArchivedRoadmapData> {
     const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc
     const { data, error } = await rpc('get_archived_roadmap', {
-      p_user_id: userId,
       p_direction_id: directionId,
     })
 
@@ -81,7 +80,6 @@ export const roadmapVersionRepository = {
   ): Promise<DeleteArchivedRoadmapResult> {
     const rpc = supabase.rpc.bind(supabase) as unknown as UntypedRpc
     const { data, error } = await rpc('delete_archived_roadmap', {
-      p_user_id: userId,
       p_direction_id: directionId,
     })
 

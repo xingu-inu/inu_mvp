@@ -33,7 +33,6 @@ export const taskRepository = {
     const targetDate = date ?? new Date().toISOString().split('T')[0]
 
     const { data, error } = await supabase.rpc('get_today_tasks', {
-      p_user_id: userId,
       p_date: targetDate,
     })
 

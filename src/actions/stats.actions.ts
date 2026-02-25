@@ -29,9 +29,8 @@ export interface WeeklyStats {
  */
 export const getWeeklyStats = authAction(
   'getWeeklyStats',
-  async ({ supabase, user }, weekStart: string): Promise<WeeklyStats> => {
+  async ({ supabase }, weekStart: string): Promise<WeeklyStats> => {
     const { data, error } = await supabase.rpc('get_weekly_stats', {
-      p_user_id: user.id,
       p_week_start: weekStart,
     })
 

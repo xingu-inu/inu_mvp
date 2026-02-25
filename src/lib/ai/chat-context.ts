@@ -64,11 +64,10 @@ export async function getActiveGoals(supabase: TypedSupabaseClient, userId: stri
   }
 }
 
-export async function getTodayTasks(supabase: TypedSupabaseClient, userId: string) {
+export async function getTodayTasks(supabase: TypedSupabaseClient, _userId: string) {
   const today = getToday()
 
   const { data, error } = await supabase.rpc('get_today_tasks', {
-    p_user_id: userId,
     p_date: today,
   })
 
@@ -130,11 +129,10 @@ export async function getGoalDetail(supabase: TypedSupabaseClient, userId: strin
   }
 }
 
-export async function getWeeklyStats(supabase: TypedSupabaseClient, userId: string) {
+export async function getWeeklyStats(supabase: TypedSupabaseClient, _userId: string) {
   const weekStart = getWeekStart()
 
   const { data, error } = await supabase.rpc('get_weekly_stats', {
-    p_user_id: userId,
     p_week_start: weekStart,
   })
 

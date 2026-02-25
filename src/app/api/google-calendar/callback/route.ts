@@ -3,21 +3,38 @@ import { NextResponse } from 'next/server'
 import { publicRoute } from '@/lib/security'
 import { getOAuth2Client } from '@/lib/google-calendar'
 
+/**
+ * Get safe origin for redirects, preventing Host header injection.
+ * Always requires NEXT_PUBLIC_SITE_URL in production.
+ */
+function getSafeOrigin(requestUrl: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  if (siteUrl) return siteUrl.replace(/\/+$/, '') // strip trailing slash
+
+  // Development-only fallback
+  if (process.env.NODE_ENV === 'development') {
+    return new URL(requestUrl).origin
+  }
+
+  // Production without SITE_URL configured — fail to safe default
+  return 'https://localhost:3000'
+}
+
 export const GET = publicRoute(
   'gcal.callback',
   async (ctx): Promise<NextResponse> => {
-    const { searchParams, origin } = new URL(ctx.request.url)
+    const { searchParams } = new URL(ctx.request.url)
+    const origin = getSafeOrigin(ctx.request.url)
     const code = searchParams.get('code')
     const state = searchParams.get('state')
 
     const cookieStore = await cookies()
     const storedState = cookieStore.get('google_oauth_state')?.value
+    cookieStore.delete('google_oauth_state')
 
     if (!code || !state || state !== storedState) {
       return NextResponse.redirect(`${origin}/home?error=google_calendar_oauth_failed`)
     }
-
-    cookieStore.delete('google_oauth_state')
 
     const {
       data: { user },

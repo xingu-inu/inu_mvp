@@ -4,7 +4,17 @@
  * (camelCase fields from home.actions.ts HomeTask type)
  */
 
-import { format, startOfWeek, addDays, isBefore, isAfter, startOfDay } from 'date-fns'
+import {
+  format,
+  startOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addDays,
+  eachDayOfInterval,
+  isBefore,
+  isAfter,
+  startOfDay,
+} from 'date-fns'
 import { type HomeTaskDto as HomeTask } from '@/actions/home.actions'
 import {
   DEMO_TASKS_LITE as DEMO_TASKS,
@@ -219,6 +229,74 @@ export function generateDemoWeekTasks(baseDate: Date): Record<string, HomeTask[]
   }
 
   return result
+}
+
+// ============================================
+// Enriched Task[] for month view (includes goal relation for area color)
+// ============================================
+export function getDemoTasksWithGoals(): Task[] {
+  return DEMO_TASKS.filter((t) => t.is_active).map((task) => {
+    const goal = task.goal_id ? (DEMO_GOAL_MAP[task.goal_id] ?? undefined) : undefined
+    return { ...task, goal }
+  })
+}
+
+// ============================================
+// Generate CheckIn rows for a given month
+// Matches the shape returned by getMonthCheckIns server action
+// ============================================
+export function generateDemoMonthCheckIns(
+  monthDate: Date
+): {
+  id: string
+  task_id: string
+  user_id: string
+  date: string
+  status: string
+  note: string | null
+  created_at: string
+}[] {
+  const monthStart = startOfMonth(monthDate)
+  const monthEnd = endOfMonth(monthDate)
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+  const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
+  const rows: {
+    id: string
+    task_id: string
+    user_id: string
+    date: string
+    status: string
+    note: string | null
+    created_at: string
+  }[] = []
+
+  for (const day of days) {
+    const dateStr = format(day, 'yyyy-MM-dd')
+    if (dateStr > todayStr) continue // no check-ins for future days
+
+    const isToday = dateStr === todayStr
+
+    for (const task of DEMO_TASKS) {
+      if (!task.is_active) continue
+      if (!taskOccursOnDay(task, day)) continue
+
+      const status = getCheckInStatus(task, dateStr, isToday, false)
+      if (!status || status === 'miss') continue // only 'done' and 'skip' are stored as rows
+
+      rows.push({
+        id: `demo-ci-${task.id}-${dateStr}`,
+        task_id: task.id,
+        user_id: 'demo-user-1',
+        date: dateStr,
+        status,
+        note: null,
+        created_at: `${dateStr}T10:00:00.000Z`,
+      })
+    }
+  }
+
+  return rows
 }
 
 export type { HomeTask }

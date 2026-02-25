@@ -24,7 +24,7 @@ export interface CheckinResult {
 export const createCheckIn = authAction(
   'createCheckIn',
   async (
-    { supabase, user },
+    { supabase },
     taskId: string,
     status: CheckinStatus,
     date?: string,
@@ -32,7 +32,6 @@ export const createCheckIn = authAction(
   ): Promise<ApiResponse<CheckinResult>> => {
     const { data, error } = await supabase.rpc('create_checkin_with_streak', {
       p_task_id: taskId,
-      p_user_id: user.id,
       p_status: status,
       p_date: date ?? undefined,
       p_note: note,
@@ -82,10 +81,9 @@ export interface UndoCheckinResult {
  */
 export const undoCheckIn = authAction(
   'undoCheckIn',
-  async ({ supabase, user }, checkinId: string): Promise<ApiResponse<UndoCheckinResult>> => {
+  async ({ supabase }, checkinId: string): Promise<ApiResponse<UndoCheckinResult>> => {
     const { data, error } = await supabase.rpc('undo_checkin_with_streak', {
       p_checkin_id: checkinId,
-      p_user_id: user.id,
     })
 
     if (error) throw error

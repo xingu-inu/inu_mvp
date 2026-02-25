@@ -57,7 +57,6 @@ export const checkinRepository = {
   ): Promise<CheckInResult> {
     const { data, error } = await supabase.rpc('create_checkin_with_streak', {
       p_task_id: input.task_id,
-      p_user_id: userId,
       p_status: input.status,
       p_note: input.note ?? undefined,
     })

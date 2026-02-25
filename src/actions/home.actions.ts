@@ -82,14 +82,13 @@ export interface HomeTaskDto {
 export const getHomeTasks = authAction(
   'getHomeTasks',
   async (
-    { supabase, user },
+    { supabase },
     date?: string,
     directionId?: string
   ): Promise<ApiListResult<HomeTaskDto>> => {
     const { data, error } = await supabase.rpc('get_today_tasks', {
-      p_user_id: user.id,
       p_date: date,
-      p_direction_id: directionId ?? null,
+      p_direction_id: directionId,
     })
 
     if (error) throw error
@@ -107,14 +106,13 @@ export const getHomeTasks = authAction(
 export const getWeekHomeTasks = authAction(
   'getWeekHomeTasks',
   async (
-    { supabase, user },
+    { supabase },
     startDate: string,
     endDate: string,
     directionId?: string
   ): Promise<ApiResponse<Record<string, HomeTaskDto[]>>> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.rpc as any)('get_week_tasks', {
-      p_user_id: user.id,
       p_start_date: startDate,
       p_end_date: endDate,
       p_direction_id: directionId ?? null,
@@ -123,5 +121,29 @@ export const getWeekHomeTasks = authAction(
     if (error) throw error
 
     return successResponse((data as unknown as Record<string, HomeTaskDto[]>) || {})
+  }
+)
+
+/**
+ * Upsert a date-specific sort order for a task.
+ * Used by Home DnD — reordering on one date does NOT affect other dates.
+ */
+export const upsertTaskDateSortOrder = authAction(
+  'upsertTaskDateSortOrder',
+  async (
+    { supabase },
+    taskId: string,
+    date: string,
+    sortOrder: string
+  ): Promise<ApiResponse<void>> => {
+    const { error } = await supabase.rpc('upsert_task_date_sort_order', {
+      p_task_id: taskId,
+      p_date: date,
+      p_sort_order: sortOrder,
+    })
+
+    if (error) throw error
+
+    return successResponse(undefined)
   }
 )

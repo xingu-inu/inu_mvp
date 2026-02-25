@@ -8,6 +8,50 @@ import { CORE_PRINCIPLES, SECURITY_PRINCIPLES } from '@/lib/ai/constants'
 import { profileRepository } from '@/repositories/profile.repository'
 import { sanitizeUserText, getInjectionSeverity, validateAiOutput } from '@/lib/ai/sanitize'
 
+/**
+ * Create a transform stream that monitors AI output for sensitive data leakage.
+ * If critical patterns are detected mid-stream, it replaces the output with an error.
+ */
+function createSecureOutputTransform(): TransformStream<Uint8Array, Uint8Array> {
+  const textDecoder = new TextDecoder()
+  const textEncoder = new TextEncoder()
+  let accumulatedText = ''
+  let streamBlocked = false
+  // Sliding window: keep last 8KB to detect cross-chunk API key patterns
+  // without unbounded memory growth or O(n^2) regex cost
+  const MAX_BUFFER = 8192
+
+  return new TransformStream({
+    transform(chunk, controller) {
+      if (streamBlocked) {
+        // Stream already blocked, drop remaining chunks
+        return
+      }
+
+      // Decode and accumulate text from this chunk (sliding window)
+      const chunkText = textDecoder.decode(chunk, { stream: true })
+      accumulatedText += chunkText
+      if (accumulatedText.length > MAX_BUFFER) {
+        accumulatedText = accumulatedText.slice(-MAX_BUFFER)
+      }
+
+      // Validate accumulated text for critical patterns
+      const validation = validateAiOutput(accumulatedText)
+      if (!validation.safe) {
+        // Critical leak detected — block stream and send error
+        streamBlocked = true
+        const errorMessage = '죄송합니다. 응답을 생성하지 못했어요. 다시 시도해주세요.'
+        controller.enqueue(textEncoder.encode(errorMessage))
+        controller.terminate()
+        return
+      }
+
+      // Safe — pass through the original chunk
+      controller.enqueue(chunk)
+    },
+  })
+}
+
 function buildSystemPrompt(userName: string, todayDate: string): string {
   return `당신은 inu(이누) 앱의 AI 동행자 '이누'입니다.
 
@@ -103,16 +147,15 @@ export const POST = authRoute(
       systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
     }
 
-    // Sanitize user messages for injection detection
+    // V-02 FIX: Check ALL user messages for injection, not just the last one
     const uiMessages = parsed.data.messages as unknown as UIMessage[]
-    const lastMessage = uiMessages[uiMessages.length - 1]
-    if (lastMessage) {
-      const lastText = lastMessage.parts
+    for (const msg of uiMessages) {
+      const msgText = msg.parts
         ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
         .map((p) => p.text)
         .join('')
-      if (lastText) {
-        const severity = getInjectionSeverity(lastText)
+      if (msgText) {
+        const severity = getInjectionSeverity(msgText)
         if (severity === 'critical') {
           return NextResponse.json(
             {
@@ -165,7 +208,20 @@ export const POST = authRoute(
       },
     })
 
-    return result.toUIMessageStreamResponse() as unknown as NextResponse
+    // V-01 FIX: Apply streaming output validation transform
+    const response = result.toUIMessageStreamResponse() as unknown as Response
+
+    // Create a secure transform that monitors the stream for critical leaks
+    const secureTransform = createSecureOutputTransform()
+
+    // Pipe the response body through the security transform
+    const secureBody = response.body?.pipeThrough(secureTransform)
+
+    return new NextResponse(secureBody, {
+      headers: response.headers,
+      status: response.status,
+      statusText: response.statusText,
+    })
   },
   { csrf: true, rateLimit: { limit: 10 } }
 )

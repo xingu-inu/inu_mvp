@@ -634,6 +634,44 @@ export type Database = {
         }
         Relationships: []
       }
+      task_date_sort_orders: {
+        Row: {
+          id: string
+          task_id: string
+          date: string
+          sort_order: string
+          user_id: string
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          date: string
+          sort_order: string
+          user_id: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          date?: string
+          sort_order?: string
+          user_id?: string
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'task_date_sort_orders_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       tasks: {
         Row: {
           area_id: string | null
@@ -807,58 +845,35 @@ export type Database = {
         Args: { p_table_name: string; p_updates: Json }
         Returns: undefined
       }
-      complete_onboarding:
-        | {
-            Args: {
-              p_areas: Json
-              p_direction: Json
-              p_first_goal?: Json
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_areas: Json
-              p_direction: Json
-              p_first_goal?: Json
-              p_first_task?: Json
-              p_user_id: string
-            }
-            Returns: Json
-          }
-      create_checkin_with_streak:
-        | {
-            Args: {
-              p_date?: string
-              p_note?: string
-              p_status: Database['public']['Enums']['checkin_status']
-              p_task_id: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_note?: string
-              p_status: Database['public']['Enums']['checkin_status']
-              p_task_id: string
-              p_user_id: string
-            }
-            Returns: Json
-          }
+      complete_onboarding: {
+        Args: {
+          p_areas: Json
+          p_direction: Json
+          p_first_goal?: Json
+          p_first_task?: Json
+        }
+        Returns: Json
+      }
+      create_checkin_with_streak: {
+        Args: {
+          p_date?: string
+          p_note?: string
+          p_status: Database['public']['Enums']['checkin_status']
+          p_task_id: string
+        }
+        Returns: Json
+      }
       create_new_roadmap_version: {
         Args: {
           p_carry_over_goal_ids?: string[]
           p_name?: string
           p_statement: string
-          p_user_id: string
           p_why?: string
         }
         Returns: Json
       }
       delete_archived_roadmap: {
-        Args: { p_direction_id: string; p_user_id: string }
+        Args: { p_direction_id: string }
         Returns: Json
       }
       get_admin_signup_chart: {
@@ -870,37 +885,41 @@ export type Database = {
       }
       get_admin_stats: { Args: never; Returns: Json }
       get_archived_roadmap: {
-        Args: { p_direction_id: string; p_user_id: string }
+        Args: { p_direction_id: string }
         Returns: Json
       }
-      get_direction_history: { Args: { p_user_id: string }; Returns: Json }
-      get_roadmap_data: { Args: { p_user_id: string }; Returns: Json }
-      get_today_dashboard: { Args: { p_user_id: string }; Returns: Json }
+      get_direction_history: { Args: Record<string, never>; Returns: Json }
+      get_roadmap_data: { Args: Record<string, never>; Returns: Json }
+      get_today_dashboard: { Args: Record<string, never>; Returns: Json }
       get_today_tasks: {
-        Args: { p_date?: string; p_user_id: string }
+        Args: { p_date?: string; p_direction_id?: string }
         Returns: Json
       }
       get_week_tasks: {
-        Args: { p_end_date: string; p_start_date: string; p_user_id: string }
+        Args: { p_end_date: string; p_start_date: string; p_direction_id?: string }
         Returns: Json
       }
       get_weekly_stats: {
-        Args: { p_user_id: string; p_week_start: string }
+        Args: { p_week_start: string }
         Returns: Json
       }
       is_admin: { Args: never; Returns: boolean }
       reset_missed_streaks: { Args: never; Returns: undefined }
       resolve_direction_for_date: {
-        Args: { p_date: string; p_user_id: string }
+        Args: { p_date: string }
         Returns: string
       }
       resolve_directions_for_date: {
-        Args: { p_date: string; p_user_id: string }
+        Args: { p_date: string }
         Returns: string[]
       }
       undo_checkin_with_streak: {
-        Args: { p_checkin_id: string; p_user_id: string }
+        Args: { p_checkin_id: string }
         Returns: Json
+      }
+      upsert_task_date_sort_order: {
+        Args: { p_task_id: string; p_date: string; p_sort_order: string }
+        Returns: undefined
       }
     }
     Enums: {

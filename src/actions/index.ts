@@ -20,11 +20,12 @@ export {
 } from './stats.actions'
 
 export {
-  completeOnboarding,
+  completeOnboardingV2,
   checkOnboardingStatus,
   type DirectionInput,
   type AreaInput,
-  type GoalInput,
+  type GoalInputV2,
+  type TaskInputV2,
   type OnboardingResult,
 } from './onboarding.actions'
 

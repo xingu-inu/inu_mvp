@@ -6,9 +6,26 @@
 /**
  * Strip zero-width and invisible Unicode characters that can bypass pattern detection.
  * Normalizes to NFC form to collapse homoglyph variants.
+ * Converts fullwidth ASCII and common homoglyphs to standard ASCII for reliable detection.
  */
 function normalizeForDetection(text: string): string {
-  return text.normalize('NFC').replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\u00AD]/g, '')
+  return (
+    text
+      .normalize('NFC')
+      // Strip zero-width and invisible Unicode characters
+      .replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\u00AD]/g, '')
+      // Normalize fullwidth ASCII (ＡＢＣ → ABC, ａｂｃ → abc, ０１２ → 012)
+      .replace(/[\uFF01-\uFF5E]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0))
+      // Normalize common Cyrillic/Greek homoglyphs to Latin equivalents
+      .replace(/[\u0430]/g, 'a') // Cyrillic а → a
+      .replace(/[\u0435]/g, 'e') // Cyrillic е → e
+      .replace(/[\u043e]/g, 'o') // Cyrillic о → o
+      .replace(/[\u0440]/g, 'p') // Cyrillic р → p
+      .replace(/[\u0441]/g, 'c') // Cyrillic с → c
+      .replace(/[\u0443]/g, 'y') // Cyrillic у → y
+      .replace(/[\u0456]/g, 'i') // Cyrillic і → i
+      .replace(/[\u0455]/g, 's') // Cyrillic ѕ → s
+  )
 }
 
 // ── Injection Pattern Detection ──
@@ -77,13 +94,22 @@ const CRITICAL_PATTERNS_KO = [
   /제한\s*해제/,
 ]
 
+// Mixed-language injection patterns (Korean + English)
+const CRITICAL_PATTERNS_MIXED = [
+  /ignore\s+.{0,20}(지시|명령|규칙)/i,
+  /(무시|잊어|버려).{0,20}instructions?/i,
+  /(이전|모든).{0,20}(instructions?|prompts?|rules?)/i,
+  /reveal\s+.{0,20}(프롬프트|지시)/i,
+  /(출력|보여|알려).{0,20}(prompt|instructions?)/i,
+]
+
 /**
  * Detect explicit jailbreak / persona-override attempts.
  * Returns true for high-confidence adversarial inputs that should be blocked.
  */
 export function detectCriticalInjection(text: string): boolean {
   const normalized = normalizeForDetection(text)
-  const allCritical = [...CRITICAL_PATTERNS_EN, ...CRITICAL_PATTERNS_KO]
+  const allCritical = [...CRITICAL_PATTERNS_EN, ...CRITICAL_PATTERNS_KO, ...CRITICAL_PATTERNS_MIXED]
   return allCritical.some((pattern) => pattern.test(normalized))
 }
 
@@ -105,32 +131,55 @@ export function getInjectionSeverity(text: string): 'none' | 'suspicious' | 'cri
  * Escape XML-like delimiter tags that could break prompt boundaries.
  * Prevents users from injecting closing/opening tags like </user_data>
  * to escape the data context and inject instructions.
+ *
+ * Protects against:
+ * - Case variations: <System>, <SYSTEM>, <system>
+ * - Zero-width character injection: <sys​tem>
+ * - Fullwidth characters: ＜system＞
+ * - Any XML/HTML-like tag that could break prompt structure
  */
 export function sanitizeUserText(text: string): string {
-  return text
-    .replace(/<\/?user_data>/gi, (match) => match.replace('<', '&lt;').replace('>', '&gt;'))
-    .replace(/<\/?user_input>/gi, (match) => match.replace('<', '&lt;').replace('>', '&gt;'))
-    .replace(/<\/?system>/gi, (match) => match.replace('<', '&lt;').replace('>', '&gt;'))
-    .replace(/<\/?instructions?>/gi, (match) => match.replace('<', '&lt;').replace('>', '&gt;'))
+  // 1. Strip zero-width and fullwidth characters that could break tag detection
+  const cleaned = text.replace(/[\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\u00AD]/g, '')
+
+  // 2. Escape any XML/HTML-like tags that could break prompt boundaries
+  // Matches: <tag>, </tag>, <tag/>, <tag attr="val">, with any combination of word chars
+  // This catches <system>, <System>, <SYSTEM>, <user_data>, </instructions>,
+  // and attribute-bearing tags like <system role="admin">
+  return cleaned.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_-]*(?:\s[^>]*)?\/?>/gi, (match) =>
+    match.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  )
 }
 
 /**
  * Sanitize all string fields in an AI context object.
- * Applies sanitizeUserText to every non-null string value (shallow).
+ * Recursively applies sanitizeUserText to all string values at any depth.
+ * Handles nested objects, arrays, and mixed structures.
  */
-export function sanitizeContext<T extends Record<string, unknown>>(context: T): T {
-  const sanitized = { ...context }
-  for (const key of Object.keys(sanitized)) {
-    const value = sanitized[key]
-    if (typeof value === 'string') {
-      ;(sanitized as Record<string, unknown>)[key] = sanitizeUserText(value)
-    } else if (Array.isArray(value)) {
-      ;(sanitized as Record<string, unknown>)[key] = value.map((item) =>
-        typeof item === 'string' ? sanitizeUserText(item) : item
+export function sanitizeContext<T>(context: T): T {
+  // Base case: string
+  if (typeof context === 'string') {
+    return sanitizeUserText(context) as T
+  }
+
+  // Base case: array
+  if (Array.isArray(context)) {
+    return context.map((item) => sanitizeContext(item)) as T
+  }
+
+  // Recursive case: object
+  if (typeof context === 'object' && context !== null) {
+    const sanitized = { ...context }
+    for (const key of Object.keys(sanitized)) {
+      ;(sanitized as Record<string, unknown>)[key] = sanitizeContext(
+        (sanitized as Record<string, unknown>)[key]
       )
     }
+    return sanitized
   }
-  return sanitized
+
+  // Primitives (number, boolean, null, undefined)
+  return context
 }
 
 // ── Output Validation ──

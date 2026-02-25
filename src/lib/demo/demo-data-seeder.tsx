@@ -11,7 +11,12 @@ import {
   DEMO_GROUPS_LITE as DEMO_GROUPS,
   DEMO_TASKS_LITE as DEMO_TASKS,
 } from './data'
-import { generateDemoWeekTasks, generateDemoHomeTasks } from './week-data'
+import {
+  generateDemoWeekTasks,
+  generateDemoHomeTasks,
+  getDemoTasksWithGoals,
+  generateDemoMonthCheckIns,
+} from './week-data'
 
 function seedDemoData(qc: QueryClient) {
   const today = new Date()
@@ -38,6 +43,22 @@ function seedDemoData(qc: QueryClient) {
     const d = addDays(today, i)
     const dateStr = format(d, 'yyyy-MM-dd')
     qc.setQueryData(queryKeys.tasks.home(dateStr), generateDemoHomeTasks(d))
+  }
+
+  // Month view: enriched tasks + check-ins for current month ± 2 months
+  const enrichedTasks = getDemoTasksWithGoals()
+  for (let m = -2; m <= 2; m++) {
+    const monthDate = new Date(today.getFullYear(), today.getMonth() + m, 1)
+    const monthKey = format(monthDate, 'yyyy-MM')
+
+    // useMonthTasks query key
+    qc.setQueryData([...queryKeys.tasks.all, 'month', monthKey], enrichedTasks)
+
+    // useMonthSummary check-ins query key
+    qc.setQueryData(
+      [...queryKeys.checkIns.all, 'month-summary', monthKey],
+      generateDemoMonthCheckIns(monthDate)
+    )
   }
 
   // Roadmap tab: areas, goals (with groups/tasks relations), direction
