@@ -22,6 +22,7 @@ import {
   type MonthSummaryData,
   type MonthTaskPreview,
 } from '../hooks/use-month-summary'
+import { CalendarSkeleton } from './calendar-skeleton'
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -235,7 +236,7 @@ function MonthSummaryHeader({
  */
 export function UnifiedCalendar() {
   const { currentDate, setCurrentDate } = useHomeState()
-  const { summary, taskPreviews } = useMonthSummary(currentDate)
+  const { summary, taskPreviews, isLoading } = useMonthSummary(currentDate)
   const { data: areas } = useAreas()
 
   const allDays = useMemo(() => {
@@ -252,6 +253,8 @@ export function UnifiedCalendar() {
     }
     return days
   }, [currentDate])
+
+  if (isLoading) return <CalendarSkeleton />
 
   return (
     <div className="rounded-2xl border border-[var(--color-border)]/40 bg-[var(--color-bg-primary)] p-4">
