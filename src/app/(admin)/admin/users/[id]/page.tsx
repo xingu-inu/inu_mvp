@@ -4,6 +4,7 @@ interface AdminUserDetailPageProps {
   params: Promise<{ id: string }>
 }
 
-export default function AdminUserDetailPage({ params }: AdminUserDetailPageProps) {
-  return <AdminUserDetail paramsPromise={params} />
+export default async function AdminUserDetailPage({ params }: AdminUserDetailPageProps) {
+  const { id } = await params
+  return <AdminUserDetail id={id} />
 }

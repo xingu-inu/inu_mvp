@@ -234,7 +234,7 @@ export function WeekViewGrid() {
 
   return (
     <div
-      className="overflow-hidden rounded-t-2xl border-x border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[var(--shadow-card)] lg:flex lg:h-full lg:flex-col"
+      className="w-full overflow-hidden rounded-t-2xl border-x border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[var(--shadow-card)] lg:flex lg:h-full lg:min-w-0 lg:flex-1 lg:flex-col"
       style={
         isMobile
           ? ({
@@ -273,7 +273,7 @@ export function WeekViewGrid() {
       )}
 
       <div ref={scrollRef} className="overflow-auto lg:min-h-0 lg:flex-1">
-        <div className={cn('flex h-full flex-col', !isMobile && 'min-w-[840px]')}>
+        <div className={cn('flex h-full w-full flex-col', !isMobile && 'min-w-[840px]')}>
           {/* ── Sticky day headers ── */}
           <div className="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
             <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
@@ -397,7 +397,7 @@ export function WeekViewGrid() {
       {/* ── Anytime row (fixed at bottom, outside scroll area) ── */}
       {showAnytimeRow && (
         <div className="flex-shrink-0 overflow-x-auto border-t-2 border-[var(--color-border)] bg-[var(--color-bg-secondary)]/60">
-          <div className={cn(!isMobile && 'min-w-[840px]')}>
+          <div className={cn('w-full', !isMobile && 'min-w-[840px]')}>
             <div className="grid" style={{ gridTemplateColumns: gridColumns }}>
               <div className="sticky left-0 z-10 flex items-center justify-center bg-[var(--color-bg-secondary)]/60 px-1 py-2">
                 <span className="text-[11px] font-medium text-[var(--color-text-tertiary)]">

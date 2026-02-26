@@ -5,25 +5,20 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import {
-  StepIndicator,
+  StepIndicatorV5,
   WelcomeStep,
-  StepIndicatorV3,
-  WelcomeStepV3,
   AnimatedStep,
-  GoalCaptureStep,
-  FirstActionStep,
-  BrainDumpStepV3,
-  LifeOrganizedStepV3,
+  BrainDumpStepV5,
+  ReviewStepV5,
+  DirectionStepV5,
 } from '@/features/onboarding'
-import { useOnboardingV4Flag } from '@/features/onboarding'
 
 export default function OnboardingPage() {
-  const isOnboardingV4Enabled = useOnboardingV4Flag()
   const { currentStep, direction, isNavigating, setFlowVersion } = useOnboardingStore()
 
   useEffect(() => {
-    setFlowVersion(isOnboardingV4Enabled ? 'v4' : 'v3')
-  }, [isOnboardingV4Enabled, setFlowVersion])
+    setFlowVersion('v5')
+  }, [setFlowVersion])
 
   if (isNavigating) {
     return (
@@ -49,51 +44,28 @@ export default function OnboardingPage() {
     )
   }
 
-  if (!isOnboardingV4Enabled) {
-    return (
-      <div className="flex min-h-full flex-col overflow-hidden">
-        <StepIndicatorV3 />
-        <AnimatePresence mode="wait" custom={direction}>
-          {currentStep === 'welcome' && (
-            <AnimatedStep key="welcome-v3" stepKey="welcome-v3" direction={direction}>
-              <WelcomeStepV3 />
-            </AnimatedStep>
-          )}
-          {currentStep === 'brain-dump' && (
-            <AnimatedStep key="brain-dump-v3" stepKey="brain-dump-v3" direction={direction}>
-              <BrainDumpStepV3 />
-            </AnimatedStep>
-          )}
-          {currentStep === 'life-organized' && (
-            <AnimatedStep key="life-organized-v3" stepKey="life-organized-v3" direction={direction}>
-              <LifeOrganizedStepV3 />
-            </AnimatedStep>
-          )}
-        </AnimatePresence>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-full flex-col overflow-hidden">
-      {/* Step Indicator (hidden on welcome) */}
-      <StepIndicator />
-
-      {/* Step Content with Animation */}
+      <StepIndicatorV5 />
       <AnimatePresence mode="wait" custom={direction}>
         {currentStep === 'welcome' && (
-          <AnimatedStep key="welcome" stepKey="welcome" direction={direction}>
+          <AnimatedStep key="welcome-v5" stepKey="welcome-v5" direction={direction}>
             <WelcomeStep />
           </AnimatedStep>
         )}
-        {currentStep === 'goal-capture' && (
-          <AnimatedStep key="goal-capture" stepKey="goal-capture" direction={direction}>
-            <GoalCaptureStep />
+        {currentStep === 'brain-dump-v5' && (
+          <AnimatedStep key="brain-dump-v5" stepKey="brain-dump-v5" direction={direction}>
+            <BrainDumpStepV5 />
           </AnimatedStep>
         )}
-        {currentStep === 'first-action' && (
-          <AnimatedStep key="first-action" stepKey="first-action" direction={direction}>
-            <FirstActionStep />
+        {currentStep === 'review-v5' && (
+          <AnimatedStep key="review-v5" stepKey="review-v5" direction={direction}>
+            <ReviewStepV5 />
+          </AnimatedStep>
+        )}
+        {currentStep === 'direction-v5' && (
+          <AnimatedStep key="direction-v5" stepKey="direction-v5" direction={direction}>
+            <DirectionStepV5 />
           </AnimatedStep>
         )}
       </AnimatePresence>

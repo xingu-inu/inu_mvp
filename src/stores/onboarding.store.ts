@@ -1,4 +1,4 @@
-﻿import { create } from 'zustand'
+import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import {
@@ -6,12 +6,46 @@ import {
   GOAL_CHIP_OPTIONS,
   ONBOARDING_STEPS_V3,
   ONBOARDING_STEPS_V4,
+  ONBOARDING_STEPS_V5,
   classifyCustomGoalArea,
   type OnboardingFlowVersion,
   type OnboardingStep,
   type DefaultAreaOption,
 } from '@/lib/constants/onboarding'
 import type { AreaType } from '@/types/entities'
+
+// ============================================
+// V5 Review Types
+// ============================================
+export interface V5ReviewTask {
+  _id: string
+  _checked: boolean
+  name: string
+  why?: string
+  repeat_type: string
+  duration_minutes: number
+  time_slot: string
+}
+
+export interface V5ReviewGoal {
+  _id: string
+  _checked: boolean
+  name: string
+  why?: string
+  tasks: V5ReviewTask[]
+}
+
+export interface V5ReviewArea {
+  _id: string
+  _checked: boolean
+  name: string
+  emoji: string
+  color: string
+  type: string
+  isExisting: boolean
+  existingAreaId?: string
+  goals: V5ReviewGoal[]
+}
 
 export type DirectionMode = 'accept' | 'edit' | 'explore'
 export type AiEnhanceStatus = 'idle' | 'loading' | 'done' | 'error'
@@ -31,6 +65,11 @@ export interface SuggestedTask {
   goalId: string
   name: string
   accepted: boolean
+}
+
+export interface AiPreparedTaskSeed {
+  goalName: string
+  taskName: string
 }
 
 export function buildSuggestedTaskKey(goalId: string, taskName: string): string {
@@ -53,6 +92,7 @@ interface OnboardingState {
   derivedAreas: DefaultAreaOption[]
   activeGoalIds: string[]
   suggestedTasks: SuggestedTask[]
+  aiPreparedTaskSeeds: AiPreparedTaskSeed[]
 
   // V4 additions
   primaryTaskId: string | null
@@ -62,6 +102,12 @@ interface OnboardingState {
   generatedDirection: string | null
   directionMode: DirectionMode | null
   editedDirection: string | null
+
+  // V5 state
+  v5DirectionChips: string[]
+  v5BrainDumpText: string
+  v5ReviewAreas: V5ReviewArea[]
+  v5Summary: string
 
   // Step actions
   toggleGoalChip: (chipId: string) => void
@@ -73,6 +119,7 @@ interface OnboardingState {
   overrideGoalArea: (goalId: string, newArea: AreaType) => void
   toggleActiveGoal: (goalId: string) => void
   setSuggestedTasks: (tasks: SuggestedTask[]) => void
+  setAiPreparedTaskSeeds: (seeds: AiPreparedTaskSeed[]) => void
   toggleTaskAccepted: (goalId: string, taskName: string) => void
   setPrimaryTask: (taskKey: string | null) => void
   setAiEnhanceStatus: (status: AiEnhanceStatus) => void
@@ -81,6 +128,12 @@ interface OnboardingState {
   setGeneratedDirection: (direction: string) => void
   setDirectionMode: (mode: DirectionMode | null) => void
   setEditedDirection: (direction: string) => void
+
+  // V5 actions
+  toggleV5DirectionChip: (chipId: string) => void
+  setV5BrainDumpText: (text: string) => void
+  setV5ReviewAreas: (areas: V5ReviewArea[]) => void
+  setV5Summary: (summary: string) => void
 
   // Navigation
   setFlowVersion: (version: OnboardingFlowVersion) => void
@@ -92,7 +145,7 @@ interface OnboardingState {
 }
 
 const initialState = {
-  flowVersion: 'v4' as OnboardingFlowVersion,
+  flowVersion: 'v5' as OnboardingFlowVersion,
   currentStep: 'welcome' as OnboardingStep,
   direction: 'forward' as const,
   isNavigating: false,
@@ -104,6 +157,7 @@ const initialState = {
   derivedAreas: [] as DefaultAreaOption[],
   activeGoalIds: [] as string[],
   suggestedTasks: [] as SuggestedTask[],
+  aiPreparedTaskSeeds: [] as AiPreparedTaskSeed[],
 
   primaryTaskId: null as string | null,
   aiEnhanceStatus: 'idle' as AiEnhanceStatus,
@@ -111,10 +165,16 @@ const initialState = {
   generatedDirection: null as string | null,
   directionMode: null as DirectionMode | null,
   editedDirection: null as string | null,
+
+  v5DirectionChips: [] as string[],
+  v5BrainDumpText: '',
+  v5ReviewAreas: [] as V5ReviewArea[],
+  v5Summary: '',
 }
 
 const V3_STEP_SET = new Set<string>(ONBOARDING_STEPS_V3)
 const V4_STEP_SET = new Set<string>(ONBOARDING_STEPS_V4)
+const V5_STEP_SET = new Set<string>(ONBOARDING_STEPS_V5)
 
 const TO_V4_STEP: Partial<Record<OnboardingStep, OnboardingStep>> = {
   'brain-dump': 'goal-capture',
@@ -127,11 +187,17 @@ const TO_V3_STEP: Partial<Record<OnboardingStep, OnboardingStep>> = {
 }
 
 function getStepOrder(version: OnboardingFlowVersion): readonly OnboardingStep[] {
-  return (version === 'v3' ? ONBOARDING_STEPS_V3 : ONBOARDING_STEPS_V4) as readonly OnboardingStep[]
+  if (version === 'v3') return ONBOARDING_STEPS_V3 as readonly OnboardingStep[]
+  if (version === 'v5') return ONBOARDING_STEPS_V5 as readonly OnboardingStep[]
+  return ONBOARDING_STEPS_V4 as readonly OnboardingStep[]
 }
 
 function normalizeCurrentStep(step: unknown, flowVersion: OnboardingFlowVersion): OnboardingStep {
   const value = typeof step === 'string' ? step : 'welcome'
+
+  if (flowVersion === 'v5') {
+    return V5_STEP_SET.has(value) ? (value as OnboardingStep) : 'welcome'
+  }
 
   if (flowVersion === 'v4') {
     if (value === 'brain-dump') return 'goal-capture'
@@ -209,6 +275,24 @@ function resolvePrimaryTaskId(
   }
 
   return acceptedTaskKeys[0] ?? null
+}
+
+function uniqueTaskSeeds(seeds: AiPreparedTaskSeed[]): AiPreparedTaskSeed[] {
+  const seen = new Set<string>()
+  const result: AiPreparedTaskSeed[] = []
+
+  for (const seed of seeds) {
+    const goalName = seed.goalName.trim()
+    const taskName = seed.taskName.trim()
+    if (!goalName || !taskName) continue
+
+    const key = `${goalName.toLowerCase()}::${taskName.toLowerCase()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.push({ goalName, taskName })
+  }
+
+  return result
 }
 
 export const useOnboardingStore = create<OnboardingState>()(
@@ -317,6 +401,10 @@ export const useOnboardingStore = create<OnboardingState>()(
         }))
       },
 
+      setAiPreparedTaskSeeds: (seeds) => {
+        set({ aiPreparedTaskSeeds: uniqueTaskSeeds(seeds).slice(0, 40) })
+      },
+
       toggleTaskAccepted: (goalId, taskName) => {
         const { suggestedTasks, primaryTaskId } = get()
 
@@ -354,15 +442,35 @@ export const useOnboardingStore = create<OnboardingState>()(
       setDirectionMode: (mode) => set({ directionMode: mode }),
       setEditedDirection: (direction) => set({ editedDirection: direction }),
 
+      // V5 actions
+      toggleV5DirectionChip: (chipId) => {
+        const { v5DirectionChips } = get()
+        if (v5DirectionChips.includes(chipId)) {
+          set({ v5DirectionChips: v5DirectionChips.filter((id) => id !== chipId) })
+        } else {
+          set({ v5DirectionChips: [...v5DirectionChips, chipId] })
+        }
+      },
+      setV5BrainDumpText: (text) => set({ v5BrainDumpText: text }),
+      setV5ReviewAreas: (areas) => set({ v5ReviewAreas: areas }),
+      setV5Summary: (summary) => set({ v5Summary: summary }),
+
       // ============================================
       // Navigation
       // ============================================
       setFlowVersion: (version) => {
         const currentState = get()
-        const mappedStep =
-          version === 'v4'
-            ? (TO_V4_STEP[currentState.currentStep] ?? currentState.currentStep)
-            : (TO_V3_STEP[currentState.currentStep] ?? currentState.currentStep)
+        let mappedStep: OnboardingStep = currentState.currentStep
+
+        if (version === 'v4') {
+          mappedStep = TO_V4_STEP[currentState.currentStep] ?? currentState.currentStep
+        } else if (version === 'v3') {
+          mappedStep = TO_V3_STEP[currentState.currentStep] ?? currentState.currentStep
+        }
+        // v5 keeps welcome, otherwise resets to welcome
+        if (version === 'v5' && !V5_STEP_SET.has(mappedStep)) {
+          mappedStep = 'welcome'
+        }
 
         const nextCurrentStep = normalizeCurrentStep(mappedStep, version)
 
@@ -415,14 +523,16 @@ export const useOnboardingStore = create<OnboardingState>()(
     }),
     {
       name: 'inu-onboarding',
-      version: 7,
+      version: 8,
       migrate: (persistedState, version) => {
         if (version < 7) {
           return initialState
         }
 
         const state = (persistedState ?? {}) as Partial<OnboardingState>
-        const flowVersion = state.flowVersion === 'v3' ? 'v3' : 'v4'
+        const rawVersion = state.flowVersion
+        const flowVersion: OnboardingFlowVersion =
+          rawVersion === 'v3' ? 'v3' : rawVersion === 'v4' ? 'v4' : 'v5'
 
         return {
           ...initialState,
@@ -432,6 +542,10 @@ export const useOnboardingStore = create<OnboardingState>()(
           aiEnhanceStatus: state.aiEnhanceStatus ?? 'idle',
           primaryTaskId: state.primaryTaskId ?? null,
           startedAt: state.startedAt ?? null,
+          v5DirectionChips: state.v5DirectionChips ?? [],
+          v5BrainDumpText: state.v5BrainDumpText ?? '',
+          v5ReviewAreas: state.v5ReviewAreas ?? [],
+          v5Summary: state.v5Summary ?? '',
         } as OnboardingState
       },
       partialize: (state) => ({
@@ -444,11 +558,16 @@ export const useOnboardingStore = create<OnboardingState>()(
         derivedAreas: state.derivedAreas,
         activeGoalIds: state.activeGoalIds,
         suggestedTasks: state.suggestedTasks,
+        aiPreparedTaskSeeds: state.aiPreparedTaskSeeds,
         primaryTaskId: state.primaryTaskId,
         aiEnhanceStatus: state.aiEnhanceStatus,
         generatedDirection: state.generatedDirection,
         directionMode: state.directionMode,
         editedDirection: state.editedDirection,
+        v5DirectionChips: state.v5DirectionChips,
+        v5BrainDumpText: state.v5BrainDumpText,
+        v5ReviewAreas: state.v5ReviewAreas,
+        v5Summary: state.v5Summary,
       }),
     }
   )

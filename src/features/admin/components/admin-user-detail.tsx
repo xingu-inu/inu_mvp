@@ -1,6 +1,5 @@
 'use client'
 
-import { use } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
@@ -21,11 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface AdminUserDetailProps {
-  paramsPromise: Promise<{ id: string }>
+  id: string
 }
 
-export function AdminUserDetail({ paramsPromise }: AdminUserDetailProps) {
-  const { id } = use(paramsPromise)
+export function AdminUserDetail({ id }: AdminUserDetailProps) {
   const { data: user, isLoading } = useAdminUserDetail(id)
   const toggleAdmin = useToggleAdminStatus()
 

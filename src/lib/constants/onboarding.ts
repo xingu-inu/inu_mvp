@@ -424,18 +424,27 @@ export function classifyCustomGoalArea(goalText: string): AreaType {
 // ============================================
 export const ONBOARDING_STEPS_V3 = ['welcome', 'brain-dump', 'life-organized'] as const
 export const ONBOARDING_STEPS_V4 = ['welcome', 'goal-capture', 'first-action'] as const
+export const ONBOARDING_STEPS_V5 = [
+  'welcome',
+  'brain-dump-v5',
+  'review-v5',
+  'direction-v5',
+] as const
 
 export type OnboardingStepV3 = (typeof ONBOARDING_STEPS_V3)[number]
 export type OnboardingStepV4 = (typeof ONBOARDING_STEPS_V4)[number]
-export type OnboardingStep = OnboardingStepV3 | OnboardingStepV4
-export type OnboardingFlowVersion = 'v3' | 'v4'
+export type OnboardingStepV5 = (typeof ONBOARDING_STEPS_V5)[number]
+export type OnboardingStep = OnboardingStepV3 | OnboardingStepV4 | OnboardingStepV5
+export type OnboardingFlowVersion = 'v3' | 'v4' | 'v5'
 
 /** Steps shown in the progress indicator (excludes welcome) */
 export const INDICATOR_STEPS_V3 = ['brain-dump', 'life-organized'] as const
 export const INDICATOR_STEPS_V4 = ['goal-capture', 'first-action'] as const
+export const INDICATOR_STEPS_V5 = ['brain-dump-v5', 'review-v5', 'direction-v5'] as const
 
 export type IndicatorStepV3 = (typeof INDICATOR_STEPS_V3)[number]
 export type IndicatorStepV4 = (typeof INDICATOR_STEPS_V4)[number]
+export type IndicatorStepV5 = (typeof INDICATOR_STEPS_V5)[number]
 
 export const STEP_CONFIG_V3: Record<IndicatorStepV3, { index: number; label: string }> = {
   'brain-dump': { index: 0, label: '쏟아내기' },
@@ -446,6 +455,87 @@ export const STEP_CONFIG_V4: Record<IndicatorStepV4, { index: number; label: str
   'goal-capture': { index: 0, label: '목표 고르기' },
   'first-action': { index: 1, label: '내일 시작' },
 }
+
+export const STEP_CONFIG_V5: Record<IndicatorStepV5, { index: number; label: string }> = {
+  'brain-dump-v5': { index: 0, label: '쏟아내기' },
+  'review-v5': { index: 1, label: '확인' },
+  'direction-v5': { index: 2, label: '내 방향' },
+}
+
+// ============================================
+// Direction Chip Options (v5 onboarding)
+// ============================================
+export interface DirectionChipOption {
+  id: string
+  label: string
+  emoji: string
+  statement: string
+}
+
+// ============================================
+// Brain Dump Quick Chips (v5 onboarding — curated subset)
+// ============================================
+export interface BrainDumpQuickCategory {
+  label: string
+  emoji: string
+  chips: Array<{ id: string; label: string; emoji: string }>
+}
+
+export const BRAIN_DUMP_QUICK_CATEGORIES: BrainDumpQuickCategory[] = []
+
+// Popular chips — curated from survey data (no category headers)
+export const BRAIN_DUMP_POPULAR_CHIPS: Array<{ id: string; label: string; emoji: string }> = [
+  { id: 'lose-weight', label: '살 빼기', emoji: '💪' },
+  { id: 'exercise-daily', label: '운동 습관', emoji: '🏃' },
+  { id: 'diet-manage', label: '식단 관리', emoji: '🥗' },
+  { id: 'sleep-improve', label: '수면 개선', emoji: '😴' },
+  { id: 'saving', label: '저축하기', emoji: '💰' },
+  { id: 'investing', label: '재테크 · 투자', emoji: '📊' },
+  { id: 'side-income', label: '부업 시작', emoji: '💵' },
+  { id: 'job-change', label: '이직 준비', emoji: '💼' },
+  { id: 'reading', label: '독서', emoji: '📖' },
+  { id: 'self-develop', label: '자기계발', emoji: '🎓' },
+  { id: 'relationship', label: '관계 개선', emoji: '❤️' },
+  { id: 'stress-manage', label: '스트레스 관리', emoji: '🧘' },
+  { id: 'phone-detox', label: '스마트폰 줄이기', emoji: '📵' },
+  { id: 'new-hobby', label: '새 취미 시작', emoji: '🎨' },
+]
+
+export const DIRECTION_CHIP_OPTIONS: DirectionChipOption[] = [
+  {
+    id: 'health-vitality',
+    label: '건강하고 활력있게',
+    emoji: '💪',
+    statement: '건강하고 활력있게',
+  },
+  {
+    id: 'growth-challenge',
+    label: '끊임없이 성장하며',
+    emoji: '📈',
+    statement: '끊임없이 성장하며',
+  },
+  {
+    id: 'financial-freedom',
+    label: '경제적으로 자유롭게',
+    emoji: '💰',
+    statement: '경제적으로 자유롭게',
+  },
+  {
+    id: 'warm-relationships',
+    label: '사람들과 따뜻하게',
+    emoji: '❤️',
+    statement: '사람들과 따뜻하게',
+  },
+  { id: 'creative-joy', label: '창의적으로 즐기며', emoji: '🎨', statement: '창의적으로 즐기며' },
+  { id: 'inner-peace', label: '내면이 평화롭게', emoji: '🧘', statement: '내면이 평화롭게' },
+  { id: 'own-path', label: '나만의 길을 걸으며', emoji: '🌟', statement: '나만의 길을 걸으며' },
+  {
+    id: 'new-challenge',
+    label: '새로운 것에 도전하며',
+    emoji: '🚀',
+    statement: '새로운 것에 도전하며',
+  },
+]
 
 // ============================================
 // Goal Chip Categories (for grouped display in BrainDump)

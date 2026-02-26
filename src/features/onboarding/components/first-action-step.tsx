@@ -49,6 +49,7 @@ export function FirstActionStep() {
     organizedGoals,
     activeGoalIds,
     suggestedTasks,
+    aiPreparedTaskSeeds,
     primaryTaskId,
     aiEnhanceStatus,
     setSuggestedTasks,
@@ -82,6 +83,32 @@ export function FirstActionStep() {
     return map
   }, [activeGoals])
 
+  const aiSeedTaskMap = useMemo(() => {
+    const goalIdByName = new Map<string, string>()
+    for (const goal of activeGoals) {
+      goalIdByName.set(goal.name.trim().toLowerCase(), goal.id)
+    }
+
+    const map = new Map<string, string[]>()
+
+    for (const seed of aiPreparedTaskSeeds) {
+      const goalId = goalIdByName.get(seed.goalName.trim().toLowerCase())
+      if (!goalId) continue
+
+      const current = map.get(goalId) ?? []
+      current.push(seed.taskName)
+      map.set(goalId, current)
+    }
+
+    for (const [goalId, taskNames] of map.entries()) {
+      map.set(goalId, uniqueTaskNames(taskNames).slice(0, 2))
+    }
+
+    return map
+  }, [activeGoals, aiPreparedTaskSeeds])
+
+  const hasAiSeededTasks = aiSeedTaskMap.size > 0
+
   const canProceed = useMemo(() => {
     if (activeGoalIds.length < 1 || !primaryTaskId) return false
 
@@ -98,6 +125,20 @@ export function FirstActionStep() {
     if (activeGoals.length === 0) return
     if (suggestedTasks.length > 0) return
 
+    const seededTasks = activeGoals.flatMap((goal) =>
+      (aiSeedTaskMap.get(goal.id) ?? []).map((name) => ({
+        goalId: goal.id,
+        name,
+        accepted: true,
+      }))
+    )
+
+    if (seededTasks.length > 0) {
+      setSuggestedTasks(seededTasks)
+      setAiEnhanceStatus('done')
+      return
+    }
+
     const localTasks = activeGoals.flatMap((goal) =>
       (localFallbackTaskMap.get(goal.id) ?? []).map((name) => ({
         goalId: goal.id,
@@ -109,10 +150,18 @@ export function FirstActionStep() {
     if (localTasks.length > 0) {
       setSuggestedTasks(localTasks)
     }
-  }, [activeGoals, localFallbackTaskMap, setSuggestedTasks, suggestedTasks.length])
+  }, [
+    activeGoals,
+    aiSeedTaskMap,
+    localFallbackTaskMap,
+    setAiEnhanceStatus,
+    setSuggestedTasks,
+    suggestedTasks.length,
+  ])
 
   useEffect(() => {
     if (activeGoals.length === 0) return
+    if (hasAiSeededTasks) return
 
     const requestKey = activeGoals.map((goal) => goal.id).join(',')
     if (aiRequestRef.current === requestKey) return
@@ -190,7 +239,14 @@ export function FirstActionStep() {
         })
       }
     })()
-  }, [activeGoals, localFallbackTaskMap, setAiEnhanceStatus, setSuggestedTasks, suggestedTasks])
+  }, [
+    activeGoals,
+    hasAiSeededTasks,
+    localFallbackTaskMap,
+    setAiEnhanceStatus,
+    setSuggestedTasks,
+    suggestedTasks,
+  ])
 
   const handleBack = () => {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_BACK, { step: 'first-action' })
