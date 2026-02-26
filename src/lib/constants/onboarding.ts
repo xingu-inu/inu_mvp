@@ -420,18 +420,31 @@ export function classifyCustomGoalArea(goalText: string): AreaType {
 }
 
 // ============================================
-// Onboarding Step Configuration (v3 - brain dump flow)
+// Onboarding Step Configuration
 // ============================================
 export const ONBOARDING_STEPS_V3 = ['welcome', 'brain-dump', 'life-organized'] as const
+export const ONBOARDING_STEPS_V4 = ['welcome', 'goal-capture', 'first-action'] as const
+
 export type OnboardingStepV3 = (typeof ONBOARDING_STEPS_V3)[number]
+export type OnboardingStepV4 = (typeof ONBOARDING_STEPS_V4)[number]
+export type OnboardingStep = OnboardingStepV3 | OnboardingStepV4
+export type OnboardingFlowVersion = 'v3' | 'v4'
 
 /** Steps shown in the progress indicator (excludes welcome) */
 export const INDICATOR_STEPS_V3 = ['brain-dump', 'life-organized'] as const
+export const INDICATOR_STEPS_V4 = ['goal-capture', 'first-action'] as const
+
 export type IndicatorStepV3 = (typeof INDICATOR_STEPS_V3)[number]
+export type IndicatorStepV4 = (typeof INDICATOR_STEPS_V4)[number]
 
 export const STEP_CONFIG_V3: Record<IndicatorStepV3, { index: number; label: string }> = {
   'brain-dump': { index: 0, label: '쏟아내기' },
   'life-organized': { index: 1, label: '정리' },
+}
+
+export const STEP_CONFIG_V4: Record<IndicatorStepV4, { index: number; label: string }> = {
+  'goal-capture': { index: 0, label: '목표 고르기' },
+  'first-action': { index: 1, label: '내일 시작' },
 }
 
 // ============================================

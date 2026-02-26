@@ -3,6 +3,7 @@ import type {
   AiBrainDumpRequest,
   AiRoadmapDiagnosisRequest,
   AiTaskSuggestRequest,
+  AiTaskSuggestBatchRequest,
   AiPriorityRankRequest,
   AiReviewInsightRequest,
   AiAreaAnalysisRequest,
@@ -353,6 +354,50 @@ JSON 형식으로 반환:
 }`
 }
 
+function buildTaskSuggestBatchPrompt(request: AiTaskSuggestBatchRequest): string {
+  const goalsBlock = request.context.goals
+    .map(
+      (goal) => `- ${sanitizeUserText(goal.name)} (goalId: ${goal.id}, areaType: ${goal.areaType})`
+    )
+    .join('\n')
+
+  const existingTasksBlock =
+    request.context.existingTasks && request.context.existingTasks.length > 0
+      ? request.context.existingTasks.map((task) => `- ${sanitizeUserText(task)}`).join('\n')
+      : '없음'
+
+  return `사용자의 온보딩 목표를 보고, 각 목표별로 바로 시작 가능한 실천(Task) 1-2개를 제안해주세요.
+
+규칙:
+1. 각 제안은 아주 작고 바로 실행 가능한 행동으로 작성하세요.
+2. 목표별로 tasks는 1-2개, 전체는 간결하게 유지하세요.
+3. 기존 할 일과 중복되지 않게 작성하세요.
+4. goalId는 반드시 아래 goalId를 그대로 사용하세요.
+5. summary는 한 문장으로 작성하세요.
+
+<user_data>
+목표 목록:
+${goalsBlock || '없음'}
+
+이미 있는 할 일:
+${existingTasksBlock}
+</user_data>
+
+JSON 형식으로 반환:
+{
+  "type": "task-suggest-batch",
+  "summary": "3개 목표에 6개 실천을 제안합니다",
+  "suggestions": [
+    {
+      "goalId": "실제 goalId",
+      "tasks": [
+        { "name": "실천 이름" }
+      ]
+    }
+  ]
+}`
+}
+
 function buildPriorityRankPrompt(request: AiPriorityRankRequest): string {
   const { context } = request
   const parts: string[] = []
@@ -596,6 +641,10 @@ export function buildPrompt(request: AiGenerateRequest): string {
 
   if (request.type === 'task-suggest') {
     return buildTaskSuggestPrompt(request)
+  }
+
+  if (request.type === 'task-suggest-batch') {
+    return buildTaskSuggestBatchPrompt(request)
   }
 
   if (request.type === 'priority-rank') {

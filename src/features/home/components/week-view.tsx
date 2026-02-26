@@ -49,9 +49,10 @@ const SlotLabelGutter = memo(function SlotLabelGutter({
           <div
             key={slot}
             className={cn(
-              'flex flex-col items-center justify-center gap-0.5 border-b border-[var(--color-border)]/50 px-1',
+              'flex items-center justify-center gap-0.5 border-b border-[var(--color-border)]/50 px-1',
+              isDawnEmpty ? 'flex-row' : 'flex-col',
               currentSlot === slot && 'bg-[var(--color-primary-50)]/40',
-              isDawnEmpty && 'opacity-50'
+              isDawnEmpty && 'opacity-40'
             )}
             style={{
               ...(currentSlot !== slot ? { backgroundColor: `var(--color-slot-${slot})` } : {}),
@@ -63,24 +64,23 @@ const SlotLabelGutter = memo(function SlotLabelGutter({
             <span
               className={cn(
                 'text-center leading-tight text-[var(--color-text-disabled)]',
-                isMobile ? 'text-xs' : 'text-sm'
+                isDawnEmpty ? 'text-[10px]' : isMobile ? 'text-xs' : 'text-sm'
               )}
             >
               {config.emoji}
             </span>
-            {!isDawnEmpty && (
-              <span
-                className={cn(
-                  'text-[9px] leading-none',
-                  currentSlot === slot
-                    ? 'text-[var(--color-primary-500)]'
-                    : 'text-[var(--color-text-disabled)]'
-                )}
-              >
-                {config.hours[0]}-{config.hours[1]}
-              </span>
-            )}
-            {currentSlot === slot && (
+            <span
+              className={cn(
+                'leading-none',
+                isDawnEmpty ? 'text-[8px]' : 'text-[9px]',
+                currentSlot === slot
+                  ? 'text-[var(--color-primary-500)]'
+                  : 'text-[var(--color-text-disabled)]'
+              )}
+            >
+              {config.hours[0]}-{config.hours[1]}
+            </span>
+            {currentSlot === slot && !isDawnEmpty && (
               <span className="mt-0.5 text-[8px] leading-none font-semibold text-[var(--color-primary-500)]">
                 지금
               </span>
@@ -342,7 +342,7 @@ export function WeekViewGrid() {
           {/* ── 4-Block grid body ── */}
           <div
             ref={gridBodyRef}
-            className="grid flex-1"
+            className="grid min-h-[400px] flex-1"
             style={{ gridTemplateColumns: gridColumns }}
           >
             {/* Slot labels gutter (memo'd to isolate currentSlot interval re-renders) */}

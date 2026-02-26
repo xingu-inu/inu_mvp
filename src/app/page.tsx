@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation'
 
 import { createClient } from '@/lib/supabase/server'
 import { DemoApp } from '@/features/demo/components/demo-app'
+import { LandingAuthGuard } from '@/features/demo/components/landing-auth-guard'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'inu - 내 인생의 로드맵',
@@ -15,14 +18,13 @@ export const metadata: Metadata = {
 }
 
 export default async function LandingPage() {
-  // 로그인 상태 확인 (defense-in-depth: proxy.ts도 처리함)
+  // 서버 사이드 auth check (신규 요청 / 새로고침 시)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (user) {
-    // 온보딩 상태 확인
     const { data: profile } = await supabase
       .from('profiles')
       .select('onboarding_completed')
@@ -32,5 +34,11 @@ export default async function LandingPage() {
     redirect(profile?.onboarding_completed ? '/home' : '/onboarding')
   }
 
-  return <DemoApp />
+  return (
+    <>
+      {/* 클라이언트 라우터 캐시 히트 시 안전망: 로그인 상태이면 /home으로 리다이렉트 */}
+      <LandingAuthGuard />
+      <DemoApp />
+    </>
+  )
 }

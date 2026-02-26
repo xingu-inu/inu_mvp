@@ -2,9 +2,9 @@
 
 import { motion } from 'framer-motion'
 import {
-  INDICATOR_STEPS_V4,
-  STEP_CONFIG_V4,
-  type IndicatorStepV4,
+  INDICATOR_STEPS_V3,
+  STEP_CONFIG_V3,
+  type IndicatorStepV3,
 } from '@/lib/constants/onboarding'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 
@@ -14,14 +14,14 @@ export function StepIndicator() {
   // Don't show for welcome
   if (currentStep === 'welcome') return null
 
-  const currentConfig = STEP_CONFIG_V4[currentStep as IndicatorStepV4]
+  const currentConfig = STEP_CONFIG_V3[currentStep as IndicatorStepV3]
   const currentIndex = currentConfig?.index ?? 0
 
   return (
     <div className="mb-6 flex flex-col gap-3">
       {/* Segmented progress bar */}
       <div className="flex gap-1.5">
-        {INDICATOR_STEPS_V4.map((step, i) => (
+        {INDICATOR_STEPS_V3.map((step, i) => (
           <div
             key={step}
             className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--color-bg-tertiary)]"
@@ -40,8 +40,8 @@ export function StepIndicator() {
 
       {/* Step labels */}
       <div className="flex">
-        {INDICATOR_STEPS_V4.map((step, i) => {
-          const config = STEP_CONFIG_V4[step as IndicatorStepV4]
+        {INDICATOR_STEPS_V3.map((step, i) => {
+          const config = STEP_CONFIG_V3[step as IndicatorStepV3]
           const isActive = i === currentIndex
           const isCompleted = i < currentIndex
           return (

@@ -4,6 +4,13 @@ export const ANALYTICS_EVENTS = {
   AUTH_LOGIN: 'auth_login',
   AUTH_LOGOUT: 'auth_logout',
   // Onboarding
+  ONBOARDING_STARTED: 'onboarding_started',
+  ONBOARDING_STEP_VIEWED: 'onboarding_step_viewed',
+  ONBOARDING_STEP_NEXT: 'onboarding_step_next',
+  ONBOARDING_STEP_BACK: 'onboarding_step_back',
+  ONBOARDING_STEP_SKIPPED: 'onboarding_step_skipped',
+  ONBOARDING_AI_ENHANCE_REQUESTED: 'onboarding_ai_enhance_requested',
+  ONBOARDING_AI_ENHANCE_FAILED: 'onboarding_ai_enhance_failed',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
   // Check-in

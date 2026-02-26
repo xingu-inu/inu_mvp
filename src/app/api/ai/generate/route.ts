@@ -116,6 +116,17 @@ const taskSuggestContextSchema = z.object({
   ),
 })
 
+const taskSuggestBatchContextSchema = z.object({
+  goals: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      areaType: z.string(),
+    })
+  ),
+  existingTasks: z.array(z.string()).optional(),
+})
+
 const priorityRankContextSchema = z.object({
   direction: z.string().nullable(),
   areas: z.array(
@@ -234,6 +245,10 @@ const aiRequestSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('task-suggest'),
     context: taskSuggestContextSchema,
+  }),
+  z.object({
+    type: z.literal('task-suggest-batch'),
+    context: taskSuggestBatchContextSchema,
   }),
   z.object({
     type: z.literal('priority-rank'),

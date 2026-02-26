@@ -239,6 +239,20 @@ export interface AiTaskSuggestRequest {
   context: AiTaskSuggestContext
 }
 
+export interface AiTaskSuggestBatchContext {
+  goals: Array<{
+    id: string
+    name: string
+    areaType: string
+  }>
+  existingTasks?: string[]
+}
+
+export interface AiTaskSuggestBatchRequest {
+  type: 'task-suggest-batch'
+  context: AiTaskSuggestBatchContext
+}
+
 export interface AiSuggestedTask {
   name: string
   why?: string
@@ -259,6 +273,17 @@ export interface AiTaskSuggestResponse {
   type: 'task-suggest'
   summary: string
   suggestions: AiTaskSuggestGoalGroup[]
+}
+
+export interface AiTaskSuggestBatchItem {
+  goalId: string
+  tasks: Array<{ name: string }>
+}
+
+export interface AiTaskSuggestBatchResponse {
+  type: 'task-suggest-batch'
+  summary: string
+  suggestions: AiTaskSuggestBatchItem[]
 }
 
 // ── Priority Rank Types (Home 우선순위 정리) ──
@@ -404,6 +429,7 @@ export type AiGenerateRequest =
   | AiBrainDumpRequest
   | AiRoadmapDiagnosisRequest
   | AiTaskSuggestRequest
+  | AiTaskSuggestBatchRequest
   | AiPriorityRankRequest
   | AiReviewInsightRequest
   | AiAreaAnalysisRequest
@@ -460,6 +486,7 @@ export type AiGenerateResponse =
   | AiBrainDumpResponse
   | AiRoadmapDiagnosisResponse
   | AiTaskSuggestResponse
+  | AiTaskSuggestBatchResponse
   | AiPriorityRankResponse
   | AiReviewInsightResponse
   | AiAreaAnalysisResponse

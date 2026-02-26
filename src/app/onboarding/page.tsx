@@ -1,18 +1,29 @@
 'use client'
 
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import {
   StepIndicator,
   WelcomeStep,
+  StepIndicatorV3,
+  WelcomeStepV3,
   AnimatedStep,
-  BrainDumpStep,
-  LifeOrganizedStep,
+  GoalCaptureStep,
+  FirstActionStep,
+  BrainDumpStepV3,
+  LifeOrganizedStepV3,
 } from '@/features/onboarding'
+import { useOnboardingV4Flag } from '@/features/onboarding'
 
 export default function OnboardingPage() {
-  const { currentStep, direction, isNavigating } = useOnboardingStore()
+  const isOnboardingV4Enabled = useOnboardingV4Flag()
+  const { currentStep, direction, isNavigating, setFlowVersion } = useOnboardingStore()
+
+  useEffect(() => {
+    setFlowVersion(isOnboardingV4Enabled ? 'v4' : 'v3')
+  }, [isOnboardingV4Enabled, setFlowVersion])
 
   if (isNavigating) {
     return (
@@ -31,9 +42,34 @@ export default function OnboardingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          로드맵으로 이동 중...
+          홈으로 이동 중...
         </motion.p>
         <Loader2 className="h-6 w-6 animate-spin text-[var(--color-primary-500)]" />
+      </div>
+    )
+  }
+
+  if (!isOnboardingV4Enabled) {
+    return (
+      <div className="flex min-h-full flex-col overflow-hidden">
+        <StepIndicatorV3 />
+        <AnimatePresence mode="wait" custom={direction}>
+          {currentStep === 'welcome' && (
+            <AnimatedStep key="welcome-v3" stepKey="welcome-v3" direction={direction}>
+              <WelcomeStepV3 />
+            </AnimatedStep>
+          )}
+          {currentStep === 'brain-dump' && (
+            <AnimatedStep key="brain-dump-v3" stepKey="brain-dump-v3" direction={direction}>
+              <BrainDumpStepV3 />
+            </AnimatedStep>
+          )}
+          {currentStep === 'life-organized' && (
+            <AnimatedStep key="life-organized-v3" stepKey="life-organized-v3" direction={direction}>
+              <LifeOrganizedStepV3 />
+            </AnimatedStep>
+          )}
+        </AnimatePresence>
       </div>
     )
   }
@@ -50,14 +86,14 @@ export default function OnboardingPage() {
             <WelcomeStep />
           </AnimatedStep>
         )}
-        {currentStep === 'brain-dump' && (
-          <AnimatedStep key="brain-dump" stepKey="brain-dump" direction={direction}>
-            <BrainDumpStep />
+        {currentStep === 'goal-capture' && (
+          <AnimatedStep key="goal-capture" stepKey="goal-capture" direction={direction}>
+            <GoalCaptureStep />
           </AnimatedStep>
         )}
-        {currentStep === 'life-organized' && (
-          <AnimatedStep key="life-organized" stepKey="life-organized" direction={direction}>
-            <LifeOrganizedStep />
+        {currentStep === 'first-action' && (
+          <AnimatedStep key="first-action" stepKey="first-action" direction={direction}>
+            <FirstActionStep />
           </AnimatedStep>
         )}
       </AnimatePresence>
