@@ -94,10 +94,9 @@ export async function isRateLimited(
   const token = process.env.UPSTASH_REDIS_REST_TOKEN
 
   if (!url || !token) {
-    // In production, fail closed (deny) when Redis is not configured
-    if (process.env.NODE_ENV === 'production') {
-      return true
-    }
+    // Redis 미설정 시 in-memory fallback 사용.
+    // 프로덕션에서 Redis를 설정하면 분산 rate limit이 적용됩니다.
+    // .env.example: UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
     return isRateLimitedMemory(key, limit, windowMs)
   }
 
