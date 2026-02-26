@@ -484,21 +484,26 @@ export interface BrainDumpQuickCategory {
 export const BRAIN_DUMP_QUICK_CATEGORIES: BrainDumpQuickCategory[] = []
 
 // Popular chips — curated from survey data (no category headers)
-export const BRAIN_DUMP_POPULAR_CHIPS: Array<{ id: string; label: string; emoji: string }> = [
-  { id: 'lose-weight', label: '살 빼기', emoji: '💪' },
-  { id: 'exercise-daily', label: '운동 습관', emoji: '🏃' },
-  { id: 'diet-manage', label: '식단 관리', emoji: '🥗' },
-  { id: 'sleep-improve', label: '수면 개선', emoji: '😴' },
-  { id: 'saving', label: '저축하기', emoji: '💰' },
-  { id: 'investing', label: '재테크 · 투자', emoji: '📊' },
-  { id: 'side-income', label: '부업 시작', emoji: '💵' },
-  { id: 'job-change', label: '이직 준비', emoji: '💼' },
-  { id: 'reading', label: '독서', emoji: '📖' },
-  { id: 'self-develop', label: '자기계발', emoji: '🎓' },
-  { id: 'relationship', label: '관계 개선', emoji: '❤️' },
-  { id: 'stress-manage', label: '스트레스 관리', emoji: '🧘' },
-  { id: 'phone-detox', label: '스마트폰 줄이기', emoji: '📵' },
-  { id: 'new-hobby', label: '새 취미 시작', emoji: '🎨' },
+export const BRAIN_DUMP_POPULAR_CHIPS: Array<{
+  id: string
+  label: string
+  emoji: string
+  areaType: AreaType
+}> = [
+  { id: 'lose-weight', label: '살 빼기', emoji: '💪', areaType: 'health' },
+  { id: 'exercise-daily', label: '운동 습관', emoji: '🏃', areaType: 'health' },
+  { id: 'diet-manage', label: '식단 관리', emoji: '🥗', areaType: 'health' },
+  { id: 'sleep-improve', label: '수면 개선', emoji: '😴', areaType: 'health' },
+  { id: 'saving', label: '저축하기', emoji: '💰', areaType: 'finance' },
+  { id: 'investing', label: '재테크 · 투자', emoji: '📊', areaType: 'finance' },
+  { id: 'side-income', label: '부업 시작', emoji: '💵', areaType: 'finance' },
+  { id: 'job-change', label: '이직 준비', emoji: '💼', areaType: 'career' },
+  { id: 'reading', label: '독서', emoji: '📖', areaType: 'learning' },
+  { id: 'self-develop', label: '자기계발', emoji: '🎓', areaType: 'learning' },
+  { id: 'relationship', label: '관계 개선', emoji: '❤️', areaType: 'relationships' },
+  { id: 'stress-manage', label: '스트레스 관리', emoji: '🧘', areaType: 'mental' },
+  { id: 'phone-detox', label: '스마트폰 줄이기', emoji: '📵', areaType: 'mental' },
+  { id: 'new-hobby', label: '새 취미 시작', emoji: '🎨', areaType: 'hobbies' },
 ]
 
 export const DIRECTION_CHIP_OPTIONS: DirectionChipOption[] = [

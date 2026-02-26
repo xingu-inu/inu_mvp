@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import {
   StepIndicatorV5,
-  WelcomeStep,
   AnimatedStep,
   BrainDumpStepV5,
   ReviewStepV5,
@@ -14,11 +13,18 @@ import {
 } from '@/features/onboarding'
 
 export default function OnboardingPage() {
-  const { currentStep, direction, isNavigating, setFlowVersion } = useOnboardingStore()
+  const { currentStep, direction, isNavigating, setFlowVersion, nextStep } = useOnboardingStore()
 
   useEffect(() => {
     setFlowVersion('v5')
   }, [setFlowVersion])
+
+  // v5에서 welcome step은 사용하지 않으므로 즉시 건너뜀
+  useEffect(() => {
+    if (currentStep === 'welcome') {
+      nextStep()
+    }
+  }, [currentStep, nextStep])
 
   if (isNavigating) {
     return (
@@ -48,11 +54,6 @@ export default function OnboardingPage() {
     <div className="flex min-h-full flex-col overflow-hidden">
       <StepIndicatorV5 />
       <AnimatePresence mode="wait" custom={direction}>
-        {currentStep === 'welcome' && (
-          <AnimatedStep key="welcome-v5" stepKey="welcome-v5" direction={direction}>
-            <WelcomeStep />
-          </AnimatedStep>
-        )}
         {currentStep === 'brain-dump-v5' && (
           <AnimatedStep key="brain-dump-v5" stepKey="brain-dump-v5" direction={direction}>
             <BrainDumpStepV5 />

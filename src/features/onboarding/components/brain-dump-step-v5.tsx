@@ -8,7 +8,12 @@ import { useAiSuggest } from '@/hooks/use-ai-suggest'
 import { useOnboardingStore } from '@/stores/onboarding.store'
 import type { V5ReviewArea, V5ReviewGoal, V5ReviewTask } from '@/stores/onboarding.store'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
-import { BRAIN_DUMP_POPULAR_CHIPS } from '@/lib/constants/onboarding'
+import {
+  BRAIN_DUMP_POPULAR_CHIPS,
+  AREA_PRESETS_EXTENDED,
+  SAMPLE_TASKS,
+} from '@/lib/constants/onboarding'
+import type { AreaType } from '@/types/entities'
 import { useStepKeyboard } from '../hooks/use-step-keyboard'
 import type { AiBrainDumpResponse, AiBrainDumpArea } from '@/lib/ai/types'
 
@@ -16,6 +21,57 @@ const PLACEHOLDER = `위에서 고르거나, 여기에 자유롭게 적어보세
 예) 살 빼고 싶다, 영어 공부 다시 시작, 저축 좀 해야하는데...`
 
 const MAX_LENGTH = 2000
+
+/** 칩만 선택된 경우 AI 없이 즉시 review 데이터를 빌드 */
+function buildReviewAreasFromChips(selectedChipIds: string[]): V5ReviewArea[] {
+  const chips = BRAIN_DUMP_POPULAR_CHIPS.filter((c) => selectedChipIds.includes(c.id))
+
+  // areaType 기준으로 그룹핑
+  const byArea = new Map<AreaType, typeof chips>()
+  for (const chip of chips) {
+    const list = byArea.get(chip.areaType) ?? []
+    list.push(chip)
+    byArea.set(chip.areaType, list)
+  }
+
+  let idCounter = 0
+  return Array.from(byArea.entries()).map(([areaType, areaChips]) => {
+    const preset = AREA_PRESETS_EXTENDED.find((a) => a.type === areaType) ?? {
+      name: '기타',
+      type: 'custom' as AreaType,
+      emoji: '🎯',
+      color: '#8a7a65',
+    }
+    const sampleTasks = (SAMPLE_TASKS[areaType] ?? []).slice(0, 2)
+
+    return {
+      _id: `area-${idCounter++}`,
+      _checked: true,
+      name: preset.name,
+      emoji: preset.emoji,
+      color: preset.color,
+      type: areaType,
+      isExisting: false,
+      goals: areaChips.map(
+        (chip): V5ReviewGoal => ({
+          _id: `goal-${idCounter++}`,
+          _checked: true,
+          name: chip.label,
+          tasks: sampleTasks.map(
+            (taskName): V5ReviewTask => ({
+              _id: `task-${idCounter++}`,
+              _checked: true,
+              name: taskName,
+              repeat_type: 'daily',
+              duration_minutes: 15,
+              time_slot: 'anytime',
+            })
+          ),
+        })
+      ),
+    }
+  })
+}
 
 export function BrainDumpStepV5() {
   const {
@@ -52,18 +108,34 @@ export function BrainDumpStepV5() {
   }, [selectedChips, v5BrainDumpText])
 
   const isValid = combinedInput.length > 0
-  const remaining = MAX_LENGTH - v5BrainDumpText.length
+  const hasFreeText = v5BrainDumpText.trim().length > 0
+  // 칩만 있으면 AI 불필요, 자유 텍스트가 있으면 AI 필요
+  const needsAi = hasFreeText
 
   const handleSubmit = useCallback(() => {
     if (!isValid || isLoading) return
-
-    setIsLoading(true)
     setError(null)
 
+    // 칩만 선택된 경우: AI 없이 즉시 review 빌드
+    if (!hasFreeText && selectedChips.length > 0) {
+      const areas = buildReviewAreasFromChips(selectedChips)
+      setV5ReviewAreas(areas)
+      setV5Summary('')
+      trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+        step: 'brain-dump-v5',
+        mode: 'chips-only',
+        chip_count: selectedChips.length,
+      })
+      nextStep()
+      return
+    }
+
+    // 자유 텍스트 포함: AI 호출
+    setIsLoading(true)
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_AI_ENHANCE_REQUESTED, {
       step: 'brain-dump-v5',
       chip_count: selectedChips.length,
-      has_freetext: v5BrainDumpText.trim().length > 0,
+      has_freetext: true,
     })
 
     aiSuggest.mutate(
@@ -119,8 +191,10 @@ export function BrainDumpStepV5() {
 
           setV5ReviewAreas(mapped)
           setV5Summary(response.summary ?? '')
-
-          trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, { step: 'brain-dump-v5' })
+          trackEvent(ANALYTICS_EVENTS.ONBOARDING_STEP_COMPLETED, {
+            step: 'brain-dump-v5',
+            mode: 'ai',
+          })
           nextStep()
         },
         onError: (err) => {
@@ -133,9 +207,9 @@ export function BrainDumpStepV5() {
   }, [
     isValid,
     isLoading,
-    combinedInput,
+    hasFreeText,
     selectedChips,
-    v5BrainDumpText,
+    combinedInput,
     aiSuggest,
     setV5ReviewAreas,
     setV5Summary,
@@ -241,12 +315,20 @@ export function BrainDumpStepV5() {
                 className="w-full gap-1.5"
                 size="lg"
               >
-                <Sparkles className="h-4 w-4" />
-                AI로 정리하기
-                {selectedChips.length > 0 && (
-                  <span className="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
-                    {selectedChips.length}개 선택
-                  </span>
+                {needsAi ? (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    AI로 정리하기
+                  </>
+                ) : (
+                  <>
+                    바로 확인하기
+                    {selectedChips.length > 0 && (
+                      <span className="ml-1 rounded-full bg-white/20 px-1.5 py-0.5 text-xs">
+                        {selectedChips.length}개
+                      </span>
+                    )}
+                  </>
                 )}
               </Button>
               <Button variant="ghost" size="sm" onClick={prevStep} className="w-full gap-1">

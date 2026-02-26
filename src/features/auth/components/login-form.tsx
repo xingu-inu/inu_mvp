@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
@@ -14,7 +13,6 @@ import { isApiSuccess } from '@/types'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 export function LoginForm() {
-  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
 
   const {
@@ -30,7 +28,8 @@ export function LoginForm() {
 
     if (isApiSuccess(result)) {
       trackEvent(ANALYTICS_EVENTS.AUTH_LOGIN, { method: 'email' })
-      router.push(result.data.redirectTo)
+      // 풀 페이지 이동 — 라우터 캐시(DemoApp 등)를 우회하고 미들웨어가 신선하게 처리하도록
+      window.location.replace(result.data.redirectTo)
     } else {
       toast.error(result.error.message)
     }
