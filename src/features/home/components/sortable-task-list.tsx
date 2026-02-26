@@ -1,14 +1,15 @@
 'use client'
 
 import { useCallback } from 'react'
-import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core'
+import { DndContext, DragOverlay, type DragStartEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { AreaTaskSection } from './area-task-section'
 import { DailySection } from './daily-section'
 import { GCalEventSection } from './gcal-event-section'
-import { SortableAreaItem } from '@/components/common'
-import { useStandardSensors } from '@/lib/dnd/dnd-config'
-import { useAreaDnd } from '../hooks/use-area-dnd'
+import { CompactTaskRow } from './compact-task-row'
+import { SortableAreaItem, DragOverlayCard } from '@/components/common'
+import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
+import { useUnifiedHomeDnd, DAILY_CONTAINER_ID } from '../hooks/use-unified-home-dnd'
 import type { HomeTask } from '@/types/entities'
 import type { GoogleCalendarEvent } from '@/types/google-calendar'
 import type { AreaGroup } from '@/lib/utils/task-utils'
@@ -38,27 +39,39 @@ export function SortableTaskList({
   priorityTiers,
   googleEvents,
 }: SortableTaskListProps) {
-  // ── Area DnD (reorder area sections) ──
-  const { areaOrder, onAreaDragEnd, onAreaDragCancel } = useAreaDnd(areaGroups, selectedDate)
   const sensors = useStandardSensors()
+  const {
+    areaOrder,
+    getTasksForContainer,
+    activeType,
+    activeTask,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDragCancel,
+    collisionDetection,
+  } = useUnifiedHomeDnd({ areaGroups, dailyTasks, selectedDate })
 
   const areaSortableIds = areaOrder.map((id) => `area-${id}`)
 
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      onAreaDragEnd(event)
+  const wrappedDragStart = useCallback(
+    (event: DragStartEvent) => {
+      onDragStartProp?.()
+      handleDragStart(event)
     },
-    [onAreaDragEnd]
+    [onDragStartProp, handleDragStart]
   )
 
   return (
     <>
-      {/* Area-only DndContext — task DnD is handled per-section inside each component */}
+      {/* Single unified DndContext — area reorder + cross-section task DnD */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
+        onDragStart={wrappedDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
-        onDragCancel={onAreaDragCancel}
+        onDragCancel={handleDragCancel}
       >
         <SortableContext items={areaSortableIds} strategy={verticalListSortingStrategy}>
           <div className="space-y-4">
@@ -75,15 +88,15 @@ export function SortableTaskList({
                   {(dragHandleProps) => (
                     <AreaTaskSection
                       sortable
+                      containerId={areaId}
                       area={group.area}
                       goals={group.goals}
-                      tasks={group.tasks}
+                      tasks={getTasksForContainer(areaId)}
                       stats={group.stats}
                       isReadOnly={isReadOnly}
                       selectedDate={selectedDate}
                       expandedTaskId={expandedTaskId}
                       onToggle={onToggle}
-                      onDragStart={onDragStartProp}
                       enableAiSuggest={enableAiSuggest}
                       priorityTiers={priorityTiers}
                       dragHandleProps={dragHandleProps}
@@ -95,17 +108,25 @@ export function SortableTaskList({
 
             <DailySection
               sortable
-              tasks={dailyTasks}
+              containerId={DAILY_CONTAINER_ID}
+              tasks={getTasksForContainer(DAILY_CONTAINER_ID)}
               isReadOnly={isReadOnly}
               selectedDate={selectedDate}
               expandedTaskId={expandedTaskId}
               onToggle={onToggle}
-              onDragStart={onDragStartProp}
               enableAiSuggest={enableAiSuggest}
               priorityTiers={priorityTiers}
             />
           </div>
         </SortableContext>
+
+        <DragOverlay dropAnimation={DROP_ANIMATION}>
+          {activeType === 'task' && activeTask ? (
+            <DragOverlayCard>
+              <CompactTaskRow task={activeTask} isReadOnly selectedDate={selectedDate} />
+            </DragOverlayCard>
+          ) : null}
+        </DragOverlay>
       </DndContext>
 
       {/* Google Calendar — outside DnD */}

@@ -21,12 +21,21 @@ import {
  */
 export function useHomeTasks(date: Date = new Date(), directionId?: string) {
   const dateStr = format(date, 'yyyy-MM-dd')
+  const queryClient = useQueryClient()
+  const weekStartStr = format(startOfWeek(date, { weekStartsOn: 0 }), 'yyyy-MM-dd')
 
   return useQuery({
     queryKey: queryKeys.tasks.home(dateStr, directionId),
     queryFn: () => getHomeTasksAction(dateStr, directionId).then(unwrapListResponse),
     staleTime: STALE_TIMES.HOME_TASKS,
     select: mapApiTasksToEntities,
+    // Derive from week cache to avoid redundant fetch before useWeekTasks seeds day caches
+    placeholderData: () => {
+      const weekData = queryClient.getQueryData<Record<string, HomeTaskDto[]>>(
+        queryKeys.tasks.homeWeek(weekStartStr, directionId)
+      )
+      return weekData?.[dateStr]
+    },
   })
 }
 
@@ -58,9 +67,18 @@ export function usePrefetchHomeTasks(selectedDate: Date, directionId?: string) {
       })
     }
 
-    // Prefetch previous and next week batches (2 POSTs max)
-    prefetchWeek(prevStartStr, prevEndStr)
-    prefetchWeek(nextStartStr, nextEndStr)
+    // Defer prefetch to idle time so it doesn't compete with critical renders
+    const run = () => {
+      prefetchWeek(prevStartStr, prevEndStr)
+      prefetchWeek(nextStartStr, nextEndStr)
+    }
+
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(run, { timeout: 3000 })
+      return () => cancelIdleCallback(id)
+    }
+    const id = setTimeout(run, 1000)
+    return () => clearTimeout(id)
   }, [queryClient, prevStartStr, prevEndStr, nextStartStr, nextEndStr, directionId])
 }
 

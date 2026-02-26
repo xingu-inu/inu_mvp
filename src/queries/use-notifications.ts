@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { format, startOfWeek, endOfWeek, subWeeks } from 'date-fns'
 import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
@@ -12,7 +12,7 @@ import {
 } from '@/lib/notifications'
 import { unwrapListResponse, unwrapResponse } from '@/lib/api'
 import { mapApiTasksToEntities } from '@/lib/utils/task-utils'
-import { getHomeTasks, getWeekHomeTasks } from '@/actions/home.actions'
+import { getHomeTasks, getWeekHomeTasks, type HomeTaskDto } from '@/actions/home.actions'
 import { getActiveGoalsMinimal } from '@/actions/goal.actions'
 import { getActiveAnnouncements } from '@/actions/announcement.actions'
 import type { AppNotification } from '@/types/entities'
@@ -88,21 +88,27 @@ function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNoti
     }))
 }
 
-async function fetchNotifications(): Promise<AppNotification[]> {
+async function fetchNotifications(queryClient: QueryClient): Promise<AppNotification[]> {
   const today = new Date()
   const dateStr = format(today, 'yyyy-MM-dd')
   const isMonday = today.getDay() === 1
 
-  // Core data — use lightweight goal query (no groups/tasks join)
-  const [tasksResponse, goalsResponse, announcementsResponse] = await Promise.all([
-    getHomeTasks(dateStr),
+  // Core data — reuse TQ cache for tasks & announcements to avoid duplicate POSTs
+  const [apiTasks, goalsResponse, announcements] = await Promise.all([
+    queryClient.ensureQueryData<HomeTaskDto[]>({
+      queryKey: queryKeys.tasks.home(dateStr),
+      queryFn: () => getHomeTasks(dateStr).then(unwrapListResponse),
+      staleTime: STALE_TIMES.HOME_TASKS,
+    }),
     getActiveGoalsMinimal(),
-    getActiveAnnouncements(),
+    queryClient.ensureQueryData<Announcement[]>({
+      queryKey: queryKeys.announcements.active,
+      queryFn: () => getActiveAnnouncements().then(unwrapResponse),
+      staleTime: STALE_TIMES.ANNOUNCEMENTS,
+    }),
   ])
 
-  const apiTasks = unwrapListResponse(tasksResponse)
   const todayTasks = mapApiTasksToEntities(apiTasks)
-
   const activeGoals: MinimalGoal[] = goalsResponse.success ? goalsResponse.data : []
 
   // Weekly data (conditional)
@@ -160,17 +166,17 @@ async function fetchNotifications(): Promise<AppNotification[]> {
     goalStats,
   })
 
-  // Merge announcements as high-priority notifications
-  const announcements = announcementsResponse.success ? unwrapResponse(announcementsResponse) : []
   const announcementNotifications = mapAnnouncementsToNotifications(announcements)
 
   return [...announcementNotifications, ...computed]
 }
 
 export function useNotifications() {
+  const queryClient = useQueryClient()
+
   return useQuery({
     queryKey: queryKeys.notifications.today(),
-    queryFn: fetchNotifications,
+    queryFn: () => fetchNotifications(queryClient),
     staleTime: STALE_TIMES.NOTIFICATIONS,
     refetchOnWindowFocus: true,
   })

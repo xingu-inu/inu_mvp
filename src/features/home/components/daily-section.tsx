@@ -1,14 +1,12 @@
 'use client'
 
-import { useCallback } from 'react'
-import { DndContext, closestCenter, DragOverlay, type DragStartEvent } from '@dnd-kit/core'
+import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CompactTaskRow } from './compact-task-row'
 import { InlineTaskInput } from './inline-task-input'
 import { DailySectionHeader } from './daily-section-header'
-import { SortableTaskItem, DragOverlayCard } from '@/components/common'
-import { useStandardSensors, DROP_ANIMATION } from '@/lib/dnd/dnd-config'
-import { useSectionTaskDnd } from '../hooks/use-section-task-dnd'
+import { SortableTaskItem } from '@/components/common'
+import { cn } from '@/lib/utils'
 import type { HomeTask } from '@/types/entities'
 
 interface DailySectionBaseProps {
@@ -23,12 +21,12 @@ interface DailySectionBaseProps {
 
 interface StaticDailySectionProps extends DailySectionBaseProps {
   sortable?: false
-  onDragStart?: never
+  containerId?: never
 }
 
 interface SortableDailySectionProps extends DailySectionBaseProps {
   sortable: true
-  onDragStart?: () => void
+  containerId: string
 }
 
 type DailySectionProps = StaticDailySectionProps | SortableDailySectionProps
@@ -75,6 +73,7 @@ function StaticDailySectionInner({
 }
 
 function SortableDailySectionInner({
+  containerId,
   tasks,
   isReadOnly,
   selectedDate,
@@ -82,63 +81,41 @@ function SortableDailySectionInner({
   onToggle,
   enableAiSuggest,
   priorityTiers,
-  onDragStart: onDragStartProp,
 }: SortableDailySectionProps) {
-  const sensors = useStandardSensors()
-  const { localTasks, activeTask, handleDragStart, handleDragEnd, handleDragCancel } =
-    useSectionTaskDnd(tasks, selectedDate)
+  // Droppable container for cross-section task DnD
+  const { setNodeRef, isOver } = useDroppable({
+    id: containerId,
+    data: { type: 'container' as const },
+  })
 
-  const wrappedDragStart = useCallback(
-    (event: DragStartEvent) => {
-      onDragStartProp?.()
-      handleDragStart(event)
-    },
-    [onDragStartProp, handleDragStart]
-  )
-
-  const taskIds = localTasks.map((t) => t.id)
+  const taskIds = tasks.map((t) => t.id)
 
   return (
     <section
+      ref={setNodeRef}
       aria-labelledby="daily-tasks"
-      className="border-l-2 pl-3"
+      className={cn('border-l-2 pl-3 transition-all', isOver && 'bg-accent/30 rounded-md')}
       style={{ borderLeftColor: 'var(--color-text-tertiary)' }}
     >
-      <DailySectionHeader taskCount={localTasks.length} />
+      <DailySectionHeader taskCount={tasks.length} />
 
-      {/* Task DnD — own DndContext (isolated from area reorder) */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={wrappedDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          <div className="space-y-0.5">
-            {localTasks.map((task) => (
-              <SortableTaskItem key={task.id} id={task.id}>
-                <CompactTaskRow
-                  task={task}
-                  isReadOnly={isReadOnly}
-                  selectedDate={selectedDate}
-                  isExpanded={expandedTaskId === task.id}
-                  onToggle={onToggle}
-                  priorityTier={priorityTiers?.[task.id]}
-                />
-              </SortableTaskItem>
-            ))}
-          </div>
-        </SortableContext>
-
-        <DragOverlay dropAnimation={DROP_ANIMATION}>
-          {activeTask ? (
-            <DragOverlayCard>
-              <CompactTaskRow task={activeTask} isReadOnly selectedDate={selectedDate} />
-            </DragOverlayCard>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      {/* Tasks — SortableContext only (DndContext is in parent SortableTaskList) */}
+      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <div className="space-y-0.5">
+          {tasks.map((task) => (
+            <SortableTaskItem key={task.id} id={task.id} data={{ type: 'task' as const }}>
+              <CompactTaskRow
+                task={task}
+                isReadOnly={isReadOnly}
+                selectedDate={selectedDate}
+                isExpanded={expandedTaskId === task.id}
+                onToggle={onToggle}
+                priorityTier={priorityTiers?.[task.id]}
+              />
+            </SortableTaskItem>
+          ))}
+        </div>
+      </SortableContext>
 
       {!isReadOnly && (
         <InlineTaskInput selectedDate={selectedDate} enableAiSuggest={enableAiSuggest} />

@@ -147,3 +147,41 @@ export const upsertTaskDateSortOrder = authAction(
     return successResponse(undefined)
   }
 )
+
+/**
+ * Move a task to a different section (area/daily).
+ * Updates goal_id + clears group_id/area_id + sets sort_order.
+ * Also upserts date-specific sort order so the move only affects the given date.
+ */
+export const moveTaskToSection = authAction(
+  'moveTaskToSection',
+  async (
+    { supabase },
+    taskId: string,
+    newGoalId: string | null,
+    newSortOrder: string,
+    date: string
+  ): Promise<ApiResponse<void>> => {
+    const { error: taskError } = await supabase
+      .from('tasks')
+      .update({
+        goal_id: newGoalId,
+        group_id: null,
+        area_id: null,
+        sort_order: newSortOrder,
+      })
+      .eq('id', taskId)
+
+    if (taskError) throw taskError
+
+    const { error: sortError } = await supabase.rpc('upsert_task_date_sort_order', {
+      p_task_id: taskId,
+      p_date: date,
+      p_sort_order: newSortOrder,
+    })
+
+    if (sortError) throw sortError
+
+    return successResponse(undefined)
+  }
+)

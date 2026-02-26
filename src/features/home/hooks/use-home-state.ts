@@ -31,10 +31,13 @@ const viewParser = parseAsString.withDefault('week')
  * Manages date + view navigation via URL params
  */
 export function useHomeState() {
-  const [params, setParams] = useQueryStates({
-    date: dateParser,
-    view: viewParser,
-  })
+  const [params, setParams] = useQueryStates(
+    {
+      date: dateParser,
+      view: viewParser,
+    },
+    { shallow: true }
+  )
 
   const view = (params.view as HomeView) || 'week'
 

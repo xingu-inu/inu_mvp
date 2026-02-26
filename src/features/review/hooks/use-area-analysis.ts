@@ -35,6 +35,7 @@ export function useAreaAnalysis({ areaId, period, periodLabel }: UseAreaAnalysis
   // Reactive cache reader — never auto-fetches, only reads from cache
   const { data: cachedData } = useQuery<AiAreaAnalysisResponse>({
     queryKey: cacheKey,
+    queryFn: () => Promise.reject(new Error('Cache-only query')),
     enabled: false,
     staleTime: STALE_TIMES.AI_ANALYSIS,
     gcTime: STALE_TIMES.AI_ANALYSIS,

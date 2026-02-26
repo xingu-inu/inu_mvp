@@ -245,9 +245,7 @@ export function getDemoTasksWithGoals(): Task[] {
 // Generate CheckIn rows for a given month
 // Matches the shape returned by getMonthCheckIns server action
 // ============================================
-export function generateDemoMonthCheckIns(
-  monthDate: Date
-): {
+export function generateDemoMonthCheckIns(monthDate: Date): {
   id: string
   task_id: string
   user_id: string
