@@ -88,7 +88,7 @@ function computeStreakAtRisk(tasks: HomeTask[], dateStr: string): AppNotificatio
       emoji: '⚠️',
       priority: 4,
       actionLabel: '체크하기',
-      actionPath: '/home',
+      actionPath: '/roadmap',
       relatedTaskId: task.id,
       autoResolve: true,
     }))
@@ -129,7 +129,7 @@ function computeAllComplete(tasks: HomeTask[], dateStr: string): AppNotification
     emoji: '🎉',
     priority: 2,
     actionLabel: '회고 쓰기',
-    actionPath: '/home',
+    actionPath: '/roadmap',
     autoResolve: false,
   }
 }
@@ -161,7 +161,7 @@ function computeStreakRecovery(tasks: HomeTask[], dateStr: string): AppNotificat
       emoji: '🌱',
       priority: 3,
       actionLabel: '시작하기',
-      actionPath: '/home',
+      actionPath: '/roadmap',
       relatedTaskId: task.id,
       autoResolve: true,
     }))

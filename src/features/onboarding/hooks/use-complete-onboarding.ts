@@ -164,7 +164,7 @@ export function useCompleteOnboarding() {
       })
 
       setNavigating(true)
-      window.location.href = '/home'
+      window.location.href = '/roadmap'
     } catch (err) {
       setError(
         err instanceof Error ? err.message : '온보딩 완료에 실패했습니다. 다시 시도해주세요.'

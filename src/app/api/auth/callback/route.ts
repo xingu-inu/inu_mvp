@@ -5,14 +5,7 @@ import { publicRoute } from '@/lib/security'
  * Allowed path prefixes for post-auth redirect.
  * Only these top-level routes are permitted targets.
  */
-const ALLOWED_REDIRECT_PREFIXES = [
-  '/home',
-  '/onboarding',
-  '/roadmap',
-  '/review',
-  '/profile',
-  '/admin',
-]
+const ALLOWED_REDIRECT_PREFIXES = ['/onboarding', '/roadmap', '/review', '/profile', '/admin']
 
 /**
  * Sanitize redirect path to prevent open redirect attacks.
@@ -28,12 +21,12 @@ function sanitizeRedirectPath(path: string): string {
       if (next === decoded) break
       decoded = next
     } catch {
-      return '/home'
+      return '/roadmap'
     }
   }
 
   if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('://')) {
-    return '/home'
+    return '/roadmap'
   }
 
   // Whitelist check: path must start with one of the allowed prefixes
@@ -42,7 +35,7 @@ function sanitizeRedirectPath(path: string): string {
       decoded === prefix || decoded.startsWith(`${prefix}/`) || decoded.startsWith(`${prefix}?`)
   )
 
-  return isAllowed ? decoded : '/home'
+  return isAllowed ? decoded : '/roadmap'
 }
 
 export const GET = publicRoute(
@@ -50,7 +43,7 @@ export const GET = publicRoute(
   async (ctx): Promise<NextResponse> => {
     const { searchParams, origin } = new URL(ctx.request.url)
     const code = searchParams.get('code')
-    const next = sanitizeRedirectPath(searchParams.get('next') ?? '/home')
+    const next = sanitizeRedirectPath(searchParams.get('next') ?? '/roadmap')
 
     if (code) {
       const { error } = await ctx.supabase.auth.exchangeCodeForSession(code)

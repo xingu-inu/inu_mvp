@@ -31,12 +31,12 @@ export default async function LandingPage() {
       .eq('id', user.id)
       .single()
 
-    redirect(profile?.onboarding_completed ? '/home' : '/onboarding')
+    redirect(profile?.onboarding_completed ? '/roadmap' : '/onboarding')
   }
 
   return (
     <>
-      {/* 클라이언트 라우터 캐시 히트 시 안전망: 로그인 상태이면 /home으로 리다이렉트 */}
+      {/* 클라이언트 라우터 캐시 히트 시 안전망: 로그인 상태이면 /roadmap으로 리다이렉트 */}
       <LandingAuthGuard />
       <DemoApp />
     </>

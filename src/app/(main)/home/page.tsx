@@ -1,5 +1,5 @@
-import HomeContentPage from './home-content'
+import { redirect } from 'next/navigation'
 
 export default function HomePage() {
-  return <HomeContentPage />
+  redirect('/roadmap')
 }

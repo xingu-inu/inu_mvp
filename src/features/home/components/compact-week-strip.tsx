@@ -7,18 +7,32 @@ import { useHomeState } from '../hooks/use-home-state'
 import { useWeekTasks } from '../hooks/use-week-tasks'
 import { useHomeDirection } from '../hooks/use-home-direction'
 
+interface CompactWeekStripProps {
+  selectedDate?: Date
+  onDateSelect?: (date: Date) => void
+  directionId?: string
+}
+
 /**
  * Compact 7-day week strip for mobile — Todomate-style.
  * Shows weekday, date number, and completion progress for each day.
  * Tapping a day updates the selected date → task list below refreshes.
+ *
+ * Accepts optional controlled props; falls back to useHomeState when not provided.
  */
-export function CompactWeekStrip() {
-  const { currentDate, setCurrentDate } = useHomeState()
+export function CompactWeekStrip({
+  selectedDate: externalDate,
+  onDateSelect,
+  directionId: externalDirectionId,
+}: CompactWeekStripProps = {}) {
+  const { currentDate: internalDate, setCurrentDate: internalSetDate } = useHomeState()
   const { selectedDirectionId } = useHomeDirection()
-  const { tasksByDate, weekDays, isLoading } = useWeekTasks(
-    currentDate,
-    selectedDirectionId ?? undefined
-  )
+
+  const currentDate = externalDate ?? internalDate
+  const setCurrentDate = onDateSelect ?? internalSetDate
+  const directionId = externalDate ? externalDirectionId : (selectedDirectionId ?? undefined)
+
+  const { tasksByDate, weekDays, isLoading } = useWeekTasks(currentDate, directionId)
 
   if (isLoading) {
     return <WeekStripSkeleton />

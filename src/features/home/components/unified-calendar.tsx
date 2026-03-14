@@ -230,12 +230,25 @@ function MonthSummaryHeader({
   )
 }
 
+interface UnifiedCalendarProps {
+  selectedDate?: Date
+  onDateSelect?: (date: Date) => void
+}
+
 /**
  * Monthly calendar — Color Dot Garden.
  * Each task is a colored dot (area color). Done=filled, Skip=gray, Miss=faded, Future=outlined.
+ *
+ * Accepts optional controlled props; falls back to useHomeState when not provided.
  */
-export function UnifiedCalendar() {
-  const { currentDate, setCurrentDate } = useHomeState()
+export function UnifiedCalendar({
+  selectedDate: externalDate,
+  onDateSelect,
+}: UnifiedCalendarProps = {}) {
+  const { currentDate: internalDate, setCurrentDate: internalSetDate } = useHomeState()
+
+  const currentDate = externalDate ?? internalDate
+  const setCurrentDate = onDateSelect ?? internalSetDate
   const { summary, taskPreviews, isLoading } = useMonthSummary(currentDate)
   const { data: areas } = useAreas()
 

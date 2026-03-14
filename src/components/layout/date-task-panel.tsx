@@ -1,165 +1,20 @@
 'use client'
 
-import { useMemo } from 'react'
-import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
-import { format, isToday, isFuture, startOfDay, startOfWeek, isBefore, parseISO } from 'date-fns'
-import { ko } from 'date-fns/locale'
-import { Calendar, Sparkles } from 'lucide-react'
-import { usePanelDateStore } from '@/stores/panel-date.store'
-import { useHomeStore } from '@/stores/home.store'
-import { useHomeTasks } from '@/queries/use-home'
-import { getContextualGreeting, calculateTaskStats } from '@/lib/utils/task-utils'
-import { useHomeDirection } from '@/features/home/hooks/use-home-direction'
-import { VersionBrowsingBanner } from '@/features/home/components/version-browsing-banner'
-import { TaskList } from '@/features/home/components/task-list'
-import { useGoogleCalendarEvents } from '@/queries/use-google-calendar-events'
 
-import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
-import { TaskDetailPanel } from '@/features/home/components/panel-modes/task-detail-panel'
-import { HomeGoalView } from '@/features/home/components/panel-modes/home-goal-view'
-
-const PriorityRankModal = dynamic(
-  () =>
-    import('@/features/home/components/priority-rank-modal').then((m) => ({
-      default: m.PriorityRankModal,
-    })),
-  { ssr: false }
-)
+import { useRoadmapStore, selectPanelMode, selectRightPanelTab } from '@/stores/roadmap.store'
 import { GoalBrowsePanel } from '@/features/roadmap/components/panel-modes'
 import { GroupEditForm, GroupCreateForm } from '@/features/roadmap'
-import { useRoadmapStore, selectPanelMode } from '@/stores/roadmap.store'
 import { ReviewPanel } from '@/features/review/components/review-panel'
-import { useDirection } from '@/queries/use-direction'
+import { TodayPanel } from '@/features/roadmap/components/today-panel'
+import { FormSegmentedControl } from '@/components/ui/form-segmented-control'
 
-const EVENING_HOUR = 18
-const REFLECTION_THRESHOLD = 50
+const PANEL_TAB_OPTIONS = [
+  { value: 'roadmap', label: '로드맵' },
+  { value: 'checkin', label: '체크인' },
+]
 
-function PanelSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="h-12 animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
-      <div className="h-16 animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
-      <div className="h-16 animate-pulse rounded-xl bg-[var(--color-bg-secondary)]" />
-    </div>
-  )
-}
-
-/** Full daily panel — tasks, check-in, reflection */
-function HomeDailyPanel() {
-  const selectedDate = usePanelDateStore((s) => s.selectedDate)
-  const panelMode = useHomeStore((s) => s.panelMode)
-
-  // Delegate to sub-panels for task-detail and goal-view modes
-  if (panelMode === 'task-detail') {
-    return <TaskDetailPanel />
-  }
-
-  if (panelMode === 'goal-view') {
-    return <HomeGoalView />
-  }
-
-  return <HomeDailyContent selectedDate={selectedDate} />
-}
-
-function HomeDailyContent({ selectedDate }: { selectedDate: Date }) {
-  const { data: currentDirection } = useDirection()
-  const { isCurrentVersion, selectedVersion, selectedDirectionId } = useHomeDirection()
-  const { data: tasks = [], isLoading } = useHomeTasks(
-    selectedDate,
-    selectedDirectionId ?? undefined
-  )
-
-  const viewingToday = isToday(selectedDate)
-  const viewingFuture = isFuture(startOfDay(selectedDate))
-  const dateLabel = format(selectedDate, 'M월 d일 EEEE', { locale: ko })
-  const stats = useMemo(() => calculateTaskStats(tasks), [tasks])
-  const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
-
-  // Detect if selected date is before the current direction was created
-  const isOldDirectionDate = !!(
-    currentDirection?.created_at &&
-    isBefore(startOfDay(selectedDate), startOfDay(parseISO(currentDirection.created_at)))
-  )
-
-  const isReadOnly = !isCurrentVersion || isOldDirectionDate
-
-  // Google Calendar events for selected date
-  const weekStartStr = format(startOfWeek(selectedDate, { weekStartsOn: 0 }), 'yyyy-MM-dd')
-  const { data: googleEvents = [] } = useGoogleCalendarEvents(weekStartStr)
-  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd')
-  const dayGCalEvents = useMemo(
-    () => googleEvents.filter((e) => e.dateStr === selectedDateStr),
-    [googleEvents, selectedDateStr]
-  )
-
-  // Derived flags for reflection card placement
-  const currentHour = new Date().getHours()
-  const showReflection = !viewingFuture
-  const reflectionAbove =
-    stats.isAllDone ||
-    (viewingToday && currentHour >= EVENING_HOUR && stats.completionRate >= REFLECTION_THRESHOLD)
-
-  return (
-    <div className="flex h-full flex-col">
-      {/* Date header + contextual greeting + priority rank button */}
-      <div className="border-b border-[var(--color-border)] px-5 py-4">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-[var(--color-text-tertiary)]" />
-              <h2 className="text-sm font-semibold">{dateLabel}</h2>
-            </div>
-            {viewingToday && isCurrentVersion && tasks.length > 0 && (
-              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-                {getContextualGreeting(tasks)}
-              </p>
-            )}
-          </div>
-          {!isReadOnly && tasks.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsPriorityRankOpen(true)}
-              className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              우선순위 정리
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-5 pb-5">
-        {isLoading ? (
-          <PanelSkeleton />
-        ) : (
-          <>
-            {!isCurrentVersion && <VersionBrowsingBanner version={selectedVersion} />}
-            {showReflection && reflectionAbove && (
-              <DailyReflectionCard tasks={tasks} date={selectedDate} />
-            )}
-            <TaskList
-              tasks={tasks}
-              isReadOnly={isReadOnly}
-              selectedDate={selectedDate}
-              enableAiSuggest={!isReadOnly}
-              googleEvents={dayGCalEvents}
-            />
-            {showReflection && !reflectionAbove && (
-              <DailyReflectionCard tasks={tasks} date={selectedDate} />
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Priority rank modal */}
-      {!isReadOnly && <PriorityRankModal />}
-    </div>
-  )
-}
-
-/** Roadmap right panel — routes by panelMode for group forms */
+/** Roadmap right panel — routes by panelMode */
 function RoadmapPanel() {
   const panelMode = useRoadmapStore(selectPanelMode)
 
@@ -174,39 +29,44 @@ function RoadmapPanel() {
 }
 
 /** Derive the main tab from pathname */
-function useMainTab(): 'home' | 'roadmap' | 'review' {
+function useMainTab(): 'roadmap' | 'review' {
   const pathname = usePathname()
   if (pathname.startsWith('/review')) return 'review'
-  if (pathname.startsWith('/roadmap')) return 'roadmap'
-  return 'home'
+  return 'roadmap'
+}
+
+function RoadmapPanelWithToggle() {
+  const rightPanelTab = useRoadmapStore(selectRightPanelTab)
+  const setRightPanelTab = useRoadmapStore((s) => s.setRightPanelTab)
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Toggle header */}
+      <div className="flex items-center justify-center border-b border-[var(--color-border)] px-4 py-3">
+        <FormSegmentedControl
+          value={rightPanelTab}
+          onChange={(v) => setRightPanelTab(v as 'roadmap' | 'checkin')}
+          options={PANEL_TAB_OPTIONS}
+          compact
+          layoutId="right-panel-tab"
+        />
+      </div>
+
+      {/* Panel content */}
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {rightPanelTab === 'checkin' ? <TodayPanel /> : <RoadmapPanel />}
+      </div>
+    </div>
+  )
 }
 
 /** Main exported component - unified panel */
 export function DateTaskPanel() {
   const mainTab = useMainTab()
 
-  // Review → 공유 패널에서 상세 뷰 표시
   if (mainTab === 'review') {
     return <ReviewPanel />
   }
 
-  // Roadmap → panelMode에 따라 라우팅
-  if (mainTab === 'roadmap') {
-    return (
-      <div className="flex h-full flex-col">
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <RoadmapPanel />
-        </div>
-      </div>
-    )
-  }
-
-  // Home → daily panel 직접 렌더
-  return (
-    <div className="flex h-full flex-col">
-      <div className="min-h-0 flex-1">
-        <HomeDailyPanel />
-      </div>
-    </div>
-  )
+  return <RoadmapPanelWithToggle />
 }

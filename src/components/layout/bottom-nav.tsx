@@ -3,12 +3,11 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Map, BarChart3 } from 'lucide-react'
+import { Map, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 const navItems = [
-  { href: '/home', icon: Home, label: '홈' },
   { href: '/roadmap', icon: Map, label: '로드맵' },
   { href: '/review', icon: BarChart3, label: '회고' },
 ]

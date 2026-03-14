@@ -33,7 +33,7 @@ export const GET = publicRoute(
     cookieStore.delete('google_oauth_state')
 
     if (!code || !state || state !== storedState) {
-      return NextResponse.redirect(`${origin}/home?error=google_calendar_oauth_failed`)
+      return NextResponse.redirect(`${origin}/roadmap?error=google_calendar_oauth_failed`)
     }
 
     const {
@@ -60,9 +60,9 @@ export const GET = publicRoute(
         { onConflict: 'user_id' }
       )
 
-      return NextResponse.redirect(`${origin}/home?google_calendar=connected`)
+      return NextResponse.redirect(`${origin}/roadmap?google_calendar=connected`)
     } catch {
-      return NextResponse.redirect(`${origin}/home?error=google_calendar_token_failed`)
+      return NextResponse.redirect(`${origin}/roadmap?error=google_calendar_token_failed`)
     }
   },
   { rateLimit: { limit: 10 } }

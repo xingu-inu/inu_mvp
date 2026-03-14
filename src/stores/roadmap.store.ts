@@ -19,6 +19,8 @@ export type Selection =
   | { type: 'group'; id: string; goalId: string }
   | { type: 'task'; id: string; goalId: string }
 
+export type RightPanelTab = 'roadmap' | 'checkin'
+
 export type PanelMode =
   | 'browse'
   | 'view'
@@ -66,6 +68,10 @@ interface RoadmapState {
   panelMode: PanelMode
   setPanelMode: (mode: PanelMode) => void
 
+  // Right panel tab (roadmap vs checkin)
+  rightPanelTab: RightPanelTab
+  setRightPanelTab: (tab: RightPanelTab) => void
+
   // Tree layout direction
   treeLayout: TreeLayoutDirection
   setTreeLayout: (layout: TreeLayoutDirection) => void
@@ -111,6 +117,7 @@ const initialState = {
   focusedGoalId: null as string | null,
   inlineMode: null as InlineMode,
   panelMode: 'browse' as PanelMode,
+  rightPanelTab: 'roadmap' as RightPanelTab,
   treeLayout: 'horizontal' as TreeLayoutDirection,
   isBrainDumpOpen: false,
   isDiagnosisOpen: false,
@@ -160,7 +167,7 @@ export const useRoadmapStore = create<RoadmapState>()(
                       ? 'edit-task'
                       : 'browse'
 
-        set({ selection: sel, panelMode })
+        set({ selection: sel, panelMode, rightPanelTab: 'roadmap' })
       },
 
       setStatusFilter: (filter) => set({ statusFilter: filter }),
@@ -206,6 +213,8 @@ export const useRoadmapStore = create<RoadmapState>()(
       setInlineMode: (mode) => set({ inlineMode: mode }),
 
       setPanelMode: (mode) => set({ panelMode: mode }),
+
+      setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
       setTreeLayout: (layout) => set({ treeLayout: layout }),
 
@@ -262,6 +271,7 @@ export const selectSelectedNodeId = (s: RoadmapState): string | null =>
   s.selection.type === 'none' ? null : s.selection.id
 
 export const selectPanelMode = (s: RoadmapState) => s.panelMode
+export const selectRightPanelTab = (s: RoadmapState) => s.rightPanelTab
 export const selectInlineMode = (s: RoadmapState) => s.inlineMode
 export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
 export const selectMobileDrawerGoalId = (s: RoadmapState) => s.mobileDrawerGoalId

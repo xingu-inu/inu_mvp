@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Mascot } from '@/components/common/mascot'
+import { useRoadmapStore } from '@/stores/roadmap.store'
 
 export function EmptyReview() {
   return (
@@ -16,7 +17,7 @@ export function EmptyReview() {
         <br />
         꾸준함이 눈에 보이는 순간을 만나보세요!
       </p>
-      <Link href="/home">
+      <Link href="/roadmap" onClick={() => useRoadmapStore.getState().setRightPanelTab('checkin')}>
         <Button>오늘 시작하기</Button>
       </Link>
     </div>

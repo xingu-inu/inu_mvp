@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, RefreshCw, ChevronUp } from 'lucide-react'
+import { Sparkles, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { StreakBadge } from '@/components/ui/badge'
 import { AiIcon } from '@/components/common/ai-icon'
@@ -129,52 +129,7 @@ export function CompactSummaryCard({
 }: CompactSummaryCardProps) {
   const isZero = stats.completionRate === 0
   const { data: aiData, isLoading: aiLoading, error: aiError, generate, reset } = useReviewInsight()
-  const [aiExpanded, setAiExpanded] = useState(false)
-
-  const handleAiToggle = useCallback(() => {
-    if (!aiExpanded && !aiData && !aiLoading && !aiError) {
-      const context: AiReviewInsightContext = {
-        period: isWeek ? 'week' : 'month',
-        periodLabel,
-        completionRate: stats.completionRate,
-        activeDays: stats.activeDays,
-        totalDays: stats.totalDays,
-        avgMoodLabel: stats.avgMoodLabel,
-        moodTrend: (moodHistory ?? []).map((m) => ({ date: m.date, mood: m.mood })),
-        topStreaks: streaks.slice(0, 5).map((s) => ({
-          taskName: s.taskName,
-          count: s.streakCount,
-          areaName: s.areaName,
-        })),
-        areaBalances: areaBalances.map((a) => ({
-          areaName: a.areaName,
-          completionRate: a.completionRate,
-        })),
-        weeklyReflection: weeklyReflection
-          ? {
-              highlight: weeklyReflection.highlight ?? undefined,
-              challenge: weeklyReflection.challenge ?? undefined,
-              next_focus: weeklyReflection.next_focus ?? undefined,
-            }
-          : undefined,
-      }
-      void generate(context)
-    }
-    setAiExpanded((v) => !v)
-  }, [
-    aiExpanded,
-    aiData,
-    aiLoading,
-    aiError,
-    isWeek,
-    periodLabel,
-    stats,
-    moodHistory,
-    streaks,
-    areaBalances,
-    weeklyReflection,
-    generate,
-  ])
+  const [aiExpanded] = useState(false)
 
   const handleRefresh = useCallback(() => {
     reset()

@@ -12,6 +12,7 @@ import {
   useNotificationCount,
   dismissAnnouncement,
 } from '@/queries/use-notifications'
+import { useRoadmapStore } from '@/stores/roadmap.store'
 import type { AppNotification } from '@/types/entities'
 
 interface NotificationPopoverProps {
@@ -27,6 +28,10 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
 
   const handleClick = (notification: AppNotification) => {
     if (notification.actionPath) {
+      // Check-in related notifications should open the checkin tab
+      if (notification.actionPath.startsWith('/roadmap')) {
+        useRoadmapStore.getState().setRightPanelTab('checkin')
+      }
       router.push(notification.actionPath)
       setOpen(false)
     }

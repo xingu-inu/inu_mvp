@@ -109,7 +109,7 @@ export async function proxy(request: NextRequest) {
   if (user && isAdminPath) {
     if (!profile?.is_admin) {
       const url = request.nextUrl.clone()
-      url.pathname = '/home'
+      url.pathname = '/roadmap'
       return NextResponse.redirect(url)
     }
   }
@@ -117,7 +117,7 @@ export async function proxy(request: NextRequest) {
   // Logged in + on auth pages → redirect to today (or onboarding if not completed)
   if (user && isAuthPath) {
     const url = request.nextUrl.clone()
-    url.pathname = profile?.onboarding_completed ? '/home' : '/onboarding'
+    url.pathname = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
     return NextResponse.redirect(url)
   }
 
@@ -134,7 +134,7 @@ export async function proxy(request: NextRequest) {
   if (user && isOnboardingPath) {
     if (profile?.onboarding_completed) {
       const url = request.nextUrl.clone()
-      url.pathname = '/home'
+      url.pathname = '/roadmap'
       return NextResponse.redirect(url)
     }
   }
@@ -142,7 +142,7 @@ export async function proxy(request: NextRequest) {
   // Root path redirect (logged-in users only; unauthenticated users see landing page)
   if (pathname === '/' && user) {
     const url = request.nextUrl.clone()
-    url.pathname = profile?.onboarding_completed ? '/home' : '/onboarding'
+    url.pathname = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
     return NextResponse.redirect(url)
   }
 

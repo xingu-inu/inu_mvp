@@ -16,7 +16,7 @@ export function LandingAuthGuard() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace('/home')
+      router.replace('/roadmap')
     }
   }, [user, isLoading, router])
 

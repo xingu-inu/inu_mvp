@@ -69,13 +69,13 @@ export const signInWithEmail = publicAction(
         .eq('id', user.id)
         .single()
 
-      const redirectTo = profile?.onboarding_completed ? '/home' : '/onboarding'
+      const redirectTo = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
       revalidatePath('/', 'layout')
       return successResponse({ redirectTo })
     }
 
     revalidatePath('/', 'layout')
-    return successResponse({ redirectTo: '/home' })
+    return successResponse({ redirectTo: '/roadmap' })
   },
   { rateLimit: { limit: 5 } }
 )
