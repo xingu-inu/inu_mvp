@@ -146,8 +146,9 @@ export const signInWithGoogle = publicAction(
   'signInWithGoogle',
   async ({ supabase }): Promise<ApiResponse<OAuthUrl>> => {
     const headersList = await headers()
-    const origin =
+    const rawOrigin =
       headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const origin = rawOrigin.replace(/\/+$/, '')
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -183,8 +184,9 @@ export const signInWithMagicLink = publicAction(
     }
 
     const headersList = await headers()
-    const origin =
+    const rawOrigin =
       headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const origin = rawOrigin.replace(/\/+$/, '')
 
     const { error } = await supabase.auth.signInWithOtp({
       email: validated.data.email,
@@ -222,8 +224,9 @@ export const resetPassword = publicAction(
     }
 
     const headersList = await headers()
-    const origin =
+    const rawOrigin =
       headersList.get('origin') || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const origin = rawOrigin.replace(/\/+$/, '')
 
     const { error } = await supabase.auth.resetPasswordForEmail(validated.data.email, {
       redirectTo: `${origin}/api/auth/callback?next=/profile/security`,
