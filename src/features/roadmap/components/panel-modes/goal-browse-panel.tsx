@@ -1,16 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import {
-  ChevronRight,
-  List,
-  Compass,
-  Edit2,
-  Plus,
-  Trash2,
-  Sparkles,
-  Stethoscope,
-} from 'lucide-react'
+import { ChevronRight, List, Compass, Edit2, Plus, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { ErrorCard } from '@/components/ui/error-card'
@@ -18,7 +9,12 @@ import { PanelLoadingSpinner } from '@/features/roadmap/components/shared/panel-
 import { useGoals } from '@/queries/use-goals'
 import { useAreas, useDeleteArea } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
-import { useRoadmapStore, selectStatusFilter, selectSelectedNodeId } from '@/stores/roadmap.store'
+import {
+  useRoadmapStore,
+  selectStatusFilter,
+  selectSelectedNodeId,
+  type StatusFilter,
+} from '@/stores/roadmap.store'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import { GoalAccordionItem } from './goal-accordion-item'
 import {
@@ -69,8 +65,6 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
   const [isCreatingArea, setIsCreatingArea] = useState(false)
   const [creatingGoalInAreaId, setCreatingGoalInAreaId] = useState<string | null>(null)
   const { isDemoMode } = useDemoMode()
-  const setIsBrainDumpOpen = useRoadmapStore((s) => s.setIsBrainDumpOpen)
-  const setIsDiagnosisOpen = useRoadmapStore((s) => s.setIsDiagnosisOpen)
   const areaDelete = useDeleteConfirm()
 
   const deleteArea = useDeleteArea()
@@ -319,73 +313,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-b border-[var(--color-border)] px-5 py-4">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold">로드맵 목록</h2>
-            <div className="mt-1 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
-              {statusFilter !== 'all' ? (
-                <FilterBadge
-                  status={statusFilter as GoalStatus}
-                  count={filteredGoals.length}
-                  onClear={() => useRoadmapStore.getState().setStatusFilter('all')}
-                />
-              ) : (
-                <>
-                  <span>{filteredGoals.length}개 목표</span>
-                  {(() => {
-                    const activeCount = filteredGoals.filter((g) => g.status === 'active').length
-                    const completedCount = filteredGoals.filter(
-                      (g) => g.status === 'completed'
-                    ).length
-                    const archivedCount = filteredGoals.filter(
-                      (g) => g.status === 'archived'
-                    ).length
-                    return (
-                      <>
-                        {activeCount > 0 && (
-                          <span className="text-[var(--color-primary-500)]">
-                            {activeCount} 진행 중
-                          </span>
-                        )}
-                        {completedCount > 0 && (
-                          <span className="text-[var(--color-done)]">{completedCount} 완료</span>
-                        )}
-                        {archivedCount > 0 && (
-                          <span className="text-[var(--color-archived)]">
-                            {archivedCount} 나중에
-                          </span>
-                        )}
-                      </>
-                    )
-                  })()}
-                </>
-              )}
-            </div>
-          </div>
-          {!isDemoMode && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsDiagnosisOpen(true)}
-                className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border border-[var(--color-primary-200)] px-2.5 py-2 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:bg-[var(--color-primary-50)] active:scale-[0.97]"
-              >
-                <Stethoscope className="h-3.5 w-3.5" />
-                진단
-              </button>
-              <button
-                onClick={() => setIsBrainDumpOpen(true)}
-                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg bg-gradient-to-r from-[var(--color-primary-500)] to-[var(--color-ai)] px-3 py-2 text-xs font-medium text-white shadow-sm transition-[opacity,transform] hover:opacity-90 active:scale-[0.97]"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                쏟아내기
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Direction bar — fixed above scroll */}
+      {/* Direction bar with goal count — fixed above scroll */}
       {direction && (
         <DirectionBar
           statement={direction.statement}
@@ -395,6 +323,9 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
           onEdit={() => setEditingDirection(true)}
           onDoneEdit={() => setEditingDirection(false)}
           isDemoMode={isDemoMode}
+          goalCount={filteredGoals.length}
+          statusFilter={statusFilter}
+          onClearFilter={() => useRoadmapStore.getState().setStatusFilter('all')}
         />
       )}
 
@@ -652,7 +583,7 @@ function FilterBadge({
   )
 }
 
-/** Compact Direction bar — always visible, fixed above scroll */
+/** Compact Direction bar — always visible, fixed above scroll, now includes goal count */
 function DirectionBar({
   statement,
   why,
@@ -661,6 +592,9 @@ function DirectionBar({
   onEdit,
   onDoneEdit,
   isDemoMode,
+  goalCount,
+  statusFilter,
+  onClearFilter,
 }: {
   statement: string
   why?: string | null
@@ -669,6 +603,9 @@ function DirectionBar({
   onEdit: () => void
   onDoneEdit: () => void
   isDemoMode: boolean
+  goalCount: number
+  statusFilter: StatusFilter
+  onClearFilter: () => void
 }) {
   if (isEditing) {
     return (
@@ -684,14 +621,29 @@ function DirectionBar({
   }
 
   return (
-    <div className="group/direction flex items-start gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-primary-50)]/30 px-4 py-2.5">
+    <div className="group/direction flex items-start gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-primary-50)]/30 px-4 py-2">
       <Compass className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--color-primary-400)]" />
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-1 text-sm text-[var(--color-text-primary)]">{statement}</p>
-        {why && (
-          <span className="mt-1 inline-block max-w-full truncate rounded-full bg-[var(--color-primary-100)] px-2 py-0.5 text-xs text-[var(--color-primary-600)]">
-            {why}
+        <p className="line-clamp-1 text-sm text-[var(--color-text-primary)]">
+          {statement}
+          <span className="ml-2 text-xs text-[var(--color-text-tertiary)]">
+            · {goalCount}개 목표
           </span>
+        </p>
+        {statusFilter !== 'all' ? (
+          <div className="mt-0.5">
+            <FilterBadge
+              status={statusFilter as GoalStatus}
+              count={goalCount}
+              onClear={onClearFilter}
+            />
+          </div>
+        ) : (
+          why && (
+            <span className="mt-0.5 inline-block max-w-full truncate rounded-full bg-[var(--color-primary-100)] px-2 py-0.5 text-xs text-[var(--color-primary-600)]">
+              {why}
+            </span>
+          )
         )}
       </div>
       {!isDemoMode && (
