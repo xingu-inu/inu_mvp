@@ -35,6 +35,7 @@ export type PanelMode =
 /** Inline editing mode within a GoalAccordionItem (desktop only) */
 export type InlineMode =
   | null
+  | 'create-goal'
   | 'create-group'
   | { type: 'edit-group'; groupId: string }
   | 'create-task'

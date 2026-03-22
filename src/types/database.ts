@@ -425,8 +425,10 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           id: string
+          impact_area_ids: string[]
           name: string
           sort_order: string | null
+          start_date: string | null
           status: Database['public']['Enums']['goal_status']
           status_change_note: string | null
           status_change_reason: string | null
@@ -441,8 +443,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           id?: string
+          impact_area_ids?: string[]
           name: string
           sort_order?: string | null
+          start_date?: string | null
           status?: Database['public']['Enums']['goal_status']
           status_change_note?: string | null
           status_change_reason?: string | null
@@ -457,8 +461,10 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           id?: string
+          impact_area_ids?: string[]
           name?: string
           sort_order?: string | null
+          start_date?: string | null
           status?: Database['public']['Enums']['goal_status']
           status_change_note?: string | null
           status_change_reason?: string | null

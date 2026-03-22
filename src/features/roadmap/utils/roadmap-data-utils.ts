@@ -27,8 +27,9 @@ export interface TreeNode {
 }
 
 export interface CrossLink {
-  sourceTaskId: string
-  targetGoalId: string
+  sourceTaskId?: string // for task-level cross-links
+  sourceGoalId?: string // for goal-level cross-links
+  targetGoalId?: string // for task-level cross-links
   targetNodeId: string
   areaColor: string
 }
@@ -148,6 +149,17 @@ export function buildTreeData(
           })
 
           const allChildren = [...groupNodes, ...directTaskNodes]
+
+          // Collect goal-level cross-links for impact areas
+          if (goal.impact_area_ids?.length) {
+            for (const impactAreaId of goal.impact_area_ids) {
+              crossLinks.push({
+                sourceGoalId: goal.id,
+                targetNodeId: impactAreaId,
+                areaColor: areaColorMap.get(impactAreaId) ?? '#8a8078',
+              })
+            }
+          }
 
           return {
             type: 'goal' as const,

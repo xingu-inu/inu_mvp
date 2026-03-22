@@ -8,6 +8,7 @@ import { useCreateTask } from '@/queries/use-tasks'
 import { format } from 'date-fns'
 import { AREA_PRESETS_EXTENDED, SAMPLE_GOALS, SAMPLE_TASKS } from '@/lib/constants/onboarding'
 import type { AreaType } from '@/types/entities'
+import { TemplatePicker } from '../shared/template-picker'
 
 interface TreeQuickAddProps {
   parentType: 'direction' | 'area' | 'goal' | 'group'
@@ -148,12 +149,15 @@ function GoalQuickAdd({
   onClose: () => void
 }) {
   const [name, setName] = useState('')
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const createGoal = useCreateGoal()
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+    if (!showTemplatePicker) {
+      setTimeout(() => inputRef.current?.focus(), 0)
+    }
+  }, [showTemplatePicker])
 
   const samples = areaType ? (SAMPLE_GOALS[areaType] ?? []).slice(0, 3) : []
 
@@ -166,9 +170,29 @@ function GoalQuickAdd({
     )
   }
 
+  if (showTemplatePicker) {
+    return (
+      <div className="w-72">
+        <TemplatePicker areaId={areaId} onClose={onClose} />
+        <button
+          onClick={() => setShowTemplatePicker(false)}
+          className="mt-1 text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)]"
+        >
+          ← 직접 입력하기
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="w-60 space-y-3">
       <p className="text-sm font-medium text-[var(--color-text-primary)]">새 목표</p>
+      <button
+        onClick={() => setShowTemplatePicker(true)}
+        className="w-full rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-2 text-left text-xs text-[var(--color-primary-600)] transition-colors hover:bg-[var(--color-primary-100)]"
+      >
+        ✨ 템플릿으로 시작하기
+      </button>
       <input
         ref={inputRef}
         value={name}

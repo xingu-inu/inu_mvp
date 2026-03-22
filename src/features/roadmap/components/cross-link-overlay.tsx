@@ -1,13 +1,16 @@
 'use client'
 
-import { useState, useLayoutEffect, useCallback, type RefObject } from 'react'
+import { useState, useLayoutEffect, useCallback, useRef, type RefObject } from 'react'
 
 export interface CrossLink {
-  sourceTaskId: string
-  targetGoalId: string
+  sourceTaskId?: string
+  sourceGoalId?: string
+  targetGoalId?: string
   /** The actual node to draw the line to (groupId if specified, otherwise goalId) */
   targetNodeId: string
   areaColor: string
+  /** Human-readable label describing this link (e.g. "Task → Goal") */
+  label?: string
 }
 
 type AnchorSide = 'left' | 'right' | 'top' | 'bottom'
@@ -27,8 +30,16 @@ interface LinePosition {
   sourceAnchor: AnchorSide
   targetAnchor: AnchorSide
   areaColor: string
-  sourceTaskId: string
-  targetGoalId: string
+  sourceId: string
+  targetId: string
+  label: string
+}
+
+interface TooltipState {
+  x: number
+  y: number
+  label: string
+  visible: boolean
 }
 
 // ─── Helpers ────────────────────────────────────────
@@ -134,6 +145,50 @@ function getControlPoints(
   return { cx1, cy1, cx2, cy2 }
 }
 
+/** Compute the midpoint of a cubic Bézier at t=0.5 */
+function bezierMidpoint(
+  sx: number,
+  sy: number,
+  cx1: number,
+  cy1: number,
+  cx2: number,
+  cy2: number,
+  tx: number,
+  ty: number
+): { x: number; y: number } {
+  const t = 0.5
+  const mt = 1 - t
+  const x = mt * mt * mt * sx + 3 * mt * mt * t * cx1 + 3 * mt * t * t * cx2 + t * t * t * tx
+  const y = mt * mt * mt * sy + 3 * mt * mt * t * cy1 + 3 * mt * t * t * cy2 + t * t * t * ty
+  return { x, y }
+}
+
+// ─── CSS animation injected once ────────────────────
+
+const ANIMATION_STYLE_ID = 'crosslink-animation-style'
+let animationStyleMountCount = 0
+
+function ensureAnimationStyle() {
+  if (typeof document === 'undefined') return
+  if (document.getElementById(ANIMATION_STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = ANIMATION_STYLE_ID
+  style.textContent = `
+    @keyframes crosslink-flow {
+      from { stroke-dashoffset: 20; }
+      to   { stroke-dashoffset: 0; }
+    }
+    .crosslink-path {
+      animation: crosslink-flow 2.5s linear infinite;
+    }
+    .crosslink-path-hovered {
+      animation: crosslink-flow 1.5s linear infinite;
+    }
+  `
+  document.head.appendChild(style)
+  return style
+}
+
 // ─── Component ──────────────────────────────────────
 
 export function CrossLinkOverlay({
@@ -142,6 +197,22 @@ export function CrossLinkOverlay({
   layoutDirection = 'horizontal',
 }: CrossLinkOverlayProps) {
   const [lines, setLines] = useState<LinePosition[]>([])
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null)
+  const [tooltip, setTooltip] = useState<TooltipState>({ x: 0, y: 0, label: '', visible: false })
+  const svgRef = useRef<SVGSVGElement | null>(null)
+
+  // Inject CSS once, clean up on unmount (ref-counted for concurrent instances)
+  useLayoutEffect(() => {
+    animationStyleMountCount++
+    ensureAnimationStyle()
+    return () => {
+      animationStyleMountCount--
+      if (animationStyleMountCount <= 0) {
+        document.getElementById(ANIMATION_STYLE_ID)?.remove()
+        animationStyleMountCount = 0
+      }
+    }
+  }, [])
 
   const calculatePositions = useCallback(() => {
     const container = containerRef.current
@@ -151,8 +222,12 @@ export function CrossLinkOverlay({
     const newLines: LinePosition[] = []
 
     for (const link of crossLinks) {
-      const sourceEl = container.querySelector(`[data-node-id="${link.sourceTaskId}"]`)
-      const targetEl = container.querySelector(`[data-node-id="${link.targetNodeId}"]`)
+      // Support both task-level and goal-level cross-links
+      const sourceNodeId = link.sourceTaskId ?? link.sourceGoalId
+      if (!sourceNodeId) continue
+
+      const sourceEl = container.querySelector(`[data-node-id="${CSS.escape(sourceNodeId)}"]`)
+      const targetEl = container.querySelector(`[data-node-id="${CSS.escape(link.targetNodeId)}"]`)
 
       if (!sourceEl || !targetEl) continue
 
@@ -176,8 +251,9 @@ export function CrossLinkOverlay({
         sourceAnchor,
         targetAnchor,
         areaColor: link.areaColor,
-        sourceTaskId: link.sourceTaskId,
-        targetGoalId: link.targetGoalId,
+        sourceId: sourceNodeId,
+        targetId: link.targetNodeId,
+        label: link.label ?? `${sourceNodeId} → ${link.targetNodeId}`,
       })
     }
 
@@ -217,63 +293,190 @@ export function CrossLinkOverlay({
   // Collect unique colors for arrow markers
   const uniqueColors = [...new Set(lines.map((l) => l.areaColor))]
 
+  function handleLinkEnter(line: LinePosition, cx1: number, cy1: number, cx2: number, cy2: number) {
+    const key = `${line.sourceId}-${line.targetId}`
+    setHoveredKey(key)
+
+    const mid = bezierMidpoint(
+      line.sourceX,
+      line.sourceY,
+      cx1,
+      cy1,
+      cx2,
+      cy2,
+      line.targetX,
+      line.targetY
+    )
+
+    // Convert SVG coords to container-relative coords
+    const svg = svgRef.current
+    const container = containerRef.current
+    if (!svg || !container) return
+
+    const containerRect = container.getBoundingClientRect()
+    const svgRect = svg.getBoundingClientRect()
+    const offsetX = svgRect.left - containerRect.left
+    const offsetY = svgRect.top - containerRect.top
+
+    setTooltip({ x: mid.x + offsetX, y: mid.y + offsetY, label: line.label, visible: true })
+  }
+
+  function handleLinkLeave() {
+    setHoveredKey(null)
+    setTooltip((prev) => ({ ...prev, visible: false }))
+  }
+
+  function handleLinkClick(line: LinePosition) {
+    const container = containerRef.current
+    if (!container) return
+
+    // Highlight source node
+    const sourceEl = container.querySelector(`[data-node-id="${CSS.escape(line.sourceId)}"]`)
+    const targetEl = container.querySelector(`[data-node-id="${CSS.escape(line.targetId)}"]`)
+
+    if (sourceEl instanceof HTMLElement) {
+      sourceEl.classList.add('crosslink-focused')
+      sourceEl.style.outline = `2px solid ${line.areaColor}`
+      sourceEl.style.outlineOffset = '2px'
+      setTimeout(() => {
+        sourceEl.classList.remove('crosslink-focused')
+        sourceEl.style.outline = ''
+        sourceEl.style.outlineOffset = ''
+      }, 2000)
+    }
+
+    if (targetEl instanceof HTMLElement) {
+      targetEl.classList.add('crosslink-focused')
+      targetEl.style.outline = `2px solid ${line.areaColor}`
+      targetEl.style.outlineOffset = '2px'
+      setTimeout(() => {
+        targetEl.classList.remove('crosslink-focused')
+        targetEl.style.outline = ''
+        targetEl.style.outlineOffset = ''
+      }, 2000)
+    }
+  }
+
   return (
-    <svg
-      style={{
-        position: 'absolute',
-        inset: 0,
-        pointerEvents: 'none',
-        overflow: 'visible',
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      <defs>
-        {uniqueColors.map((color) => {
-          const colorId = color.replace('#', '')
+    <>
+      <svg
+        ref={svgRef}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          overflow: 'visible',
+          width: '100%',
+          height: '100%',
+        }}
+      >
+        <defs>
+          {uniqueColors.map((color) => {
+            const colorId = color.replace('#', '')
+            return (
+              <marker
+                key={colorId}
+                id={`crosslink-arrow-${colorId}`}
+                viewBox="0 0 8 6"
+                refX={7}
+                refY={3}
+                markerWidth={8}
+                markerHeight={6}
+                orient="auto-start-reverse"
+              >
+                <path d="M 0 0 L 8 3 L 0 6 Z" fill={color} opacity={0.6} />
+              </marker>
+            )
+          })}
+        </defs>
+
+        {lines.map((line) => {
+          const { cx1, cy1, cx2, cy2 } = getControlPoints(
+            line.sourceX,
+            line.sourceY,
+            line.targetX,
+            line.targetY,
+            line.sourceAnchor,
+            line.targetAnchor
+          )
+
+          const pathD = `M ${line.sourceX} ${line.sourceY} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${line.targetX} ${line.targetY}`
+          const colorId = line.areaColor.replace('#', '')
+          const key = `${line.sourceId}-${line.targetId}`
+          const isHovered = hoveredKey === key
+
           return (
-            <marker
-              key={colorId}
-              id={`crosslink-arrow-${colorId}`}
-              viewBox="0 0 8 6"
-              refX={7}
-              refY={3}
-              markerWidth={8}
-              markerHeight={6}
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 0 L 8 3 L 0 6 Z" fill={color} opacity={0.6} />
-            </marker>
+            <g key={key}>
+              {/* Invisible hit-area path for easier hover targeting */}
+              <path
+                d={pathD}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={12}
+                style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                onMouseEnter={() => handleLinkEnter(line, cx1, cy1, cx2, cy2)}
+                onMouseLeave={handleLinkLeave}
+                onClick={() => handleLinkClick(line)}
+              />
+              {/* Visible animated path */}
+              <path
+                d={pathD}
+                fill="none"
+                stroke={line.areaColor}
+                strokeDasharray="6 4"
+                strokeWidth={isHovered ? 2 : 1.5}
+                opacity={isHovered ? 0.8 : 0.45}
+                markerEnd={`url(#crosslink-arrow-${colorId})`}
+                className={isHovered ? 'crosslink-path-hovered' : 'crosslink-path'}
+                style={{ transition: 'opacity 0.2s, stroke-width 0.2s', pointerEvents: 'none' }}
+              />
+            </g>
           )
         })}
-      </defs>
+      </svg>
 
-      {lines.map((line) => {
-        const { cx1, cy1, cx2, cy2 } = getControlPoints(
-          line.sourceX,
-          line.sourceY,
-          line.targetX,
-          line.targetY,
-          line.sourceAnchor,
-          line.targetAnchor
-        )
-
-        const path = `M ${line.sourceX} ${line.sourceY} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${line.targetX} ${line.targetY}`
-        const colorId = line.areaColor.replace('#', '')
-
-        return (
-          <path
-            key={`${line.sourceTaskId}-${line.targetGoalId}`}
-            d={path}
-            fill="none"
-            stroke={line.areaColor}
-            strokeDasharray="6 4"
-            strokeWidth={1.5}
-            opacity={0.45}
-            markerEnd={`url(#crosslink-arrow-${colorId})`}
+      {/* Tooltip */}
+      {tooltip.visible && (
+        <div
+          style={{
+            position: 'absolute',
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translate(-50%, -100%)',
+            marginTop: -8,
+            pointerEvents: 'none',
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              background: 'rgba(15, 15, 15, 0.85)',
+              color: '#fff',
+              fontSize: 11,
+              fontWeight: 500,
+              lineHeight: 1.4,
+              padding: '3px 8px',
+              borderRadius: 6,
+              whiteSpace: 'nowrap',
+              backdropFilter: 'blur(4px)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+          >
+            {tooltip.label}
+          </div>
+          {/* Tiny downward caret */}
+          <div
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: '5px solid transparent',
+              borderRight: '5px solid transparent',
+              borderTop: '5px solid rgba(15, 15, 15, 0.85)',
+              margin: '0 auto',
+            }}
           />
-        )
-      })}
-    </svg>
+        </div>
+      )}
+    </>
   )
 }

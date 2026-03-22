@@ -182,8 +182,10 @@ export const goalRepository = {
         name: input.name,
         why: input.why ?? null,
         status: input.status ?? 'backlog',
+        start_date: input.start_date ?? null,
         target_date: input.target_date ?? null,
         sort_order: newSortOrder,
+        impact_area_ids: input.impact_area_ids ?? [],
       })
       .select(
         `

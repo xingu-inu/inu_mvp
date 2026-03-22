@@ -140,39 +140,42 @@ export function GoalWhySection<T extends FieldValues>({
 }
 
 // ---------------------------------------------------------------------------
-// GoalDeadlineSection
+// GoalPeriodSection
 // ---------------------------------------------------------------------------
 
-interface GoalDeadlineSectionProps<T extends FieldValues> {
+interface GoalPeriodSectionProps<T extends FieldValues> {
   form: UseFormReturn<T>
-  hasDeadline: boolean
+  hasPeriod: boolean
+  startDate: string | undefined
   targetDate: string | undefined
   idPrefix?: string
 }
 
-export function GoalDeadlineSection<T extends FieldValues>({
+export function GoalPeriodSection<T extends FieldValues>({
   form,
-  hasDeadline,
+  hasPeriod,
+  startDate,
   targetDate,
-  idPrefix = 'goal-deadline',
-}: GoalDeadlineSectionProps<T>) {
+  idPrefix = 'goal-period',
+}: GoalPeriodSectionProps<T>) {
   return (
     <div className="rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2.5">
       <div className="flex items-center justify-between">
         <div>
           <Label htmlFor={idPrefix} className="mb-0 flex items-center gap-1.5 text-xs">
             <Calendar className="h-3.5 w-3.5 text-[var(--color-text-tertiary)]" />
-            기한 설정
+            기간 설정
           </Label>
           <p className="ml-5 text-[10px] text-[var(--color-text-tertiary)]">
-            기한이 있으면 동기부여에 도움돼요
+            기간이 있으면 흐름을 잡는 데 도움돼요
           </p>
         </div>
         <Switch
           id={idPrefix}
-          checked={hasDeadline}
+          checked={hasPeriod}
           onCheckedChange={(checked) => {
             if (!checked) {
+              form.setValue('start_date' as never, undefined as never)
               form.setValue('target_date' as never, undefined as never)
             } else {
               form.setValue('target_date' as never, new Date().toISOString().split('T')[0] as never)
@@ -181,15 +184,24 @@ export function GoalDeadlineSection<T extends FieldValues>({
         />
       </div>
       <AnimatePresence>
-        {hasDeadline && (
+        {hasPeriod && (
           <AnimatedCollapse>
-            <div className="mt-2 ml-5">
+            <div className="mt-2 ml-5 flex gap-2">
+              <DatePicker
+                value={startDate}
+                onChange={(date) =>
+                  form.setValue('start_date' as never, (date ?? undefined) as never)
+                }
+                compact
+                placeholder="시작일"
+              />
               <DatePicker
                 value={targetDate}
                 onChange={(date) =>
                   form.setValue('target_date' as never, (date ?? undefined) as never)
                 }
                 compact
+                placeholder="목표일"
               />
             </div>
           </AnimatedCollapse>
@@ -198,3 +210,6 @@ export function GoalDeadlineSection<T extends FieldValues>({
     </div>
   )
 }
+
+// Backward-compat alias
+export const GoalDeadlineSection = GoalPeriodSection

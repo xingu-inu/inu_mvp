@@ -15,7 +15,7 @@ import { Chip } from '@/components/ui/chip'
 import {
   GoalNameSection,
   GoalWhySection,
-  GoalDeadlineSection,
+  GoalPeriodSection,
 } from '@/features/roadmap/components/inline-forms/goal-form-sections'
 import { useUpdateGoal, useGoalWithRelations, useGoals } from '@/queries/use-goals'
 import { useEnableGoalGroups, useDisableGoalGroups } from '@/queries/use-groups'
@@ -60,13 +60,15 @@ export function InlineGoalEdit({ goal, area, onDone }: InlineGoalEditProps) {
       name: goal.name,
       why: goal.why || '',
       status: goal.status,
+      start_date: goal.start_date || undefined,
       target_date: goal.target_date || undefined,
     },
   })
 
   const currentName = useWatch({ control: form.control, name: 'name' })
+  const startDate = useWatch({ control: form.control, name: 'start_date' })
   const targetDate = useWatch({ control: form.control, name: 'target_date' })
-  const hasDeadline = !!targetDate
+  const hasPeriod = !!(startDate || targetDate)
   const whyValue = useWatch({ control: form.control, name: 'why' })
 
   // Reset when goal data changes externally
@@ -75,6 +77,7 @@ export function InlineGoalEdit({ goal, area, onDone }: InlineGoalEditProps) {
       name: goal.name,
       why: goal.why || '',
       status: goal.status,
+      start_date: goal.start_date || undefined,
       target_date: goal.target_date || undefined,
     })
   }, [goal.id]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -86,7 +89,8 @@ export function InlineGoalEdit({ goal, area, onDone }: InlineGoalEditProps) {
         input: {
           ...values,
           why: values.why || undefined,
-          target_date: hasDeadline ? values.target_date : undefined,
+          start_date: hasPeriod ? values.start_date : undefined,
+          target_date: hasPeriod ? values.target_date : undefined,
         },
       },
       {
@@ -179,12 +183,13 @@ export function InlineGoalEdit({ goal, area, onDone }: InlineGoalEditProps) {
           설정
         </span>
 
-        {/* Deadline */}
-        <GoalDeadlineSection
+        {/* Period */}
+        <GoalPeriodSection
           form={form}
-          hasDeadline={hasDeadline}
+          hasPeriod={hasPeriod}
+          startDate={startDate}
           targetDate={targetDate}
-          idPrefix={`edit-deadline-${goal.id}`}
+          idPrefix={`edit-period-${goal.id}`}
         />
 
         {/* Group Management Toggle */}

@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { motion } from 'framer-motion'
 import {
   Compass,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { SelectedNodeType } from '@/stores/roadmap.store'
+import { VIBE_COLORS, type GoalVibe, type VibeColorKey } from '@/stores/goal-vibe.store'
 
 export interface VisualTreeNode {
   type: SelectedNodeType
@@ -27,8 +29,11 @@ export interface VisualTreeNode {
   status?: string
   areaColor?: string
   children?: VisualTreeNode[]
+  vibe?: GoalVibe
   meta?: {
     count?: number
+    doneCount?: number
+    totalCount?: number
     streak?: number
     totalStreak?: number
     targetDate?: string
@@ -40,6 +45,7 @@ export interface VisualTreeNode {
     repeatType?: string
     hasCrossLinks?: boolean
     sortOrder?: string
+    impactAreaColors?: string[]
   }
 }
 
@@ -76,6 +82,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
       role="button"
       tabIndex={0}
       data-node-id={node.id}
+      data-node-type={node.type}
       data-node-card
       title={node.type === 'group' && node.why ? node.why : undefined}
       className={cn(
@@ -86,16 +93,92 @@ export const TreeNodeCard = memo(function TreeNodeCard({
           'shadow-[0_0_0_4px_var(--color-primary-100)] ring-2 ring-[var(--color-primary-500)]/60',
         isSearchMatch && !isSelected && 'ring-2 ring-[var(--color-primary-400)]'
       )}
+      style={(() => {
+        const streakVal =
+          node.type === 'goal' ? (node.meta?.totalStreak ?? 0) : (node.meta?.streak ?? 0)
+        const hasGlow = (node.type === 'goal' || node.type === 'task') && streakVal >= 7
+        const glowColor = node.areaColor ?? node.color
+
+        // Vibe themeColor takes priority over impactAreaColors for goal background
+        if (node.type === 'goal' && node.vibe?.themeColor) {
+          const hex = VIBE_COLORS[node.vibe.themeColor as VibeColorKey]
+          return {
+            backgroundColor: `color-mix(in oklch, ${hex} 8%, var(--color-bg-primary))`,
+            ...(hasGlow && glowColor
+              ? { boxShadow: `0 0 8px color-mix(in oklch, ${glowColor} 20%, transparent)` }
+              : {}),
+          }
+        }
+
+        const hasImpactBg =
+          node.type === 'goal' &&
+          node.meta?.impactAreaColors &&
+          node.meta.impactAreaColors.length > 0
+
+        if (!hasImpactBg && !hasGlow) return undefined
+        return {
+          ...(hasImpactBg
+            ? {
+                backgroundColor: `color-mix(in oklch, ${node.meta!.impactAreaColors![0]} 4%, var(--color-bg-primary))`,
+              }
+            : {}),
+          ...(hasGlow && glowColor
+            ? { boxShadow: `0 0 8px color-mix(in oklch, ${glowColor} 20%, transparent)` }
+            : {}),
+        }
+      })()}
       onClick={onSelect}
       onKeyDown={handleKeyDown}
     >
       {/* Area/Goal 색상 accent bar */}
       {((node.type === 'goal' && node.areaColor) || (node.type === 'area' && node.color)) && (
         <div
-          className="absolute inset-y-0 left-0 w-1"
-          style={{ backgroundColor: node.type === 'goal' ? node.areaColor! : node.color! }}
+          className={cn(
+            'absolute inset-y-0 left-0',
+            node.type === 'goal' && (node.meta?.impactAreaColors?.length ?? 0) > 0 ? 'w-1.5' : 'w-1'
+          )}
+          style={(() => {
+            if (node.type === 'goal' && node.vibe?.themeColor) {
+              return { backgroundColor: VIBE_COLORS[node.vibe.themeColor as VibeColorKey] }
+            }
+            if (node.type === 'goal' && node.areaColor) {
+              const impacts = node.meta?.impactAreaColors
+              if (impacts && impacts.length > 0) {
+                const primary = node.areaColor
+                let stops: string
+                if (impacts.length === 1) {
+                  stops = `${primary} 50%, ${impacts[0]} 50%`
+                } else if (impacts.length === 2) {
+                  stops = `${primary} 33%, ${impacts[0]} 33% 66%, ${impacts[1]} 66%`
+                } else {
+                  // 3+: primary 40%, then split remaining evenly
+                  const rest = impacts.slice(0, 3)
+                  stops = `${primary} 40%, ${rest[0]} 40% 60%, ${rest[1]} 60% 80%, ${rest[2]} 80%`
+                }
+                return { background: `linear-gradient(to bottom, ${stops})` }
+              }
+              return { backgroundColor: node.areaColor }
+            }
+            return { backgroundColor: node.color! }
+          })()}
         />
       )}
+
+      {/* Impact area dots (top-right corner) */}
+      {node.type === 'goal' &&
+        node.meta?.impactAreaColors &&
+        node.meta.impactAreaColors.length > 0 && (
+          <div className="absolute -top-1.5 -right-1.5 flex items-center">
+            {node.meta.impactAreaColors.map((color) => (
+              <div
+                key={color}
+                className="-ml-1 h-2 w-2 rounded-full border-[1.5px] border-[var(--color-bg-primary)] first:ml-0"
+                style={{ backgroundColor: color }}
+                title="영향 영역"
+              />
+            ))}
+          </div>
+        )}
 
       {/* Expand/collapse toggle (Direction is always expanded, no toggle) */}
       {hasChildren && node.type !== 'direction' && (
@@ -155,6 +238,9 @@ function NodeIcon({ node }: { node: VisualTreeNode }) {
         </div>
       )
     case 'goal':
+      if (node.vibe?.emoji) {
+        return <span className="flex-shrink-0 text-base leading-none">{node.vibe.emoji}</span>
+      }
       return <Target className="h-4 w-4 flex-shrink-0 text-[var(--color-text-secondary)]" />
     case 'group':
       return node.meta?.isCompleted ? (
@@ -179,6 +265,58 @@ function NodeIcon({ node }: { node: VisualTreeNode }) {
         <Repeat className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
       )
   }
+}
+
+function ProgressRing({
+  doneCount,
+  totalCount,
+  color,
+}: {
+  doneCount: number
+  totalCount: number
+  color?: string
+}) {
+  const size = 16
+  const strokeWidth = 2
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const progress = totalCount > 0 ? doneCount / totalCount : 0
+  const strokeDashoffset = circumference * (1 - progress)
+  const ringColor = color ?? 'var(--color-primary-500)'
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      className="flex-shrink-0 -rotate-90"
+      aria-label={`${doneCount}/${totalCount} done`}
+    >
+      <title>{`${doneCount}/${totalCount} done`}</title>
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="var(--color-border)"
+        strokeWidth={strokeWidth}
+        opacity={0.4}
+      />
+      {totalCount > 0 && (
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={ringColor}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+        />
+      )}
+    </svg>
+  )
 }
 
 function CompactDDayBadge({ targetDate }: { targetDate: string }) {
@@ -206,8 +344,35 @@ function CompactDDayBadge({ targetDate }: { targetDate: string }) {
   )
 }
 
+const STREAK_MILESTONES = new Set([3, 7, 14, 30])
+
+function StreakBadge({ streak }: { streak: number }) {
+  const isMilestone = STREAK_MILESTONES.has(streak)
+  const isMilestonePulse = isMilestone && streak >= 7
+
+  return (
+    <motion.span
+      className="flex-shrink-0 rounded-full bg-[var(--color-streak-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-streak)]"
+      animate={isMilestone ? { scale: [1, 1.4, 1] } : undefined}
+      transition={
+        isMilestone
+          ? {
+              duration: 0.6,
+              type: 'spring',
+              stiffness: 300,
+              damping: 15,
+              repeat: isMilestonePulse ? Infinity : 0,
+            }
+          : undefined
+      }
+    >
+      🔥{streak}
+    </motion.span>
+  )
+}
+
 function NodeBadge({ node }: { node: VisualTreeNode }) {
-  // Goal: status dot + count + D-Day + totalStreak
+  // Goal: status dot + progress ring + D-Day + totalStreak
   if (node.type === 'goal') {
     const statusKey = node.status as keyof typeof GOAL_STATUS_CONFIG
     const statusDotColor =
@@ -221,23 +386,21 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
               ? 'var(--color-archived)'
               : 'var(--color-text-tertiary)'
 
+    const doneCount = node.meta?.doneCount ?? 0
+    const totalCount = node.meta?.totalCount ?? node.meta?.count ?? 0
+    const showRing = totalCount > 0
+
     return (
       <div className="ml-auto flex flex-shrink-0 items-center gap-1">
         <span
           className="h-1.5 w-1.5 flex-shrink-0 rounded-full"
           style={{ backgroundColor: statusDotColor }}
         />
-        {node.meta?.count && (
-          <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
-            {node.meta.count}
-          </span>
+        {showRing && (
+          <ProgressRing doneCount={doneCount} totalCount={totalCount} color={node.areaColor} />
         )}
         {node.meta?.targetDate && <CompactDDayBadge targetDate={node.meta.targetDate} />}
-        {(node.meta?.totalStreak ?? 0) > 0 && (
-          <span className="flex-shrink-0 rounded-full bg-[var(--color-streak-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-streak)]">
-            🔥{node.meta!.totalStreak}
-          </span>
-        )}
+        {(node.meta?.totalStreak ?? 0) > 0 && <StreakBadge streak={node.meta!.totalStreak!} />}
       </div>
     )
   }
@@ -283,14 +446,7 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
         </span>
       )
     } else if (node.meta?.streak && node.meta.streak > 0) {
-      badges.push(
-        <span
-          key="streak"
-          className="flex-shrink-0 rounded-full bg-[var(--color-streak-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-streak)]"
-        >
-          🔥{node.meta.streak}
-        </span>
-      )
+      badges.push(<StreakBadge key="streak" streak={node.meta.streak} />)
     }
 
     if (badges.length > 0) {

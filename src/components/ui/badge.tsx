@@ -81,4 +81,73 @@ const DDayBadge = forwardRef<HTMLSpanElement, DDayBadgeProps>(
 )
 DDayBadge.displayName = 'DDayBadge'
 
-export { StreakBadge, DDayBadge }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// Period Badge (start ~ target date)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+interface PeriodBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  startDate?: string | null
+  targetDate?: string | null
+  /** compact: "3/22~4/15", full: "3월 22일 ~ 4월 15일" */
+  compact?: boolean
+}
+
+const PeriodBadge = forwardRef<HTMLSpanElement, PeriodBadgeProps>(
+  ({ startDate, targetDate, compact = true, className, ...props }, ref) => {
+    const result = useMemo(() => {
+      if (!startDate && !targetDate) return null
+
+      const fmt = (iso: string) => {
+        const d = parseISO(iso)
+        return compact
+          ? `${d.getMonth() + 1}/${d.getDate()}`
+          : `${d.getMonth() + 1}월 ${d.getDate()}일`
+      }
+
+      const sep = compact ? '~' : ' ~ '
+      let label: string
+      if (startDate && targetDate) {
+        label = `${fmt(startDate)}${sep}${fmt(targetDate)}`
+      } else if (targetDate) {
+        label = `${sep}${fmt(targetDate)}`
+      } else if (startDate) {
+        label = `${fmt(startDate)}${sep}`
+      } else {
+        return null
+      }
+
+      // Urgency: target within 7 days or overdue
+      let variant: 'urgent' | 'overdue' | 'default' = 'default'
+      if (targetDate) {
+        const days = differenceInDays(startOfDay(parseISO(targetDate)), startOfDay(new Date()))
+        if (days < 0) variant = 'overdue'
+        else if (days <= 7) variant = 'urgent'
+      }
+
+      return { label, variant }
+    }, [startDate, targetDate, compact])
+
+    if (!result) return null
+
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums',
+          result.variant === 'urgent'
+            ? 'bg-[var(--color-miss-bg)] text-[var(--color-miss)]'
+            : result.variant === 'overdue'
+              ? 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] line-through'
+              : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]',
+          className
+        )}
+        {...props}
+      >
+        {result.label}
+      </span>
+    )
+  }
+)
+PeriodBadge.displayName = 'PeriodBadge'
+
+export { StreakBadge, DDayBadge, PeriodBadge }

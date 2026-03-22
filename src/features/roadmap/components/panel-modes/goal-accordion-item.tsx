@@ -2,10 +2,10 @@
 
 import { memo, useState, forwardRef } from 'react'
 import { AiChatButton } from '@/components/common/ai-chat-button'
-import { ChevronDown, ChevronRight, Trash2, Edit2, Target } from 'lucide-react'
+import { ChevronDown, ChevronRight, Trash2, Edit2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { OverflowMenu } from '@/features/roadmap/components/shared/overflow-menu'
-import { StreakBadge, DDayBadge } from '@/components/ui/badge'
+import { PeriodBadge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { GoalStatusPopover } from '../goal-status-popover'
 import { InlineGoalEdit } from '../inline-forms'
@@ -39,8 +39,6 @@ export const GoalAccordionItem = memo(
     },
     ref
   ) {
-    const goalTasks = goal.tasks || []
-    const totalStreak = goalTasks.reduce((sum, t) => sum + t.streak_count, 0)
     const [showDelete, setShowDelete] = useState(false)
 
     const handleToggle = () => {
@@ -63,7 +61,7 @@ export const GoalAccordionItem = memo(
             : 'border-[var(--color-border)] bg-[var(--color-bg-primary)]'
         )}
       >
-        {/* Header — 1줄: chevron + status + name + count + streak + ··· */}
+        {/* Header — Row 1: chevron + status + name + period + AI + ··· */}
         <div
           className="flex w-full items-center gap-2 p-3 transition-colors hover:bg-[var(--color-bg-secondary)]"
           style={{ borderLeft: `4px solid ${area.color}` }}
@@ -80,8 +78,6 @@ export const GoalAccordionItem = memo(
             )}
           </button>
 
-          <Target className="h-4 w-4 flex-shrink-0 text-[var(--color-text-secondary)]" />
-
           <GoalStatusPopover goal={goal} />
 
           <button
@@ -92,13 +88,9 @@ export const GoalAccordionItem = memo(
           </button>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            {goalTasks.length > 0 && (
-              <span className="rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
-                {goalTasks.length}
-              </span>
+            {(goal.start_date || goal.target_date) && (
+              <PeriodBadge startDate={goal.start_date} targetDate={goal.target_date} />
             )}
-            {goal.target_date && <DDayBadge targetDate={goal.target_date} />}
-            {totalStreak > 0 && <StreakBadge count={totalStreak} />}
 
             {/* AI Chat */}
             <AiChatButton
@@ -135,6 +127,16 @@ export const GoalAccordionItem = memo(
           </div>
         </div>
 
+        {/* Row 2 (optional): why snippet */}
+        {goal.why && (
+          <div
+            className="-mt-1 truncate pb-2 pl-[52px] text-xs text-[var(--color-text-tertiary)] italic"
+            style={{ borderLeft: `4px solid ${area.color}` }}
+          >
+            {goal.why}
+          </div>
+        )}
+
         {/* Expanded Content */}
         <AnimatePresence initial={false}>
           {isExpanded && (
@@ -162,7 +164,6 @@ export const GoalAccordionItem = memo(
                 <GoalExpandedContent
                   goal={goal}
                   onTaskSelect={onTaskSelect}
-                  onEditGoal={onEditGoal}
                   showDelete={showDelete}
                   onShowDeleteChange={setShowDelete}
                 />

@@ -14,6 +14,7 @@ import type { VisualTreeNode } from './tree-node-card'
 import type { Area, Goal } from '@/types/entities'
 import type { AreaType } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
+import type { GoalVibe } from '@/stores/goal-vibe.store'
 import { useFocusBranch } from '../../hooks/use-focus-branch'
 import { useDeleteArea } from '@/queries/use-areas'
 import { useDeleteGoal } from '@/queries/use-goals'
@@ -227,7 +228,8 @@ export function buildVisualTreeData(
   direction: { id: string; statement: string | null; why: string | null } | null,
   areas: Area[],
   goals: Goal[],
-  statusFilter: string
+  statusFilter: string,
+  goalVibes?: Record<string, GoalVibe>
 ): { tree: VisualTreeNode | null; crossLinks: CrossLink[] } {
   const today = new Date().toISOString().split('T')[0]
   const crossLinks: CrossLink[] = []
@@ -242,6 +244,12 @@ export function buildVisualTreeData(
     const existing = goalsByArea.get(goal.area_id) || []
     goalsByArea.set(goal.area_id, [...existing, goal])
   })
+
+  // Build area color lookup for goal-level cross-links
+  const areaColorMap = new Map<string, string>()
+  for (const area of areas) {
+    areaColorMap.set(area.id, area.color)
+  }
 
   // Build area nodes (all active areas, even without goals)
   const areaNodes: VisualTreeNode[] = areas.map((area) => {
@@ -334,6 +342,30 @@ export function buildVisualTreeData(
 
       const allChildren = [...groupNodes, ...directTaskNodes]
       const totalStreak = tasks.reduce((sum, t) => sum + t.streak_count, 0)
+      const activeTasks = tasks.filter((t) => t.status !== 'paused' && t.status !== 'completed')
+      const doneCount = activeTasks.filter((t) =>
+        t.check_ins?.some((c) => c.date === today && c.status === 'done')
+      ).length
+      const totalCount = activeTasks.length
+
+      // Collect goal-level cross-links for impact areas
+      if (goal.impact_area_ids?.length) {
+        for (const impactAreaId of goal.impact_area_ids) {
+          if (impactAreaId === goal.area_id) continue
+          crossLinks.push({
+            sourceGoalId: goal.id,
+            targetNodeId: impactAreaId,
+            areaColor: areaColorMap.get(impactAreaId) ?? '#8a8078',
+          })
+        }
+      }
+
+      // Derive impactAreaColors for gradient bar in tree node card
+      const impactAreaColors: string[] | undefined = goal.impact_area_ids?.length
+        ? goal.impact_area_ids
+            .map((id) => areaColorMap.get(id))
+            .filter((c): c is string => c !== undefined)
+        : undefined
 
       return {
         type: 'goal' as const,
@@ -342,11 +374,15 @@ export function buildVisualTreeData(
         why: goal.why,
         status: goal.status,
         areaColor: area.color,
+        vibe: goalVibes?.[goal.id],
         meta: {
           count: tasks.length || undefined,
+          doneCount,
+          totalCount,
           totalStreak: totalStreak || undefined,
           targetDate: goal.target_date ?? undefined,
           sortOrder: goal.sort_order,
+          impactAreaColors: impactAreaColors?.length ? impactAreaColors : undefined,
         },
         children: allChildren.length > 0 ? allChildren : undefined,
       }

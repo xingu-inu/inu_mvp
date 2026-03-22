@@ -12,7 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import {
   GoalNameSection,
   GoalWhySection,
-  GoalDeadlineSection,
+  GoalPeriodSection,
 } from '@/features/roadmap/components/inline-forms/goal-form-sections'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCreateGoal, useGoals } from '@/queries/use-goals'
@@ -63,8 +63,9 @@ export function InlineGoalCreate({ areaId, onDone }: InlineGoalCreateProps) {
 
   const currentName = useWatch({ control: form.control, name: 'name' })
   const currentWhy = useWatch({ control: form.control, name: 'why' }) ?? ''
+  const startDate = useWatch({ control: form.control, name: 'start_date' })
   const targetDate = useWatch({ control: form.control, name: 'target_date' })
-  const hasDeadline = !!targetDate
+  const hasPeriod = !!(startDate || targetDate)
 
   const handleSubmit = async (values: CreateGoalInput) => {
     createGoal.mutate(
@@ -72,7 +73,8 @@ export function InlineGoalCreate({ areaId, onDone }: InlineGoalCreateProps) {
         ...values,
         area_id: areaId,
         why: values.why || undefined,
-        target_date: hasDeadline ? values.target_date : undefined,
+        start_date: hasPeriod ? values.start_date : undefined,
+        target_date: hasPeriod ? values.target_date : undefined,
       },
       {
         onSuccess: async (newGoal) => {
@@ -176,12 +178,13 @@ export function InlineGoalCreate({ areaId, onDone }: InlineGoalCreateProps) {
           설정
         </span>
 
-        {/* Deadline */}
-        <GoalDeadlineSection
+        {/* Period */}
+        <GoalPeriodSection
           form={form}
-          hasDeadline={hasDeadline}
+          hasPeriod={hasPeriod}
+          startDate={startDate}
           targetDate={targetDate}
-          idPrefix="inline-goal-deadline"
+          idPrefix="inline-goal-period"
         />
 
         {/* Group auto-generation toggle */}

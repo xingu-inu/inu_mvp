@@ -84,11 +84,13 @@ export interface Goal extends BaseEntity {
   why: string | null
   vision: string | null
   status: GoalStatus
+  start_date: string | null
   target_date: string | null
   completed_at: string | null
   sort_order: string // Fractional indexing (TEXT in DB)
   status_change_reason: string | null
   status_change_note: string | null
+  impact_area_ids: string[] // Secondary areas this goal also serves (max 3)
   // Relations (optional, for joined queries)
   area?: Area
   groups?: Group[]
@@ -296,7 +298,9 @@ export interface CreateGoalInput {
   why?: string
   vision?: string
   status?: GoalStatus
+  start_date?: string
   target_date?: string
+  impact_area_ids?: string[]
 }
 
 export interface UpdateGoalInput {
@@ -304,10 +308,12 @@ export interface UpdateGoalInput {
   why?: string
   vision?: string
   status?: GoalStatus
+  start_date?: string
   target_date?: string
   sort_order?: string
   status_change_reason?: string
   status_change_note?: string
+  impact_area_ids?: string[]
 }
 
 export interface CreateGroupInput {

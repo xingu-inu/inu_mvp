@@ -81,21 +81,41 @@ export const goalStatusSchema = z.enum([
   'archived',
 ])
 
-export const createGoalSchema = z.object({
-  area_id: z.string().uuid('영역을 선택해주세요'),
-  name: z.string().trim().min(1, 'Required').max(100, 'Max 100 characters'),
-  why: z.string().trim().max(500).optional(),
-  status: goalStatusSchema.optional().default('active'),
-  target_date: dateSchema.optional(),
-})
+export const createGoalSchema = z
+  .object({
+    area_id: z.string().uuid('영역을 선택해주세요'),
+    name: z.string().trim().min(1, 'Required').max(100, 'Max 100 characters'),
+    why: z.string().trim().max(500).optional(),
+    status: goalStatusSchema.optional().default('active'),
+    start_date: dateSchema.optional(),
+    target_date: dateSchema.optional(),
+    impact_area_ids: z
+      .array(z.string().uuid())
+      .max(3, '최대 3개의 영향 영역만 선택할 수 있습니다')
+      .optional(),
+  })
+  .refine((data) => !data.start_date || !data.target_date || data.start_date <= data.target_date, {
+    message: '시작일은 목표일 이전이어야 합니다',
+    path: ['start_date'],
+  })
 
-export const updateGoalSchema = z.object({
-  name: z.string().trim().min(1).max(100).optional(),
-  why: z.string().trim().max(500).optional(),
-  status: goalStatusSchema.optional(),
-  target_date: dateSchema.optional(),
-  sort_order: z.string().optional(),
-})
+export const updateGoalSchema = z
+  .object({
+    name: z.string().trim().min(1).max(100).optional(),
+    why: z.string().trim().max(500).optional(),
+    status: goalStatusSchema.optional(),
+    start_date: dateSchema.optional(),
+    target_date: dateSchema.optional(),
+    sort_order: z.string().optional(),
+    impact_area_ids: z
+      .array(z.string().uuid())
+      .max(3, '최대 3개의 영향 영역만 선택할 수 있습니다')
+      .optional(),
+  })
+  .refine((data) => !data.start_date || !data.target_date || data.start_date <= data.target_date, {
+    message: '시작일은 목표일 이전이어야 합니다',
+    path: ['start_date'],
+  })
 
 export type CreateGoalSchema = z.infer<typeof createGoalSchema>
 export type UpdateGoalSchema = z.infer<typeof updateGoalSchema>

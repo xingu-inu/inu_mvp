@@ -25,6 +25,7 @@ import {
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { PeriodBadge } from '@/components/ui/badge'
 import { ProgressBar } from '@/components/ui/progress'
 import { useReorderGroups, useDeleteGroup, useToggleGroupComplete } from '@/queries/use-groups'
 import { useUpdateTask, useReorderTasks } from '@/queries/use-tasks'
@@ -87,13 +88,11 @@ const GroupCompleteBadge = memo(function GroupCompleteBadge({
 export const GoalExpandedContent = memo(function GoalExpandedContent({
   goal,
   onTaskSelect,
-  onEditGoal,
   showDelete,
   onShowDeleteChange,
 }: {
   goal: Goal
   onTaskSelect?: (taskId: string) => void
-  onEditGoal?: () => void
   showDelete: boolean
   onShowDeleteChange: (show: boolean) => void
 }) {
@@ -369,7 +368,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
   return (
     <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
       {/* Why */}
-      {goal.why ? (
+      {goal.why && (
         <div className="rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-3 py-2.5">
           <span className="mb-1 flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-[var(--color-primary-500)] uppercase">
             <Heart className="h-3 w-3" />왜 중요한가요?
@@ -378,19 +377,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
             {goal.why}
           </p>
         </div>
-      ) : (
-        <button
-          type="button"
-          onClick={() => onEditGoal?.()}
-          className="w-full cursor-pointer rounded-lg border border-dashed border-[var(--color-primary-300)] bg-[var(--color-primary-50)] px-3 py-2.5 text-left transition-colors hover:border-[var(--color-primary-400)] hover:bg-[var(--color-primary-100)]"
-        >
-          <span className="mb-0.5 flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-[var(--color-primary-400)] uppercase">
-            <Heart className="h-3 w-3" />왜 중요한가요?
-          </span>
-          <p className="ml-[18px] text-xs text-[var(--color-text-tertiary)]">
-            이유를 적어두면 꾸준히 하는 데 도움이 돼요
-          </p>
-        </button>
+      )}
+
+      {/* Period */}
+      {(goal.start_date || goal.target_date) && (
+        <div className="flex items-center gap-1.5 px-1">
+          <PeriodBadge startDate={goal.start_date} targetDate={goal.target_date} compact={false} />
+        </div>
       )}
 
       {/* Group Progress */}

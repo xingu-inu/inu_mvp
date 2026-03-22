@@ -18,11 +18,12 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { PanelLoadingSpinner } from '@/features/roadmap/components/shared/panel-loading-spinner'
 import { Chip } from '@/components/ui/chip'
-import { DDayBadge } from '@/components/ui/badge'
+import { PeriodBadge } from '@/components/ui/badge'
 import { ResponsiveModal, ModalBody, ModalFooter } from '@/components/ui/responsive-modal'
 import { ProgressBar } from '@/components/ui/progress'
 import { useGoals, useGoalWithRelations, useUpdateGoal, useDeleteGoal } from '@/queries/use-goals'
 import { useDeleteGroup, useEnableGoalGroups, useDisableGoalGroups } from '@/queries/use-groups'
+import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore, selectGoalId, selectInlineMode } from '@/stores/roadmap.store'
 import { cn } from '@/lib/utils'
@@ -45,7 +46,7 @@ import { CrossLinkTaskPicker } from '../shared/cross-link-task-picker'
 import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
 import { AiDecomposeSection } from './ai-decompose-section'
 import { StatusTransitionSection } from './status-transition-section'
-import type { GoalStatus } from '@/types/entities'
+import type { GoalStatus, Area } from '@/types/entities'
 import type { AiDecomposeResponse } from '@/lib/ai/types'
 
 interface GoalViewModeProps {
@@ -86,6 +87,7 @@ export function GoalViewMode({
   const taskDelete = useDeleteConfirm()
   const { crossLinkedByGroup } = useCrossLinkedTasks(goalId)
   const { data: allGoals } = useGoals()
+  const { data: allAreas } = useAreas()
   const updateTaskForUnlink = useUpdateTask()
 
   // Reset inline mode when goal changes
@@ -265,7 +267,9 @@ export function GoalViewMode({
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-[var(--color-primary-500)]" />
             <h2 className="text-xl font-bold">{goal.name}</h2>
-            {goal.target_date && <DDayBadge targetDate={goal.target_date} />}
+            {(goal.start_date || goal.target_date) && (
+              <PeriodBadge startDate={goal.start_date} targetDate={goal.target_date} />
+            )}
           </div>
         </div>
         <div className="flex gap-1">
@@ -293,22 +297,34 @@ export function GoalViewMode({
       {/* Content */}
       <div className="flex-1 space-y-5 overflow-y-auto p-4 pb-8 lg:pb-4">
         {/* Why */}
-        {goal.why ? (
+        {goal.why && (
           <div className="rounded-lg bg-[var(--color-bg-secondary)] px-4 py-3">
             <span className="mb-1 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
               이 목표, 왜 중요한가요?
             </span>
             <p className="leading-relaxed text-[var(--color-text-primary)]">{goal.why}</p>
           </div>
-        ) : (
-          <div className="w-full rounded-lg border border-dashed border-[var(--color-border)] px-4 py-3 text-left">
-            <span className="mb-0.5 block text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-              이 목표, 왜 중요한가요?
-            </span>
-            <p className="text-sm text-[var(--color-text-tertiary)]">
-              이유를 적어두면 꾸준히 하는 데 도움이 돼요
-            </p>
+        )}
+
+        {/* Period */}
+        {(goal.start_date || goal.target_date) && (
+          <div className="px-1">
+            <PeriodBadge
+              startDate={goal.start_date}
+              targetDate={goal.target_date}
+              compact={false}
+            />
           </div>
+        )}
+
+        {/* Impact Areas */}
+        {allAreas && allAreas.filter((a) => a.id !== goal.area_id).length > 0 && (
+          <ImpactAreaPicker
+            areaId={goal.area_id}
+            selectedIds={goal.impact_area_ids ?? []}
+            areas={allAreas}
+            onUpdate={(ids) => updateGoal.mutate({ id: goal.id, input: { impact_area_ids: ids } })}
+          />
         )}
 
         {/* Status Change */}
@@ -783,6 +799,73 @@ export function GoalViewMode({
           </ModalBody>
         </ResponsiveModal>
       )}
+    </div>
+  )
+}
+
+// ── Impact Area Picker ──────────────────────────────────────────────────────
+
+interface ImpactAreaPickerProps {
+  areaId: string
+  selectedIds: string[]
+  areas: Area[]
+  onUpdate: (ids: string[]) => void
+}
+
+function ImpactAreaPicker({ areaId, selectedIds, areas, onUpdate }: ImpactAreaPickerProps) {
+  const secondaryAreas = areas.filter((a) => a.id !== areaId)
+  const atMax = selectedIds.length >= 3
+
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id)) {
+      onUpdate(selectedIds.filter((x) => x !== id))
+    } else if (!atMax) {
+      onUpdate([...selectedIds, id])
+    }
+  }
+
+  return (
+    <div>
+      <div className="mb-2">
+        <p className="text-sm font-medium text-[var(--color-text-primary)]">영향 영역</p>
+        <p className="text-xs text-[var(--color-text-tertiary)]">
+          이 목표가 도움이 되는 영역 (최대 3개)
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {secondaryAreas.map((area) => {
+          const isSelected = selectedIds.includes(area.id)
+          const isDisabled = atMax && !isSelected
+
+          return (
+            <button
+              key={area.id}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => toggle(area.id)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
+                isSelected
+                  ? 'border border-solid'
+                  : 'border border-dashed border-[var(--color-border)] bg-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]',
+                isDisabled && 'pointer-events-none opacity-50'
+              )}
+              style={
+                isSelected
+                  ? {
+                      backgroundColor: `${area.color}26`,
+                      borderColor: area.color,
+                      color: area.color,
+                    }
+                  : undefined
+              }
+            >
+              <span>{area.emoji}</span>
+              <span>{area.name}</span>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
