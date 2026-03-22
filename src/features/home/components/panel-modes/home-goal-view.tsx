@@ -15,7 +15,6 @@ import { useGoal } from '@/queries/use-goals'
 export function HomeGoalView() {
   const selectedGoalId = useHomeStore((s) => s.selectedGoalId)
   const clearPanelSelection = useHomeStore((s) => s.clearPanelSelection)
-  const selectTask = useHomeStore((s) => s.selectTask)
   const { data: goal, isLoading } = useGoal(selectedGoalId ?? '')
 
   if (isLoading) {
@@ -97,10 +96,9 @@ export function HomeGoalView() {
               활성 Task ({activeTasks.length})
             </h4>
             {activeTasks.map((task) => (
-              <button
+              <div
                 key={task.id}
-                onClick={() => selectTask(task.id)}
-                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-[var(--color-bg-primary)]"
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left"
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-full"
@@ -114,7 +112,7 @@ export function HomeGoalView() {
                     🔥{task.streak_count}
                   </span>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         )}

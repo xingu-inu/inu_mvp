@@ -10,7 +10,6 @@ import { useHomeTasks } from '@/queries/use-home'
 import { useDirection } from '@/queries/use-direction'
 import { TaskList } from '@/features/home/components/task-list'
 import { DailyReflectionCard } from '@/features/home/components/daily-reflection-card'
-import { TaskDetailPanel } from '@/features/home/components/panel-modes/task-detail-panel'
 import { HomeGoalView } from '@/features/home/components/panel-modes/home-goal-view'
 import { CompactWeekStrip } from '@/features/home/components/compact-week-strip'
 import { UnifiedCalendar } from '@/features/home/components/unified-calendar'
@@ -47,10 +46,7 @@ export function TodayPanel() {
   const setSelectedDate = usePanelDateStore((s) => s.setSelectedDate)
   const panelMode = useHomeStore((s) => s.panelMode)
 
-  // Delegate to sub-panels for task-detail and goal-view modes
-  if (panelMode === 'task-detail') {
-    return <TaskDetailPanel />
-  }
+  // Delegate to goal-view sub-panel
   if (panelMode === 'goal-view') {
     return <HomeGoalView />
   }

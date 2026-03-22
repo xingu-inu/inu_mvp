@@ -19,7 +19,6 @@ export function PriorityRankModal() {
 
   const isPriorityRankOpen = useHomeStore((s) => s.isPriorityRankOpen)
   const setIsPriorityRankOpen = useHomeStore((s) => s.setIsPriorityRankOpen)
-  const selectTask = useHomeStore((s) => s.selectTask)
   const setPriorityRankResult = useHomeStore((s) => s.setPriorityRankResult)
   const cachedPriorityRankResult = useHomeStore((s) => s.priorityRankResult)
   const cachedPriorityRankDate = useHomeStore((s) => s.priorityRankDate)
@@ -161,8 +160,7 @@ export function PriorityRankModal() {
     [aiSuggest, setIsPriorityRankOpen]
   )
 
-  const handleTaskClick = (taskId: string) => {
-    selectTask(taskId)
+  const handleTaskClick = (_taskId: string) => {
     setIsPriorityRankOpen(false)
   }
 

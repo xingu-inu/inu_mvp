@@ -3,11 +3,12 @@
 import { useMemo, useEffect, useRef } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { CalendarDays, Heart, Link2 } from 'lucide-react'
+import { format } from 'date-fns'
+import { Activity, CalendarDays, Heart, Link2 } from 'lucide-react'
 import { InlineFormShell } from '@/features/roadmap/components/shared/inline-form-shell'
 import { InlineFormActions } from '@/features/roadmap/components/shared/inline-form-actions'
 import { FormSection } from '@/features/roadmap/components/shared/form-section'
-import { ScheduleSummary } from '@/features/roadmap/components/shared/schedule-summary'
+import { DatePicker } from '@/components/ui/date-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Chip } from '@/components/ui/chip'
@@ -16,11 +17,13 @@ import { useUpdateTask } from '@/queries/use-tasks'
 import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
 import { updateTaskSchema, type UpdateTaskSchema } from '@/lib/validations'
+import { cn } from '@/lib/utils'
+import { chipClass } from '@/lib/utils/chip-class'
 import { getWhySuggestions } from '@/lib/utils/why-generator'
-import { TaskFormFields } from '@/features/roadmap/components/shared/task-form-fields'
+import { TASK_STATUS_CONFIG } from '@/lib/task-status'
 import { CrossAreaPicker } from '@/features/roadmap/components/shared/cross-area-picker'
 import { CrossGoalPicker } from '@/features/roadmap/components/shared/cross-goal-picker'
-import type { Task, AreaType } from '@/types/entities'
+import type { Task, AreaType, TaskStatus } from '@/types/entities'
 
 /** Task fields needed for the edit form */
 type TaskForEdit = Pick<
@@ -30,17 +33,12 @@ type TaskForEdit = Pick<
   | 'why'
   | 'goal_id'
   | 'group_id'
-  | 'repeat_type'
-  | 'repeat_days'
-  | 'duration_minutes'
-  | 'time_slot'
-  | 'specific_time'
-  | 'scheduled_date'
   | 'start_date'
   | 'end_date'
   | 'related_area_ids'
   | 'related_goal_ids'
   | 'cross_link_group_map'
+  | 'status'
 >
 
 interface InlineTaskEditProps {
@@ -72,13 +70,7 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
     values: {
       name: task.name,
       why: task.why || '',
-      group_id: task.group_id ?? null,
-      repeat_type: task.repeat_type,
-      repeat_days: task.repeat_days ?? undefined,
-      duration_minutes: task.duration_minutes ?? undefined,
-      time_slot: task.time_slot ?? undefined,
-      specific_time: task.specific_time ?? undefined,
-      scheduled_date: task.scheduled_date ?? undefined,
+      status: task.status,
       start_date: task.start_date ?? undefined,
       end_date: task.end_date ?? undefined,
       related_area_ids: task.related_area_ids ?? [],
@@ -88,33 +80,16 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
   })
 
   const currentWhy = useWatch({ control: form.control, name: 'why' })
-  const [
-    schedRepeatType,
-    schedRepeatDays,
-    schedScheduledDate,
-    schedTimeSlot,
-    schedSpecificTime,
-    schedDurationMinutes,
-    schedStartDate,
-    schedEndDate,
-  ] = useWatch({
-    control: form.control,
-    name: [
-      'repeat_type',
-      'repeat_days',
-      'scheduled_date',
-      'time_slot',
-      'specific_time',
-      'duration_minutes',
-      'start_date',
-      'end_date',
-    ],
-  })
+  const watchedStartDate = useWatch({ control: form.control, name: 'start_date' })
+  const watchedEndDate = useWatch({ control: form.control, name: 'end_date' })
+  const watchedStatus = useWatch({ control: form.control, name: 'status' })
   const relatedAreaIds = useWatch({ control: form.control, name: 'related_area_ids' }) ?? []
   const rawRelatedGoalIds = useWatch({ control: form.control, name: 'related_goal_ids' })
   const relatedGoalIds = useMemo(() => rawRelatedGoalIds ?? [], [rawRelatedGoalIds])
   const rawCrossLinkGroupMap = useWatch({ control: form.control, name: 'cross_link_group_map' })
   const crossLinkGroupMap = useMemo(() => rawCrossLinkGroupMap ?? {}, [rawCrossLinkGroupMap])
+
+  const currentStatus: TaskStatus = (watchedStatus ?? task.status) as TaskStatus
 
   // Build cross-linked goals with their available groups
   const crossLinkedGoalsWithGroups = useMemo(() => {
@@ -220,25 +195,64 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
         )}
       </div>
 
-      {/* Schedule */}
+      {/* Period — start_date + end_date only */}
       <FormSection
         icon={CalendarDays}
-        label="스케줄"
+        label="기간"
         defaultOpen
         preview={
-          <ScheduleSummary
-            repeatType={schedRepeatType ?? 'once'}
-            repeatDays={schedRepeatDays}
-            scheduledDate={schedScheduledDate}
-            timeSlot={schedTimeSlot}
-            specificTime={schedSpecificTime}
-            durationMinutes={schedDurationMinutes}
-            startDate={schedStartDate}
-            endDate={schedEndDate}
-          />
+          <span>
+            {watchedStartDate ? `${watchedStartDate} ~` : '시작 미설정'}
+            {watchedEndDate ? ` ${watchedEndDate}` : ' 종료 없음'}
+          </span>
         }
       >
-        <TaskFormFields form={form} compact />
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-[var(--color-text-tertiary)]">시작</Label>
+            <DatePicker
+              value={watchedStartDate ?? null}
+              onChange={(d) => form.setValue('start_date', d ?? null, { shouldDirty: true })}
+              compact
+              placeholder="시작 날짜 (선택)"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-[var(--color-text-tertiary)]">종료</Label>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => form.setValue('end_date', null, { shouldDirty: true })}
+                className={chipClass(!watchedEndDate)}
+              >
+                없음 (계속)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!watchedEndDate) {
+                    const defaultEnd = format(
+                      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                      'yyyy-MM-dd'
+                    )
+                    form.setValue('end_date', defaultEnd, { shouldDirty: true })
+                  }
+                }}
+                className={chipClass(!!watchedEndDate)}
+              >
+                날짜 선택
+              </button>
+            </div>
+            {watchedEndDate && (
+              <DatePicker
+                value={watchedEndDate}
+                onChange={(d) => form.setValue('end_date', d ?? null, { shouldDirty: true })}
+                compact
+                placeholder="종료 날짜"
+              />
+            )}
+          </div>
+        </div>
       </FormSection>
 
       {/* Why / Motivation */}
@@ -332,6 +346,36 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
           )}
         </FormSection>
       )}
+
+      {/* Status — 달성 여부 */}
+      <FormSection
+        icon={Activity}
+        label="달성 여부"
+        defaultOpen
+        preview={<span>{TASK_STATUS_CONFIG[currentStatus].label}</span>}
+      >
+        <div className="flex gap-2">
+          {(['active', 'paused', 'completed'] as TaskStatus[]).map((s) => {
+            const cfg = TASK_STATUS_CONFIG[s]
+            const isSelected = currentStatus === s
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => form.setValue('status', s, { shouldDirty: true })}
+                className={cn(
+                  'flex-1 rounded-lg border-2 py-2 text-xs font-medium transition-all',
+                  isSelected
+                    ? `${cfg.border} ${cfg.bg} ${cfg.text}`
+                    : 'border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]'
+                )}
+              >
+                {cfg.label}
+              </button>
+            )
+          })}
+        </div>
+      </FormSection>
 
       {/* Actions */}
       <InlineFormActions onCancel={onDone} isPending={updateTask.isPending} submitLabel="저장" />

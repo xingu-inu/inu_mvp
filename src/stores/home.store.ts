@@ -2,15 +2,13 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AiPriorityRankResponse } from '@/lib/ai/types'
 
-export type HomePanelMode = 'browse' | 'task-detail' | 'goal-view'
+export type HomePanelMode = 'browse' | 'goal-view'
 
 interface HomeState {
   // Detail panel state (desktop right panel)
   panelMode: HomePanelMode
   setPanelMode: (mode: HomePanelMode) => void
-  selectedTaskId: string | null
   selectedGoalId: string | null
-  selectTask: (taskId: string) => void
   selectGoal: (goalId: string) => void
   clearPanelSelection: () => void
 
@@ -36,7 +34,6 @@ interface HomeState {
 
 const initialState = {
   panelMode: 'browse' as HomePanelMode,
-  selectedTaskId: null as string | null,
   selectedGoalId: null as string | null,
   highlightedTaskId: null as string | null,
   isPriorityRankOpen: false,
@@ -52,13 +49,6 @@ export const useHomeStore = create<HomeState>()(
 
       setPanelMode: (mode) => set({ panelMode: mode }),
 
-      selectTask: (taskId) => {
-        set({
-          panelMode: 'task-detail',
-          selectedTaskId: taskId,
-        })
-      },
-
       selectGoal: (goalId) => {
         set({
           panelMode: 'goal-view',
@@ -69,7 +59,6 @@ export const useHomeStore = create<HomeState>()(
       clearPanelSelection: () => {
         set({
           panelMode: 'browse',
-          selectedTaskId: null,
           selectedGoalId: null,
         })
       },
