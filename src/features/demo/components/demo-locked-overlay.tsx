@@ -4,10 +4,6 @@ import { useRouter } from 'next/navigation'
 import { useDemoMode } from '@/lib/demo/demo-context'
 
 const TAB_MESSAGES: Record<string, { title: string; desc: string }> = {
-  home: {
-    title: '오늘의 할 일을 관리하세요',
-    desc: '체크인, 스트릭, 회고까지 한 곳에서',
-  },
   roadmap: {
     title: '나만의 로드맵을 만드세요',
     desc: '방향 → 목표 → 실천이 이유로 연결',
@@ -21,7 +17,7 @@ const TAB_MESSAGES: Record<string, { title: string; desc: string }> = {
 export function DemoLockedOverlay({ children }: { children: React.ReactNode }) {
   const { activeTab } = useDemoMode()
   const router = useRouter()
-  const msg = TAB_MESSAGES[activeTab] ?? TAB_MESSAGES.home
+  const msg = TAB_MESSAGES[activeTab] ?? TAB_MESSAGES.roadmap
 
   return (
     <div className="relative h-full">

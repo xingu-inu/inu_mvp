@@ -10,7 +10,6 @@ import { DemoDesktopTopBar } from './demo-desktop-top-bar'
 import { DemoBottomNav } from './demo-bottom-nav'
 import { DemoCTABanner } from './demo-cta-banner'
 import { DemoGateModal } from './demo-gate-modal'
-import { DemoHomeContent } from './demo-home-content'
 import { DemoRoadmapContent } from './demo-roadmap-content'
 import { DemoReviewContent } from './demo-review-content'
 import { DemoRightPanel } from './demo-right-panel'
@@ -18,7 +17,7 @@ import { DemoLockedOverlay } from './demo-locked-overlay'
 import { DemoContextBanner } from './demo-context-banner'
 
 export function DemoApp() {
-  const [activeTab, setActiveTab] = useState<DemoTab>('home')
+  const [activeTab, setActiveTab] = useState<DemoTab>('roadmap')
   const [gateOpen, setGateOpen] = useState(false)
 
   // Create a dedicated QueryClient for demo mode
@@ -59,7 +58,6 @@ export function DemoApp() {
 
               <div className="min-h-0 flex-1 pb-16 lg:flex lg:pb-0">
                 <div className="min-w-0 flex-1 overflow-y-auto">
-                  {activeTab === 'home' && <DemoHomeContent />}
                   {activeTab === 'roadmap' && <DemoRoadmapContent />}
                   {activeTab === 'review' && <DemoReviewContent />}
                 </div>

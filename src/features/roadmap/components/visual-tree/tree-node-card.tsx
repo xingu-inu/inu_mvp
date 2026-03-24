@@ -358,9 +358,7 @@ function StreakBadge({ streak }: { streak: number }) {
         isMilestone
           ? {
               duration: 0.6,
-              type: 'spring',
-              stiffness: 300,
-              damping: 15,
+              ease: 'easeInOut',
               repeat: isMilestonePulse ? Infinity : 0,
             }
           : undefined

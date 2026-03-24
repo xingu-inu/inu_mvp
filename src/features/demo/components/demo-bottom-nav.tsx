@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, Map, BarChart3 } from 'lucide-react'
+import { Map, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDemoMode, type DemoTab } from '@/lib/demo/demo-context'
 
@@ -11,7 +11,6 @@ interface NavItem {
 }
 
 const DEMO_NAV_ITEMS: NavItem[] = [
-  { tab: 'home', icon: Home, label: '홈' },
   { tab: 'roadmap', icon: Map, label: '로드맵' },
   { tab: 'review', icon: BarChart3, label: '회고' },
 ]

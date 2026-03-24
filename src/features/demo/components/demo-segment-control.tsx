@@ -10,7 +10,6 @@ interface SegmentItem {
 }
 
 const DEMO_NAV_ITEMS: SegmentItem[] = [
-  { tab: 'home', label: '홈' },
   { tab: 'roadmap', label: '로드맵' },
   { tab: 'review', label: '회고' },
 ]

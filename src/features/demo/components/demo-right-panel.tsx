@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { isToday, format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { Calendar } from 'lucide-react'
@@ -10,23 +11,48 @@ import { getContextualGreeting } from '@/lib/utils/task-utils'
 import { TaskList } from '@/features/home/components/task-list'
 import { GoalBrowsePanel } from '@/features/roadmap/components/panel-modes'
 import { ReviewPanel } from '@/features/review/components/review-panel'
+import { FormSegmentedControl } from '@/components/ui/form-segmented-control'
+
+const PANEL_TAB_OPTIONS = [
+  { value: 'roadmap', label: '로드맵' },
+  { value: 'checkin', label: '체크인' },
+]
 
 export function DemoRightPanel() {
   const { activeTab } = useDemoMode()
-
-  if (activeTab === 'roadmap') {
-    return <GoalBrowsePanel />
-  }
 
   if (activeTab === 'review') {
     return <ReviewPanel />
   }
 
-  return <DemoHomeDailyPanel />
+  return <DemoRoadmapPanelWithToggle />
 }
 
-/** Simplified version of HomeDailyPanel for demo mode (read-only) */
-function DemoHomeDailyPanel() {
+/** Mirrors the logged-in DateTaskPanel's roadmap/checkin toggle */
+function DemoRoadmapPanelWithToggle() {
+  const [rightPanelTab, setRightPanelTab] = useState<'roadmap' | 'checkin'>('roadmap')
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="border-b border-[var(--color-border)] px-4 py-2.5">
+        <FormSegmentedControl
+          value={rightPanelTab}
+          onChange={(v) => setRightPanelTab(v as 'roadmap' | 'checkin')}
+          options={PANEL_TAB_OPTIONS}
+          compact
+          layoutId="demo-right-panel-tab"
+        />
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {rightPanelTab === 'checkin' ? <DemoCheckinPanel /> : <GoalBrowsePanel />}
+      </div>
+    </div>
+  )
+}
+
+/** Simplified check-in panel for demo mode (read-only) */
+function DemoCheckinPanel() {
   const selectedDate = usePanelDateStore((s) => s.selectedDate)
   const { data: tasks = [], isLoading } = useHomeTasks(selectedDate)
   const viewingToday = isToday(selectedDate)

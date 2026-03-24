@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from 'react'
 
-export type DemoTab = 'home' | 'roadmap' | 'review'
+export type DemoTab = 'roadmap' | 'review'
 
 interface DemoModeContextValue {
   isDemoMode: boolean
@@ -14,7 +14,7 @@ interface DemoModeContextValue {
 const DemoModeContext = createContext<DemoModeContextValue>({
   isDemoMode: false,
   showLoginGate: () => {},
-  activeTab: 'home',
+  activeTab: 'roadmap',
   setActiveTab: () => {},
 })
 
