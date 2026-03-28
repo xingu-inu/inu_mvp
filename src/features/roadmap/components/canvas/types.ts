@@ -3,18 +3,25 @@ import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 
 // ── Node data payloads ──────────────────────────────────────
 
-export interface DirectionNodeData {
+/** Shared interaction state injected into all canvas nodes */
+interface InteractionState {
+  isSelected?: boolean
+  isSearchMatch?: boolean
+  searchQuery?: string
+}
+
+export interface DirectionNodeData extends InteractionState {
   treeNode: VisualTreeNode
   [key: string]: unknown
 }
 
-export interface AreaNodeData {
+export interface AreaNodeData extends InteractionState {
   treeNode: VisualTreeNode
   goalCount: number
   [key: string]: unknown
 }
 
-export interface GoalNodeData {
+export interface GoalNodeData extends InteractionState {
   treeNode: VisualTreeNode
   areaColor: string
   [key: string]: unknown

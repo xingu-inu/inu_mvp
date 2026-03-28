@@ -16,6 +16,8 @@ import {
 import { cn } from '@/lib/utils'
 import type { GoalNodeData } from '../types'
 import { TreeNodeCard, type VisualTreeNode } from '../../visual-tree/tree-node-card'
+import { useCanvasInteractionsContext } from '../canvas-interactions-context'
+import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 
 // ── Main component ─────────────────────────────────────────
 
@@ -23,12 +25,14 @@ export const GoalNode = memo(function GoalNode({
   id,
   data,
 }: NodeProps<Node<GoalNodeData, 'goal'>>) {
-  const { treeNode, areaColor } = data
+  const { treeNode, areaColor, isSelected, isSearchMatch, searchQuery } = data
   const hasChildren = !!treeNode.children?.length
   const isDraft = treeNode.status === 'backlog'
 
   const [isExpanded, setIsExpanded] = useState(false)
   const updateNodeInternals = useUpdateNodeInternals()
+  const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
+    useCanvasInteractionsContext()
 
   const handleToggle = useCallback(() => {
     setIsExpanded((prev) => !prev)
@@ -36,8 +40,11 @@ export const GoalNode = memo(function GoalNode({
   }, [id, updateNodeInternals])
 
   const handleSelect = useCallback(() => {
-    // Phase 3: wire to roadmap.store.select({ type: 'goal', id })
-  }, [])
+    handleNodeSelect('goal', id)
+  }, [handleNodeSelect, id])
+
+  const onAddChild = useCallback(() => handleStartAdd('goal', id), [handleStartAdd, id])
+  const onDelete = useCallback(() => handleDeleteNode('goal', id), [handleDeleteNode, id])
 
   return (
     <div
@@ -50,14 +57,32 @@ export const GoalNode = memo(function GoalNode({
     >
       <Handle type="target" position={Position.Top} />
 
-      <TreeNodeCard
+      <TreeContextMenu
         node={treeNode}
-        isSelected={false}
-        isExpanded={isExpanded}
-        hasChildren={hasChildren}
-        onSelect={handleSelect}
-        onToggle={handleToggle}
-      />
+        onEdit={handleSelect}
+        onAddChild={onAddChild}
+        onDelete={onDelete}
+      >
+        <div>
+          <TreeNodeCard
+            node={treeNode}
+            isSelected={isSelected ?? false}
+            isExpanded={isExpanded}
+            hasChildren={hasChildren}
+            onSelect={handleSelect}
+            onToggle={handleToggle}
+            isSearchMatch={isSearchMatch}
+            searchQuery={searchQuery}
+          />
+        </div>
+      </TreeContextMenu>
+
+      {/* Quick-add popover */}
+      {addingToId === id && (
+        <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2">
+          {getQuickAddContent(treeNode)}
+        </div>
+      )}
 
       {/* Expanded content: Group → Task list */}
       <AnimatePresence initial={false}>

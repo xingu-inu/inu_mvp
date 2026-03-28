@@ -90,10 +90,12 @@ export function useDagreLayout(
       prevInitialRef.current.edges !== initialEdges
     ) {
       prevInitialRef.current = { nodes: initialNodes, edges: initialEdges }
+      setNodes(initialNodes)
+      setEdges(initialEdges)
       layoutAppliedRef.current = false
     }
     edgesRef.current = initialEdges
-  }, [initialNodes, initialEdges])
+  }, [initialNodes, initialEdges, setNodes, setEdges])
 
   // Two-pass layout: wait for nodes to be measured, then apply dagre
   useEffect(() => {

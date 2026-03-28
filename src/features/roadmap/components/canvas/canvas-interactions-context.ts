@@ -1,0 +1,24 @@
+import { createContext, useContext, type ReactNode } from 'react'
+import type { SelectedNodeType } from '@/stores/roadmap.store'
+import type { VisualTreeNode } from '../visual-tree/tree-node-card'
+
+export interface CanvasInteractionsValue {
+  handleNodeSelect: (type: SelectedNodeType, id: string) => void
+  handleDeleteNode: (type: SelectedNodeType, id: string) => void
+  handleStartAdd: (type: SelectedNodeType, id: string) => void
+  handleCancelAdd: () => void
+  getQuickAddContent: (node: VisualTreeNode) => ReactNode
+  addingToId: string | null
+}
+
+export const CanvasInteractionsContext = createContext<CanvasInteractionsValue>(null!)
+
+export function useCanvasInteractionsContext() {
+  const ctx = useContext(CanvasInteractionsContext)
+  if (!ctx) {
+    throw new Error(
+      'useCanvasInteractionsContext must be used within CanvasInteractionsContext.Provider'
+    )
+  }
+  return ctx
+}
