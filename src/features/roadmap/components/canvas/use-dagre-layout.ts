@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useCallback, useRef } from 'react'
-import { useNodesInitialized, useNodesState, useEdgesState, useReactFlow } from '@xyflow/react'
+import { useEffect, useCallback, useRef } from 'react'
+import {
+  useNodesInitialized,
+  useNodesState,
+  useEdgesState,
+  useReactFlow,
+  type OnNodesChange,
+  type OnEdgesChange,
+} from '@xyflow/react'
 import dagre from '@dagrejs/dagre'
 import type { WhyMapNode, WhyMapEdge } from './types'
 
@@ -60,14 +67,14 @@ export function useDagreLayout(
 ): {
   nodes: WhyMapNode[]
   edges: WhyMapEdge[]
-  onNodesChange: ReturnType<typeof useNodesState>[1]
-  onEdgesChange: ReturnType<typeof useEdgesState>[1]
-  setNodes: ReturnType<typeof useNodesState>[2]
-  setEdges: ReturnType<typeof useEdgesState>[2]
+  setNodes: React.Dispatch<React.SetStateAction<WhyMapNode[]>>
+  setEdges: React.Dispatch<React.SetStateAction<WhyMapEdge[]>>
+  onNodesChange: OnNodesChange<WhyMapNode>
+  onEdgesChange: OnEdgesChange<WhyMapEdge>
   relayout: () => void
 } {
-  const [nodes, onNodesChange, setNodes] = useNodesState(initialNodes)
-  const [edges, onEdgesChange, setEdges] = useEdgesState(initialEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState<WhyMapNode>(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState<WhyMapEdge>(initialEdges)
   const nodesInitialized = useNodesInitialized()
   const layoutAppliedRef = useRef(false)
   const edgesRef = useRef(initialEdges)
@@ -77,7 +84,7 @@ export function useDagreLayout(
   const prevInitialRef = useRef({ nodes: initialNodes, edges: initialEdges })
 
   // Sync when upstream data identity changes
-  useMemo(() => {
+  useEffect(() => {
     if (
       prevInitialRef.current.nodes !== initialNodes ||
       prevInitialRef.current.edges !== initialEdges
@@ -115,5 +122,5 @@ export function useDagreLayout(
     })
   }, [direction, fitView, setNodes])
 
-  return { nodes, edges, onNodesChange, onEdgesChange, setNodes, setEdges, relayout }
+  return { nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange, relayout }
 }
