@@ -22,6 +22,7 @@ import { useDagreLayout } from './use-dagre-layout'
 import { useCanvasInteractions } from './use-canvas-interactions'
 import { CanvasInteractionsContext } from './canvas-interactions-context'
 import { nodeTypes } from './nodes'
+import { edgeTypes } from './edges'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -128,10 +129,26 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     })
   }, [allNodes, selectedNodeId, focusedIds, searchMatchedIds, searchQuery])
 
+  // Enrich edges with focus-mode dimming
+  const enrichedEdges = useMemo(() => {
+    if (!focusedIds) return rawEdges
+    return rawEdges.map((edge) => {
+      const isRelevant = focusedIds.has(edge.source) && focusedIds.has(edge.target)
+      return {
+        ...edge,
+        style: {
+          ...edge.style,
+          opacity: isRelevant ? 1 : 0.1,
+          transition: 'opacity 0.2s',
+        },
+      }
+    })
+  }, [rawEdges, focusedIds])
+
   const direction = treeLayout === 'horizontal' ? 'LR' : 'TB'
   const { nodes, edges, onNodesChange, onEdgesChange } = useDagreLayout(
     enrichedNodes as WhyMapNode[],
-    rawEdges,
+    enrichedEdges,
     direction
   )
 
@@ -202,6 +219,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onPaneClick={handlePaneClick}
