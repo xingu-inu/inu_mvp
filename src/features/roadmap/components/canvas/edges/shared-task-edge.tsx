@@ -11,7 +11,9 @@ export const SharedTaskEdge = memo(function SharedTaskEdge({
   targetPosition,
   data,
   style,
-  ...rest
+  markerStart,
+  markerEnd,
+  interactionWidth,
 }: EdgeProps<Edge<SharedTaskEdgeData>>) {
   const { strength = 1, areaColor = '#8a8078' } = data ?? {}
 
@@ -34,7 +36,9 @@ export const SharedTaskEdge = memo(function SharedTaskEdge({
         opacity: 0.6,
         ...style,
       }}
-      {...rest}
+      markerStart={markerStart}
+      markerEnd={markerEnd}
+      interactionWidth={interactionWidth}
     />
   )
 })

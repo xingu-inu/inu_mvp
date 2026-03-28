@@ -31,6 +31,7 @@ export interface StickyNodeData {
   noteId: string
   text: string
   color: string
+  onConvertToGoal?: (text: string) => void
   [key: string]: unknown
 }
 

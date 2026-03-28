@@ -347,6 +347,7 @@ export function buildRoadmapCommands(handlers: {
       id: 'zoom-to-fit',
       label: 'Zoom to Fit',
       icon: Maximize,
+      shortcut: '⌘0',
       category: 'navigate',
       action: handlers.onZoomToFit,
     },

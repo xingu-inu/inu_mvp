@@ -144,11 +144,14 @@ export function VisualTreeWrapper() {
     [treeLayout, setTreeLayout]
   )
 
+  const handleConvertToGoal = useCallback((text: string) => setConvertText(text), [])
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement
-      const isEditable = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA'
+      const isEditable =
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
       if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
         e.preventDefault()
@@ -167,7 +170,7 @@ export function VisualTreeWrapper() {
         return
       }
 
-      if (isEditable || isCommandPaletteOpen) return
+      if (isEditable || isCommandPaletteOpen || isSearchOpen) return
 
       if (e.key === '/') {
         e.preventDefault()
@@ -178,11 +181,30 @@ export function VisualTreeWrapper() {
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault()
         canvasRef.current?.addStickyAtCenter()
+        return
+      }
+
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault()
+        canvasRef.current?.toggleMinimap()
+        return
+      }
+
+      if (e.key === 'l' || e.key === 'L') {
+        e.preventDefault()
+        toggleLayout()
+        return
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+        e.preventDefault()
+        canvasRef.current?.fitView()
+        return
       }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isSearchOpen, isCommandPaletteOpen, handleSearchClose, clearSelection])
+  }, [isSearchOpen, isCommandPaletteOpen, handleSearchClose, clearSelection, toggleLayout])
 
   // Command palette commands
   // eslint-disable-next-line react-hooks/refs
@@ -191,7 +213,7 @@ export function VisualTreeWrapper() {
     onOpenDiagnosis: () => openDiagnosis(),
     onOpenSearch: () => setIsSearchOpen(true),
     onZoomToFit: () => canvasRef.current?.fitView(),
-    onToggleMinimap: () => {}, // Phase 5: ReactFlow MiniMap
+    onToggleMinimap: () => canvasRef.current?.toggleMinimap(),
     onToggleLayout: toggleLayout,
     onFilterStatus: () => {
       const statuses = [
@@ -251,7 +273,7 @@ export function VisualTreeWrapper() {
         treeLayout={treeLayout}
         searchQuery={searchQuery}
         searchMatchedIds={searchResult.matchedIds}
-        onConvertToGoal={(text) => setConvertText(text)}
+        onConvertToGoal={handleConvertToGoal}
       />
 
       {/* Convert-to-Goal modal */}

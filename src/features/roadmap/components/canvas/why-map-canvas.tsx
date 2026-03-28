@@ -1,11 +1,19 @@
 'use client'
 
-import { forwardRef, useImperativeHandle, useMemo, useCallback, type CSSProperties } from 'react'
+import {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useCallback,
+  useState,
+  type CSSProperties,
+} from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
   Background,
   BackgroundVariant,
+  MiniMap,
   useReactFlow,
   type NodeMouseHandler,
 } from '@xyflow/react'
@@ -30,6 +38,7 @@ export interface WhyMapCanvasRef {
   focusNode: (nodeId: string) => void
   fitView: () => void
   addStickyAtCenter: () => void
+  toggleMinimap: () => void
 }
 
 // ── Props ──────────────────────────────────────────────────
@@ -43,6 +52,23 @@ interface WhyMapCanvasProps {
   searchQuery: string
   searchMatchedIds: Set<string>
   onConvertToGoal: (text: string) => void
+}
+
+// ── MiniMap node color ──────────────────────────────────────
+
+function minimapNodeColor(node: WhyMapNode): string {
+  switch (node.type) {
+    case 'direction':
+      return '#6366f1' // indigo
+    case 'area':
+      return '#8b5cf6' // violet
+    case 'goal':
+      return '#3b82f6' // blue
+    case 'sticky':
+      return '#fbbf24' // amber
+    default:
+      return '#64748b'
+  }
 }
 
 // ── Outer wrapper (provides ReactFlowProvider) ─────────────
@@ -68,7 +94,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     treeLayout,
     searchQuery,
     searchMatchedIds,
-    onConvertToGoal: _onConvertToGoal,
+    onConvertToGoal,
   },
   ref
 ) {
@@ -77,6 +103,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const addNote = useStickyNotesStore((s) => s.addNote)
   const updateNote = useStickyNotesStore((s) => s.updateNote)
   const { screenToFlowPosition } = useReactFlow()
+  const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
   // Interaction logic (selection, delete, quick-add, focus)
   const interactions = useCanvasInteractions(treeData, goals, areas)
@@ -95,11 +122,11 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
       id: `sticky-${note.id}`,
       type: 'sticky' as const,
       position: { x: note.x, y: note.y },
-      data: { noteId: note.id, text: note.text, color: note.color },
+      data: { noteId: note.id, text: note.text, color: note.color, onConvertToGoal },
       draggable: true,
     }))
     return [...rawNodes, ...stickyNodes]
-  }, [rawNodes, notes])
+  }, [rawNodes, notes, onConvertToGoal])
 
   // Enrich nodes with interaction state
   const enrichedNodes = useMemo(() => {
@@ -195,6 +222,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
       fitView({ padding: 0.15, duration: 300 })
     },
     addStickyAtCenter,
+    toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
   }))
 
   const handleNodeDragStop: NodeMouseHandler<WhyMapNode> = useCallback(
@@ -239,6 +267,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
+          {isMinimapVisible && (
+            <MiniMap nodeColor={minimapNodeColor} maskColor="rgba(0,0,0,0.08)" pannable zoomable />
+          )}
         </ReactFlow>
       </CanvasInteractionsContext.Provider>
     </div>

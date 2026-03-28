@@ -10,7 +10,9 @@ export const HierarchyEdge = memo(function HierarchyEdge({
   sourcePosition,
   targetPosition,
   style,
-  ...rest
+  markerStart,
+  markerEnd,
+  interactionWidth,
 }: EdgeProps<Edge<HierarchyEdgeData>>) {
   const [edgePath] = getSmoothStepPath({
     sourceX,
@@ -26,7 +28,9 @@ export const HierarchyEdge = memo(function HierarchyEdge({
     <BaseEdge
       path={edgePath}
       style={{ strokeWidth: 1.5, stroke: 'var(--color-border)', ...style }}
-      {...rest}
+      markerStart={markerStart}
+      markerEnd={markerEnd}
+      interactionWidth={interactionWidth}
     />
   )
 })
