@@ -4,7 +4,6 @@ import { memo } from 'react'
 import * as ContextMenu from '@radix-ui/react-context-menu'
 import { Pencil, Plus, Copy, Trash2, ChevronRight, Sparkles, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useDemoMode } from '@/lib/demo/demo-context'
 import { GOAL_STATUS_OPTIONS } from '@/lib/goal-status'
 import { useUpdateGoal } from '@/queries/use-goals'
 import type { VisualTreeNode } from './tree-node-card'
@@ -40,7 +39,6 @@ export const TreeContextMenu = memo(function TreeContextMenu({
   onDelete,
   children,
 }: TreeContextMenuProps) {
-  const { isDemoMode } = useDemoMode()
   const updateGoal = useUpdateGoal()
   const setGoalVibe = useGoalVibeStore((s) => s.setGoalVibe)
   const clearGoalVibe = useGoalVibeStore((s) => s.clearGoalVibe)
@@ -48,13 +46,12 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     node.type === 'goal' ? s.goalVibes[node.id] : undefined
   )
 
-  const canAddChild = node.type !== 'task' && !isDemoMode
+  const canAddChild = node.type !== 'task'
   const canDuplicate = node.type === 'goal' || node.type === 'group' || node.type === 'task'
-  const canChangeStatus = node.type === 'goal' && !isDemoMode
+  const canChangeStatus = node.type === 'goal'
   const canVibe = node.type === 'goal'
   const canDelete =
-    !isDemoMode &&
-    (node.type === 'area' || node.type === 'goal' || node.type === 'group' || node.type === 'task')
+    node.type === 'area' || node.type === 'goal' || node.type === 'group' || node.type === 'task'
 
   function handleDelete() {
     const confirmed = window.confirm(`"${node.name}"을(를) 삭제하시겠습니까?`)

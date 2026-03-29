@@ -23,7 +23,6 @@ import { useProfile, useUpdateProfile } from '@/queries/use-profile'
 import { useDirection, useUpdateDirection } from '@/queries/use-direction'
 import { signOut } from '@/actions/auth.actions'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
-import { GoogleCalendarConnect } from '@/features/profile/components/google-calendar-connect'
 import { ModalBody } from '@/components/ui/responsive-modal'
 import { AvatarUpload } from './avatar-upload'
 import type { ModalView } from './profile-modal'
@@ -265,12 +264,6 @@ export function ProfileMainView({
           <ChevronRight className="h-4 w-4 text-[var(--color-primary-400)]" />
         </Link>
       )}
-
-      {/* Connected Services */}
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-[var(--color-text-secondary)]">연동 서비스</p>
-        <GoogleCalendarConnect />
-      </div>
 
       {/* Settings Links */}
       <div className="space-y-1">

@@ -90,17 +90,6 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
       },
     }),
 
-    get_recent_reflections: tool({
-      description: '최근 기분 기록과 회고를 조회합니다. 기분 추이와 한줄 회고를 포함합니다.',
-      inputSchema: z.object({
-        days: z.number().min(1).max(30).describe('조회할 일수 (1~30)'),
-      }),
-      execute: async ({ days }) => {
-        const result = await chatContext.getRecentReflections(supabase, userId, days)
-        return sanitizeToolResult(result)
-      },
-    }),
-
     get_task_streaks: tool({
       description: '활성 Task들의 스트릭(연속 완료) 현황을 조회합니다.',
       inputSchema: z.object({}),

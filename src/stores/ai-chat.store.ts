@@ -37,7 +37,7 @@ export const useAiChatStore = create<AiChatState>((set) => ({
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
 
   activeConversationId: null,
-  setActiveConversation: (id) => set({ activeConversationId: id, context: null }),
+  setActiveConversation: (id) => set({ activeConversationId: id }),
 
   startNewConversation: () => set({ activeConversationId: null, context: null }),
 

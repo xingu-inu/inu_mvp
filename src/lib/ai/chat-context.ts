@@ -7,7 +7,6 @@ import { directionRepository } from '@/repositories/direction.repository'
 import { areaRepository } from '@/repositories/area.repository'
 import { goalRepository } from '@/repositories/goal.repository'
 import { taskRepository } from '@/repositories/task.repository'
-import { reflectionRepository } from '@/repositories/reflection.repository'
 
 function getWeekStart(): string {
   const now = new Date()
@@ -154,38 +153,6 @@ export async function getWeeklyStats(supabase: TypedSupabaseClient, _userId: str
     completion_rate: `${rate}%`,
     daily_breakdown: stats?.dailyBreakdown ?? [],
     area_breakdown: stats?.areaBreakdown ?? [],
-  }
-}
-
-export async function getRecentReflections(
-  supabase: TypedSupabaseClient,
-  userId: string,
-  days: number
-) {
-  const clampedDays = Math.min(Math.max(days, 1), 30)
-  const today = getToday()
-  const startDate = new Date()
-  startDate.setDate(startDate.getDate() - clampedDays)
-  const start = startDate.toISOString().split('T')[0]
-
-  const reflections = await reflectionRepository.getByDateRange(supabase, userId, start, today)
-
-  // Mood summary
-  const moodCounts = { great: 0, good: 0, neutral: 0, bad: 0, terrible: 0 }
-  for (const r of reflections) {
-    if (r.mood && r.mood in moodCounts) {
-      moodCounts[r.mood as keyof typeof moodCounts]++
-    }
-  }
-
-  return {
-    period: `최근 ${clampedDays}일`,
-    daily_reflections: reflections.map((r) => ({
-      date: r.date,
-      mood: r.mood,
-      summary: r.summary,
-    })),
-    mood_summary: moodCounts,
   }
 }
 

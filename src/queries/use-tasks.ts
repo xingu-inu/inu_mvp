@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { format, parseISO, getDay } from 'date-fns'
+import { format } from 'date-fns'
 import { toast } from 'sonner'
 import { generateNKeysBetween } from '@/lib/fractional-index'
 import { queryKeys } from '@/lib/query/keys'
@@ -14,9 +14,7 @@ import {
   reorderTasks as reorderTasksAction,
 } from '@/actions'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
-import { usePanelDateStore } from '@/stores/panel-date.store'
-import type { Area, Goal, Task, HomeTask, CreateTaskInput, UpdateTaskInput } from '@/types/entities'
-import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
+import type { Goal, Task, CreateTaskInput, UpdateTaskInput } from '@/types/entities'
 
 /** Helper: optimistically patch a task inside the goals.all cache */
 function patchTaskInGoals(goals: Goal[], taskId: string, patch: Partial<Task>): Goal[] {
@@ -24,31 +22,6 @@ function patchTaskInGoals(goals: Goal[], taskId: string, patch: Partial<Task>): 
     ...g,
     tasks: (g.tasks ?? []).map((t) => (t.id === taskId ? { ...t, ...patch } : t)),
   }))
-}
-
-/** Check if a task with given repeat config should appear on a specific date */
-function shouldInsertOnDate(
-  repeatType: string,
-  repeatDays: number[] | null | undefined,
-  scheduledDate: string | null | undefined,
-  dateStr: string
-): boolean {
-  const dayOfWeek = getDay(parseISO(dateStr))
-  switch (repeatType) {
-    case 'daily':
-      return true
-    case 'weekdays':
-      return dayOfWeek >= 1 && dayOfWeek <= 5
-    case 'weekends':
-      return dayOfWeek === 0 || dayOfWeek === 6
-    case 'weekly':
-    case 'custom':
-      return repeatDays?.includes(dayOfWeek) ?? false
-    case 'once':
-      return dateStr === scheduledDate
-    default:
-      return false
-  }
 }
 
 /**
@@ -137,7 +110,6 @@ export function useCreateTask() {
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
       await queryClient.cancelQueries({ queryKey: queryKeys.goals.all })
-      await queryClient.cancelQueries({ queryKey: ['tasks', 'home'] })
 
       const now = new Date().toISOString()
       const tempTask: Task = {
@@ -194,113 +166,7 @@ export function useCreateTask() {
         }
       }
 
-      // Lookup goal/area from cache for correct optimistic grouping
-      const cachedGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals.all)
-      const cachedAreas = queryClient.getQueryData<Area[]>(queryKeys.areas.all)
-
-      let optimisticGoal: ActionHomeTask['goal'] = null
-      let optimisticDirectArea: ActionHomeTask['directArea'] = null
-
-      if (input.goal_id && cachedGoals) {
-        const g = cachedGoals.find((goal) => goal.id === input.goal_id)
-        if (g) {
-          const a = cachedAreas?.find((area) => area.id === g.area_id)
-          if (a) {
-            optimisticGoal = {
-              id: g.id,
-              name: g.name,
-              why: g.why ?? null,
-              areaId: g.area_id,
-              area: {
-                id: a.id,
-                name: a.name,
-                emoji: a.emoji,
-                color: a.color,
-                why: a.why,
-                sortOrder: a.sort_order,
-              },
-            }
-          }
-        }
-      } else if (input.area_id && cachedAreas) {
-        const a = cachedAreas.find((area) => area.id === input.area_id)
-        if (a) {
-          optimisticDirectArea = {
-            id: a.id,
-            name: a.name,
-            emoji: a.emoji,
-            color: a.color,
-            why: a.why,
-            sortOrder: a.sort_order,
-          }
-        }
-      }
-
-      // Update tasks.home(*) + tasks.homeWeek(*) caches
-      const previousHome = queryClient.getQueriesData({ queryKey: ['tasks', 'home'] })
-      const repeatType = input.repeat_type ?? 'once'
-
-      const optimisticHomeTask: ActionHomeTask = {
-        id: tempTask.id,
-        name: tempTask.name,
-        why: tempTask.why,
-        goalId: input.goal_id ?? null,
-        groupId: input.group_id ?? null,
-        areaId: input.area_id ?? null,
-        timeSlot: input.time_slot ?? 'anytime',
-        specificTime: input.specific_time ?? null,
-        durationMinutes: input.duration_minutes ?? 15,
-        streakCount: 0,
-        bestStreak: 0,
-        sortOrder: 'zzz',
-        totalCompleted: 0,
-        repeatType: repeatType,
-        repeatDays: input.repeat_days ?? null,
-        scheduledDate: input.scheduled_date ?? null,
-        startDate: input.start_date ?? null,
-        endDate: input.end_date ?? null,
-        taskStatus: 'active',
-        directionVersion: null,
-        goal: optimisticGoal,
-        group: null,
-        directArea: optimisticDirectArea,
-        relatedAreaIds: input.related_area_ids ?? null,
-        relatedAreas: null,
-        relatedGoalIds: input.related_goal_ids ?? null,
-        relatedGoals: null,
-        todayCheckIn: null,
-      }
-
-      for (const [key, data] of previousHome) {
-        if (!data) continue
-        if (Array.isArray(data)) {
-          // Daily cache: ['tasks', 'home', dateStr] → ActionHomeTask[]
-          const cacheDate = key[2] as string | undefined
-          if (
-            cacheDate &&
-            !shouldInsertOnDate(repeatType, input.repeat_days, input.scheduled_date, cacheDate)
-          )
-            continue
-          queryClient.setQueryData<ActionHomeTask[]>(key, [
-            ...(data as ActionHomeTask[]),
-            optimisticHomeTask,
-          ])
-        } else if (typeof data === 'object') {
-          // Week cache: ['tasks', 'home', 'week', weekStart] → Record<string, ActionHomeTask[]>
-          const weekData = data as Record<string, ActionHomeTask[]>
-          const updated: Record<string, ActionHomeTask[]> = {}
-          for (const [dateKey, tasks] of Object.entries(weekData)) {
-            if (shouldInsertOnDate(repeatType, input.repeat_days, input.scheduled_date, dateKey)) {
-              updated[dateKey] = [...(Array.isArray(tasks) ? tasks : []), optimisticHomeTask]
-            } else {
-              updated[dateKey] = tasks
-            }
-          }
-          queryClient.setQueryData(key, updated)
-        }
-      }
-
-      return { previousTasks, previousGoals, previousHome }
+      return { previousTasks, previousGoals }
     },
     onError: (_err, _vars, context) => {
       if (context?.previousTasks) {
@@ -309,18 +175,11 @@ export function useCreateTask() {
       if (context?.previousGoals) {
         queryClient.setQueryData(queryKeys.goals.all, context.previousGoals)
       }
-      if (context?.previousHome) {
-        for (const [key, data] of context.previousHome) {
-          queryClient.setQueryData(key, data)
-        }
-      }
       toast.error('할 일 추가에 실패했습니다.')
     },
     onSettled: (_data, _err, input) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
       if (input.goal_id) {
         queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byGoal(input.goal_id) })
       }
@@ -331,21 +190,6 @@ export function useCreateTask() {
         repeat_type: input.repeat_type,
         time_slot: input.time_slot,
       })
-
-      if (input.repeat_type === 'once' && input.scheduled_date) {
-        const todayStr = format(new Date(), 'yyyy-MM-dd')
-        if (input.scheduled_date !== todayStr) {
-          const targetDate = parseISO(input.scheduled_date)
-          const dateLabel = format(targetDate, 'M월 d일')
-          toast.success(`${dateLabel}에 할 일이 추가되었어요`, {
-            action: {
-              label: `${dateLabel} 보기`,
-              onClick: () => usePanelDateStore.getState().setSelectedDate(targetDate),
-            },
-          })
-          return
-        }
-      }
       toast.success('할 일이 추가되었어요')
     },
   })
@@ -368,11 +212,9 @@ export function useUpdateTask() {
     onMutate: async ({ id, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
       await queryClient.cancelQueries({ queryKey: queryKeys.goals.all })
-      await queryClient.cancelQueries({ queryKey: ['tasks', 'home'] })
 
       const previous = queryClient.getQueryData<Task[]>(queryKeys.tasks.all)
       const previousGoals = queryClient.getQueryData<Goal[]>(queryKeys.goals.all)
-      const previousHome = queryClient.getQueriesData({ queryKey: ['tasks', 'home'] })
 
       const patch = { ...input, updated_at: new Date().toISOString() }
 
@@ -392,55 +234,7 @@ export function useUpdateTask() {
         )
       }
 
-      // Optimistic Update — tasks.home(*) + tasks.homeWeek(*) caches
-      // Home cache stores ActionHomeTask (camelCase), so convert snake_case input
-      const snakeToCamel: Record<string, string> = {
-        name: 'name',
-        why: 'why',
-        group_id: 'groupId',
-        repeat_type: 'repeatType',
-        repeat_days: 'repeatDays',
-        duration_minutes: 'durationMinutes',
-        time_slot: 'timeSlot',
-        specific_time: 'specificTime',
-        scheduled_date: 'scheduledDate',
-        start_date: 'startDate',
-        end_date: 'endDate',
-        sort_order: 'sortOrder',
-        status: 'taskStatus',
-        related_area_ids: 'relatedAreaIds',
-        related_goal_ids: 'relatedGoalIds',
-      }
-      const homePatch: Record<string, unknown> = {}
-      for (const [k, v] of Object.entries(input)) {
-        const camelKey = snakeToCamel[k]
-        if (camelKey !== undefined) {
-          homePatch[camelKey] = v
-        }
-      }
-
-      for (const [key, data] of previousHome) {
-        if (!data) continue
-        if (Array.isArray(data)) {
-          // Daily cache: HomeTask[]
-          queryClient.setQueryData<HomeTask[]>(
-            key,
-            (data as HomeTask[]).map((t) => (t.id === id ? { ...t, ...homePatch } : t))
-          )
-        } else if (typeof data === 'object') {
-          // Week cache: Record<string, HomeTask[]>
-          const weekData = data as Record<string, HomeTask[]>
-          const updated: Record<string, HomeTask[]> = {}
-          for (const [dateKey, tasks] of Object.entries(weekData)) {
-            updated[dateKey] = Array.isArray(tasks)
-              ? tasks.map((t) => (t.id === id ? { ...t, ...homePatch } : t))
-              : tasks
-          }
-          queryClient.setQueryData(key, updated)
-        }
-      }
-
-      return { previous, previousGoals, previousHome }
+      return { previous, previousGoals }
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
@@ -449,17 +243,10 @@ export function useUpdateTask() {
       if (context?.previousGoals) {
         queryClient.setQueryData(queryKeys.goals.all, context.previousGoals)
       }
-      if (context?.previousHome) {
-        for (const [key, data] of context.previousHome) {
-          queryClient.setQueryData(key, data)
-        }
-      }
       toast.error('수정에 실패했습니다.')
     },
     onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
       // 구조적 변경(goal/group 이동 등)일 때만 goals 전체 invalidation
       const structuralKeys = ['goal_id', 'group_id', 'is_active']
       if (Object.keys(variables.input).some((k) => structuralKeys.includes(k))) {
@@ -492,9 +279,7 @@ export function useDeleteTask() {
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.tasks.all })
-      await queryClient.cancelQueries({ queryKey: ['tasks', 'home'] })
       const previous = queryClient.getQueryData<Task[]>(queryKeys.tasks.all)
-      const previousHome = queryClient.getQueriesData({ queryKey: ['tasks', 'home'] })
 
       // Optimistic Delete — tasks.all
       if (previous) {
@@ -504,44 +289,17 @@ export function useDeleteTask() {
         )
       }
 
-      // Optimistic Delete — tasks.home(*) + tasks.home.week(*) caches
-      for (const [key, data] of previousHome) {
-        if (!data) continue
-        if (Array.isArray(data)) {
-          // Daily: HomeTask[]
-          queryClient.setQueryData(
-            key,
-            (data as HomeTask[]).filter((t) => t.id !== id)
-          )
-        } else if (typeof data === 'object') {
-          // Weekly: Record<string, HomeTask[]>
-          const weekData = data as Record<string, HomeTask[]>
-          const updated: Record<string, HomeTask[]> = {}
-          for (const [dateKey, tasks] of Object.entries(weekData)) {
-            updated[dateKey] = Array.isArray(tasks) ? tasks.filter((t) => t.id !== id) : tasks
-          }
-          queryClient.setQueryData(key, updated)
-        }
-      }
-
-      return { previous, previousHome }
+      return { previous }
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(queryKeys.tasks.all, context.previous)
-      }
-      if (context?.previousHome) {
-        for (const [key, data] of context.previousHome) {
-          queryClient.setQueryData(key, data)
-        }
       }
       toast.error('삭제에 실패했습니다.')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
     },
     onSuccess: () => {
       toast.success('할 일이 삭제되었습니다.')

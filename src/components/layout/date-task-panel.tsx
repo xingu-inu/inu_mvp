@@ -1,12 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { usePathname } from 'next/navigation'
 
 import { useRoadmapStore, selectPanelMode, selectRightPanelTab } from '@/stores/roadmap.store'
 import { GoalBrowsePanel } from '@/features/roadmap/components/panel-modes'
 import { GroupEditForm, GroupCreateForm } from '@/features/roadmap'
-import { ReviewPanel } from '@/features/review/components/review-panel'
 import { FormSegmentedControl } from '@/components/ui/form-segmented-control'
 
 const EmbeddedAiChat = dynamic(
@@ -31,13 +29,6 @@ function RoadmapPanel() {
     default:
       return <GoalBrowsePanel />
   }
-}
-
-/** Derive the main tab from pathname */
-function useMainTab(): 'roadmap' | 'review' {
-  const pathname = usePathname()
-  if (pathname.startsWith('/review')) return 'review'
-  return 'roadmap'
 }
 
 function RoadmapPanelWithToggle() {
@@ -65,7 +56,5 @@ function RoadmapPanelWithToggle() {
 
 /** Main exported component - unified panel */
 export function DateTaskPanel() {
-  const mainTab = useMainTab()
-  if (mainTab === 'review') return <ReviewPanel />
   return <RoadmapPanelWithToggle />
 }

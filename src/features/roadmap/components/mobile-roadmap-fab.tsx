@@ -9,7 +9,6 @@ import { InlineAreaCreate } from './inline-forms/inline-area-create'
 import { InlineGoalCreate } from './inline-forms/inline-goal-create'
 import { useAreas } from '@/queries/use-areas'
 import { useAiChatStore } from '@/stores/ai-chat.store'
-import { useDemoMode } from '@/lib/demo/demo-context'
 import type { AreaType } from '@/types/entities'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -47,7 +46,6 @@ type MenuId = (typeof MENU_ITEMS)[number]['id']
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export function MobileRoadmapFab() {
-  const { isDemoMode } = useDemoMode()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAreaDrawerOpen, setIsAreaDrawerOpen] = useState(false)
   const [isGoalDrawerOpen, setIsGoalDrawerOpen] = useState(false)
@@ -64,7 +62,7 @@ export function MobileRoadmapFab() {
         setIsGoalDrawerOpen(true)
         break
       case 'ai-chat':
-        useAiChatStore.getState().toggleChat()
+        useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
         break
     }
   }, [])
@@ -82,8 +80,6 @@ export function MobileRoadmapFab() {
     setIsGoalDrawerOpen(false)
     setGoalDrawerAreaId(null)
   }, [])
-
-  if (isDemoMode) return null
 
   return (
     <>

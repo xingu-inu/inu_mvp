@@ -1,5 +1,4 @@
-import type { TimeSlot, RepeatType, TaskStatus, HomeTask as EntityHomeTask } from '@/types/entities'
-import type { HomeTaskDto as ActionHomeTask } from '@/actions/home.actions'
+import type { TimeSlot, RepeatType, HomeTask as EntityHomeTask } from '@/types/entities'
 import { TIME_SLOT_CONFIG, TIME_SLOT_ORDER } from '@/lib/constants/time-slots'
 
 /**
@@ -36,99 +35,6 @@ export function formatRepeatType(type: RepeatType): string | null {
 
 // Re-export a unified HomeTask type
 export type HomeTask = EntityHomeTask
-
-/**
- * Maps the camelCase API response to snake_case entity format
- */
-export function mapApiTaskToEntity(task: ActionHomeTask): EntityHomeTask {
-  return {
-    id: task.id,
-    user_id: '', // Not returned by API
-    goal_id: task.goalId,
-    group_id: task.groupId,
-    area_id: task.areaId,
-    name: task.name,
-    why: task.why,
-    repeat_type: (task.repeatType as RepeatType) ?? 'daily',
-    repeat_days: task.repeatDays ?? null,
-    duration_minutes: task.durationMinutes,
-    time_slot: task.timeSlot as TimeSlot,
-    specific_time: task.specificTime,
-    streak_count: task.streakCount,
-    best_streak: task.bestStreak,
-    last_check_in_date: null,
-    is_active: true,
-    sort_order: task.sortOrder,
-    related_area_ids: task.relatedAreaIds ?? [],
-    related_goal_ids: task.relatedGoalIds ?? [],
-    cross_link_group_map: {},
-    google_event_id: null,
-    total_completed: task.totalCompleted ?? 0,
-    created_at: '',
-    updated_at: '',
-    todayCheckIn: task.todayCheckIn
-      ? {
-          id: task.todayCheckIn.id,
-          status: task.todayCheckIn.status,
-          note: task.todayCheckIn.note,
-          createdAt: task.todayCheckIn.createdAt,
-        }
-      : null,
-    directArea: task.directArea
-      ? {
-          id: task.directArea.id,
-          name: task.directArea.name,
-          emoji: task.directArea.emoji,
-          color: task.directArea.color,
-          why: task.directArea.why ?? null,
-          sort_order: task.directArea.sortOrder ?? '',
-        }
-      : null,
-    relatedAreas: task.relatedAreas ?? null,
-    relatedGoals: task.relatedGoals ?? null,
-    goal: task.goal
-      ? {
-          id: task.goal.id,
-          name: task.goal.name,
-          why: task.goal.why ?? null,
-          areaId: task.goal.areaId,
-          area: {
-            id: task.goal.area.id,
-            name: task.goal.area.name,
-            emoji: task.goal.area.emoji,
-            color: task.goal.area.color,
-            why: task.goal.area.why ?? null,
-            sort_order: task.goal.area.sortOrder ?? '',
-          },
-        }
-      : null,
-    group: task.group
-      ? {
-          id: task.group.id,
-          name: task.group.name,
-          why: task.group.why ?? null,
-        }
-      : null,
-    status: (task.taskStatus as TaskStatus) ?? 'active',
-    scheduled_date: task.scheduledDate ?? null,
-    start_date: task.startDate ?? null,
-    end_date: task.endDate ?? null,
-    completed_at: null,
-    paused_at: null,
-    status_change_reason: null,
-    status_change_note: null,
-    scheduledDate: task.scheduledDate ?? null,
-    taskStatus: (task.taskStatus as TaskStatus) ?? 'active',
-    directionVersion: task.directionVersion ?? null,
-  }
-}
-
-/**
- * Maps array of API tasks to entity format
- */
-export function mapApiTasksToEntities(tasks: ActionHomeTask[]): EntityHomeTask[] {
-  return tasks.map(mapApiTaskToEntity)
-}
 
 /**
  * Calculates a Why Chain completeness score for a task.
