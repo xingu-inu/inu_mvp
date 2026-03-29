@@ -3,6 +3,8 @@
 import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { cn } from '@/lib/utils'
+import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
+import type { GoalStatus } from '@/types/entities'
 import type { AreaNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
@@ -10,8 +12,10 @@ import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 export const AreaNode = memo(function AreaNode({
   id,
   data,
+  sourcePosition,
+  targetPosition,
 }: NodeProps<Node<AreaNodeData, 'area'>>) {
-  const { treeNode, goalCount, isSelected, isSearchMatch } = data
+  const { treeNode, goalCount, statusCounts, isSelected, isSearchMatch } = data
   const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
     useCanvasInteractionsContext()
 
@@ -21,7 +25,7 @@ export const AreaNode = memo(function AreaNode({
 
   return (
     <div>
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={targetPosition ?? Position.Top} />
 
       <TreeContextMenu
         node={treeNode}
@@ -65,11 +69,34 @@ export const AreaNode = memo(function AreaNode({
               {treeNode.name}
             </span>
 
-            {/* Goal count badge */}
+            {/* Goal status counts badge */}
             {goalCount > 0 && (
-              <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
-                {goalCount}
-              </span>
+              <div className="flex flex-shrink-0 items-center gap-1">
+                {statusCounts && Object.keys(statusCounts).length > 1 ? (
+                  (Object.entries(statusCounts) as [GoalStatus, number][]).map(
+                    ([status, count]) => {
+                      const config = GOAL_STATUS_CONFIG[status]
+                      if (!config || !count) return null
+                      return (
+                        <span
+                          key={status}
+                          className={cn(
+                            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                            config.bg,
+                            config.text
+                          )}
+                        >
+                          {count}
+                        </span>
+                      )
+                    }
+                  )
+                ) : (
+                  <span className="rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+                    {goalCount}
+                  </span>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -82,7 +109,7 @@ export const AreaNode = memo(function AreaNode({
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={sourcePosition ?? Position.Bottom} />
     </div>
   )
 })

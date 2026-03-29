@@ -11,6 +11,8 @@ import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 export const DirectionNode = memo(function DirectionNode({
   id,
   data,
+  sourcePosition,
+  targetPosition,
 }: NodeProps<Node<DirectionNodeData, 'direction'>>) {
   const { treeNode, isSelected, isSearchMatch } = data
   const areaCount = treeNode.children?.length ?? 0
@@ -22,7 +24,7 @@ export const DirectionNode = memo(function DirectionNode({
 
   return (
     <div>
-      <Handle type="target" position={Position.Top} className="!invisible" />
+      <Handle type="target" position={targetPosition ?? Position.Top} className="!invisible" />
 
       <TreeContextMenu node={treeNode} onEdit={onSelect} onAddChild={onAddChild}>
         <div
@@ -62,7 +64,7 @@ export const DirectionNode = memo(function DirectionNode({
         </div>
       )}
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={sourcePosition ?? Position.Bottom} />
     </div>
   )
 })

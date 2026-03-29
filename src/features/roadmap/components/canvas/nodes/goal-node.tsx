@@ -14,6 +14,8 @@ import {
   Link,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
+import type { GoalStatus } from '@/types/entities'
 import type { GoalNodeData } from '../types'
 import { TreeNodeCard, type VisualTreeNode } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
@@ -24,6 +26,8 @@ import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 export const GoalNode = memo(function GoalNode({
   id,
   data,
+  sourcePosition,
+  targetPosition,
 }: NodeProps<Node<GoalNodeData, 'goal'>>) {
   const { treeNode, areaColor, isSelected, isSearchMatch, searchQuery } = data
   const hasChildren = !!treeNode.children?.length
@@ -55,7 +59,7 @@ export const GoalNode = memo(function GoalNode({
         isDraft && '[&_[data-node-card]]:border-transparent'
       )}
     >
-      <Handle type="target" position={Position.Top} />
+      <Handle type="target" position={targetPosition ?? Position.Top} />
 
       <TreeContextMenu
         node={treeNode}
@@ -76,6 +80,26 @@ export const GoalNode = memo(function GoalNode({
           />
         </div>
       </TreeContextMenu>
+
+      {/* Status tag (non-active only) */}
+      {(() => {
+        if (!treeNode.status || treeNode.status === 'active') return null
+        const statusConfig = GOAL_STATUS_CONFIG[treeNode.status as GoalStatus]
+        if (!statusConfig) return null
+        return (
+          <div className="px-3 pb-1">
+            <span
+              className={cn(
+                'inline-block rounded-full px-1.5 py-px text-[9px] font-medium',
+                statusConfig.bg,
+                statusConfig.text
+              )}
+            >
+              {statusConfig.label}
+            </span>
+          </div>
+        )
+      })()}
 
       {/* Quick-add popover */}
       {addingToId === id && (
@@ -104,7 +128,7 @@ export const GoalNode = memo(function GoalNode({
         )}
       </AnimatePresence>
 
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={sourcePosition ?? Position.Bottom} />
     </div>
   )
 })

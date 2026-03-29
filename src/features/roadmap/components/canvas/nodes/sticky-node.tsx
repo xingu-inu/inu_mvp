@@ -8,6 +8,8 @@ import type { StickyNodeData } from '../types'
 
 export const StickyNode = memo(function StickyNode({
   data,
+  sourcePosition,
+  targetPosition,
 }: NodeProps<Node<StickyNodeData, 'sticky'>>) {
   const updateNote = useStickyNotesStore((s) => s.updateNote)
   const removeNote = useStickyNotesStore((s) => s.removeNote)
@@ -79,7 +81,7 @@ export const StickyNode = memo(function StickyNode({
 
   return (
     <div onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
-      <Handle type="target" position={Position.Top} className="!invisible" />
+      <Handle type="target" position={targetPosition ?? Position.Top} className="!invisible" />
 
       <div
         className="group relative max-w-[240px] min-w-[160px] rounded-lg shadow-sm transition-shadow hover:shadow-md"
@@ -149,7 +151,7 @@ export const StickyNode = memo(function StickyNode({
         )}
       </div>
 
-      <Handle type="source" position={Position.Bottom} className="!invisible" />
+      <Handle type="source" position={sourcePosition ?? Position.Bottom} className="!invisible" />
     </div>
   )
 })

@@ -4,6 +4,7 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  Position,
   type OnNodesChange,
   type OnEdgesChange,
 } from '@xyflow/react'
@@ -56,6 +57,8 @@ function getLayoutedElements(
         x: dagreNode.x - w / 2,
         y: dagreNode.y - h / 2,
       },
+      sourcePosition: direction === 'LR' ? Position.Right : Position.Bottom,
+      targetPosition: direction === 'LR' ? Position.Left : Position.Top,
     }
   })
 }
