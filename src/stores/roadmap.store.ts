@@ -10,24 +10,16 @@ import {
 } from './roadmap-selection.store'
 import { createVersionSlice, versionInitialState, type VersionSlice } from './roadmap-version.store'
 
-// ── Re-exports (barrel) ────────────────────────────────
+// ── Re-exports (barrel — preserves existing import paths) ──────────
 
 export type { Selection, PanelMode, InlineMode, SelectionSlice } from './roadmap-selection.store'
 
-export {
-  useRoadmapSelectionStore,
-  selectSelection,
-  selectGoalId,
-  selectSelectedNodeId,
-  selectPanelMode,
-  selectInlineMode,
-} from './roadmap-selection.store'
-
 export type { VersionSlice } from './roadmap-version.store'
 
+export { useRoadmapSelectionStore } from './roadmap-selection.store'
 export { useRoadmapVersionStore } from './roadmap-version.store'
 
-// ── Types (remaining in this store) ────────────────────
+// ── Core types (remain here) ───────────────────────────────────────
 
 export type StatusFilter = GoalStatus | 'all'
 
@@ -37,9 +29,9 @@ export type TreeLayoutDirection = 'vertical' | 'horizontal'
 
 export type RightPanelTab = 'roadmap' | 'ai-chat'
 
-// ── UI Slice (remaining properties) ────────────────────
+// ── Core slice (statusFilter, expandedAreas, treeLayout, rightPanelTab, mobile drawer) ──
 
-export interface UISlice {
+interface CoreSlice {
   statusFilter: StatusFilter
   setStatusFilter: (filter: StatusFilter) => void
   expandedAreas: string[]
@@ -49,35 +41,31 @@ export interface UISlice {
   setRightPanelTab: (tab: RightPanelTab) => void
   treeLayout: TreeLayoutDirection
   setTreeLayout: (layout: TreeLayoutDirection) => void
-  isFloatingPanelOpen: boolean
-  setFloatingPanelOpen: (open: boolean) => void
-  toggleFloatingPanel: () => void
   mobileDrawerGoalId: string | null
   openMobileDrawer: (goalId: string) => void
   closeMobileDrawer: () => void
   reset: () => void
 }
 
-const uiInitialState = {
+const coreInitialState = {
   statusFilter: 'all' as StatusFilter,
   expandedAreas: [] as string[],
   rightPanelTab: 'roadmap' as RightPanelTab,
   treeLayout: 'horizontal' as TreeLayoutDirection,
-  isFloatingPanelOpen: false,
   mobileDrawerGoalId: null as string | null,
 }
 
-// ── Combined state ─────────────────────────────────────
+// ── Combined state ─────────────────────────────────────────────────
 
-export type RoadmapState = SelectionSlice & VersionSlice & UISlice
+export type RoadmapState = SelectionSlice & VersionSlice & CoreSlice
 
 const initialState = {
   ...selectionInitialState,
   ...versionInitialState,
-  ...uiInitialState,
+  ...coreInitialState,
 }
 
-// ── Combined store ─────────────────────────────────────
+// ── Combined store (slices pattern + persist for core) ─────────────
 
 export const useRoadmapStore = create<RoadmapState>()(
   persist(
@@ -85,12 +73,14 @@ export const useRoadmapStore = create<RoadmapState>()(
       const [set, get] = args
 
       return {
-        // Compose slices
+        // Selection slice (selection, panelMode, inlineMode, focusedGoalId, floatingPanel)
         ...createSelectionSlice(...args),
+
+        // Version slice (version history, wizard, restore/delete direction)
         ...createVersionSlice(...args),
 
-        // UI slice (inline — no cross-cutting concerns)
-        ...uiInitialState,
+        // Core slice (inline — small enough to keep here)
+        ...coreInitialState,
 
         setStatusFilter: (filter: StatusFilter) => set({ statusFilter: filter }),
 
@@ -110,9 +100,6 @@ export const useRoadmapStore = create<RoadmapState>()(
 
         setTreeLayout: (layout: TreeLayoutDirection) => set({ treeLayout: layout }),
 
-        setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
-        toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
-
         openMobileDrawer: (goalId: string) => set({ mobileDrawerGoalId: goalId }),
         closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
 
@@ -130,9 +117,23 @@ export const useRoadmapStore = create<RoadmapState>()(
   )
 )
 
-// ── Selectors (remaining UI concerns) ──────────────────
+// === Selectors (use with useRoadmapStore(selector) for minimal re-renders) ===
 
-export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
+export const selectSelection = (s: RoadmapState) => s.selection
+
+export const selectGoalId = (s: RoadmapState): string | null => {
+  const sel = s.selection
+  if (sel.type === 'goal') return sel.id
+  if (sel.type === 'group' || sel.type === 'task') return sel.goalId
+  return null
+}
+
+export const selectSelectedNodeId = (s: RoadmapState): string | null =>
+  s.selection.type === 'none' ? null : s.selection.id
+
+export const selectPanelMode = (s: RoadmapState) => s.panelMode
 export const selectRightPanelTab = (s: RoadmapState) => s.rightPanelTab
+export const selectInlineMode = (s: RoadmapState) => s.inlineMode
+export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
 export const selectMobileDrawerGoalId = (s: RoadmapState) => s.mobileDrawerGoalId
 export const selectIsFloatingPanelOpen = (s: RoadmapState) => s.isFloatingPanelOpen

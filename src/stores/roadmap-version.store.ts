@@ -33,7 +33,7 @@ export const createVersionSlice: StateCreator<RoadmapState, [], [], VersionSlice
   setDeleteTargetDirectionId: (id: string | null) => set({ deleteTargetDirectionId: id }),
 })
 
-// ── Standalone store (re-render isolation) ─────────────
+// ── Standalone store (re-render isolation for new code) ─
 
 export const useRoadmapVersionStore = create<VersionSlice>()((set) => ({
   ...versionInitialState,

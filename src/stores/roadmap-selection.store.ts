@@ -45,6 +45,9 @@ export interface SelectionSlice {
   setInlineMode: (mode: InlineMode) => void
   panelMode: PanelMode
   setPanelMode: (mode: PanelMode) => void
+  isFloatingPanelOpen: boolean
+  setFloatingPanelOpen: (open: boolean) => void
+  toggleFloatingPanel: () => void
 }
 
 export const selectionInitialState = {
@@ -52,6 +55,7 @@ export const selectionInitialState = {
   focusedGoalId: null as string | null,
   inlineMode: null as InlineMode,
   panelMode: 'browse' as PanelMode,
+  isFloatingPanelOpen: false,
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -133,11 +137,12 @@ export const createSelectionSlice: StateCreator<RoadmapState, [], [], SelectionS
   },
 
   setInlineMode: (mode: InlineMode) => set({ inlineMode: mode }),
-
   setPanelMode: (mode: PanelMode) => set({ panelMode: mode }),
+  setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
+  toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
 })
 
-// ── Standalone store (re-render isolation) ─────────────
+// ── Standalone store (re-render isolation for new code) ─
 
 export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => ({
   ...selectionInitialState,
@@ -154,7 +159,11 @@ export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => (
       get().clearSelection()
       return
     }
-    set({ selection: sel, panelMode: derivePanelMode(sel) })
+    set({
+      selection: sel,
+      panelMode: derivePanelMode(sel),
+      isFloatingPanelOpen: sel.type !== 'none',
+    })
   },
 
   clearSelection: () =>
@@ -163,6 +172,7 @@ export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => (
       focusedGoalId: null,
       inlineMode: null,
       panelMode: 'browse',
+      isFloatingPanelOpen: false,
     }),
 
   focusGoal: (id: string) => {
@@ -172,6 +182,7 @@ export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => (
         selection: { type: 'none' },
         focusedGoalId: null,
         inlineMode: null,
+        isFloatingPanelOpen: false,
       })
       return
     }
@@ -179,27 +190,30 @@ export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => (
       selection: { type: 'goal', id },
       focusedGoalId: id,
       inlineMode: null,
+      isFloatingPanelOpen: true,
     })
   },
 
   setInlineMode: (mode: InlineMode) => set({ inlineMode: mode }),
-
   setPanelMode: (mode: PanelMode) => set({ panelMode: mode }),
+  setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
+  toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
 }))
 
 // ── Selectors ──────────────────────────────────────────
 
-export const selectSelection = (s: SelectionSlice) => s.selection
+export const selectSelectionFromSlice = (s: SelectionSlice) => s.selection
 
-export const selectGoalId = (s: SelectionSlice): string | null => {
+export const selectGoalIdFromSlice = (s: SelectionSlice): string | null => {
   const sel = s.selection
   if (sel.type === 'goal') return sel.id
   if (sel.type === 'group' || sel.type === 'task') return sel.goalId
   return null
 }
 
-export const selectSelectedNodeId = (s: SelectionSlice): string | null =>
+export const selectSelectedNodeIdFromSlice = (s: SelectionSlice): string | null =>
   s.selection.type === 'none' ? null : s.selection.id
 
-export const selectPanelMode = (s: SelectionSlice) => s.panelMode
-export const selectInlineMode = (s: SelectionSlice) => s.inlineMode
+export const selectPanelModeFromSlice = (s: SelectionSlice) => s.panelMode
+export const selectInlineModeFromSlice = (s: SelectionSlice) => s.inlineMode
+export const selectIsFloatingPanelOpenFromSlice = (s: SelectionSlice) => s.isFloatingPanelOpen
