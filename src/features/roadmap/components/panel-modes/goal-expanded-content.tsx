@@ -42,8 +42,7 @@ import {
   InlineDeleteConfirm,
 } from '../inline-forms'
 import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
-import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
-import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
+import { CrossLinkedTaskSection } from '../shared/cross-linked-task-section'
 import { TaskRow } from './task-row'
 import { SortableGroupItem } from '@/components/common'
 import { TaskList, FlatTaskListWithDnd } from './goal-task-list'
@@ -442,29 +441,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
             <InlineTaskQuickInput goalId={goal.id} />
 
             {/* Cross-linked tasks (flat) */}
-            {crossLinkedByGroup
-              .get(null)
-              ?.map(({ task, sourceGoalId, sourceGoalName, sourceAreaEmoji, sourceAreaColor }) => (
-                <CrossLinkedTaskRow
-                  key={`cross-${task.id}`}
-                  task={task}
-                  sourceGoalName={sourceGoalName}
-                  sourceAreaEmoji={sourceAreaEmoji}
-                  sourceAreaColor={sourceAreaColor}
-                  onUnlink={() => {
-                    const updates = computeUnlinkUpdates({
-                      relatedGoalIds: task.related_goal_ids ?? [],
-                      relatedAreaIds: task.related_area_ids ?? [],
-                      crossLinkGroupMap: task.cross_link_group_map ?? {},
-                      unlinkGoalId: goal.id,
-                      unlinkGoalAreaId: goal.area_id,
-                      allGoals,
-                    })
-                    updateTask.mutate({ id: task.id, input: updates })
-                  }}
-                  onNavigate={() => focusGoal(sourceGoalId)}
-                />
-              ))}
+            <CrossLinkedTaskSection
+              crossLinkedTasks={crossLinkedByGroup.get(null)}
+              goalId={goal.id}
+              goalAreaId={goal.area_id}
+              allGoals={allGoals}
+              onNavigate={(sourceGoalId) => focusGoal(sourceGoalId)}
+            />
           </>
         ) : (
           /* ── Groups ON: group structure with cross-group DnD ── */
@@ -641,41 +624,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                                           />
 
                                           {/* Cross-linked tasks in this group */}
-                                          {crossLinkedByGroup
-                                            .get(group.id)
-                                            ?.map(
-                                              ({
-                                                task,
-                                                sourceGoalId,
-                                                sourceGoalName,
-                                                sourceAreaEmoji,
-                                                sourceAreaColor,
-                                              }) => (
-                                                <CrossLinkedTaskRow
-                                                  key={`cross-${task.id}`}
-                                                  task={task}
-                                                  sourceGoalName={sourceGoalName}
-                                                  sourceAreaEmoji={sourceAreaEmoji}
-                                                  sourceAreaColor={sourceAreaColor}
-                                                  onUnlink={() => {
-                                                    const updates = computeUnlinkUpdates({
-                                                      relatedGoalIds: task.related_goal_ids ?? [],
-                                                      relatedAreaIds: task.related_area_ids ?? [],
-                                                      crossLinkGroupMap:
-                                                        task.cross_link_group_map ?? {},
-                                                      unlinkGoalId: goal.id,
-                                                      unlinkGoalAreaId: goal.area_id,
-                                                      allGoals,
-                                                    })
-                                                    updateTask.mutate({
-                                                      id: task.id,
-                                                      input: updates,
-                                                    })
-                                                  }}
-                                                  onNavigate={() => focusGoal(sourceGoalId)}
-                                                />
-                                              )
-                                            )}
+                                          <CrossLinkedTaskSection
+                                            crossLinkedTasks={crossLinkedByGroup.get(group.id)}
+                                            goalId={goal.id}
+                                            goalAreaId={goal.area_id}
+                                            allGoals={allGoals}
+                                            onNavigate={(sourceGoalId) => focusGoal(sourceGoalId)}
+                                          />
                                         </div>
                                       </motion.div>
                                     )}
@@ -704,37 +659,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                   )}
 
                   {/* Ungrouped cross-linked tasks (shown in orphaned area) */}
-                  {crossLinkedByGroup
-                    .get(null)
-                    ?.map(
-                      ({
-                        task,
-                        sourceGoalId,
-                        sourceGoalName,
-                        sourceAreaEmoji,
-                        sourceAreaColor,
-                      }) => (
-                        <CrossLinkedTaskRow
-                          key={`cross-${task.id}`}
-                          task={task}
-                          sourceGoalName={sourceGoalName}
-                          sourceAreaEmoji={sourceAreaEmoji}
-                          sourceAreaColor={sourceAreaColor}
-                          onUnlink={() => {
-                            const updates = computeUnlinkUpdates({
-                              relatedGoalIds: task.related_goal_ids ?? [],
-                              relatedAreaIds: task.related_area_ids ?? [],
-                              crossLinkGroupMap: task.cross_link_group_map ?? {},
-                              unlinkGoalId: goal.id,
-                              unlinkGoalAreaId: goal.area_id,
-                              allGoals,
-                            })
-                            updateTask.mutate({ id: task.id, input: updates })
-                          }}
-                          onNavigate={() => focusGoal(sourceGoalId)}
-                        />
-                      )
-                    )}
+                  <CrossLinkedTaskSection
+                    crossLinkedTasks={crossLinkedByGroup.get(null)}
+                    goalId={goal.id}
+                    goalAreaId={goal.area_id}
+                    allGoals={allGoals}
+                    onNavigate={(sourceGoalId) => focusGoal(sourceGoalId)}
+                  />
 
                   {/* DragOverlay */}
                   <DragOverlay dropAnimation={DROP_ANIMATION}>

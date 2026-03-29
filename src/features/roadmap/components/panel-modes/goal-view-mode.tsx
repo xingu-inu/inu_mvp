@@ -39,10 +39,9 @@ import { GoalTaskItem } from '../shared/goal-task-item'
 import { StatusTransitionDialog } from '../status-transition-dialog'
 import { GoalCompletionDialog } from '../goal-completion-dialog'
 import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
-import { computeUnlinkUpdates } from '@/lib/utils/task-utils'
 import { useUpdateTask } from '@/queries/use-tasks'
 import { CrossLinkTaskPicker } from '../shared/cross-link-task-picker'
-import { CrossLinkedTaskRow } from '../shared/cross-linked-task-row'
+import { CrossLinkedTaskSection } from '../shared/cross-linked-task-section'
 import { AiDecomposeSection } from './ai-decompose-section'
 import { StatusTransitionSection } from './status-transition-section'
 import type { GoalStatus, Area } from '@/types/entities'
@@ -455,36 +454,16 @@ export function GoalViewMode({
               <InlineTaskQuickInput goalId={goal.id} />
 
               {/* Cross-linked tasks (flat / no groups) */}
-              {(crossLinkedByGroup.get(null) ?? []).length > 0 && (
-                <div className="mt-1 space-y-0.5">
-                  {(crossLinkedByGroup.get(null) ?? []).map(
-                    ({ task, sourceGoalId, sourceGoalName, sourceAreaEmoji, sourceAreaColor }) => (
-                      <CrossLinkedTaskRow
-                        key={task.id}
-                        task={task}
-                        sourceGoalId={sourceGoalId}
-                        sourceGoalName={sourceGoalName}
-                        sourceAreaEmoji={sourceAreaEmoji}
-                        sourceAreaColor={sourceAreaColor}
-                        onUnlink={() => {
-                          const updates = computeUnlinkUpdates({
-                            relatedGoalIds: task.related_goal_ids ?? [],
-                            relatedAreaIds: task.related_area_ids ?? [],
-                            crossLinkGroupMap: task.cross_link_group_map ?? {},
-                            unlinkGoalId: goalId!,
-                            unlinkGoalAreaId: goal!.area_id,
-                            allGoals: allGoals ?? [],
-                          })
-                          updateTaskForUnlink.mutate({ id: task.id, input: updates })
-                        }}
-                        onNavigate={() => {
-                          useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
-                        }}
-                      />
-                    )
-                  )}
-                </div>
-              )}
+              <CrossLinkedTaskSection
+                crossLinkedTasks={crossLinkedByGroup.get(null)}
+                goalId={goalId!}
+                goalAreaId={goal!.area_id}
+                allGoals={allGoals ?? []}
+                onNavigate={(sourceGoalId) =>
+                  useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
+                }
+                className="mt-1 space-y-0.5"
+              />
             </>
           ) : (
             /* ── Groups ON: group structure with tasks ── */
@@ -615,44 +594,16 @@ export function GoalViewMode({
                             </div>
                           )}
                           {/* Cross-linked tasks for this group */}
-                          {(crossLinkedByGroup.get(group.id) ?? []).length > 0 && (
-                            <div className="mt-1 ml-4 space-y-0.5 border-l-2 border-dashed border-[var(--color-border)] pl-3">
-                              {(crossLinkedByGroup.get(group.id) ?? []).map(
-                                ({
-                                  task,
-                                  sourceGoalId,
-                                  sourceGoalName,
-                                  sourceAreaEmoji,
-                                  sourceAreaColor,
-                                }) => (
-                                  <CrossLinkedTaskRow
-                                    key={task.id}
-                                    task={task}
-                                    sourceGoalId={sourceGoalId}
-                                    sourceGoalName={sourceGoalName}
-                                    sourceAreaEmoji={sourceAreaEmoji}
-                                    sourceAreaColor={sourceAreaColor}
-                                    onUnlink={() => {
-                                      const updates = computeUnlinkUpdates({
-                                        relatedGoalIds: task.related_goal_ids ?? [],
-                                        relatedAreaIds: task.related_area_ids ?? [],
-                                        crossLinkGroupMap: task.cross_link_group_map ?? {},
-                                        unlinkGoalId: goalId!,
-                                        unlinkGoalAreaId: goal!.area_id,
-                                        allGoals: allGoals ?? [],
-                                      })
-                                      updateTaskForUnlink.mutate({ id: task.id, input: updates })
-                                    }}
-                                    onNavigate={() => {
-                                      useRoadmapStore
-                                        .getState()
-                                        .select({ type: 'goal', id: sourceGoalId })
-                                    }}
-                                  />
-                                )
-                              )}
-                            </div>
-                          )}
+                          <CrossLinkedTaskSection
+                            crossLinkedTasks={crossLinkedByGroup.get(group.id)}
+                            goalId={goalId!}
+                            goalAreaId={goal!.area_id}
+                            allGoals={allGoals ?? []}
+                            onNavigate={(sourceGoalId) =>
+                              useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
+                            }
+                            className="mt-1 ml-4 space-y-0.5 border-l-2 border-dashed border-[var(--color-border)] pl-3"
+                          />
                         </>
                       )}
                     </div>
@@ -661,36 +612,16 @@ export function GoalViewMode({
               </div>
 
               {/* Orphaned cross-linked tasks (no group assigned) */}
-              {(crossLinkedByGroup.get(null) ?? []).length > 0 && (
-                <div className="mt-2 space-y-0.5">
-                  {(crossLinkedByGroup.get(null) ?? []).map(
-                    ({ task, sourceGoalId, sourceGoalName, sourceAreaEmoji, sourceAreaColor }) => (
-                      <CrossLinkedTaskRow
-                        key={task.id}
-                        task={task}
-                        sourceGoalId={sourceGoalId}
-                        sourceGoalName={sourceGoalName}
-                        sourceAreaEmoji={sourceAreaEmoji}
-                        sourceAreaColor={sourceAreaColor}
-                        onUnlink={() => {
-                          const updates = computeUnlinkUpdates({
-                            relatedGoalIds: task.related_goal_ids ?? [],
-                            relatedAreaIds: task.related_area_ids ?? [],
-                            crossLinkGroupMap: task.cross_link_group_map ?? {},
-                            unlinkGoalId: goalId!,
-                            unlinkGoalAreaId: goal!.area_id,
-                            allGoals: allGoals ?? [],
-                          })
-                          updateTaskForUnlink.mutate({ id: task.id, input: updates })
-                        }}
-                        onNavigate={() => {
-                          useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
-                        }}
-                      />
-                    )
-                  )}
-                </div>
-              )}
+              <CrossLinkedTaskSection
+                crossLinkedTasks={crossLinkedByGroup.get(null)}
+                goalId={goalId!}
+                goalAreaId={goal!.area_id}
+                allGoals={allGoals ?? []}
+                onNavigate={(sourceGoalId) =>
+                  useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
+                }
+                className="mt-2 space-y-0.5"
+              />
             </>
           )}
         </div>
