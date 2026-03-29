@@ -1,34 +1,3 @@
-// Existing exports (Phase 3)
-export { getHomeTasks, getWeekHomeTasks, type HomeTaskDto } from './home.actions'
-
-export {
-  createCheckIn,
-  updateCheckIn,
-  undoCheckIn,
-  getMonthCheckIns,
-  type CheckinResult,
-  type UndoCheckinResult,
-  type MonthCheckInRow,
-} from './checkin.actions'
-
-export {
-  getWeeklyStats,
-  getCurrentWeekStart,
-  type WeeklyStats,
-  type DailyBreakdown,
-  type AreaBreakdown,
-} from './stats.actions'
-
-export {
-  completeOnboardingV2,
-  checkOnboardingStatus,
-  type DirectionInput,
-  type AreaInput,
-  type GoalInputV2,
-  type TaskInputV2,
-  type OnboardingResult,
-} from './onboarding.actions'
-
 // Phase 4.5: New Server Actions
 export { getDirection, createDirection, updateDirection } from './direction.actions'
 
@@ -79,24 +48,6 @@ export {
   reorderTasks,
   deleteTask,
 } from './task.actions'
-
-export {
-  getDailyReflection,
-  getReflectionsByDateRange,
-  createReflection,
-  updateReflection,
-  deleteReflection,
-} from './reflection.actions'
-
-export { getMonthlyReflection, saveMonthlyReflection } from './monthly-reflection.actions'
-
-export { getWeeklyReflection, saveWeeklyReflection } from './weekly-reflection.actions'
-
-export {
-  getGoalReflection,
-  getGoalReflections,
-  saveGoalReflection,
-} from './goal-reflection.actions'
 
 export { getProfile, updateProfile, updateAvatar, isOnboardingCompleted } from './profile.actions'
 
