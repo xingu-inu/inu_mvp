@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
-import type { GoalNodeData } from '../types'
+import { ZOOM_COMPACT, ZOOM_FULL, type GoalNodeData } from '../types'
 import { TreeNodeCard, type VisualTreeNode } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
@@ -30,17 +30,29 @@ export const GoalNode = memo(function GoalNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<GoalNodeData, 'goal'>>) {
-  const { treeNode, areaColor, ancestorWhys, isSelected, isSearchMatch, searchQuery } = data
+  const {
+    treeNode,
+    areaColor,
+    ancestorWhys,
+    isSelected,
+    isSearchMatch,
+    searchQuery,
+    zoomLevel = ZOOM_FULL,
+  } = data
   const hasChildren = !!treeNode.children?.length
   const isDraft = treeNode.status === 'backlog'
+  const isCompact = zoomLevel <= ZOOM_COMPACT
+  const isFull = zoomLevel >= ZOOM_FULL
 
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpandedRaw, setIsExpandedRaw] = useState(false)
+  // Only allow expansion in full zoom — AnimatePresence handles exit animation
+  const isExpanded = isFull && isExpandedRaw
   const updateNodeInternals = useUpdateNodeInternals()
   const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
     useCanvasInteractionsContext()
 
   const handleToggle = useCallback(() => {
-    setIsExpanded((prev) => !prev)
+    setIsExpandedRaw((prev) => !prev)
     requestAnimationFrame(() => updateNodeInternals(id))
   }, [id, updateNodeInternals])
 
@@ -60,7 +72,7 @@ export const GoalNode = memo(function GoalNode({
         isDraft && '[&_[data-node-card]]:border-transparent'
       )}
     >
-      {ancestorWhys && ancestorWhys.length > 0 && (
+      {isFull && ancestorWhys && ancestorWhys.length > 0 && (
         <WhyChainTooltip
           ancestorWhys={ancestorWhys}
           currentName={treeNode.name}
@@ -69,72 +81,90 @@ export const GoalNode = memo(function GoalNode({
       )}
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
-      <TreeContextMenu
-        node={treeNode}
-        onEdit={handleSelect}
-        onAddChild={onAddChild}
-        onDelete={onDelete}
-      >
-        <div>
-          <TreeNodeCard
+      {isCompact ? (
+        /* Compact zoom: name-only simplified box */
+        <div
+          className={cn(
+            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm',
+            isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
+            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
+          )}
+          onClick={handleSelect}
+        >
+          <span className="block truncate text-xs font-medium text-[var(--color-text-primary)]">
+            {treeNode.name}
+          </span>
+        </div>
+      ) : (
+        <>
+          <TreeContextMenu
             node={treeNode}
-            isSelected={isSelected ?? false}
-            isExpanded={isExpanded}
-            hasChildren={hasChildren}
-            onSelect={handleSelect}
-            onToggle={handleToggle}
-            isSearchMatch={isSearchMatch}
-            searchQuery={searchQuery}
-          />
-        </div>
-      </TreeContextMenu>
-
-      {/* Status tag (non-active only) */}
-      {(() => {
-        if (!treeNode.status || treeNode.status === 'active') return null
-        const statusConfig = GOAL_STATUS_CONFIG[treeNode.status as GoalStatus]
-        if (!statusConfig) return null
-        return (
-          <div className="px-3 pb-1">
-            <span
-              className={cn(
-                'inline-block rounded-full px-1.5 py-px text-[9px] font-medium',
-                statusConfig.bg,
-                statusConfig.text
-              )}
-            >
-              {statusConfig.label}
-            </span>
-          </div>
-        )
-      })()}
-
-      {/* Quick-add popover */}
-      {addingToId === id && (
-        <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2">
-          {getQuickAddContent(treeNode)}
-        </div>
-      )}
-
-      {/* Expanded content: Group → Task list */}
-      <AnimatePresence initial={false}>
-        {isExpanded && hasChildren && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-            onAnimationComplete={() => updateNodeInternals(id)}
+            onEdit={handleSelect}
+            onAddChild={onAddChild}
+            onDelete={onDelete}
           >
-            <div className="space-y-0.5 border-t border-[var(--color-border)] px-3 py-2">
-              {treeNode.children?.map((child) => (
-                <GoalChildItem key={child.id} node={child} areaColor={areaColor} />
-              ))}
+            <div>
+              <TreeNodeCard
+                node={treeNode}
+                isSelected={isSelected ?? false}
+                isExpanded={isExpanded}
+                hasChildren={hasChildren}
+                onSelect={handleSelect}
+                onToggle={handleToggle}
+                isSearchMatch={isSearchMatch}
+                searchQuery={searchQuery}
+              />
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </TreeContextMenu>
+
+          {/* Status tag (non-active only) */}
+          {(() => {
+            if (!treeNode.status || treeNode.status === 'active') return null
+            const statusConfig = GOAL_STATUS_CONFIG[treeNode.status as GoalStatus]
+            if (!statusConfig) return null
+            return (
+              <div className="px-3 pb-1">
+                <span
+                  className={cn(
+                    'inline-block rounded-full px-1.5 py-px text-[9px] font-medium',
+                    statusConfig.bg,
+                    statusConfig.text
+                  )}
+                >
+                  {statusConfig.label}
+                </span>
+              </div>
+            )
+          })()}
+
+          {/* Quick-add popover */}
+          {addingToId === id && (
+            <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2">
+              {getQuickAddContent(treeNode)}
+            </div>
+          )}
+
+          {/* Expanded content: Group → Task list (auto-collapses when leaving full zoom) */}
+          <AnimatePresence initial={false}>
+            {isExpanded && hasChildren && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+                onAnimationComplete={() => updateNodeInternals(id)}
+              >
+                <div className="space-y-0.5 border-t border-[var(--color-border)] px-3 py-2">
+                  {treeNode.children?.map((child) => (
+                    <GoalChildItem key={child.id} node={child} areaColor={areaColor} />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
       <Handle type="source" position={sourcePosition ?? Position.Bottom} />
     </div>

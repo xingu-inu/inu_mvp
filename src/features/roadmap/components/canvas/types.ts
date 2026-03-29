@@ -2,6 +2,13 @@ import type { Node, Edge } from '@xyflow/react'
 import type { GoalStatus } from '@/types/entities'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 
+// ── Semantic zoom ────────────────────────────────────────────
+
+/** Quantized zoom bands injected as zoomLevel (0 = compact, 1 = medium, 2 = full) */
+export const ZOOM_COMPACT = 0
+export const ZOOM_MEDIUM = 1
+export const ZOOM_FULL = 2
+
 // ── Node data payloads ──────────────────────────────────────
 
 /** Shared interaction state injected into all canvas nodes */
@@ -9,6 +16,8 @@ interface InteractionState {
   isSelected?: boolean
   isSearchMatch?: boolean
   searchQuery?: string
+  /** Quantized zoom band: 0 = compact, 1 = medium, 2 = full */
+  zoomLevel?: number
 }
 
 /** Ancestor why entry for Why Chain tooltip */

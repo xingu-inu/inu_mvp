@@ -16,6 +16,7 @@ import {
   MiniMap,
   Panel,
   useReactFlow,
+  useViewport,
   type NodeMouseHandler,
 } from '@xyflow/react'
 import { useRoadmapStore } from '@/stores/roadmap.store'
@@ -33,6 +34,7 @@ import { CanvasInteractionsContext } from './canvas-interactions-context'
 import { nodeTypes } from './nodes'
 import { edgeTypes } from './edges'
 import { AreaRegions } from './area-regions'
+import { useCanvasKeyboard } from './use-canvas-keyboard'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -105,6 +107,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const addNote = useStickyNotesStore((s) => s.addNote)
   const updateNote = useStickyNotesStore((s) => s.updateNote)
   const { screenToFlowPosition } = useReactFlow()
+  const { zoom: rawZoom } = useViewport()
+  // Quantize zoom into 3 bands so enrichedNodes only recomputes at threshold crossings
+  const zoomBand: number = rawZoom < 0.4 ? 0 : rawZoom > 0.8 ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
   // Interaction logic (selection, delete, quick-add, focus)
@@ -151,12 +156,13 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           isSelected,
           isSearchMatch,
           searchQuery: isSearchMatch ? searchQuery : undefined,
+          zoomLevel: zoomBand,
         },
         style,
         selected: isSelected,
       }
     })
-  }, [allNodes, selectedNodeId, focusedIds, searchMatchedIds, searchQuery])
+  }, [allNodes, selectedNodeId, focusedIds, searchMatchedIds, searchQuery, zoomBand])
 
   // Enrich edges with focus-mode dimming
   const enrichedEdges = useMemo(() => {
@@ -180,6 +186,18 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     enrichedEdges,
     direction
   )
+
+  // ── Keyboard shortcuts ────────────────────────────────────
+
+  useCanvasKeyboard({
+    nodes,
+    edges,
+    selectedNodeId,
+    direction,
+    handleStartAdd: interactions.handleStartAdd,
+    handleNodeSelect: interactions.handleNodeSelect,
+    clearSelection,
+  })
 
   // ── Event handlers ─────────────────────────────────────────
 

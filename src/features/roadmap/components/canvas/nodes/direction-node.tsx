@@ -4,7 +4,7 @@ import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { Compass } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { DirectionNodeData } from '../types'
+import { ZOOM_COMPACT, ZOOM_FULL, type DirectionNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 
@@ -14,8 +14,10 @@ export const DirectionNode = memo(function DirectionNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<DirectionNodeData, 'direction'>>) {
-  const { treeNode, isSelected, isSearchMatch } = data
+  const { treeNode, isSelected, isSearchMatch, zoomLevel = ZOOM_FULL } = data
   const areaCount = treeNode.children?.length ?? 0
+  const isCompact = zoomLevel <= ZOOM_COMPACT
+  const isFull = zoomLevel >= ZOOM_FULL
   const { handleNodeSelect, handleStartAdd, addingToId, getQuickAddContent } =
     useCanvasInteractionsContext()
 
@@ -42,14 +44,14 @@ export const DirectionNode = memo(function DirectionNode({
             <span className="block truncate text-base font-bold text-[var(--color-text-on-primary)]">
               {treeNode.name}
             </span>
-            {treeNode.why && (
+            {!isCompact && treeNode.why && (
               <span className="block truncate text-[10px] text-[var(--color-text-on-primary)] italic opacity-80">
                 {treeNode.why}
               </span>
             )}
           </div>
 
-          {areaCount > 0 && (
+          {isFull && areaCount > 0 && (
             <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-on-primary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-on-primary)]">
               {areaCount}
             </span>

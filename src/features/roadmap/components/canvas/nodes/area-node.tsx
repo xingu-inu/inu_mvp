@@ -5,7 +5,7 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
-import type { AreaNodeData } from '../types'
+import { ZOOM_COMPACT, ZOOM_FULL, type AreaNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 import { WhyChainTooltip } from './why-chain-tooltip'
@@ -16,7 +16,17 @@ export const AreaNode = memo(function AreaNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<AreaNodeData, 'area'>>) {
-  const { treeNode, goalCount, statusCounts, ancestorWhys, isSelected, isSearchMatch } = data
+  const {
+    treeNode,
+    goalCount,
+    statusCounts,
+    ancestorWhys,
+    isSelected,
+    isSearchMatch,
+    zoomLevel = ZOOM_FULL,
+  } = data
+  const isCompact = zoomLevel <= ZOOM_COMPACT
+  const isFull = zoomLevel >= ZOOM_FULL
   const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
     useCanvasInteractionsContext()
 
@@ -26,7 +36,7 @@ export const AreaNode = memo(function AreaNode({
 
   return (
     <div className="group/why">
-      {ancestorWhys && ancestorWhys.length > 0 && (
+      {isFull && ancestorWhys && ancestorWhys.length > 0 && (
         <WhyChainTooltip
           ancestorWhys={ancestorWhys}
           currentName={treeNode.name}
@@ -69,7 +79,7 @@ export const AreaNode = memo(function AreaNode({
                   }}
                 />
               )}
-              {treeNode.emoji && <span className="text-base">{treeNode.emoji}</span>}
+              {!isCompact && treeNode.emoji && <span className="text-base">{treeNode.emoji}</span>}
             </div>
 
             {/* Name */}
@@ -78,9 +88,9 @@ export const AreaNode = memo(function AreaNode({
             </span>
 
             {/* Goal status counts badge */}
-            {goalCount > 0 && (
+            {!isCompact && goalCount > 0 && (
               <div className="flex flex-shrink-0 items-center gap-1">
-                {statusCounts && Object.keys(statusCounts).length > 1 ? (
+                {isFull && statusCounts && Object.keys(statusCounts).length > 1 ? (
                   (Object.entries(statusCounts) as [GoalStatus, number][]).map(
                     ([status, count]) => {
                       const config = GOAL_STATUS_CONFIG[status]
