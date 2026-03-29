@@ -86,10 +86,17 @@ export const AreaNode = memo(function AreaNode({
               {!isCompact && treeNode.emoji && <span className="text-base">{treeNode.emoji}</span>}
             </div>
 
-            {/* Name */}
-            <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
-              {treeNode.name}
-            </span>
+            {/* Name + Why */}
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
+                {treeNode.name}
+              </span>
+              {!isCompact && treeNode.why && (
+                <span className="block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
+                  {treeNode.why}
+                </span>
+              )}
+            </div>
 
             {/* Goal status counts badge */}
             {!isCompact && goalCount > 0 && (

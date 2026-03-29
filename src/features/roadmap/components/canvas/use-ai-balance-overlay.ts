@@ -105,12 +105,15 @@ export function useAiBalanceOverlay(
 ) {
   const [isActive, setIsActive] = useState(false)
   const [overlays, setOverlays] = useState<Map<string, BalanceOverlay>>(new Map())
+  const [diagnosisResult, setDiagnosisResult] = useState<AiRoadmapDiagnosisResponse | null>(null)
   const cachedRef = useRef<Map<string, BalanceOverlay> | null>(null)
   const { mutate, isPending } = useAiSuggest()
 
   // Invalidate cache when inputs change
   useEffect(() => {
     cachedRef.current = null
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset cached diagnosis when upstream data changes
+    setDiagnosisResult(null)
   }, [areas, goals, directionStatement])
 
   const toggle = useCallback(() => {
@@ -134,8 +137,10 @@ export function useAiBalanceOverlay(
       { type: 'roadmap-diagnosis', scope: 'full', context },
       {
         onSuccess: (data) => {
-          const mapped = mapDiagnosisToOverlays(data as AiRoadmapDiagnosisResponse)
+          const response = data as AiRoadmapDiagnosisResponse
+          const mapped = mapDiagnosisToOverlays(response)
           cachedRef.current = mapped
+          setDiagnosisResult(response)
           setOverlays(mapped)
         },
         onError: () => {
@@ -145,5 +150,11 @@ export function useAiBalanceOverlay(
     )
   }, [isActive, areas, goals, directionStatement, mutate])
 
-  return { overlays, isActive, isLoading: isPending && isActive, toggle }
+  return {
+    overlays,
+    isActive,
+    isLoading: isPending && isActive,
+    toggle,
+    diagnosisResult,
+  }
 }

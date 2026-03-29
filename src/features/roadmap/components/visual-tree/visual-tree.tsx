@@ -290,6 +290,8 @@ export function buildVisualTreeData(
               repeatType: task.repeat_type,
               hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
               sortOrder: task.sort_order,
+              startDate: task.start_date ?? undefined,
+              endDate: task.end_date ?? undefined,
             },
           }
         })
@@ -336,6 +338,8 @@ export function buildVisualTreeData(
             repeatType: task.repeat_type,
             hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
             sortOrder: task.sort_order,
+            startDate: task.start_date ?? undefined,
+            endDate: task.end_date ?? undefined,
           },
         }
       })
@@ -381,6 +385,8 @@ export function buildVisualTreeData(
           totalCount,
           totalStreak: totalStreak || undefined,
           targetDate: goal.target_date ?? undefined,
+          startDate: goal.start_date ?? undefined,
+          endDate: goal.target_date ?? undefined, // Goal has no end_date; target_date is the deadline
           sortOrder: goal.sort_order,
           impactAreaColors: impactAreaColors?.length ? impactAreaColors : undefined,
         },

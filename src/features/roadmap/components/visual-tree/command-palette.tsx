@@ -6,8 +6,7 @@ import {
   Target,
   CheckCircle,
   StickyNote,
-  Brain,
-  Stethoscope,
+  Activity,
   Search,
   Maximize,
   Map,
@@ -281,8 +280,7 @@ export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProp
 // ── Command factory helpers ───────────────────────────────────────────────────
 
 export function buildRoadmapCommands(handlers: {
-  onOpenBrainDump: () => void
-  onOpenDiagnosis: () => void
+  onToggleBalance: () => void
   onOpenSearch: () => void
   onZoomToFit: () => void
   onToggleMinimap: () => void
@@ -320,20 +318,12 @@ export function buildRoadmapCommands(handlers: {
       action: handlers.onAddStickyNote,
     },
     {
-      id: 'brain-dump',
-      label: 'Brain Dump',
-      icon: Brain,
-      shortcut: 'B',
-      category: 'ai',
-      action: handlers.onOpenBrainDump,
-    },
-    {
-      id: 'ai-diagnose',
-      label: 'AI Diagnose',
-      icon: Stethoscope,
+      id: 'toggle-balance',
+      label: 'AI Balance',
+      icon: Activity,
       shortcut: 'D',
       category: 'ai',
-      action: handlers.onOpenDiagnosis,
+      action: handlers.onToggleBalance,
     },
     {
       id: 'search-tree',

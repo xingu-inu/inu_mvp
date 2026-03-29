@@ -104,7 +104,7 @@ ${CORE_PRINCIPLES}
 ${SECURITY_PRINCIPLES}`
 }
 
-const contextSchema = z.object({
+const entityContextSchema = z.object({
   type: z.enum(['goal', 'task']),
   goalId: z.string(),
   goalName: z.string(),
@@ -112,6 +112,12 @@ const contextSchema = z.object({
   taskName: z.string().optional(),
   areaName: z.string().optional(),
 })
+
+const brainDumpContextSchema = z.object({
+  type: z.literal('brain-dump'),
+})
+
+const contextSchema = z.discriminatedUnion('type', [entityContextSchema, brainDumpContextSchema])
 
 const chatSchema = z.object({
   messages: z.array(z.record(z.string(), z.unknown())).max(50),
@@ -139,12 +145,30 @@ export const POST = authRoute(
     let systemPrompt = buildSystemPrompt(userName, todayDate)
     const { context } = parsed.data
     if (context) {
-      const entity =
-        context.type === 'goal'
-          ? `"${context.goalName}" 목표`
-          : `"${context.taskName}" 할 일 (목표: "${context.goalName}")`
-      const areaHint = context.areaName ? ` (영역: ${context.areaName})` : ''
-      systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
+      if (context.type === 'brain-dump') {
+        systemPrompt += `\n\n[대화 맥락 — 쏟아내기 모드]
+사용자가 "쏟아내기" 모드로 대화를 시작했습니다.
+
+역할: 사용자가 하고 싶은 것들, 목표, 아이디어를 자유롭게 이야기하면 이를 체계적으로 정리해주세요.
+
+진행 방식:
+1. 사용자의 이야기를 충분히 들으세요. "더 있어요?" "다른 영역은요?" 등으로 더 끌어내세요.
+2. 충분히 모이면 get_user_overview 도구로 기존 구조를 확인하세요.
+3. 기존 Area에 맞는 것은 기존 Area에, 새로운 영역은 새 Area로 propose_structure 도구를 호출하세요.
+4. 사용자가 수정을 요청하면 반영해서 다시 propose_structure를 호출하세요.
+
+중요:
+- 처음부터 구조화하지 마세요. 먼저 자유롭게 이야기하게 하세요.
+- 한 번에 너무 많이 만들지 마세요. 핵심부터 시작.
+- 기존 Area/Goal과 중복되지 않게 확인하세요.`
+      } else {
+        const entity =
+          context.type === 'goal'
+            ? `"${context.goalName}" 목표`
+            : `"${context.taskName}" 할 일 (목표: "${context.goalName}")`
+        const areaHint = context.areaName ? ` (영역: ${context.areaName})` : ''
+        systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
+      }
     }
 
     // V-02 FIX: Check ALL user messages for injection, not just the last one

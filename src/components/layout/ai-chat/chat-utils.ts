@@ -37,3 +37,9 @@ export const TASK_QUICK_ACTIONS = [
   { label: '시간 활용 조언', prompt: '이 할 일을 더 효과적으로 할 시간 활용법을 알려줘' },
   { label: '대안 제안', prompt: '이 할 일의 대안이나 보완 활동을 제안해줘' },
 ]
+
+export const BRAIN_DUMP_QUICK_ACTIONS = [
+  { label: '요즘 관심사 정리', prompt: '요즘 이런 것들에 관심이 있어: ' },
+  { label: '새해 목표 세우기', prompt: '올해 이루고 싶은 것들을 정리하고 싶어' },
+  { label: '생활 루틴 만들기', prompt: '매일 반복하는 루틴을 만들고 싶어' },
+]

@@ -3,6 +3,7 @@
 import { memo, useMemo } from 'react'
 import { Panel } from '@xyflow/react'
 import { ChevronLeft, ChevronRight, X, Footprints } from 'lucide-react'
+import { CanvasToolbar } from './canvas-toolbar'
 import type { WhyMapNode, WhyMapEdge, WhyWalkStep, WhyWalkState } from './types'
 import type { GoalNodeData, AreaNodeData, DirectionNodeData } from './types'
 
@@ -128,7 +129,7 @@ export const WhyWalkOverlay = memo(function WhyWalkOverlay({
 
   return (
     <Panel position="bottom-center" className="!mb-2">
-      <div className="flex max-w-md flex-col items-center gap-2 rounded-xl bg-[var(--color-bg-primary)]/95 px-5 py-3 shadow-lg backdrop-blur">
+      <div className="glass-3 flex max-w-md flex-col items-center gap-2 rounded-xl px-5 py-3 shadow-lg">
         {/* Header: step counter + close */}
         <div className="flex w-full items-center justify-between text-[10px] text-[var(--color-text-tertiary)]">
           <div className="flex items-center gap-1.5">
@@ -182,14 +183,12 @@ export const WhyWalkOverlay = memo(function WhyWalkOverlay({
 
         {/* Navigation */}
         <div className="flex items-center gap-3">
-          <button
+          <CanvasToolbar.Button
             onClick={onPrev}
             disabled={isFirst}
             aria-label="Previous step"
-            className="rounded-lg p-1.5 transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-30"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+            icon={<ChevronLeft className="h-4 w-4" />}
+          />
 
           {/* Progress: dots for small sequences, text for large */}
           {state.sequence.length <= 15 ? (
@@ -211,14 +210,12 @@ export const WhyWalkOverlay = memo(function WhyWalkOverlay({
             </span>
           )}
 
-          <button
+          <CanvasToolbar.Button
             onClick={onNext}
             disabled={isLast}
             aria-label="Next step"
-            className="rounded-lg p-1.5 transition-colors hover:bg-[var(--color-bg-secondary)] disabled:opacity-30"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+            icon={<ChevronRight className="h-4 w-4" />}
+          />
         </div>
       </div>
     </Panel>

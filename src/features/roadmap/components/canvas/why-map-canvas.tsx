@@ -23,6 +23,8 @@ import {
   type Edge,
 } from '@xyflow/react'
 import { Activity, Loader2, PanelRight } from 'lucide-react'
+import { CanvasToolbar } from './canvas-toolbar'
+import { CanvasChip } from './canvas-chip'
 import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
 import { useStickyNotesStore } from '@/stores/sticky-notes.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
@@ -50,6 +52,7 @@ export interface WhyMapCanvasRef {
   fitView: () => void
   addStickyAtCenter: () => void
   toggleMinimap: () => void
+  toggleBalance: () => void
 }
 
 // ── Props ──────────────────────────────────────────────────
@@ -92,18 +95,14 @@ function PanelToggleButton() {
   const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
   const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
   return (
-    <button
+    <CanvasToolbar.Toggle
+      active={isOpen}
+      icon={<PanelRight className="h-3.5 w-3.5" />}
       onClick={toggle}
-      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors ${
-        isOpen
-          ? 'bg-indigo-500/90 text-white'
-          : 'bg-[var(--color-bg-primary)]/90 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
-      }`}
       title="패널 토글 (])"
     >
-      <PanelRight className="h-3.5 w-3.5" />
-      <span>Panel</span>
-    </button>
+      Panel
+    </CanvasToolbar.Toggle>
   )
 }
 
@@ -148,12 +147,10 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
 
   const toggleGoalExpand = useCallback((goalId: string) => {
-    console.log('[canvas] toggleGoalExpand called', goalId)
     setExpandedGoalIds((prev) => {
       const next = new Set(prev)
       if (next.has(goalId)) next.delete(goalId)
       else next.add(goalId)
-      console.log('[canvas] expandedGoalIds updated, size=' + next.size)
       return next
     })
   }, [])
@@ -183,7 +180,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   )
 
   // ── Data pipeline: tree → flow elements → enrich → dagre ──
-  console.log('[canvas] render, expandedGoalIds.size=' + expandedGoalIds.size, [...expandedGoalIds])
 
   const { nodes: rawNodes, edges: rawEdges } = useMemo(
     () => treeToFlowElements(treeData, crossLinks, expandedGoalIds),
@@ -407,6 +403,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     },
     addStickyAtCenter,
     toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
+    toggleBalance: aiBalance.toggle,
   }))
 
   const handleNodeDragStop: NodeMouseHandler<WhyMapNode> = useCallback(
@@ -553,15 +550,27 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           {isMinimapVisible && (
             <MiniMap nodeColor={minimapNodeColor} maskColor="rgba(0,0,0,0.08)" pannable zoomable />
           )}
-          {/* Canvas stats (hidden during Why Walk since overlay uses same position) */}
-          {canvasStats && !whyWalkState?.isActive && (
+          {/* Canvas stats / Balance summary (hidden during Why Walk since overlay uses same position) */}
+          {!whyWalkState?.isActive && (
             <Panel position="bottom-center" className="!mb-2">
-              <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-primary)]/90 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
-                <span>{canvasStats.totalGoals} goals</span>
-                <span className="text-[var(--color-done)]">{canvasStats.completedCount} done</span>
-                <span>{canvasStats.activeCount} active</span>
-                <span>{Math.round(canvasStats.completionRate)}%</span>
-              </div>
+              {aiBalance.isActive && aiBalance.diagnosisResult ? (
+                <CanvasChip variant="info" className="gap-2">
+                  <span>{aiBalance.diagnosisResult.summary.icon}</span>
+                  <span className="font-semibold">{aiBalance.diagnosisResult.summary.label}</span>
+                  <span className="text-[var(--color-text-tertiary)]">
+                    {aiBalance.diagnosisResult.summary.description}
+                  </span>
+                </CanvasChip>
+              ) : canvasStats ? (
+                <CanvasChip variant="info" className="gap-3">
+                  <span>{canvasStats.totalGoals} goals</span>
+                  <span className="text-[var(--color-done)]">
+                    {canvasStats.completedCount} done
+                  </span>
+                  <span>{canvasStats.activeCount} active</span>
+                  <span>{Math.round(canvasStats.completionRate)}%</span>
+                </CanvasChip>
+              ) : null}
             </Panel>
           )}
 
@@ -576,56 +585,57 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           )}
 
           {/* Canvas top-right toolbar — pushed below floating header */}
-          <Panel position="top-right" className="!mt-20 !mr-3 flex flex-col gap-1.5">
-            <button
-              onClick={aiBalance.toggle}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors ${
-                aiBalance.isActive
-                  ? 'bg-indigo-500/90 text-white'
-                  : 'bg-[var(--color-bg-primary)]/90 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
-              }`}
-              title="AI Balance"
-            >
-              {aiBalance.isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Activity className="h-3.5 w-3.5" />
-              )}
-              <span>Balance</span>
-            </button>
-            <PanelToggleButton />
+          <Panel position="top-right" className="!mt-20 !mr-3">
+            <CanvasToolbar className="flex-col">
+              <CanvasToolbar.Toggle
+                active={aiBalance.isActive}
+                icon={
+                  aiBalance.isLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Activity className="h-3.5 w-3.5" />
+                  )
+                }
+                onClick={aiBalance.toggle}
+                title="AI Balance"
+              >
+                Balance
+              </CanvasToolbar.Toggle>
+              <CanvasToolbar.Divider className="mx-0 h-px w-full" />
+              <PanelToggleButton />
+            </CanvasToolbar>
           </Panel>
 
           {/* Brainstorm mode indicator */}
           {isBrainstormMode && (
             <Panel position="top-left" className="!mt-2 !ml-2">
-              <div className="flex items-center gap-2 rounded-lg bg-amber-500/90 px-3 py-1.5 text-xs font-medium text-white shadow-sm backdrop-blur">
+              <CanvasChip variant="accent">
                 <span>Brainstorm</span>
                 <span className="text-amber-100">click to add ideas</span>
-              </div>
+              </CanvasChip>
             </Panel>
           )}
 
           {/* Brainstorm: nearby area conversion suggestion */}
           {nearbyAreaSuggestion && (
             <Panel position="top-center" className="!mt-2">
-              <div className="flex items-center gap-2 rounded-lg bg-[var(--color-bg-primary)]/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+              <CanvasChip variant="action">
                 <span>
                   <strong>{nearbyAreaSuggestion.areaName}</strong>에 Goal로 추가?
                 </span>
                 <button
                   onClick={handleAcceptSuggestion}
-                  className="rounded bg-blue-500 px-2 py-0.5 text-white transition-colors hover:bg-blue-600"
+                  className="rounded-md bg-[var(--color-primary-500)] px-2 py-0.5 text-white transition-colors hover:bg-[var(--color-primary-600)]"
                 >
                   추가
                 </button>
                 <button
                   onClick={handleDismissSuggestion}
-                  className="rounded bg-[var(--color-bg-secondary)] px-2 py-0.5 transition-colors hover:bg-[var(--color-bg-tertiary)]"
+                  className="rounded-md bg-[var(--color-bg-secondary)] px-2 py-0.5 transition-colors hover:bg-[var(--color-bg-tertiary)]"
                 >
                   취소
                 </button>
-              </div>
+              </CanvasChip>
             </Panel>
           )}
         </ReactFlow>

@@ -655,13 +655,19 @@ export interface AppNotification {
 // ============================================
 // Chat (AI Coach Conversations)
 // ============================================
-export interface ChatContext {
+export type ChatContext = ChatEntityContext | ChatBrainDumpContext
+
+export interface ChatEntityContext {
   type: 'goal' | 'task'
   entityId: string
   entityName: string
   goalId: string
   goalName?: string
   areaName?: string
+}
+
+export interface ChatBrainDumpContext {
+  type: 'brain-dump'
 }
 
 export interface ChatConversation extends BaseEntity {

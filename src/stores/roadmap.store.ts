@@ -10,6 +10,8 @@ export type SelectedNodeType = 'direction' | 'area' | 'goal' | 'group' | 'task'
 
 export type TreeLayoutDirection = 'vertical' | 'horizontal'
 
+export type RightPanelTab = 'roadmap' | 'ai-chat'
+
 /** Unified selection state */
 export type Selection =
   | { type: 'none' }
@@ -18,8 +20,6 @@ export type Selection =
   | { type: 'goal'; id: string }
   | { type: 'group'; id: string; goalId: string }
   | { type: 'task'; id: string; goalId: string }
-
-export type RightPanelTab = 'roadmap' | 'checkin'
 
 export type PanelMode =
   | 'browse'
@@ -69,17 +69,13 @@ interface RoadmapState {
   panelMode: PanelMode
   setPanelMode: (mode: PanelMode) => void
 
-  // Right panel tab (roadmap vs checkin)
+  // Right panel tab
   rightPanelTab: RightPanelTab
   setRightPanelTab: (tab: RightPanelTab) => void
 
   // Tree layout direction
   treeLayout: TreeLayoutDirection
   setTreeLayout: (layout: TreeLayoutDirection) => void
-
-  // Brain dump modal
-  isBrainDumpOpen: boolean
-  setIsBrainDumpOpen: (open: boolean) => void
 
   // Diagnosis modal
   isDiagnosisOpen: boolean
@@ -125,7 +121,6 @@ const initialState = {
   panelMode: 'browse' as PanelMode,
   rightPanelTab: 'roadmap' as RightPanelTab,
   treeLayout: 'horizontal' as TreeLayoutDirection,
-  isBrainDumpOpen: false,
   isDiagnosisOpen: false,
   diagnosisInitialScope: null as DiagnosisScope | null,
   diagnosisInitialTargetId: null as string | null,
@@ -177,7 +172,6 @@ export const useRoadmapStore = create<RoadmapState>()(
         set({
           selection: sel,
           panelMode,
-          rightPanelTab: 'roadmap',
           isFloatingPanelOpen: sel.type !== 'none',
         })
       },
@@ -232,8 +226,6 @@ export const useRoadmapStore = create<RoadmapState>()(
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
       setTreeLayout: (layout) => set({ treeLayout: layout }),
-
-      setIsBrainDumpOpen: (open) => set({ isBrainDumpOpen: open }),
 
       setIsDiagnosisOpen: (open) =>
         set({

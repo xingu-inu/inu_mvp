@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Plus, X, FolderPlus, Target, Sparkles, Stethoscope, BotMessageSquare } from 'lucide-react'
+import { Plus, X, FolderPlus, Target, BotMessageSquare } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { Chip } from '@/components/ui/chip'
 import { InlineAreaCreate } from './inline-forms/inline-area-create'
 import { InlineGoalCreate } from './inline-forms/inline-goal-create'
 import { useAreas } from '@/queries/use-areas'
-import { useRoadmapStore } from '@/stores/roadmap.store'
 import { useAiChatStore } from '@/stores/ai-chat.store'
 import { useDemoMode } from '@/lib/demo/demo-context'
 import type { AreaType } from '@/types/entities'
@@ -32,8 +31,6 @@ const MENU_ITEMS = [
     color: 'var(--color-primary-500)',
     group: 'create',
   },
-  { id: 'braindump', label: '쏟아내기', icon: Sparkles, color: 'var(--color-ai)', group: 'ai' },
-  { id: 'diagnosis', label: '진단', icon: Stethoscope, color: 'var(--color-ai)', group: 'ai' },
   {
     id: 'ai-chat',
     label: '이누와 대화',
@@ -56,33 +53,21 @@ export function MobileRoadmapFab() {
   const [isGoalDrawerOpen, setIsGoalDrawerOpen] = useState(false)
   const [goalDrawerAreaId, setGoalDrawerAreaId] = useState<string | null>(null)
 
-  const setIsBrainDumpOpen = useRoadmapStore((s) => s.setIsBrainDumpOpen)
-  const setIsDiagnosisOpen = useRoadmapStore((s) => s.setIsDiagnosisOpen)
-
-  const handleMenuSelect = useCallback(
-    (id: MenuId) => {
-      setIsMenuOpen(false)
-      switch (id) {
-        case 'area':
-          setIsAreaDrawerOpen(true)
-          break
-        case 'goal':
-          setGoalDrawerAreaId(null)
-          setIsGoalDrawerOpen(true)
-          break
-        case 'braindump':
-          setIsBrainDumpOpen(true)
-          break
-        case 'diagnosis':
-          setIsDiagnosisOpen(true)
-          break
-        case 'ai-chat':
-          useAiChatStore.getState().openChat()
-          break
-      }
-    },
-    [setIsBrainDumpOpen, setIsDiagnosisOpen]
-  )
+  const handleMenuSelect = useCallback((id: MenuId) => {
+    setIsMenuOpen(false)
+    switch (id) {
+      case 'area':
+        setIsAreaDrawerOpen(true)
+        break
+      case 'goal':
+        setGoalDrawerAreaId(null)
+        setIsGoalDrawerOpen(true)
+        break
+      case 'ai-chat':
+        useAiChatStore.getState().toggleChat()
+        break
+    }
+  }, [])
 
   const handleAreaCreated = useCallback((newAreaId?: string) => {
     setIsAreaDrawerOpen(false)

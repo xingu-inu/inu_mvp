@@ -101,8 +101,6 @@ export function VisualTreeWrapper() {
   const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
   const statusFilter = useRoadmapStore(selectStatusFilter)
   const setStatusFilter = useRoadmapStore((s) => s.setStatusFilter)
-  const setIsBrainDumpOpen = useRoadmapStore((s) => s.setIsBrainDumpOpen)
-  const openDiagnosis = useRoadmapStore((s) => s.openDiagnosis)
   const selection = useRoadmapStore((s) => s.selection)
   const setInlineMode = useRoadmapStore((s) => s.setInlineMode)
   const goalVibes = useGoalVibeStore((s) => s.goalVibes)
@@ -209,8 +207,7 @@ export function VisualTreeWrapper() {
   // Command palette commands
   // eslint-disable-next-line react-hooks/refs
   const commands = buildRoadmapCommands({
-    onOpenBrainDump: () => setIsBrainDumpOpen(true),
-    onOpenDiagnosis: () => openDiagnosis(),
+    onToggleBalance: () => canvasRef.current?.toggleBalance(),
     onOpenSearch: () => setIsSearchOpen(true),
     onZoomToFit: () => canvasRef.current?.fitView(),
     onToggleMinimap: () => canvasRef.current?.toggleMinimap(),

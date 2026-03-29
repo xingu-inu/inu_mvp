@@ -109,5 +109,59 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
         return sanitizeToolResult(result)
       },
     }),
+
+    propose_structure: tool({
+      description:
+        '쏟아내기 모드에서 사용자의 아이디어를 Area/Goal/Task 구조로 제안합니다. 사용자가 충분히 이야기한 후에 호출하세요. 사용자는 이 제안을 미리보고 "반영하기"로 실제 생성할 수 있습니다.',
+      inputSchema: z.object({
+        summary: z.string().describe('정리된 내용의 한 줄 요약'),
+        areas: z.array(
+          z.object({
+            name: z.string().describe('영역 이름'),
+            emoji: z.string().describe('대표 이모지'),
+            color: z.string().describe('영역 색상 (hex)'),
+            type: z
+              .enum([
+                'health',
+                'career',
+                'finance',
+                'relationships',
+                'hobbies',
+                'mental',
+                'learning',
+                'daily',
+                'custom',
+              ])
+              .describe('영역 타입'),
+            isExisting: z.boolean().describe('기존 영역인지 여부'),
+            existingAreaId: z.string().optional().describe('기존 영역 ID (isExisting=true일 때)'),
+            goals: z.array(
+              z.object({
+                name: z.string().describe('목표 이름'),
+                why: z.string().optional().describe('이 목표를 하는 이유'),
+                tasks: z.array(
+                  z.object({
+                    name: z.string().describe('할 일 이름'),
+                    why: z.string().optional().describe('이 할 일을 하는 이유'),
+                    repeat_type: z
+                      .enum(['once', 'daily', 'weekdays', 'weekends', 'weekly', 'custom'])
+                      .describe('반복 타입'),
+                    duration_minutes: z.number().describe('소요 시간(분)'),
+                    time_slot: z
+                      .enum(['morning', 'afternoon', 'evening', 'anytime'])
+                      .describe('시간대'),
+                  })
+                ),
+              })
+            ),
+          })
+        ),
+      }),
+      execute: async ({ summary, areas }) => {
+        // This tool doesn't execute server-side changes — it returns the structure
+        // for the client to render as a preview card with "apply" button
+        return sanitizeToolResult({ type: 'propose_structure', summary, areas })
+      },
+    }),
   }
 }

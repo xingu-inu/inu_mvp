@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import {
   useNodesInitialized,
   useNodesState,
@@ -13,7 +13,7 @@ import type { WhyMapNode, WhyMapEdge } from './types'
 
 // Default dimensions for unmeasured nodes
 const DEFAULT_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  direction: { width: 280, height: 80 },
+  direction: { width: 360, height: 120 },
   area: { width: 240, height: 60 },
   goal: { width: 260, height: 80 },
   group: { width: 220, height: 60 },
@@ -26,7 +26,7 @@ function getLayoutedElements(
   edges: WhyMapEdge[],
   direction: 'TB' | 'LR'
 ): WhyMapNode[] {
-  const g = new dagre.graphlib.Graph({ compound: true })
+  const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80, edgesep: 20 })
 
@@ -38,19 +38,10 @@ function getLayoutedElements(
     })
   }
 
-  // Set compound parent-child relationships so subtrees don't overlap vertically
   for (const edge of edges) {
+    // Only hierarchy edges participate in dagre layout
     if (edge.data?.edgeType === 'hierarchy') {
       g.setEdge(edge.source, edge.target)
-
-      // Find parent node type to set compound grouping
-      const parentNode = nodes.find((n) => n.id === edge.source)
-      if (parentNode) {
-        // Area groups its goals; Goal groups its groups/tasks
-        if (parentNode.type === 'area' || parentNode.type === 'goal') {
-          g.setParent(edge.target, edge.source)
-        }
-      }
     }
   }
 
@@ -91,7 +82,10 @@ export function useDagreLayout(
   const [edges, setEdges, onEdgesChange] = useEdgesState<WhyMapEdge>(initialEdges)
   const nodesInitialized = useNodesInitialized()
   const needsLayoutRef = useRef(true)
+  const [layoutVersion, setLayoutVersion] = useState(0)
   const edgesRef = useRef(initialEdges)
+  const directionAnchorRef = useRef<{ x: number; y: number; direction: 'TB' | 'LR' } | null>(null)
+  const isFirstLayoutRef = useRef(true)
   const { fitView } = useReactFlow()
 
   // Track the previous initialNodes/initialEdges identity to detect data changes
@@ -103,10 +97,30 @@ export function useDagreLayout(
       prevInitialRef.current.nodes !== initialNodes ||
       prevInitialRef.current.edges !== initialEdges
     ) {
+      // Detect structural change (nodes added/removed) vs cosmetic change (selection, zoom)
+      const prevIds = prevInitialRef.current.nodes.map((n) => n.id).join(',')
+      const newIds = initialNodes.map((n) => n.id).join(',')
+      const structureChanged = prevIds !== newIds
+
       prevInitialRef.current = { nodes: initialNodes, edges: initialEdges }
-      setNodes(initialNodes)
+
+      // Preserve existing node positions so nodes don't flash to {x:0,y:0}
+      setNodes((currentNodes) => {
+        const posMap = new Map(currentNodes.map((n) => [n.id, n.position]))
+        return initialNodes.map((n) => ({
+          ...n,
+          position: posMap.get(n.id) ?? n.position,
+        }))
+      })
       setEdges(initialEdges)
-      needsLayoutRef.current = true
+
+      // Only trigger dagre relayout when structure changes (expand/collapse),
+      // not for cosmetic updates (selection, zoom band, search highlight)
+      if (structureChanged) {
+        needsLayoutRef.current = true
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: trigger dagre relayout when tree structure changes
+        setLayoutVersion((v) => v + 1)
+      }
     }
     edgesRef.current = initialEdges
   }, [initialNodes, initialEdges, setNodes, setEdges])
@@ -118,17 +132,44 @@ export function useDagreLayout(
         if (currentNodes.length === 0) return currentNodes
         needsLayoutRef.current = false
         const layouted = getLayoutedElements(currentNodes, edgesRef.current, direction)
-        requestAnimationFrame(() => {
-          fitView({ padding: 0.15, duration: 300 })
-        })
+
+        // Anchor Direction node: keep it at the same position across relayouts
+        const dirNode = layouted.find((n) => n.type === 'direction')
+        if (dirNode) {
+          const anchor = directionAnchorRef.current
+          if (anchor && anchor.direction === direction) {
+            const dx = anchor.x - dirNode.position.x
+            const dy = anchor.y - dirNode.position.y
+            for (const node of layouted) {
+              node.position = {
+                x: node.position.x + dx,
+                y: node.position.y + dy,
+              }
+            }
+          }
+          directionAnchorRef.current = {
+            x: dirNode.position.x,
+            y: dirNode.position.y,
+            direction,
+          }
+        }
+
+        // Only fitView on initial layout; subsequent relayouts keep viewport stable
+        if (isFirstLayoutRef.current) {
+          isFirstLayoutRef.current = false
+          requestAnimationFrame(() => {
+            fitView({ padding: 0.15, duration: 300 })
+          })
+        }
         return layouted
       })
     }
-  }, [nodesInitialized, direction, fitView, setNodes])
+  }, [nodesInitialized, layoutVersion, direction, fitView, setNodes])
 
   // Manual relayout (e.g. after direction toggle or node expand)
   const relayout = useCallback(() => {
     needsLayoutRef.current = true
+    // Trigger re-evaluation by forcing a nodes update
     setNodes((n) => [...n])
   }, [setNodes])
 

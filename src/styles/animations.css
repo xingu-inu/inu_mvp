@@ -187,3 +187,18 @@
 .animate-dot-grow {
   animation: dot-grow 300ms var(--ease-spring) both;
 }
+
+/* Direction node glow breathing effect */
+@keyframes direction-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-direction-glow {
+  animation: direction-glow 3s ease-in-out infinite;
+}

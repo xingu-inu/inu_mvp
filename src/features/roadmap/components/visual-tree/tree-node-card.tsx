@@ -46,6 +46,8 @@ export interface VisualTreeNode {
     hasCrossLinks?: boolean
     sortOrder?: string
     impactAreaColors?: string[]
+    startDate?: string
+    endDate?: string
   }
 }
 
@@ -207,8 +209,15 @@ export const TreeNodeCard = memo(function TreeNodeCard({
         <span className={cn('block truncate', getNameStyles(node))}>
           {isSearchMatch && searchQuery ? highlightText(node.name, searchQuery) : node.name}
         </span>
-        {node.type === 'direction' && node.why && (
-          <span className="block truncate text-[10px] text-[var(--color-text-on-primary)] italic opacity-80">
+        {node.why && (
+          <span
+            className={cn(
+              'block truncate text-[10px] italic',
+              node.type === 'direction'
+                ? 'text-[var(--color-text-on-primary)] opacity-80'
+                : 'text-[var(--color-text-tertiary)]'
+            )}
+          >
             {node.why}
           </span>
         )}
@@ -321,26 +330,22 @@ function ProgressRing({
   )
 }
 
-function CompactDDayBadge({ targetDate }: { targetDate: string }) {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(targetDate + 'T00:00:00')
-  const days = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-  const label = days > 0 ? `D-${days}` : days === 0 ? 'D-Day' : `D+${Math.abs(days)}`
-  const isUrgent = days <= 3 && days > 0
-  const isOverdue = days <= 0
+function formatDateShort(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+export function DateRangeBadge({ startDate, endDate }: { startDate?: string; endDate?: string }) {
+  if (!startDate && !endDate) return null
+  const label =
+    startDate && endDate
+      ? `${formatDateShort(startDate)}~${formatDateShort(endDate)}`
+      : startDate
+        ? `${formatDateShort(startDate)}~`
+        : `~${formatDateShort(endDate!)}`
 
   return (
-    <span
-      className={cn(
-        'flex-shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-        isUrgent
-          ? 'bg-[var(--color-miss-bg)] text-[var(--color-miss)]'
-          : isOverdue
-            ? 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)]'
-            : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)]'
-      )}
-    >
+    <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
       {label}
     </span>
   )
@@ -372,7 +377,7 @@ function StreakBadge({ streak }: { streak: number }) {
 }
 
 function NodeBadge({ node }: { node: VisualTreeNode }) {
-  // Goal: status dot + progress ring + D-Day + totalStreak
+  // Goal: status dot + progress ring + date range + totalStreak
   if (node.type === 'goal') {
     const statusKey = node.status as keyof typeof GOAL_STATUS_CONFIG
     const statusDotColor =
@@ -399,7 +404,9 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
         {showRing && (
           <ProgressRing doneCount={doneCount} totalCount={totalCount} color={node.areaColor} />
         )}
-        {node.meta?.targetDate && <CompactDDayBadge targetDate={node.meta.targetDate} />}
+        {(node.meta?.startDate || node.meta?.endDate) && (
+          <DateRangeBadge startDate={node.meta?.startDate} endDate={node.meta?.endDate} />
+        )}
         {(node.meta?.totalStreak ?? 0) > 0 && <StreakBadge streak={node.meta!.totalStreak!} />}
       </div>
     )
@@ -420,6 +427,12 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
   // Task: paused/completed badge or streak badge, with optional cross-link icon
   if (node.type === 'task') {
     const badges: React.ReactNode[] = []
+
+    if (node.meta?.startDate || node.meta?.endDate) {
+      badges.push(
+        <DateRangeBadge key="date" startDate={node.meta?.startDate} endDate={node.meta?.endDate} />
+      )
+    }
 
     if (node.meta?.hasCrossLinks) {
       badges.push(

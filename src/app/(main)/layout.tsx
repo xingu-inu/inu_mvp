@@ -6,7 +6,6 @@ import {
   DetailPanelShell,
   DateTaskPanel,
 } from '@/components/layout'
-import { FloatingAIButton } from '@/components/layout/floating-ai-button'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -32,9 +31,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           </DetailPanelShell>
         </div>
       </div>
-
-      {/* AI Floating Chat */}
-      <FloatingAIButton />
 
       {/* Mobile: BottomNav */}
       <BottomNav />
