@@ -1,4 +1,5 @@
 import type { Node, Edge } from '@xyflow/react'
+import type { GoalStatus } from '@/types/entities'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 
 // ── Node data payloads ──────────────────────────────────────
@@ -18,6 +19,7 @@ export interface DirectionNodeData extends InteractionState {
 export interface AreaNodeData extends InteractionState {
   treeNode: VisualTreeNode
   goalCount: number
+  statusCounts?: Partial<Record<GoalStatus, number>>
   [key: string]: unknown
 }
 

@@ -1,3 +1,4 @@
+import type { GoalStatus } from '@/types/entities'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type {
@@ -40,6 +41,13 @@ export function treeToFlowElements(
     // ── Area node ───────────────────────────────────────
     const areaGoals = area.children ?? []
 
+    // Compute status counts for Area badge
+    const statusCounts: Partial<Record<GoalStatus, number>> = {}
+    for (const goal of areaGoals) {
+      const s = (goal.status ?? 'active') as GoalStatus
+      statusCounts[s] = (statusCounts[s] ?? 0) + 1
+    }
+
     nodes.push({
       id: area.id,
       type: 'area',
@@ -47,6 +55,7 @@ export function treeToFlowElements(
       data: {
         treeNode: area,
         goalCount: areaGoals.length,
+        statusCounts,
       } satisfies AreaNodeData,
     })
 

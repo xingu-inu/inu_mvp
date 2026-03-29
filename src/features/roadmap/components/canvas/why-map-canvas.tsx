@@ -14,6 +14,7 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  Panel,
   useReactFlow,
   type NodeMouseHandler,
 } from '@xyflow/react'
@@ -238,6 +239,26 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     [updateNote]
   )
 
+  // ── Canvas stats ───────────────────────────────────────────
+
+  const canvasStats = useMemo(() => {
+    const goalNodes = rawNodes.filter(
+      (n): n is Extract<WhyMapNode, { type: 'goal' }> => n.type === 'goal'
+    )
+    const totalGoals = goalNodes.length
+    if (totalGoals === 0) return null
+
+    let activeCount = 0
+    let completedCount = 0
+    for (const n of goalNodes) {
+      const status = n.data.treeNode.status ?? 'active'
+      if (status === 'active' || status === 'maintenance') activeCount++
+      else if (status === 'completed') completedCount++
+    }
+    const completionRate = (completedCount / totalGoals) * 100
+    return { totalGoals, activeCount, completedCount, completionRate }
+  }, [rawNodes])
+
   // ── Render ─────────────────────────────────────────────────
 
   return (
@@ -269,6 +290,16 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           {isMinimapVisible && (
             <MiniMap nodeColor={minimapNodeColor} maskColor="rgba(0,0,0,0.08)" pannable zoomable />
+          )}
+          {canvasStats && (
+            <Panel position="bottom-center" className="!mb-2">
+              <div className="flex items-center gap-3 rounded-lg bg-[var(--color-bg-primary)]/90 px-3 py-1.5 text-xs shadow-sm backdrop-blur">
+                <span>{canvasStats.totalGoals} goals</span>
+                <span className="text-[var(--color-done)]">{canvasStats.completedCount} done</span>
+                <span>{canvasStats.activeCount} active</span>
+                <span>{Math.round(canvasStats.completionRate)}%</span>
+              </div>
+            </Panel>
           )}
         </ReactFlow>
       </CanvasInteractionsContext.Provider>
