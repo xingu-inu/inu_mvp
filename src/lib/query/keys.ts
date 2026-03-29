@@ -146,14 +146,6 @@ export const queryKeys = {
       ['review', 'obstacle-analysis', start, end] as const,
   },
   // ============================================
-  // AI (cached AI-generated content)
-  // ============================================
-  ai: {
-    areaAnalysis: (areaId: string, period: string, periodLabel: string) =>
-      ['ai', 'area-analysis', areaId, period, periodLabel] as const,
-  },
-
-  // ============================================
   // Notifications (computed from tasks/goals)
   // ============================================
   notifications: {
