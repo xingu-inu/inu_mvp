@@ -55,6 +55,33 @@ export interface StickyNodeData {
   [key: string]: unknown
 }
 
+// ── Why Walk (presentation mode) ────────────────────────────
+
+export interface WhyWalkStep {
+  nodeId: string
+  type: 'direction' | 'area' | 'goal'
+  name: string
+  emoji?: string | null
+  why?: string | null
+  stats?: { totalStreak?: number; completionRate?: number; activeCount?: number }
+}
+
+export interface WhyWalkState {
+  isActive: boolean
+  currentIndex: number
+  sequence: WhyWalkStep[]
+}
+
+// ── Brainstorm mode ─────────────────────────────────────────
+
+export interface NearbyAreaSuggestion {
+  stickyNodeId: string
+  areaId: string
+  areaName: string
+  stickyText: string
+  stickyPosition: { x: number; y: number }
+}
+
 // ── Edge data payloads ──────────────────────────────────────
 
 export interface HierarchyEdgeData {

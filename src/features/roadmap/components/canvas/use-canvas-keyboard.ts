@@ -14,6 +14,14 @@ interface UseCanvasKeyboardOptions {
   handleStartAdd: (type: SelectedNodeType, id: string) => void
   handleNodeSelect: (type: SelectedNodeType, id: string) => void
   clearSelection: () => void
+  // Why Walk callbacks
+  isWhyWalkActive?: boolean
+  onToggleWhyWalk?: () => void
+  onWhyWalkPrev?: () => void
+  onWhyWalkNext?: () => void
+  // Brainstorm mode callbacks
+  isBrainstormMode?: boolean
+  onToggleBrainstorm?: () => void
 }
 
 /**
@@ -31,6 +39,12 @@ export function useCanvasKeyboard({
   handleStartAdd,
   handleNodeSelect,
   clearSelection,
+  isWhyWalkActive,
+  onToggleWhyWalk,
+  onWhyWalkPrev,
+  onWhyWalkNext,
+  isBrainstormMode,
+  onToggleBrainstorm,
 }: UseCanvasKeyboardOptions) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -39,9 +53,50 @@ export function useCanvasKeyboard({
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if ((e.target as HTMLElement).isContentEditable) return
 
-      // Escape always clears selection
+      // Escape: exit Why Walk or Brainstorm first, then clear selection
       if (e.key === 'Escape') {
+        if (isWhyWalkActive) {
+          onToggleWhyWalk?.()
+          return
+        }
+        if (isBrainstormMode) {
+          onToggleBrainstorm?.()
+          return
+        }
         clearSelection()
+        return
+      }
+
+      // Why Walk navigation (when active, capture arrow keys)
+      if (isWhyWalkActive) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          onWhyWalkPrev?.()
+          return
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          onWhyWalkNext?.()
+          return
+        }
+        // W also exits Why Walk
+        if (e.key === 'w' || e.key === 'W') {
+          onToggleWhyWalk?.()
+          return
+        }
+        // Block other keys during Why Walk
+        return
+      }
+
+      // W → toggle Why Walk
+      if (e.key === 'w' || e.key === 'W') {
+        onToggleWhyWalk?.()
+        return
+      }
+
+      // B → toggle Brainstorm mode
+      if (e.key === 'b' || e.key === 'B') {
+        onToggleBrainstorm?.()
         return
       }
 
@@ -91,7 +146,21 @@ export function useCanvasKeyboard({
 
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [nodes, edges, selectedNodeId, direction, handleStartAdd, handleNodeSelect, clearSelection])
+  }, [
+    nodes,
+    edges,
+    selectedNodeId,
+    direction,
+    handleStartAdd,
+    handleNodeSelect,
+    clearSelection,
+    isWhyWalkActive,
+    onToggleWhyWalk,
+    onWhyWalkPrev,
+    onWhyWalkNext,
+    isBrainstormMode,
+    onToggleBrainstorm,
+  ])
 }
 
 // ── Nearest node finder ─────────────────────────────────────
