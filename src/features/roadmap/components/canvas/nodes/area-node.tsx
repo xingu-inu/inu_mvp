@@ -2,7 +2,6 @@
 
 import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
@@ -25,8 +24,6 @@ export const AreaNode = memo(function AreaNode({
     isSelected,
     isSearchMatch,
     zoomLevel = ZOOM_FULL,
-    balanceWarning,
-    balanceLevel,
   } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
@@ -58,8 +55,7 @@ export const AreaNode = memo(function AreaNode({
           className={cn(
             'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-shadow',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
-            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
-            balanceLevel === 'critical' && 'animate-pulse'
+            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}
           onClick={onSelect}
         >
@@ -130,14 +126,6 @@ export const AreaNode = memo(function AreaNode({
           </div>
         </div>
       </TreeContextMenu>
-
-      {/* AI Balance warning badge */}
-      {balanceWarning && (
-        <div className="flex items-center gap-1 px-3 pb-1">
-          <AlertTriangle className="h-3 w-3 flex-shrink-0 text-red-500" />
-          <span className="truncate text-[9px] text-red-600">{balanceWarning}</span>
-        </div>
-      )}
 
       {/* Quick-add popover */}
       {addingToId === id && (

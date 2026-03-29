@@ -12,7 +12,6 @@ import {
 import { MobileRoadmapFab } from '@/features/roadmap/components/mobile-roadmap-fab'
 import { MobileRoadmapView } from '@/features/roadmap/components/mobile-roadmap-view'
 import { FloatingPanel } from '@/features/roadmap/components/floating-panel'
-import { RoadmapAiModals } from './roadmap-ai-modals'
 
 const NewVersionWizard = dynamic(
   () =>
@@ -72,9 +71,6 @@ export default function RoadmapContent() {
 
       {/* Mobile: FAB for creating areas/goals + AI features */}
       <MobileRoadmapFab />
-
-      {/* AI Modals — single instance for both desktop & mobile */}
-      <RoadmapAiModals />
 
       {/* Version Management Modals */}
       <NewVersionWizard />

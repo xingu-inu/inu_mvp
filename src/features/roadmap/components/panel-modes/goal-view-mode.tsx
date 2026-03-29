@@ -10,7 +10,6 @@ import {
   Sparkles,
   Circle,
   CheckCircle2,
-  Stethoscope,
   Pencil,
 } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
@@ -729,16 +728,6 @@ export function GoalViewMode({
             }}
           />
         )}
-
-        {/* AI Diagnosis Button */}
-        <div>
-          <button
-            onClick={() => useRoadmapStore.getState().openDiagnosis('goal', goalId)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--color-primary-200)] px-3 py-2.5 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]"
-          >
-            <Stethoscope className="h-3.5 w-3.5" />이 목표 진단받기
-          </button>
-        </div>
       </div>
 
       {/* Status Transition Dialog (pause/backlog) */}

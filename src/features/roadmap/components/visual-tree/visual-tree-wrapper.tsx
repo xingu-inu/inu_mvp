@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
-import { useGoals, useCreateGoal } from '@/queries/use-goals'
+import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
 import { useRoadmapStore, selectStatusFilter } from '@/stores/roadmap.store'
@@ -13,88 +13,6 @@ import { useTreeSearch } from '../../hooks/use-tree-search'
 import { CommandPalette, buildRoadmapCommands } from './command-palette'
 import { WhyMapCanvas, type WhyMapCanvasRef } from '../canvas/why-map-canvas'
 
-// ── Convert-to-Goal floater ────────────────���─────────────────────────────────
-
-interface ConvertFloaterProps {
-  initialText: string
-  areas: { id: string; name: string; emoji: string | null }[]
-  onClose: () => void
-}
-
-function ConvertToGoalFloater({ initialText, areas, onClose }: ConvertFloaterProps) {
-  const [name, setName] = useState(initialText)
-  const [areaId, setAreaId] = useState(areas[0]?.id ?? '')
-  const createGoal = useCreateGoal()
-  const inputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 0)
-  }, [])
-
-  const handleSubmit = useCallback(() => {
-    const trimmed = name.trim()
-    if (!trimmed || !areaId) return
-    createGoal.mutate(
-      { area_id: areaId, name: trimmed, status: 'active' },
-      { onSuccess: () => onClose() }
-    )
-  }, [name, areaId, createGoal, onClose])
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="w-80 rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-5 shadow-xl">
-        <p className="mb-3 text-sm font-semibold text-[var(--color-text-primary)]">목표로 전환</p>
-        <input
-          ref={inputRef}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSubmit()
-            if (e.key === 'Escape') onClose()
-          }}
-          placeholder="목표 이름"
-          className="mb-3 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm outline-none focus:border-[var(--color-primary-300)]"
-          maxLength={100}
-        />
-        {areas.length > 0 && (
-          <select
-            value={areaId}
-            onChange={(e) => setAreaId(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-2 text-sm outline-none"
-          >
-            {areas.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.emoji ? `${a.emoji} ` : ''}
-                {a.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]"
-          >
-            취소
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!name.trim() || !areaId || createGoal.isPending}
-            className="rounded-lg bg-[var(--color-primary-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-40"
-          >
-            목표 추가
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function VisualTreeWrapper() {
   const clearSelection = useRoadmapStore((s) => s.clearSelection)
   const treeLayout = useRoadmapStore((s) => s.treeLayout)
@@ -104,7 +22,6 @@ export function VisualTreeWrapper() {
   const selection = useRoadmapStore((s) => s.selection)
   const setInlineMode = useRoadmapStore((s) => s.setInlineMode)
   const goalVibes = useGoalVibeStore((s) => s.goalVibes)
-  const [convertText, setConvertText] = useState<string | null>(null)
   const canvasRef = useRef<WhyMapCanvasRef>(null)
 
   const { data: direction } = useDirection()
@@ -142,8 +59,6 @@ export function VisualTreeWrapper() {
     [treeLayout, setTreeLayout]
   )
 
-  const handleConvertToGoal = useCallback((text: string) => setConvertText(text), [])
-
   // Keyboard shortcuts
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -176,12 +91,6 @@ export function VisualTreeWrapper() {
         return
       }
 
-      if (e.key === 'n' || e.key === 'N') {
-        e.preventDefault()
-        canvasRef.current?.addStickyAtCenter()
-        return
-      }
-
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault()
         canvasRef.current?.toggleMinimap()
@@ -207,7 +116,6 @@ export function VisualTreeWrapper() {
   // Command palette commands
   // eslint-disable-next-line react-hooks/refs
   const commands = buildRoadmapCommands({
-    onToggleBalance: () => canvasRef.current?.toggleBalance(),
     onOpenSearch: () => setIsSearchOpen(true),
     onZoomToFit: () => canvasRef.current?.fitView(),
     onToggleMinimap: () => canvasRef.current?.toggleMinimap(),
@@ -228,7 +136,6 @@ export function VisualTreeWrapper() {
     },
     onAddGoal: () => setInlineMode('create-goal'),
     onAddTask: () => setInlineMode('create-task'),
-    onAddStickyNote: () => canvasRef.current?.addStickyAtCenter(),
     hasGoalSelected: () =>
       selection.type === 'goal' || selection.type === 'group' || selection.type === 'task',
   })
@@ -270,17 +177,7 @@ export function VisualTreeWrapper() {
         treeLayout={treeLayout}
         searchQuery={searchQuery}
         searchMatchedIds={searchResult.matchedIds}
-        onConvertToGoal={handleConvertToGoal}
       />
-
-      {/* Convert-to-Goal modal */}
-      {convertText !== null && (
-        <ConvertToGoalFloater
-          initialText={convertText}
-          areas={activeAreas}
-          onClose={() => setConvertText(null)}
-        />
-      )}
     </div>
   )
 }

@@ -14,14 +14,6 @@ interface UseCanvasKeyboardOptions {
   handleStartAdd: (type: SelectedNodeType, id: string) => void
   handleNodeSelect: (type: SelectedNodeType, id: string) => void
   clearSelection: () => void
-  // Why Walk callbacks
-  isWhyWalkActive?: boolean
-  onToggleWhyWalk?: () => void
-  onWhyWalkPrev?: () => void
-  onWhyWalkNext?: () => void
-  // Brainstorm mode callbacks
-  isBrainstormMode?: boolean
-  onToggleBrainstorm?: () => void
   // Floating panel toggle
   onToggleFloatingPanel?: () => void
 }
@@ -41,12 +33,6 @@ export function useCanvasKeyboard({
   handleStartAdd,
   handleNodeSelect,
   clearSelection,
-  isWhyWalkActive,
-  onToggleWhyWalk,
-  onWhyWalkPrev,
-  onWhyWalkNext,
-  isBrainstormMode,
-  onToggleBrainstorm,
   onToggleFloatingPanel,
 }: UseCanvasKeyboardOptions) {
   useEffect(() => {
@@ -56,50 +42,9 @@ export function useCanvasKeyboard({
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if ((e.target as HTMLElement).isContentEditable) return
 
-      // Escape: exit Why Walk or Brainstorm first, then clear selection
+      // Escape: clear selection
       if (e.key === 'Escape') {
-        if (isWhyWalkActive) {
-          onToggleWhyWalk?.()
-          return
-        }
-        if (isBrainstormMode) {
-          onToggleBrainstorm?.()
-          return
-        }
         clearSelection()
-        return
-      }
-
-      // Why Walk navigation (when active, capture arrow keys)
-      if (isWhyWalkActive) {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault()
-          onWhyWalkPrev?.()
-          return
-        }
-        if (e.key === 'ArrowRight') {
-          e.preventDefault()
-          onWhyWalkNext?.()
-          return
-        }
-        // W also exits Why Walk
-        if (e.key === 'w' || e.key === 'W') {
-          onToggleWhyWalk?.()
-          return
-        }
-        // Block other keys during Why Walk
-        return
-      }
-
-      // W → toggle Why Walk
-      if (e.key === 'w' || e.key === 'W') {
-        onToggleWhyWalk?.()
-        return
-      }
-
-      // B → toggle Brainstorm mode
-      if (e.key === 'b' || e.key === 'B') {
-        onToggleBrainstorm?.()
         return
       }
 
@@ -112,7 +57,7 @@ export function useCanvasKeyboard({
       if (!selectedNodeId) return
 
       const current = nodes.find((n) => n.id === selectedNodeId)
-      if (!current || current.type === 'sticky') return
+      if (!current) return
 
       switch (e.key) {
         case 'Tab': {
@@ -133,7 +78,7 @@ export function useCanvasKeyboard({
           if (!parentEdge) break // direction node has no parent
 
           const parentNode = nodes.find((n) => n.id === parentEdge.source)
-          if (parentNode && parentNode.type !== 'sticky') {
+          if (parentNode) {
             handleStartAdd(parentNode.type as SelectedNodeType, parentNode.id)
           }
           break
@@ -145,7 +90,7 @@ export function useCanvasKeyboard({
         case 'ArrowRight': {
           e.preventDefault()
           const nearest = findNearestNode(current, nodes, e.key, direction)
-          if (nearest && nearest.type !== 'sticky') {
+          if (nearest) {
             handleNodeSelect(nearest.type as SelectedNodeType, nearest.id)
           }
           break
@@ -163,12 +108,6 @@ export function useCanvasKeyboard({
     handleStartAdd,
     handleNodeSelect,
     clearSelection,
-    isWhyWalkActive,
-    onToggleWhyWalk,
-    onWhyWalkPrev,
-    onWhyWalkNext,
-    isBrainstormMode,
-    onToggleBrainstorm,
     onToggleFloatingPanel,
   ])
 }
@@ -190,7 +129,7 @@ function findNearestNode(
   // TB: Up/Down = hierarchy (y-axis), Left/Right = siblings (x-axis)
   // LR: Left/Right = hierarchy (x-axis), Up/Down = siblings (y-axis)
   const candidates = nodes.filter((n) => {
-    if (n.id === current.id || n.type === 'sticky') return false
+    if (n.id === current.id) return false
 
     const dx = n.position.x - cx
     const dy = n.position.y - cy

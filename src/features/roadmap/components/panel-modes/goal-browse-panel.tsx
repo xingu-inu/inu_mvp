@@ -85,47 +85,6 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
   // with an external store (Zustand), which is the intended use case.
   useEffect(() => {
     const unsub = useRoadmapStore.subscribe((state, prevState) => {
-      // Handle pending diagnosis actions FIRST (before any early returns)
-      const pending = state.pendingDiagnosisAction
-      const prevPending = prevState.pendingDiagnosisAction
-      if (pending && pending !== prevPending) {
-        // Clear immediately to prevent re-processing
-        useRoadmapStore.getState().setPendingDiagnosisAction(null)
-
-        // Goal target: add-why or set-deadline → open InlineGoalEdit
-        if (
-          (pending.type === 'add-why' || pending.type === 'set-deadline') &&
-          pending.targetType === 'goal'
-        ) {
-          setTimeout(() => {
-            setEditingGoalId(pending.targetId)
-            setExpandedGoalIds((prev) => new Set(prev).add(pending.targetId))
-          }, 150)
-        }
-
-        // Task target: add-why → open task edit form in expanded content
-        if (pending.type === 'add-why' && pending.targetType === 'task') {
-          setTimeout(() => {
-            useRoadmapStore.getState().setInlineMode({
-              type: 'edit-task',
-              taskId: pending.targetId,
-            })
-          }, 200)
-        }
-
-        // Area target: add-goal → uncollapse area, show InlineGoalCreate
-        if (pending.type === 'add-goal' && pending.targetType === 'area') {
-          setCollapsedAreaIds((prev) => {
-            const next = new Set(prev)
-            next.delete(pending.targetId)
-            return next
-          })
-          setTimeout(() => {
-            setCreatingGoalInAreaId(pending.targetId)
-          }, 150)
-        }
-      }
-
       const focusId = state.focusedGoalId
       const prevFocusId = prevState.focusedGoalId
 
@@ -133,14 +92,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
       if (focusId && focusId !== prevFocusId) {
         setExpandedGoalIds((prev) => new Set(prev).add(focusId))
         setAreaDetailId(null)
-        // Only clear editingGoalId if no pending action is setting it
-        if (
-          !pending ||
-          pending.targetType !== 'goal' ||
-          (pending.type !== 'add-why' && pending.type !== 'set-deadline')
-        ) {
-          setEditingGoalId(null)
-        }
+        setEditingGoalId(null)
 
         // Un-collapse the parent area
         const goal = goals.find((g) => g.id === focusId)

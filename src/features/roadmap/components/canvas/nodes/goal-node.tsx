@@ -2,7 +2,7 @@
 
 import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
@@ -27,7 +27,6 @@ export const GoalNode = memo(function GoalNode({
     isSearchMatch,
     searchQuery,
     zoomLevel = ZOOM_FULL,
-    balanceWarning,
     isExpanded,
   } = data
   const hasChildren = !!treeNode.children?.length
@@ -127,14 +126,6 @@ export const GoalNode = memo(function GoalNode({
               </div>
             )
           })()}
-
-          {/* AI Balance warning badge */}
-          {balanceWarning && (
-            <div className="flex items-center gap-1 px-3 pb-1">
-              <AlertTriangle className="h-3 w-3 flex-shrink-0 text-amber-500" />
-              <span className="truncate text-[9px] text-amber-600">{balanceWarning}</span>
-            </div>
-          )}
 
           {/* Quick-add popover */}
           {addingToId === id && (

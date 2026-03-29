@@ -37,55 +37,6 @@ const brainDumpContextSchema = z.object({
   existingGoals: z.array(z.string()),
 })
 
-const diagnosisContextSchema = z.object({
-  direction: z.string().nullable(),
-  areas: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      emoji: z.string(),
-      type: z.string(),
-      why: z.string().nullable(),
-    })
-  ),
-  goals: z.array(
-    z.object({
-      id: z.string(),
-      areaId: z.string(),
-      name: z.string(),
-      why: z.string().nullable(),
-      status: z.string(),
-      targetDate: z.string().nullable(),
-      groupCount: z.number(),
-      taskCount: z.number(),
-    })
-  ),
-  tasks: z.array(
-    z.object({
-      id: z.string(),
-      goalId: z.string(),
-      name: z.string(),
-      why: z.string().nullable(),
-      repeatType: z.string(),
-      timeSlot: z.string(),
-      durationMinutes: z.number(),
-      streakCount: z.number(),
-    })
-  ),
-  stats: z.object({
-    totalAreas: z.number(),
-    totalGoals: z.number(),
-    activeGoals: z.number(),
-    backlogGoals: z.number(),
-    totalTasks: z.number(),
-    goalsWithoutWhy: z.number(),
-    areasWithoutWhy: z.number(),
-    tasksWithoutWhy: z.number(),
-    goalsWithoutTasks: z.number(),
-    avgTasksPerGoal: z.number(),
-  }),
-})
-
 const taskSuggestContextSchema = z.object({
   direction: z.string().nullable(),
   areas: z.array(
@@ -235,12 +186,6 @@ const aiRequestSchema = z.discriminatedUnion('type', [
     type: z.literal('brain-dump'),
     input: z.string().min(1).max(3000),
     context: brainDumpContextSchema,
-  }),
-  z.object({
-    type: z.literal('roadmap-diagnosis'),
-    scope: z.enum(['full', 'area', 'goal']),
-    targetId: z.string().optional(),
-    context: diagnosisContextSchema,
   }),
   z.object({
     type: z.literal('task-suggest'),

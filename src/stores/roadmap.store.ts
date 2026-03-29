@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 import type { GoalStatus } from '@/types/entities'
-import type { DiagnosisScope, DiagnosisAction } from '@/lib/ai/types'
 
 export type StatusFilter = GoalStatus | 'all'
 
@@ -77,17 +76,6 @@ interface RoadmapState {
   treeLayout: TreeLayoutDirection
   setTreeLayout: (layout: TreeLayoutDirection) => void
 
-  // Diagnosis modal
-  isDiagnosisOpen: boolean
-  diagnosisInitialScope: DiagnosisScope | null
-  diagnosisInitialTargetId: string | null
-  setIsDiagnosisOpen: (open: boolean) => void
-  openDiagnosis: (scope?: DiagnosisScope, targetId?: string) => void
-
-  // Pending diagnosis action (consumed by GoalBrowsePanel after navigation)
-  pendingDiagnosisAction: DiagnosisAction | null
-  setPendingDiagnosisAction: (action: DiagnosisAction | null) => void
-
   // Version management
   isVersionHistoryOpen: boolean
   setIsVersionHistoryOpen: (open: boolean) => void
@@ -121,10 +109,6 @@ const initialState = {
   panelMode: 'browse' as PanelMode,
   rightPanelTab: 'roadmap' as RightPanelTab,
   treeLayout: 'horizontal' as TreeLayoutDirection,
-  isDiagnosisOpen: false,
-  diagnosisInitialScope: null as DiagnosisScope | null,
-  diagnosisInitialTargetId: null as string | null,
-  pendingDiagnosisAction: null as DiagnosisAction | null,
   isVersionHistoryOpen: false,
   isNewVersionWizardOpen: false,
   restoreSourceDirectionId: null as string | null,
@@ -226,21 +210,6 @@ export const useRoadmapStore = create<RoadmapState>()(
       setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
 
       setTreeLayout: (layout) => set({ treeLayout: layout }),
-
-      setIsDiagnosisOpen: (open) =>
-        set({
-          isDiagnosisOpen: open,
-          ...(open ? {} : { diagnosisInitialScope: null, diagnosisInitialTargetId: null }),
-        }),
-
-      openDiagnosis: (scope, targetId) =>
-        set({
-          isDiagnosisOpen: true,
-          diagnosisInitialScope: scope ?? null,
-          diagnosisInitialTargetId: targetId ?? null,
-        }),
-
-      setPendingDiagnosisAction: (action) => set({ pendingDiagnosisAction: action }),
 
       setIsVersionHistoryOpen: (open) => set({ isVersionHistoryOpen: open }),
       setIsNewVersionWizardOpen: (open) => set({ isNewVersionWizardOpen: open }),

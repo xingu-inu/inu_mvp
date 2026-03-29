@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Target,
   CheckCircle,
-  StickyNote,
-  Activity,
   Search,
   Maximize,
   Map,
@@ -280,7 +278,6 @@ export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProp
 // ── Command factory helpers ───────────────────────────────────────────────────
 
 export function buildRoadmapCommands(handlers: {
-  onToggleBalance: () => void
   onOpenSearch: () => void
   onZoomToFit: () => void
   onToggleMinimap: () => void
@@ -288,7 +285,6 @@ export function buildRoadmapCommands(handlers: {
   onFilterStatus: () => void
   onAddGoal: () => void
   onAddTask: () => void
-  onAddStickyNote: () => void
   hasGoalSelected: () => boolean
 }): Command[] {
   return [
@@ -308,22 +304,6 @@ export function buildRoadmapCommands(handlers: {
       category: 'create',
       action: handlers.onAddTask,
       contextCheck: handlers.hasGoalSelected,
-    },
-    {
-      id: 'add-sticky-note',
-      label: 'Add Sticky Note',
-      icon: StickyNote,
-      shortcut: 'N',
-      category: 'create',
-      action: handlers.onAddStickyNote,
-    },
-    {
-      id: 'toggle-balance',
-      label: 'AI Balance',
-      icon: Activity,
-      shortcut: 'D',
-      category: 'ai',
-      action: handlers.onToggleBalance,
     },
     {
       id: 'search-tree',
