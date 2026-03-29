@@ -19,15 +19,18 @@ import {
   useReactFlow,
   useViewport,
   type NodeMouseHandler,
+  type Connection,
+  type Edge,
 } from '@xyflow/react'
+import { Activity, Loader2 } from 'lucide-react'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import { useStickyNotesStore } from '@/stores/sticky-notes.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type { Area, Goal } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
-import type { WhyMapNode, WhyWalkState, NearbyAreaSuggestion } from './types'
-import type { AreaNodeData } from './types'
+import type { WhyMapNode, WhyMapEdge, WhyWalkState, NearbyAreaSuggestion } from './types'
+import type { AreaNodeData, DependencyEdgeData } from './types'
 
 import { treeToFlowElements } from './tree-to-flow'
 import { useDagreLayout } from './use-dagre-layout'
@@ -38,6 +41,7 @@ import { edgeTypes } from './edges'
 import { AreaRegions } from './area-regions'
 import { useCanvasKeyboard } from './use-canvas-keyboard'
 import { WhyWalkOverlay, buildWhyWalkSequence } from './why-walk-overlay'
+import { useAiBalanceOverlay } from './use-ai-balance-overlay'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -124,6 +128,12 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     null
   )
 
+  // Dependency edges (user-created Goal↔Goal relations, not in dagre layout)
+  const [dependencyEdges, setDependencyEdges] = useState<WhyMapEdge[]>([])
+
+  // AI Balance overlay
+  const aiBalance = useAiBalanceOverlay(areas, goals, treeData?.why)
+
   // Interaction logic (selection, delete, quick-add, focus)
   const interactions = useCanvasInteractions(treeData, goals, areas)
   const { selectedNodeId, focusedIds, parentGoalMap } = interactions
@@ -168,6 +178,16 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           : { opacity: 0.15, transition: 'opacity 0.2s', pointerEvents: 'none' as const }
       }
 
+      // AI Balance overlay: apply glow for critical, inject warning message
+      const overlay = aiBalance.isActive ? aiBalance.overlays.get(node.id) : undefined
+      if (overlay?.level === 'critical') {
+        style = {
+          ...style,
+          boxShadow: '0 0 16px rgba(239,68,68,0.5)',
+          transition: 'opacity 0.2s, box-shadow 0.3s',
+        }
+      }
+
       return {
         ...node,
         data: {
@@ -176,17 +196,30 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           isSearchMatch,
           searchQuery: isSearchMatch ? searchQuery : undefined,
           zoomLevel: zoomBand,
+          ...(overlay && { balanceWarning: overlay.message, balanceLevel: overlay.level }),
         },
         style,
         selected: isSelected,
       }
     })
-  }, [allNodes, selectedNodeId, focusedIds, whyWalkNodeId, searchMatchedIds, searchQuery, zoomBand])
+  }, [
+    allNodes,
+    selectedNodeId,
+    focusedIds,
+    whyWalkNodeId,
+    searchMatchedIds,
+    searchQuery,
+    zoomBand,
+    aiBalance.isActive,
+    aiBalance.overlays,
+  ])
 
-  // Enrich edges with focus-mode / Why Walk dimming
+  // Merge dependency edges with raw edges, then apply focus/Why Walk dimming
+  const allEdges = useMemo(() => [...rawEdges, ...dependencyEdges], [rawEdges, dependencyEdges])
+
   const enrichedEdges = useMemo(() => {
-    if (!focusedIds && !whyWalkNodeId) return rawEdges
-    return rawEdges.map((edge) => {
+    if (!focusedIds && !whyWalkNodeId) return allEdges
+    return allEdges.map((edge) => {
       let isRelevant: boolean
       if (whyWalkNodeId) {
         isRelevant = edge.source === whyWalkNodeId || edge.target === whyWalkNodeId
@@ -202,7 +235,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
         },
       }
     })
-  }, [rawEdges, focusedIds, whyWalkNodeId])
+  }, [allEdges, focusedIds, whyWalkNodeId])
 
   const direction = treeLayout === 'horizontal' ? 'LR' : 'TB'
   const { nodes, edges, onNodesChange, onEdgesChange } = useDagreLayout(
@@ -388,6 +421,40 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     setNearbyAreaSuggestion(null)
   }, [])
 
+  // ── Dependency edge: onConnect handler (Goal↔Goal only) ──
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      if (!connection.source || !connection.target) return
+      // Only allow Goal↔Goal connections
+      const sourceNode = allNodes.find((n) => n.id === connection.source)
+      const targetNode = allNodes.find((n) => n.id === connection.target)
+      if (sourceNode?.type !== 'goal' || targetNode?.type !== 'goal') return
+
+      const src = connection.source
+      const tgt = connection.target
+      const newEdge: Edge<DependencyEdgeData> = {
+        id: `dep-${src}-${tgt}`,
+        source: src,
+        target: tgt,
+        type: 'dependency',
+        data: { edgeType: 'dependency', relation: 'depends-on' },
+      }
+
+      setDependencyEdges((prev) => {
+        // Prevent duplicate (both directions)
+        if (
+          prev.some(
+            (e) => (e.source === src && e.target === tgt) || (e.source === tgt && e.target === src)
+          )
+        )
+          return prev
+        return [...prev, newEdge as WhyMapEdge]
+      })
+    },
+    [allNodes]
+  )
+
   // ── Canvas stats ───────────────────────────────────────────
 
   const canvasStats = useMemo(() => {
@@ -420,6 +487,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={handleConnect}
           onPaneClick={handlePaneClick}
           onDoubleClick={handlePaneDoubleClick}
           onNodeDragStop={handleNodeDragStop}
@@ -462,6 +530,26 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
               onClose={handleToggleWhyWalk}
             />
           )}
+
+          {/* AI Balance overlay toggle */}
+          <Panel position="top-right" className="!mt-2 !mr-2">
+            <button
+              onClick={aiBalance.toggle}
+              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors ${
+                aiBalance.isActive
+                  ? 'bg-indigo-500/90 text-white'
+                  : 'bg-[var(--color-bg-primary)]/90 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+              }`}
+              title="AI Balance"
+            >
+              {aiBalance.isLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Activity className="h-3.5 w-3.5" />
+              )}
+              <span>Balance</span>
+            </button>
+          </Panel>
 
           {/* Brainstorm mode indicator */}
           {isBrainstormMode && (

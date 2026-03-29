@@ -18,6 +18,10 @@ interface InteractionState {
   searchQuery?: string
   /** Quantized zoom band: 0 = compact, 1 = medium, 2 = full */
   zoomLevel?: number
+  /** AI Balance overlay: warning message */
+  balanceWarning?: string
+  /** AI Balance overlay: severity level */
+  balanceLevel?: 'warning' | 'critical'
 }
 
 /** Ancestor why entry for Why Chain tooltip */
@@ -82,6 +86,14 @@ export interface NearbyAreaSuggestion {
   stickyPosition: { x: number; y: number }
 }
 
+// ── AI Balance overlay ──────────────────────────────────────
+
+export interface BalanceOverlay {
+  nodeId: string
+  level: 'warning' | 'critical'
+  message: string
+}
+
 // ── Edge data payloads ──────────────────────────────────────
 
 export interface HierarchyEdgeData {
@@ -96,6 +108,14 @@ export interface SharedTaskEdgeData {
   [key: string]: unknown
 }
 
+export type DependencyRelation = 'depends-on' | 'supports' | 'conflicts'
+
+export interface DependencyEdgeData {
+  edgeType: 'dependency'
+  relation: DependencyRelation
+  [key: string]: unknown
+}
+
 // ── Typed aliases ───────────────────────────────────────────
 
 export type WhyMapNode =
@@ -104,4 +124,4 @@ export type WhyMapNode =
   | Node<GoalNodeData, 'goal'>
   | Node<StickyNodeData, 'sticky'>
 
-export type WhyMapEdge = Edge<HierarchyEdgeData | SharedTaskEdgeData>
+export type WhyMapEdge = Edge<HierarchyEdgeData | SharedTaskEdgeData | DependencyEdgeData>
