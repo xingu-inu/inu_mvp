@@ -7,7 +7,7 @@ import { TopBarActions } from './top-bar-actions'
 
 const navItems = [
   { href: '/roadmap', label: '로드맵' },
-  { href: '/review', label: '회고' },
+  { href: '/timeline', label: '타임라인' },
 ]
 
 export function DesktopTopBar() {

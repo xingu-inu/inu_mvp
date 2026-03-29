@@ -5,7 +5,7 @@ import { publicRoute } from '@/lib/security'
  * Allowed path prefixes for post-auth redirect.
  * Only these top-level routes are permitted targets.
  */
-const ALLOWED_REDIRECT_PREFIXES = ['/onboarding', '/roadmap', '/review', '/profile', '/admin']
+const ALLOWED_REDIRECT_PREFIXES = ['/onboarding', '/roadmap', '/timeline', '/profile', '/admin']
 
 /**
  * Sanitize redirect path to prevent open redirect attacks.
