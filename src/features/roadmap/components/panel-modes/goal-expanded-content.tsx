@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { memo, useState, useEffect, useMemo, useCallback } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -18,9 +18,6 @@ import {
   closestCorners,
   DragOverlay,
   type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-  type UniqueIdentifier,
 } from '@dnd-kit/core'
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -28,7 +25,6 @@ import { Button } from '@/components/ui/button'
 import { PeriodBadge } from '@/components/ui/badge'
 import { ProgressBar } from '@/components/ui/progress'
 import { useReorderGroups, useDeleteGroup, useToggleGroupComplete } from '@/queries/use-groups'
-import { useUpdateTask, useReorderTasks } from '@/queries/use-tasks'
 import { useAreas } from '@/queries/use-areas'
 import { useGoalWithRelations, useGoals, useUpdateGoal, useDeleteGoal } from '@/queries/use-goals'
 import { cn } from '@/lib/utils'
@@ -41,14 +37,17 @@ import {
   InlineTaskQuickInput,
   InlineDeleteConfirm,
 } from '../inline-forms'
-import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
+import {
+  useDeleteConfirm,
+  useCrossLinkedTasks,
+  useCrossGroupDnd,
+  ORPHANS_CONTAINER_ID,
+} from '@/features/roadmap/hooks'
 import { CrossLinkedTaskSection } from '../shared/cross-linked-task-section'
 import { TaskRow } from './task-row'
 import { SortableGroupItem } from '@/components/common'
 import { TaskList, FlatTaskListWithDnd } from './goal-task-list'
 import type { Goal, Task, Group } from '@/types/entities'
-
-const ORPHANS_CONTAINER_ID = '__orphans__'
 
 /* ── Group complete toggle badge ── */
 
@@ -120,8 +119,6 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
   const focusGoal = useRoadmapStore((s) => s.focusGoal)
 
   const reorderGroups = useReorderGroups()
-  const reorderTasks = useReorderTasks()
-  const updateTask = useUpdateTask()
 
   const sensors = useStandardSensors()
 
@@ -143,41 +140,6 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
 
   // Task lookup by ID
   const tasksById = useMemo(() => new Map(visibleTasks.map((t) => [t.id, t])), [visibleTasks])
-
-  // ── Cross-group DnD state ──
-
-  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
-
-  // Container mapping: containerId -> taskId[]
-  // Syncs from server data, temporarily mutated during drag
-  const [taskContainers, setTaskContainers] = useState<Record<string, string[]>>({})
-
-  // Ref to track the "source" container when drag started
-  const dragSourceContainer = useRef<string | null>(null)
-
-  // Sync taskContainers from server data
-  // Skip during active drag or pending mutations to prevent optimistic flicker
-  const isMutating = updateTask.isPending || reorderTasks.isPending
-  useEffect(() => {
-    if (activeTaskId || isMutating) return
-    const containers: Record<string, string[]> = {}
-    for (const group of groups) {
-      containers[group.id] = (tasksByGroup.get(group.id) ?? []).map((t) => t.id)
-    }
-    containers[ORPHANS_CONTAINER_ID] = (tasksByGroup.get(null) ?? []).map((t) => t.id)
-    setTaskContainers(containers)
-  }, [groups, tasksByGroup, activeTaskId, isMutating])
-
-  // Find which container holds a given ID
-  const findContainer = useCallback(
-    (id: UniqueIdentifier): string | undefined => {
-      // Check if the id itself is a container
-      if (id in taskContainers) return id as string
-      // Search task containers
-      return Object.keys(taskContainers).find((key) => taskContainers[key].includes(id as string))
-    },
-    [taskContainers]
-  )
 
   // Group expand/collapse
   const [groupToggles, setGroupToggles] = useState<Record<string, boolean>>({})
@@ -204,6 +166,27 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
 
   const clearInline = useCallback(() => setInlineMode(null), [setInlineMode])
 
+  // ── Cross-group DnD (extracted hook) ──
+
+  const {
+    taskContainers,
+    activeTask,
+    orphanedTaskIds,
+    handleTaskDragStart,
+    handleTaskDragOver,
+    handleTaskDragEnd,
+    handleTaskDragCancel,
+    reorderTasks,
+  } = useCrossGroupDnd({
+    goalId: goal.id,
+    groups,
+    tasksByGroup,
+    tasksById,
+    expandedGroupIds,
+    onExpandGroup: (groupId) => setGroupToggles((prev) => ({ ...prev, [groupId]: true })),
+    onDragStart: clearInline,
+  })
+
   // ── Group DnD handler ──
 
   const handleGroupDragEnd = useCallback(
@@ -225,125 +208,6 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
     [groups, goal.id, reorderGroups]
   )
 
-  // ── Task cross-group DnD handlers ──
-
-  const handleTaskDragStart = useCallback(
-    (event: DragStartEvent) => {
-      setActiveTaskId(event.active.id as string)
-      dragSourceContainer.current = findContainer(event.active.id) ?? null
-      clearInline()
-    },
-    [findContainer, clearInline]
-  )
-
-  const handleTaskDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const { active, over } = event
-      if (!over) return
-
-      const activeContainer = findContainer(active.id)
-      let overContainer = findContainer(over.id)
-
-      // If over.id is a container itself (empty group), use it
-      if (!overContainer && (over.id as string) in taskContainers) {
-        overContainer = over.id as string
-      }
-
-      if (!activeContainer || !overContainer || activeContainer === overContainer) return
-
-      // Auto-expand collapsed groups
-      if (overContainer !== ORPHANS_CONTAINER_ID && !expandedGroupIds.has(overContainer)) {
-        setGroupToggles((prev) => ({ ...prev, [overContainer]: true }))
-      }
-
-      setTaskContainers((prev) => {
-        const activeItems = [...(prev[activeContainer] ?? [])]
-        const overItems = [...(prev[overContainer] ?? [])]
-
-        const activeIndex = activeItems.indexOf(active.id as string)
-        if (activeIndex === -1) return prev
-
-        // Determine insertion index in target container
-        const overIndex = overItems.indexOf(over.id as string)
-        const newIndex = overIndex === -1 ? overItems.length : overIndex
-
-        // Remove from source, insert into target
-        activeItems.splice(activeIndex, 1)
-        overItems.splice(newIndex, 0, active.id as string)
-
-        return {
-          ...prev,
-          [activeContainer]: activeItems,
-          [overContainer]: overItems,
-        }
-      })
-    },
-    [findContainer, taskContainers, expandedGroupIds]
-  )
-
-  const handleTaskDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
-      setActiveTaskId(null)
-
-      if (!over) {
-        dragSourceContainer.current = null
-        return
-      }
-
-      const activeContainer = findContainer(active.id)
-      const overContainer = findContainer(over.id) ?? (over.id as string)
-
-      if (!activeContainer || !overContainer) {
-        dragSourceContainer.current = null
-        return
-      }
-
-      const sourceContainer = dragSourceContainer.current
-      dragSourceContainer.current = null
-
-      const isCrossMove = sourceContainer != null && sourceContainer !== activeContainer
-
-      if (activeContainer === overContainer) {
-        const items = taskContainers[activeContainer]
-        const oldIndex = items.indexOf(active.id as string)
-        const newIndex = items.indexOf(over.id as string)
-
-        // Compute final ordering (apply arrayMove if positions differ)
-        let finalItems = items
-        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          finalItems = arrayMove(items, oldIndex, newIndex)
-          setTaskContainers((prev) => ({ ...prev, [activeContainer]: finalItems }))
-        }
-
-        if (isCrossMove) {
-          // Cross-group move: update group_id first, then reorder on success
-          const targetGroupId = activeContainer === ORPHANS_CONTAINER_ID ? null : activeContainer
-          updateTask.mutate(
-            { id: active.id as string, input: { group_id: targetGroupId } },
-            { onSuccess: () => reorderTasks.mutate({ goalId: goal.id, ids: finalItems }) }
-          )
-        } else if (finalItems !== items) {
-          // Same-group reorder only
-          reorderTasks.mutate({ goalId: goal.id, ids: finalItems })
-        }
-      }
-    },
-    [findContainer, taskContainers, goal.id, reorderTasks, updateTask]
-  )
-
-  const handleTaskDragCancel = useCallback(() => {
-    setActiveTaskId(null)
-    dragSourceContainer.current = null
-    // Reset to server state
-    const containers: Record<string, string[]> = {}
-    for (const group of groups) {
-      containers[group.id] = (tasksByGroup.get(group.id) ?? []).map((t) => t.id)
-    }
-    containers[ORPHANS_CONTAINER_ID] = (tasksByGroup.get(null) ?? []).map((t) => t.id)
-    setTaskContainers(containers)
-  }, [groups, tasksByGroup])
-
   const handleTaskClick = (taskId: string) => {
     if (onTaskSelect) {
       onTaskSelect(taskId)
@@ -357,12 +221,6 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
       setInlineMode(isAlreadyEditing ? null : { type: 'edit-task', taskId })
     }
   }
-
-  // Orphaned tasks
-  const orphanedTaskIds = taskContainers[ORPHANS_CONTAINER_ID] ?? []
-
-  // Active task for DragOverlay
-  const activeTask = activeTaskId ? tasksById.get(activeTaskId) : null
 
   return (
     <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
