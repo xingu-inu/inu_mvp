@@ -491,6 +491,54 @@ export type Database = {
           },
         ]
       }
+      goal_status_history: {
+        Row: {
+          id: string
+          goal_id: string
+          user_id: string
+          from_status: Database['public']['Enums']['goal_status']
+          to_status: Database['public']['Enums']['goal_status']
+          reason: string | null
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          goal_id: string
+          user_id: string
+          from_status: Database['public']['Enums']['goal_status']
+          to_status: Database['public']['Enums']['goal_status']
+          reason?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          goal_id?: string
+          user_id?: string
+          from_status?: Database['public']['Enums']['goal_status']
+          to_status?: Database['public']['Enums']['goal_status']
+          reason?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'goal_status_history_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'goal_status_history_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       google_calendar_connections: {
         Row: {
           access_token: string
@@ -809,6 +857,54 @@ export type Database = {
           },
         ]
       }
+      task_status_history: {
+        Row: {
+          id: string
+          task_id: string
+          user_id: string
+          from_status: Database['public']['Enums']['task_status']
+          to_status: Database['public']['Enums']['task_status']
+          reason: string | null
+          note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          user_id: string
+          from_status: Database['public']['Enums']['task_status']
+          to_status: Database['public']['Enums']['task_status']
+          reason?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          user_id?: string
+          from_status?: Database['public']['Enums']['task_status']
+          to_status?: Database['public']['Enums']['task_status']
+          reason?: string | null
+          note?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'task_status_history_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'task_status_history_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       weekly_reflections: {
         Row: {
           challenge: string | null
@@ -882,6 +978,22 @@ export type Database = {
         Args: { p_direction_id: string }
         Returns: Json
       }
+      get_admin_engagement_stats: {
+        Args: { p_days?: number }
+        Returns: Json
+      }
+      get_admin_feature_adoption: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      get_admin_onboarding_funnel: {
+        Args: Record<string, never>
+        Returns: Json
+      }
+      get_admin_retention_cohorts: {
+        Args: { p_cohort_count?: number }
+        Returns: Json
+      }
       get_admin_signup_chart: {
         Args: { p_days?: number }
         Returns: {
@@ -890,11 +1002,23 @@ export type Database = {
         }[]
       }
       get_admin_stats: { Args: never; Returns: Json }
+      get_admin_streak_distribution: {
+        Args: Record<string, never>
+        Returns: Json
+      }
       get_archived_roadmap: {
         Args: { p_direction_id: string }
         Returns: Json
       }
       get_direction_history: { Args: Record<string, never>; Returns: Json }
+      get_reason_counts: {
+        Args: { p_start_date: string; p_end_date: string }
+        Returns: {
+          reason: string
+          entity_count: number
+          entity_type: string
+        }[]
+      }
       get_roadmap_data: { Args: Record<string, never>; Returns: Json }
       get_today_dashboard: { Args: Record<string, never>; Returns: Json }
       get_today_tasks: {

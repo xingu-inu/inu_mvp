@@ -54,8 +54,7 @@ export const statusHistoryRepository = {
     reason?: string | null,
     note?: string | null
   ): Promise<GoalStatusHistoryRow> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('goal_status_history')
       .insert({
         goal_id: goalId,
@@ -69,7 +68,7 @@ export const statusHistoryRepository = {
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as GoalStatusHistoryRow
+    return data as unknown as GoalStatusHistoryRow
   },
 
   /**
@@ -80,8 +79,7 @@ export const statusHistoryRepository = {
     userId: string,
     goalId: string
   ): Promise<GoalStatusHistoryRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('goal_status_history')
       .select('*')
       .eq('user_id', userId)
@@ -89,7 +87,7 @@ export const statusHistoryRepository = {
       .order('created_at', { ascending: true })
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as GoalStatusHistoryRow[]
+    return (data ?? []) as unknown as GoalStatusHistoryRow[]
   },
 
   /**
@@ -101,8 +99,7 @@ export const statusHistoryRepository = {
     startDate?: string,
     endDate?: string
   ): Promise<GoalStatusHistoryRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
       .from('goal_status_history')
       .select('*')
       .eq('user_id', userId)
@@ -113,7 +110,7 @@ export const statusHistoryRepository = {
 
     const { data, error } = await query
     if (error) handleSupabaseError(error)
-    return (data ?? []) as GoalStatusHistoryRow[]
+    return (data ?? []) as unknown as GoalStatusHistoryRow[]
   },
 
   /**
@@ -128,8 +125,7 @@ export const statusHistoryRepository = {
     reason?: string | null,
     note?: string | null
   ): Promise<TaskStatusHistoryRow> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('task_status_history')
       .insert({
         task_id: taskId,
@@ -143,7 +139,7 @@ export const statusHistoryRepository = {
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as TaskStatusHistoryRow
+    return data as unknown as TaskStatusHistoryRow
   },
 
   /**
@@ -154,8 +150,7 @@ export const statusHistoryRepository = {
     userId: string,
     taskId: string
   ): Promise<TaskStatusHistoryRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('task_status_history')
       .select('*')
       .eq('user_id', userId)
@@ -163,7 +158,7 @@ export const statusHistoryRepository = {
       .order('created_at', { ascending: true })
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as TaskStatusHistoryRow[]
+    return (data ?? []) as unknown as TaskStatusHistoryRow[]
   },
 
   /**
@@ -175,8 +170,7 @@ export const statusHistoryRepository = {
     startDate?: string,
     endDate?: string
   ): Promise<TaskStatusHistoryRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (supabase as any)
+    let query = supabase
       .from('task_status_history')
       .select('*')
       .eq('user_id', userId)
@@ -187,7 +181,7 @@ export const statusHistoryRepository = {
 
     const { data, error } = await query
     if (error) handleSupabaseError(error)
-    return (data ?? []) as TaskStatusHistoryRow[]
+    return (data ?? []) as unknown as TaskStatusHistoryRow[]
   },
 
   /**
@@ -202,14 +196,13 @@ export const statusHistoryRepository = {
   ): Promise<ReasonCount[]> {
     // Try RPC first (single query with SQL GROUP BY)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).rpc('get_reason_counts', {
+      const { data, error } = await supabase.rpc('get_reason_counts', {
         p_start_date: startDate,
         p_end_date: endDate,
       })
 
       if (!error && data) {
-        return (data as Array<{ reason: string; entity_count: number; entity_type: string }>)
+        return data
           .map((row) => ({
             reason: row.reason,
             count: Number(row.entity_count),
@@ -225,8 +218,7 @@ export const statusHistoryRepository = {
     // Legacy fallback: 2 sequential queries + JS aggregation
     const results: ReasonCount[] = []
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: goalData, error: goalError } = await (supabase as any)
+    const { data: goalData, error: goalError } = await supabase
       .from('goal_status_history')
       .select('reason')
       .eq('user_id', userId)
@@ -236,8 +228,7 @@ export const statusHistoryRepository = {
 
     if (goalError) handleSupabaseError(goalError)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: taskData, error: taskError } = await (supabase as any)
+    const { data: taskData, error: taskError } = await supabase
       .from('task_status_history')
       .select('reason')
       .eq('user_id', userId)
@@ -249,13 +240,15 @@ export const statusHistoryRepository = {
 
     const countMap = new Map<string, { goal: number; task: number }>()
 
-    for (const row of (goalData ?? []) as Array<{ reason: string }>) {
+    for (const row of goalData ?? []) {
+      if (!row.reason) continue
       const existing = countMap.get(row.reason) ?? { goal: 0, task: 0 }
       existing.goal++
       countMap.set(row.reason, existing)
     }
 
-    for (const row of (taskData ?? []) as Array<{ reason: string }>) {
+    for (const row of taskData ?? []) {
+      if (!row.reason) continue
       const existing = countMap.get(row.reason) ?? { goal: 0, task: 0 }
       existing.task++
       countMap.set(row.reason, existing)

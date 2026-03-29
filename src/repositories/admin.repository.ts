@@ -100,27 +100,23 @@ export interface StreakBucket {
 export const adminRepository = {
   /**
    * 관리자 대시보드 통계 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getStats(supabase: TypedSupabaseClient): Promise<AdminStats> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_stats')
+    const { data, error } = await supabase.rpc('get_admin_stats')
     if (error) handleSupabaseError(error)
     return data as unknown as AdminStats
   },
 
   /**
    * 가입자 차트 데이터 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getSignupChart(
     supabase: TypedSupabaseClient,
     days: number = 30
   ): Promise<SignupChartRow[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_signup_chart', { p_days: days })
+    const { data, error } = await supabase.rpc('get_admin_signup_chart', { p_days: days })
     if (error) handleSupabaseError(error)
-    return (data ?? []) as unknown as SignupChartRow[]
+    return (data ?? []) as SignupChartRow[]
   },
 
   /**
@@ -202,14 +198,12 @@ export const adminRepository = {
 
   /**
    * 참여도(DAU/WAU/MAU) 시계열 + 요약 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getEngagementStats(
     supabase: TypedSupabaseClient,
     days: number = 30
   ): Promise<EngagementStats> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_engagement_stats', {
+    const { data, error } = await supabase.rpc('get_admin_engagement_stats', {
       p_days: days,
     })
     if (error) handleSupabaseError(error)
@@ -218,25 +212,21 @@ export const adminRepository = {
 
   /**
    * 온보딩 퍼널 단계별 사용자 수 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getOnboardingFunnel(supabase: TypedSupabaseClient): Promise<OnboardingFunnel> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_onboarding_funnel')
+    const { data, error } = await supabase.rpc('get_admin_onboarding_funnel')
     if (error) handleSupabaseError(error)
     return data as unknown as OnboardingFunnel
   },
 
   /**
    * 리텐션 코호트 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getRetentionCohorts(
     supabase: TypedSupabaseClient,
     cohortCount: number = 8
   ): Promise<RetentionCohort[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_retention_cohorts', {
+    const { data, error } = await supabase.rpc('get_admin_retention_cohorts', {
       p_cohort_count: cohortCount,
     })
     if (error) handleSupabaseError(error)
@@ -245,22 +235,18 @@ export const adminRepository = {
 
   /**
    * 기능 사용률 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getFeatureAdoption(supabase: TypedSupabaseClient): Promise<FeatureAdoption> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_feature_adoption')
+    const { data, error } = await supabase.rpc('get_admin_feature_adoption')
     if (error) handleSupabaseError(error)
     return data as unknown as FeatureAdoption
   },
 
   /**
    * 스트릭 분포 조회 (RPC)
-   * Note: RPC not yet in generated database.ts — cast required until `db:types` is run
    */
   async getStreakDistribution(supabase: TypedSupabaseClient): Promise<StreakBucket[]> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.rpc as any)('get_admin_streak_distribution')
+    const { data, error } = await supabase.rpc('get_admin_streak_distribution')
     if (error) handleSupabaseError(error)
     return (data ?? []) as unknown as StreakBucket[]
   },

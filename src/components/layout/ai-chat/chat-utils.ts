@@ -48,8 +48,7 @@ export interface ProposalToolPart {
 }
 
 /** Check if a UIMessage part is a propose_structure tool invocation */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isProposalPart(part: any): part is ProposalToolPart {
+export function isProposalPart(part: unknown): part is ProposalToolPart {
   if (typeof part !== 'object' || part === null) return false
   const p = part as Record<string, unknown>
   if (typeof p.toolCallId !== 'string' || typeof p.state !== 'string') return false

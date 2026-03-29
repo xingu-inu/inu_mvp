@@ -63,6 +63,19 @@ export async function getActiveGoals(supabase: TypedSupabaseClient, userId: stri
   }
 }
 
+/** Shape returned by the get_today_tasks RPC */
+interface TodayTaskRpcRow {
+  name: string
+  todayCheckIn?: { status: string } | null
+  streakCount?: number
+  streak_count?: number
+  durationMinutes?: number
+  duration_minutes?: number
+  timeSlot?: string
+  time_slot?: string
+  goal?: { name?: string; area?: { name?: string } } | null
+}
+
 export async function getTodayTasks(supabase: TypedSupabaseClient, _userId: string) {
   const today = getToday()
 
@@ -74,8 +87,7 @@ export async function getTodayTasks(supabase: TypedSupabaseClient, _userId: stri
     return { error: '오늘의 할 일을 가져오지 못했습니다.' }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tasks = (data ?? []) as any[]
+  const tasks = (data ?? []) as unknown as TodayTaskRpcRow[]
   const done = tasks.filter((t) => t.todayCheckIn?.status === 'done').length
   const skip = tasks.filter((t) => t.todayCheckIn?.status === 'skip').length
   const pending = tasks.length - done - skip
@@ -128,6 +140,15 @@ export async function getGoalDetail(supabase: TypedSupabaseClient, userId: strin
   }
 }
 
+/** Shape returned by the get_weekly_stats RPC */
+interface WeeklyStatsRpcResult {
+  totalTasks?: number
+  completedCount?: number
+  skippedCount?: number
+  dailyBreakdown?: unknown[]
+  areaBreakdown?: unknown[]
+}
+
 export async function getWeeklyStats(supabase: TypedSupabaseClient, _userId: string) {
   const weekStart = getWeekStart()
 
@@ -139,8 +160,7 @@ export async function getWeeklyStats(supabase: TypedSupabaseClient, _userId: str
     return { error: '주간 통계를 가져오지 못했습니다.' }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const stats = data as any
+  const stats = data as unknown as WeeklyStatsRpcResult | null
   const total = stats?.totalTasks ?? 0
   const completed = stats?.completedCount ?? 0
   const rate = total > 0 ? Math.round((completed / total) * 100) : 0

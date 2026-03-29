@@ -1,19 +1,9 @@
 // Chat Repository
 // AI 코치 대화 내역 저장/조회
-//
-// NOTE: chat_conversations, chat_messages 테이블은 새 migration으로 추가.
-// `npm run db:types` 실행 전까지 supabase.from()에 타입이 없어서
-// eslint-disable를 사용합니다. db:types 실행 후 제거할 수 있습니다.
 
 import type { TypedSupabaseClient } from './base.repository'
 import { handleSupabaseError } from './base.repository'
 import type { ChatConversation, ChatMessage } from '@/types/entities'
-
-// db:types 실행 전까지 타입 미지원 테이블 접근용
-function from(supabase: TypedSupabaseClient, table: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (supabase as any).from(table)
-}
 
 export const chatRepository = {
   /**
@@ -25,7 +15,8 @@ export const chatRepository = {
     conversationId: string,
     userId: string
   ): Promise<boolean> {
-    const { data, error } = await from(supabase, 'chat_conversations')
+    const { data, error } = await supabase
+      .from('chat_conversations')
       .select('id')
       .eq('id', conversationId)
       .eq('user_id', userId)
@@ -42,27 +33,29 @@ export const chatRepository = {
     supabase: TypedSupabaseClient,
     userId: string
   ): Promise<ChatConversation[]> {
-    const { data, error } = await from(supabase, 'chat_conversations')
+    const { data, error } = await supabase
+      .from('chat_conversations')
       .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
       .limit(50)
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as ChatConversation[]
+    return (data ?? []) as unknown as ChatConversation[]
   },
 
   /**
    * 대화 메시지 조회 (시간순)
    */
   async getMessages(supabase: TypedSupabaseClient, conversationId: string): Promise<ChatMessage[]> {
-    const { data, error } = await from(supabase, 'chat_messages')
+    const { data, error } = await supabase
+      .from('chat_messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as ChatMessage[]
+    return (data ?? []) as unknown as ChatMessage[]
   },
 
   /**
@@ -75,20 +68,19 @@ export const chatRepository = {
     relatedGoalId?: string,
     relatedTaskId?: string
   ): Promise<ChatConversation> {
-    const insertData: Record<string, unknown> = {
-      user_id: userId,
-      title: title ?? '새 대화',
-    }
-    if (relatedGoalId) insertData.related_goal_id = relatedGoalId
-    if (relatedTaskId) insertData.related_task_id = relatedTaskId
-
-    const { data, error } = await from(supabase, 'chat_conversations')
-      .insert(insertData)
+    const { data, error } = await supabase
+      .from('chat_conversations')
+      .insert({
+        user_id: userId,
+        title: title ?? '새 대화',
+        related_goal_id: relatedGoalId ?? null,
+        related_task_id: relatedTaskId ?? null,
+      })
       .select()
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as ChatConversation
+    return data as unknown as ChatConversation
   },
 
   /**
@@ -100,7 +92,8 @@ export const chatRepository = {
     role: 'user' | 'assistant',
     content: string
   ): Promise<ChatMessage> {
-    const { data, error } = await from(supabase, 'chat_messages')
+    const { data, error } = await supabase
+      .from('chat_messages')
       .insert({
         conversation_id: conversationId,
         role,
@@ -113,7 +106,8 @@ export const chatRepository = {
 
     // 첫 유저 메시지일 때만 title 업데이트 (기본값 '새 대화'인 경우)
     if (role === 'user') {
-      await from(supabase, 'chat_conversations')
+      await supabase
+        .from('chat_conversations')
         .update({
           title: content.slice(0, 50),
           updated_at: new Date().toISOString(),
@@ -123,11 +117,12 @@ export const chatRepository = {
     }
 
     // updated_at 갱신 (title이 이미 변경된 대화도 최신 순서에 반영)
-    await from(supabase, 'chat_conversations')
+    await supabase
+      .from('chat_conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
 
-    return data as ChatMessage
+    return data as unknown as ChatMessage
   },
 
   /**
@@ -138,7 +133,8 @@ export const chatRepository = {
     conversationId: string,
     userId: string
   ): Promise<void> {
-    const { error } = await from(supabase, 'chat_conversations')
+    const { error } = await supabase
+      .from('chat_conversations')
       .delete()
       .eq('id', conversationId)
       .eq('user_id', userId)
