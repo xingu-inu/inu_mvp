@@ -3,6 +3,32 @@ import { persist } from 'zustand/middleware'
 
 import type { GoalStatus } from '@/types/entities'
 
+import {
+  createSelectionSlice,
+  selectionInitialState,
+  type SelectionSlice,
+} from './roadmap-selection.store'
+import { createVersionSlice, versionInitialState, type VersionSlice } from './roadmap-version.store'
+
+// ── Re-exports (barrel) ────────────────────────────────
+
+export type { Selection, PanelMode, InlineMode, SelectionSlice } from './roadmap-selection.store'
+
+export {
+  useRoadmapSelectionStore,
+  selectSelection,
+  selectGoalId,
+  selectSelectedNodeId,
+  selectPanelMode,
+  selectInlineMode,
+} from './roadmap-selection.store'
+
+export type { VersionSlice } from './roadmap-version.store'
+
+export { useRoadmapVersionStore } from './roadmap-version.store'
+
+// ── Types (remaining in this store) ────────────────────
+
 export type StatusFilter = GoalStatus | 'all'
 
 export type SelectedNodeType = 'direction' | 'area' | 'goal' | 'group' | 'task'
@@ -11,219 +37,88 @@ export type TreeLayoutDirection = 'vertical' | 'horizontal'
 
 export type RightPanelTab = 'roadmap' | 'ai-chat'
 
-/** Unified selection state */
-export type Selection =
-  | { type: 'none' }
-  | { type: 'direction'; id: string }
-  | { type: 'area'; id: string }
-  | { type: 'goal'; id: string }
-  | { type: 'group'; id: string; goalId: string }
-  | { type: 'task'; id: string; goalId: string }
+// ── UI Slice (remaining properties) ────────────────────
 
-export type PanelMode =
-  | 'browse'
-  | 'view'
-  | 'edit-group'
-  | 'create-group'
-  | 'edit-task'
-  | 'view-direction'
-  | 'edit-direction'
-  | 'view-area'
-  | 'edit-area'
-
-/** Inline editing mode within a GoalAccordionItem (desktop only) */
-export type InlineMode =
-  | null
-  | 'create-goal'
-  | 'create-group'
-  | { type: 'edit-group'; groupId: string }
-  | 'create-task'
-  | { type: 'create-task-in-group'; groupId: string }
-  | { type: 'edit-task'; taskId: string }
-
-interface RoadmapState {
-  // Unified selection
-  selection: Selection
-  select: (sel: Selection) => void
-  clearSelection: () => void
-
-  // Filters
+export interface UISlice {
   statusFilter: StatusFilter
   setStatusFilter: (filter: StatusFilter) => void
-
-  // UI state
   expandedAreas: string[]
   toggleAreaExpanded: (areaId: string) => void
   setAllAreasExpanded: (areaIds: string[]) => void
-
-  // Focused goal (desktop: auto-expand + scroll in GoalBrowsePanel)
-  focusedGoalId: string | null
-  focusGoal: (id: string) => void
-
-  // Inline mode (desktop: which inline form is shown inside an accordion)
-  inlineMode: InlineMode
-  setInlineMode: (mode: InlineMode) => void
-
-  // Panel mode system
-  panelMode: PanelMode
-  setPanelMode: (mode: PanelMode) => void
-
-  // Right panel tab
   rightPanelTab: RightPanelTab
   setRightPanelTab: (tab: RightPanelTab) => void
-
-  // Tree layout direction
   treeLayout: TreeLayoutDirection
   setTreeLayout: (layout: TreeLayoutDirection) => void
-
-  // Version management
-  isVersionHistoryOpen: boolean
-  setIsVersionHistoryOpen: (open: boolean) => void
-  isNewVersionWizardOpen: boolean
-  setIsNewVersionWizardOpen: (open: boolean) => void
-  restoreSourceDirectionId: string | null
-  setRestoreSourceDirectionId: (id: string | null) => void
-  deleteTargetDirectionId: string | null
-  setDeleteTargetDirectionId: (id: string | null) => void
-
-  // Floating panel (roadmap only)
   isFloatingPanelOpen: boolean
   setFloatingPanelOpen: (open: boolean) => void
   toggleFloatingPanel: () => void
-
-  // Mobile goal detail drawer
   mobileDrawerGoalId: string | null
   openMobileDrawer: (goalId: string) => void
   closeMobileDrawer: () => void
-
-  // Reset
   reset: () => void
 }
 
-const initialState = {
-  selection: { type: 'none' } as Selection,
+const uiInitialState = {
   statusFilter: 'all' as StatusFilter,
   expandedAreas: [] as string[],
-  focusedGoalId: null as string | null,
-  inlineMode: null as InlineMode,
-  panelMode: 'browse' as PanelMode,
   rightPanelTab: 'roadmap' as RightPanelTab,
   treeLayout: 'horizontal' as TreeLayoutDirection,
-  isVersionHistoryOpen: false,
-  isNewVersionWizardOpen: false,
-  restoreSourceDirectionId: null as string | null,
-  deleteTargetDirectionId: null as string | null,
-  mobileDrawerGoalId: null as string | null,
   isFloatingPanelOpen: false,
+  mobileDrawerGoalId: null as string | null,
 }
+
+// ── Combined state ─────────────────────────────────────
+
+export type RoadmapState = SelectionSlice & VersionSlice & UISlice
+
+const initialState = {
+  ...selectionInitialState,
+  ...versionInitialState,
+  ...uiInitialState,
+}
+
+// ── Combined store ─────────────────────────────────────
 
 export const useRoadmapStore = create<RoadmapState>()(
   persist(
-    (set, get) => ({
-      ...initialState,
+    (...args) => {
+      const [set, get] = args
 
-      select: (sel: Selection) => {
-        const current = get()
+      return {
+        // Compose slices
+        ...createSelectionSlice(...args),
+        ...createVersionSlice(...args),
 
-        // Toggle: clicking the same entity deselects
-        if (
-          sel.type !== 'none' &&
-          current.selection.type === sel.type &&
-          'id' in sel &&
-          'id' in current.selection &&
-          sel.id === current.selection.id
-        ) {
-          get().clearSelection()
-          return
-        }
+        // UI slice (inline — no cross-cutting concerns)
+        ...uiInitialState,
 
-        // Derive panelMode from selection type
-        const panelMode: PanelMode =
-          sel.type === 'none'
-            ? 'browse'
-            : sel.type === 'goal'
-              ? 'view'
-              : sel.type === 'direction'
-                ? 'view-direction'
-                : sel.type === 'area'
-                  ? 'view-area'
-                  : sel.type === 'group'
-                    ? 'edit-group'
-                    : sel.type === 'task'
-                      ? 'edit-task'
-                      : 'browse'
+        setStatusFilter: (filter: StatusFilter) => set({ statusFilter: filter }),
 
-        set({
-          selection: sel,
-          panelMode,
-          isFloatingPanelOpen: sel.type !== 'none',
-        })
-      },
-
-      setStatusFilter: (filter) => set({ statusFilter: filter }),
-
-      toggleAreaExpanded: (areaId) => {
-        const { expandedAreas } = get()
-        const isExpanded = expandedAreas.includes(areaId)
-        set({
-          expandedAreas: isExpanded
-            ? expandedAreas.filter((id) => id !== areaId)
-            : [...expandedAreas, areaId],
-        })
-      },
-
-      setAllAreasExpanded: (areaIds) => set({ expandedAreas: areaIds }),
-
-      clearSelection: () =>
-        set({
-          selection: { type: 'none' },
-          focusedGoalId: null,
-          inlineMode: null,
-          panelMode: 'browse',
-          isFloatingPanelOpen: false,
-        }),
-
-      focusGoal: (id) => {
-        const current = get()
-        if (current.focusedGoalId === id) {
+        toggleAreaExpanded: (areaId: string) => {
+          const { expandedAreas } = get()
+          const isExpanded = expandedAreas.includes(areaId)
           set({
-            selection: { type: 'none' },
-            focusedGoalId: null,
-            inlineMode: null,
-            isFloatingPanelOpen: false,
+            expandedAreas: isExpanded
+              ? expandedAreas.filter((id) => id !== areaId)
+              : [...expandedAreas, areaId],
           })
-          return
-        }
-        set({
-          selection: { type: 'goal', id },
-          focusedGoalId: id,
-          inlineMode: null,
-          isFloatingPanelOpen: true,
-          // Do NOT change panelMode — stays 'browse' for desktop
-        })
-      },
+        },
 
-      setInlineMode: (mode) => set({ inlineMode: mode }),
+        setAllAreasExpanded: (areaIds: string[]) => set({ expandedAreas: areaIds }),
 
-      setPanelMode: (mode) => set({ panelMode: mode }),
+        setRightPanelTab: (tab: RightPanelTab) => set({ rightPanelTab: tab }),
 
-      setRightPanelTab: (tab) => set({ rightPanelTab: tab }),
+        setTreeLayout: (layout: TreeLayoutDirection) => set({ treeLayout: layout }),
 
-      setTreeLayout: (layout) => set({ treeLayout: layout }),
+        setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
+        toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
 
-      setIsVersionHistoryOpen: (open) => set({ isVersionHistoryOpen: open }),
-      setIsNewVersionWizardOpen: (open) => set({ isNewVersionWizardOpen: open }),
-      setRestoreSourceDirectionId: (id) => set({ restoreSourceDirectionId: id }),
-      setDeleteTargetDirectionId: (id) => set({ deleteTargetDirectionId: id }),
+        openMobileDrawer: (goalId: string) => set({ mobileDrawerGoalId: goalId }),
+        closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
 
-      setFloatingPanelOpen: (open) => set({ isFloatingPanelOpen: open }),
-      toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
-
-      openMobileDrawer: (goalId) => set({ mobileDrawerGoalId: goalId }),
-      closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
-
-      reset: () => set(initialState),
-    }),
+        reset: () => set(initialState),
+      }
+    },
     {
       name: 'inu-roadmap',
       partialize: (state) => ({
@@ -235,23 +130,9 @@ export const useRoadmapStore = create<RoadmapState>()(
   )
 )
 
-// === Selectors (use with useRoadmapStore(selector) for minimal re-renders) ===
+// ── Selectors (remaining UI concerns) ──────────────────
 
-export const selectSelection = (s: RoadmapState) => s.selection
-
-export const selectGoalId = (s: RoadmapState): string | null => {
-  const sel = s.selection
-  if (sel.type === 'goal') return sel.id
-  if (sel.type === 'group' || sel.type === 'task') return sel.goalId
-  return null
-}
-
-export const selectSelectedNodeId = (s: RoadmapState): string | null =>
-  s.selection.type === 'none' ? null : s.selection.id
-
-export const selectPanelMode = (s: RoadmapState) => s.panelMode
-export const selectRightPanelTab = (s: RoadmapState) => s.rightPanelTab
-export const selectInlineMode = (s: RoadmapState) => s.inlineMode
 export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
+export const selectRightPanelTab = (s: RoadmapState) => s.rightPanelTab
 export const selectMobileDrawerGoalId = (s: RoadmapState) => s.mobileDrawerGoalId
 export const selectIsFloatingPanelOpen = (s: RoadmapState) => s.isFloatingPanelOpen
