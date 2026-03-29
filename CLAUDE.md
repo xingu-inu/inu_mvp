@@ -1,10 +1,9 @@
 # inu
 
 Self-development app. Direction → Area → Goal → Group → Task (5-level structure).
-Core loop: Onboarding → Roadmap → Daily check-in → Streak → Review
+Core loop: Roadmap (Why Map) → Timeline
 
-3-tab structure: Home (`/home`, Day/Week/Month views) · Roadmap (`/roadmap`) · Review (`/review`)
-Home = Check-in + Calendar integration. Supports daily tasks (Tasks without a Goal).
+2-page structure: Roadmap (`/roadmap`, Why Map 캔버스) · Timeline (`/timeline`)
 
 ## Tech Stack
 
@@ -38,15 +37,15 @@ npm run dev / build / lint / lint:fix / format / type-check / test / test:e2e / 
 | Type     | Convention      | Example           |
 | -------- | --------------- | ----------------- |
 | Files    | kebab-case      | `task-card.tsx`   |
-| Types    | PascalCase      | `CheckIn`         |
+| Types    | PascalCase      | `Goal`            |
 | Consts   | UPPER_SNAKE     | `TIME_SLOTS`      |
-| Hooks    | use- prefix     | `use-checkin.ts`  |
+| Hooks    | use- prefix     | `use-goals.ts`    |
 | Services | .service suffix | `task.service.ts` |
 
 ## Data Model
 
 Direction → Area → Goal → Group (optional) → Task
-Core entities: CheckIn (done/skip/miss), DailyReflection (mood + summary)
+Core entities: CheckIn (done/skip/miss) for daily task tracking
 Goal statuses: Active / Backlog / Completed / Maintenance / Paused / Archive
 
 Details: @docs/plan/core/data-model.md

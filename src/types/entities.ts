@@ -38,8 +38,6 @@ export type CheckInStatus = 'done' | 'skip' | 'miss'
 
 export type DirectionStatus = 'active' | 'archived'
 
-export type MoodLevel = 'terrible' | 'bad' | 'neutral' | 'good' | 'great'
-
 export type MessageType = 'celebration' | 'encouragement' | 'insight' | 'suggestion' | 'reminder'
 
 // ============================================
@@ -151,14 +149,6 @@ export interface CheckIn {
   created_at: string
 }
 
-export interface DailyReflection extends Omit<BaseEntity, 'updated_at'> {
-  user_id: string
-  date: string
-  mood: MoodLevel | null
-  summary: string | null
-  updated_at: string
-}
-
 export interface AIMessage {
   id: string
   user_id: string
@@ -169,96 +159,6 @@ export interface AIMessage {
   related_goal_id: string | null
   related_task_id: string | null
   created_at: string
-}
-
-// ============================================
-// Result Types (for RPC/mutation responses)
-// ============================================
-export interface CheckInResult {
-  checkinId: string
-  newStreak: number
-  bestStreak: number
-}
-
-export interface OnboardingResult {
-  directionId: string
-  firstAreaId: string
-  firstGoalId: string | null
-}
-
-// ============================================
-// Dashboard Types (for RPC responses)
-// ============================================
-export interface HomeDashboard {
-  tasks: HomeTask[]
-  stats: {
-    completedToday: number
-    totalToday: number
-    currentStreak: number
-  }
-  recentCheckins: Array<{
-    id: string
-    taskId: string
-    status: CheckInStatus
-    note: string | null
-    createdAt: string
-  }>
-}
-
-export interface RelatedArea {
-  id: string
-  name: string
-  emoji: string
-  color: string
-}
-
-export interface RelatedGoal {
-  id: string
-  name: string
-  areaId: string
-  area: { id: string; name: string; emoji: string; color: string }
-}
-
-export interface HomeTask extends Omit<Task, 'goal' | 'group'> {
-  total_completed: number
-  todayCheckIn: {
-    id?: string
-    status: CheckInStatus
-    note: string | null
-    createdAt?: string
-  } | null
-  goal: {
-    id: string
-    name: string
-    why: string | null
-    areaId: string
-    area: {
-      id: string
-      name: string
-      emoji: string
-      color: string
-      why: string | null
-      sort_order: string
-    }
-  } | null
-  group: {
-    id: string
-    name: string
-    why: string | null
-  } | null
-  directArea: {
-    id: string
-    name: string
-    emoji: string
-    color: string
-    why: string | null
-    sort_order: string
-  } | null
-  relatedAreas: RelatedArea[] | null
-  relatedGoals: RelatedGoal[] | null
-  scheduledDate: string | null
-  taskStatus: TaskStatus
-  directionVersion: number | null
 }
 
 // ============================================
@@ -372,24 +272,6 @@ export interface UpdateTaskInput {
   cross_link_group_map?: Record<string, string | null>
 }
 
-export interface CreateCheckInInput {
-  task_id: string
-  date: string
-  status: CheckInStatus
-  note?: string
-}
-
-export interface CreateReflectionInput {
-  date: string
-  mood?: MoodLevel
-  summary?: string
-}
-
-export interface UpdateReflectionInput {
-  mood?: MoodLevel
-  summary?: string
-}
-
 export interface UpdateProfileInput {
   name?: string
   timezone?: string
@@ -485,111 +367,6 @@ export interface ArchivedRoadmapData {
 }
 
 // ============================================
-// Status History (Goal/Task 상태 변경 히스토리)
-// ============================================
-export interface GoalStatusHistory {
-  id: string
-  goal_id: string
-  user_id: string
-  from_status: GoalStatus
-  to_status: GoalStatus
-  reason: string | null
-  note: string | null
-  created_at: string
-}
-
-export interface TaskStatusHistory {
-  id: string
-  task_id: string
-  user_id: string
-  from_status: TaskStatus
-  to_status: TaskStatus
-  reason: string | null
-  note: string | null
-  created_at: string
-}
-
-// ============================================
-// Monthly Reflection
-// ============================================
-export interface MonthlyReflection extends BaseEntity {
-  user_id: string
-  month_start: string // First day of month (YYYY-MM-DD)
-  summary: string | null
-  highlight: string | null
-  challenge: string | null
-}
-
-export interface CreateMonthlyReflectionInput {
-  month_start: string
-  summary?: string
-  highlight?: string
-  challenge?: string
-}
-
-export interface UpdateMonthlyReflectionInput {
-  summary?: string
-  highlight?: string
-  challenge?: string
-}
-
-// ============================================
-// Goal Reflection (Review - Goal 회고)
-// ============================================
-export interface GoalReflection extends BaseEntity {
-  user_id: string
-  goal_id: string
-  period_start: string
-  period_end: string
-  summary: string | null
-  progress_feeling: MoodLevel | null
-  next_focus: string | null
-  why_temperature: number | null // 1-5 (1=cold, 5=burning)
-}
-
-export interface CreateGoalReflectionInput {
-  goal_id: string
-  period_start: string
-  period_end: string
-  summary?: string
-  progress_feeling?: MoodLevel
-  next_focus?: string
-  why_temperature?: number
-}
-
-export interface UpdateGoalReflectionInput {
-  summary?: string
-  progress_feeling?: MoodLevel
-  next_focus?: string
-  why_temperature?: number
-}
-
-// ============================================
-// Weekly Reflection
-// ============================================
-
-export interface WeeklyReflection extends BaseEntity {
-  user_id: string
-  week_start: string // Monday of the week (YYYY-MM-DD)
-  highlight: string | null // 잘한 점
-  challenge: string | null // 어려웠던 점
-  next_focus: string | null // 다음 주 다짐
-}
-
-export interface CreateWeeklyReflectionInput {
-  week_start: string
-  highlight?: string
-  challenge?: string
-  next_focus?: string
-}
-
-export interface UpdateWeeklyReflectionInput {
-  highlight?: string
-  challenge?: string
-  next_focus?: string
-}
-
-// ============================================
 // Announcement
 // ============================================
 export type AnnouncementType = 'info' | 'update' | 'event'
@@ -628,15 +405,7 @@ export interface Feedback {
 // ============================================
 // Notifications (computed, no DB table)
 // ============================================
-export type NotificationType =
-  | 'streak_at_risk'
-  | 'goal_deadline'
-  | 'all_complete'
-  | 'streak_milestone'
-  | 'weekly_summary'
-  | 'streak_recovery'
-  | 'goal_progress'
-  | 'announcement'
+export type NotificationType = 'goal_deadline' | 'goal_progress' | 'announcement'
 
 export interface AppNotification {
   id: string

@@ -10,7 +10,7 @@ interface DetailPanelShellProps {
 }
 
 /**
- * Shared detail panel shell used across all main pages (Home, Roadmap, Review).
+ * Shared detail panel shell for main pages.
  * Provides consistent width, height, border, and background styling.
  * Desktop only — hidden on mobile (lg breakpoint).
  * Hidden on /roadmap — replaced by floating panel overlay.

@@ -9,7 +9,6 @@ export type {
   TimeSlot,
   CheckInStatus,
   DirectionStatus,
-  MoodLevel,
   MessageType,
   // Entities
   Profile,
@@ -19,13 +18,7 @@ export type {
   Group,
   Task,
   CheckIn,
-  DailyReflection,
   AIMessage,
-  // Result Types
-  CheckInResult,
-  OnboardingResult,
-  // Dashboard Types
-  HomeTask,
   // Input Types
   CreateDirectionInput,
   UpdateDirectionInput,
@@ -37,9 +30,6 @@ export type {
   UpdateGroupInput,
   CreateTaskInput,
   UpdateTaskInput,
-  CreateCheckInInput,
-  CreateReflectionInput,
-  UpdateReflectionInput,
   UpdateProfileInput,
   // Roadmap Versioning
   CreateRoadmapVersionInput,
@@ -47,18 +37,6 @@ export type {
   DeleteArchivedRoadmapResult,
   DirectionHistoryItem,
   ArchivedRoadmapData,
-  // Monthly Reflection (Phase 9)
-  MonthlyReflection,
-  CreateMonthlyReflectionInput,
-  UpdateMonthlyReflectionInput,
-  // Goal Reflection
-  GoalReflection,
-  CreateGoalReflectionInput,
-  UpdateGoalReflectionInput,
-  // Weekly Reflection
-  WeeklyReflection,
-  CreateWeeklyReflectionInput,
-  UpdateWeeklyReflectionInput,
   // Announcement
   AnnouncementType,
   Announcement,

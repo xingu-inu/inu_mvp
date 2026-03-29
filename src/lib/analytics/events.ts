@@ -13,10 +13,6 @@ export const ANALYTICS_EVENTS = {
   ONBOARDING_AI_ENHANCE_FAILED: 'onboarding_ai_enhance_failed',
   ONBOARDING_STEP_COMPLETED: 'onboarding_step_completed',
   ONBOARDING_COMPLETED: 'onboarding_completed',
-  // Check-in
-  CHECKIN_DONE: 'checkin_done',
-  CHECKIN_SKIP: 'checkin_skip',
-  CHECKIN_UNDO: 'checkin_undo',
   // Goal
   GOAL_CREATED: 'goal_created',
   GOAL_STATUS_CHANGED: 'goal_status_changed',
@@ -25,8 +21,6 @@ export const ANALYTICS_EVENTS = {
   TASK_CREATED: 'task_created',
   // Navigation
   TAB_SWITCHED: 'tab_switched',
-  // Reflection
-  REFLECTION_SAVED: 'reflection_saved',
   // AI
   AI_CHAT_STARTED: 'ai_chat_started',
   // Roadmap
@@ -37,8 +31,6 @@ export const ANALYTICS_EVENTS = {
   TASK_COMPLETED: 'task_completed',
   // Goal engagement
   GOAL_DETAIL_VIEWED: 'goal_detail_viewed',
-  // Streak milestones
-  STREAK_MILESTONE: 'streak_milestone',
   // Priority feature
   PRIORITY_RANK_USED: 'priority_rank_used',
 } as const
