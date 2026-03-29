@@ -11,6 +11,12 @@ interface InteractionState {
   searchQuery?: string
 }
 
+/** Ancestor why entry for Why Chain tooltip */
+export interface AncestorWhy {
+  name: string
+  why?: string | null
+}
+
 export interface DirectionNodeData extends InteractionState {
   treeNode: VisualTreeNode
   [key: string]: unknown
@@ -20,12 +26,15 @@ export interface AreaNodeData extends InteractionState {
   treeNode: VisualTreeNode
   goalCount: number
   statusCounts?: Partial<Record<GoalStatus, number>>
+  ancestorWhys?: AncestorWhy[]
   [key: string]: unknown
 }
 
 export interface GoalNodeData extends InteractionState {
   treeNode: VisualTreeNode
   areaColor: string
+  parentAreaId?: string
+  ancestorWhys?: AncestorWhy[]
   [key: string]: unknown
 }
 

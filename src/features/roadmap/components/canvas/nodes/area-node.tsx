@@ -8,6 +8,7 @@ import type { GoalStatus } from '@/types/entities'
 import type { AreaNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
+import { WhyChainTooltip } from './why-chain-tooltip'
 
 export const AreaNode = memo(function AreaNode({
   id,
@@ -15,7 +16,7 @@ export const AreaNode = memo(function AreaNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<AreaNodeData, 'area'>>) {
-  const { treeNode, goalCount, statusCounts, isSelected, isSearchMatch } = data
+  const { treeNode, goalCount, statusCounts, ancestorWhys, isSelected, isSearchMatch } = data
   const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
     useCanvasInteractionsContext()
 
@@ -24,7 +25,14 @@ export const AreaNode = memo(function AreaNode({
   const onDelete = useCallback(() => handleDeleteNode('area', id), [handleDeleteNode, id])
 
   return (
-    <div>
+    <div className="group/why">
+      {ancestorWhys && ancestorWhys.length > 0 && (
+        <WhyChainTooltip
+          ancestorWhys={ancestorWhys}
+          currentName={treeNode.name}
+          currentWhy={treeNode.why}
+        />
+      )}
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
       <TreeContextMenu

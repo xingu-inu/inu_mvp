@@ -4,6 +4,7 @@ import type { CrossLink } from '../cross-link-overlay'
 import type {
   WhyMapNode,
   WhyMapEdge,
+  AncestorWhy,
   DirectionNodeData,
   AreaNodeData,
   GoalNodeData,
@@ -37,6 +38,9 @@ export function treeToFlowElements(
 
   const areas = tree.children ?? []
 
+  // Ancestor why for Direction (root)
+  const directionWhy: AncestorWhy = { name: tree.name, why: tree.why }
+
   for (const area of areas) {
     // ── Area node ───────────────────────────────────────
     const areaGoals = area.children ?? []
@@ -48,6 +52,8 @@ export function treeToFlowElements(
       statusCounts[s] = (statusCounts[s] ?? 0) + 1
     }
 
+    const areaAncestorWhys: AncestorWhy[] = [directionWhy]
+
     nodes.push({
       id: area.id,
       type: 'area',
@@ -56,6 +62,7 @@ export function treeToFlowElements(
         treeNode: area,
         goalCount: areaGoals.length,
         statusCounts,
+        ancestorWhys: areaAncestorWhys,
       } satisfies AreaNodeData,
     })
 
@@ -68,6 +75,8 @@ export function treeToFlowElements(
       data: { edgeType: 'hierarchy' } satisfies HierarchyEdgeData,
     })
 
+    const goalAncestorWhys: AncestorWhy[] = [directionWhy, { name: area.name, why: area.why }]
+
     for (const goal of areaGoals) {
       // ── Goal node ───────────────────────────────────
       nodes.push({
@@ -77,6 +86,8 @@ export function treeToFlowElements(
         data: {
           treeNode: goal,
           areaColor: area.color ?? '#8a8078',
+          parentAreaId: area.id,
+          ancestorWhys: goalAncestorWhys,
         } satisfies GoalNodeData,
       })
 

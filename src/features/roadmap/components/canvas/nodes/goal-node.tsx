@@ -20,6 +20,7 @@ import type { GoalNodeData } from '../types'
 import { TreeNodeCard, type VisualTreeNode } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
+import { WhyChainTooltip } from './why-chain-tooltip'
 
 // ── Main component ─────────────────────────────────────────
 
@@ -29,7 +30,7 @@ export const GoalNode = memo(function GoalNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<GoalNodeData, 'goal'>>) {
-  const { treeNode, areaColor, isSelected, isSearchMatch, searchQuery } = data
+  const { treeNode, areaColor, ancestorWhys, isSelected, isSearchMatch, searchQuery } = data
   const hasChildren = !!treeNode.children?.length
   const isDraft = treeNode.status === 'backlog'
 
@@ -53,12 +54,19 @@ export const GoalNode = memo(function GoalNode({
   return (
     <div
       className={cn(
-        'max-w-[300px] min-w-[220px]',
+        'group/why max-w-[300px] min-w-[220px]',
         isExpanded && hasChildren && 'nowheel',
         isDraft && 'rounded-xl border-2 border-dashed border-[var(--color-border)]',
         isDraft && '[&_[data-node-card]]:border-transparent'
       )}
     >
+      {ancestorWhys && ancestorWhys.length > 0 && (
+        <WhyChainTooltip
+          ancestorWhys={ancestorWhys}
+          currentName={treeNode.name}
+          currentWhy={treeNode.why}
+        />
+      )}
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
       <TreeContextMenu

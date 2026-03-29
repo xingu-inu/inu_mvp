@@ -96,17 +96,21 @@ export const TreeNodeCard = memo(function TreeNodeCard({
       style={(() => {
         const streakVal =
           node.type === 'goal' ? (node.meta?.totalStreak ?? 0) : (node.meta?.streak ?? 0)
-        const hasGlow = (node.type === 'goal' || node.type === 'task') && streakVal >= 7
+        const activityLevel =
+          node.type === 'goal' || node.type === 'task' ? Math.min(1, streakVal / 30) : 0
+        const hasGlow = activityLevel > 0
         const glowColor = node.areaColor ?? node.color
+        const glowShadow =
+          hasGlow && glowColor
+            ? `0 0 ${8 + activityLevel * 12}px color-mix(in oklch, ${glowColor} ${Math.round(20 + activityLevel * 30)}%, transparent)`
+            : undefined
 
         // Vibe themeColor takes priority over impactAreaColors for goal background
         if (node.type === 'goal' && node.vibe?.themeColor) {
           const hex = VIBE_COLORS[node.vibe.themeColor as VibeColorKey]
           return {
             backgroundColor: `color-mix(in oklch, ${hex} 8%, var(--color-bg-primary))`,
-            ...(hasGlow && glowColor
-              ? { boxShadow: `0 0 8px color-mix(in oklch, ${glowColor} 20%, transparent)` }
-              : {}),
+            ...(glowShadow ? { boxShadow: glowShadow } : {}),
           }
         }
 
@@ -122,9 +126,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
                 backgroundColor: `color-mix(in oklch, ${node.meta!.impactAreaColors![0]} 4%, var(--color-bg-primary))`,
               }
             : {}),
-          ...(hasGlow && glowColor
-            ? { boxShadow: `0 0 8px color-mix(in oklch, ${glowColor} 20%, transparent)` }
-            : {}),
+          ...(glowShadow ? { boxShadow: glowShadow } : {}),
         }
       })()}
       onClick={onSelect}

@@ -32,6 +32,7 @@ import { useCanvasInteractions } from './use-canvas-interactions'
 import { CanvasInteractionsContext } from './canvas-interactions-context'
 import { nodeTypes } from './nodes'
 import { edgeTypes } from './edges'
+import { AreaRegions } from './area-regions'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -287,6 +288,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           fitViewOptions={{ padding: 0.15 }}
           proOptions={{ hideAttribution: true }}
         >
+          <AreaRegions />
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           {isMinimapVisible && (
             <MiniMap nodeColor={minimapNodeColor} maskColor="rgba(0,0,0,0.08)" pannable zoomable />
