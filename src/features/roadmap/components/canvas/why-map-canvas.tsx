@@ -22,8 +22,8 @@ import {
   type Connection,
   type Edge,
 } from '@xyflow/react'
-import { Activity, Loader2 } from 'lucide-react'
-import { useRoadmapStore } from '@/stores/roadmap.store'
+import { Activity, Loader2, PanelRight } from 'lucide-react'
+import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
 import { useStickyNotesStore } from '@/stores/sticky-notes.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
@@ -75,11 +75,36 @@ function minimapNodeColor(node: WhyMapNode): string {
       return '#8b5cf6' // violet
     case 'goal':
       return '#3b82f6' // blue
+    case 'group':
+      return '#10b981' // emerald
+    case 'task':
+      return '#64748b' // slate
     case 'sticky':
       return '#fbbf24' // amber
     default:
       return '#64748b'
   }
+}
+
+// ── Panel toggle button (isolated to avoid canvas re-renders) ──
+
+function PanelToggleButton() {
+  const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
+  const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
+  return (
+    <button
+      onClick={toggle}
+      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors ${
+        isOpen
+          ? 'bg-indigo-500/90 text-white'
+          : 'bg-[var(--color-bg-primary)]/90 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+      }`}
+      title="패널 토글 (])"
+    >
+      <PanelRight className="h-3.5 w-3.5" />
+      <span>Panel</span>
+    </button>
+  )
 }
 
 // ── Outer wrapper (provides ReactFlowProvider) ─────────────
@@ -119,6 +144,20 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const zoomBand: number = rawZoom < 0.4 ? 0 : rawZoom > 0.8 ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
+  // Goal expand/collapse: which goals show Group/Task as canvas nodes
+  const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
+
+  const toggleGoalExpand = useCallback((goalId: string) => {
+    console.log('[canvas] toggleGoalExpand called', goalId)
+    setExpandedGoalIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(goalId)) next.delete(goalId)
+      else next.add(goalId)
+      console.log('[canvas] expandedGoalIds updated, size=' + next.size)
+      return next
+    })
+  }, [])
+
   // Why Walk presentation mode
   const [whyWalkState, setWhyWalkState] = useState<WhyWalkState | null>(null)
 
@@ -138,11 +177,17 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const interactions = useCanvasInteractions(treeData, goals, areas)
   const { selectedNodeId, focusedIds, parentGoalMap } = interactions
 
+  const interactionsContextValue = useMemo(
+    () => ({ ...interactions, toggleGoalExpand }),
+    [interactions, toggleGoalExpand]
+  )
+
   // ── Data pipeline: tree → flow elements → enrich → dagre ──
+  console.log('[canvas] render, expandedGoalIds.size=' + expandedGoalIds.size, [...expandedGoalIds])
 
   const { nodes: rawNodes, edges: rawEdges } = useMemo(
-    () => treeToFlowElements(treeData, crossLinks),
-    [treeData, crossLinks]
+    () => treeToFlowElements(treeData, crossLinks, expandedGoalIds),
+    [treeData, crossLinks, expandedGoalIds]
   )
 
   // Merge sticky notes as canvas nodes
@@ -306,6 +351,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     onWhyWalkNext: handleWhyWalkNext,
     isBrainstormMode,
     onToggleBrainstorm: handleToggleBrainstorm,
+    onToggleFloatingPanel: useRoadmapStore.getState().toggleFloatingPanel,
   })
 
   // ── Event handlers ─────────────────────────────────────────
@@ -479,7 +525,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   return (
     <div className="absolute inset-0">
-      <CanvasInteractionsContext.Provider value={interactions}>
+      <CanvasInteractionsContext.Provider value={interactionsContextValue}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -500,8 +546,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           snapGrid={[20, 20]}
           minZoom={0.15}
           maxZoom={2}
-          fitView
-          fitViewOptions={{ padding: 0.15 }}
           proOptions={{ hideAttribution: true }}
         >
           <AreaRegions />
@@ -531,8 +575,8 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
             />
           )}
 
-          {/* AI Balance overlay toggle */}
-          <Panel position="top-right" className="!mt-2 !mr-2">
+          {/* Canvas top-right toolbar — pushed below floating header */}
+          <Panel position="top-right" className="!mt-20 !mr-3 flex flex-col gap-1.5">
             <button
               onClick={aiBalance.toggle}
               className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium shadow-sm backdrop-blur transition-colors ${
@@ -549,6 +593,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
               )}
               <span>Balance</span>
             </button>
+            <PanelToggleButton />
           </Panel>
 
           {/* Brainstorm mode indicator */}

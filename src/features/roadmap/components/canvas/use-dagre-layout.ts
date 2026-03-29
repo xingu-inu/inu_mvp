@@ -16,6 +16,8 @@ const DEFAULT_DIMENSIONS: Record<string, { width: number; height: number }> = {
   direction: { width: 280, height: 80 },
   area: { width: 240, height: 60 },
   goal: { width: 260, height: 80 },
+  group: { width: 220, height: 60 },
+  task: { width: 200, height: 50 },
   sticky: { width: 200, height: 120 },
 }
 
@@ -24,7 +26,7 @@ function getLayoutedElements(
   edges: WhyMapEdge[],
   direction: 'TB' | 'LR'
 ): WhyMapNode[] {
-  const g = new dagre.graphlib.Graph()
+  const g = new dagre.graphlib.Graph({ compound: true })
   g.setDefaultEdgeLabel(() => ({}))
   g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80, edgesep: 20 })
 
@@ -36,10 +38,19 @@ function getLayoutedElements(
     })
   }
 
+  // Set compound parent-child relationships so subtrees don't overlap vertically
   for (const edge of edges) {
-    // Only hierarchy edges participate in dagre layout
     if (edge.data?.edgeType === 'hierarchy') {
       g.setEdge(edge.source, edge.target)
+
+      // Find parent node type to set compound grouping
+      const parentNode = nodes.find((n) => n.id === edge.source)
+      if (parentNode) {
+        // Area groups its goals; Goal groups its groups/tasks
+        if (parentNode.type === 'area' || parentNode.type === 'goal') {
+          g.setParent(edge.target, edge.source)
+        }
+      }
     }
   }
 
@@ -79,7 +90,7 @@ export function useDagreLayout(
   const [nodes, setNodes, onNodesChange] = useNodesState<WhyMapNode>(initialNodes)
   const [edges, setEdges, onEdgesChange] = useEdgesState<WhyMapEdge>(initialEdges)
   const nodesInitialized = useNodesInitialized()
-  const layoutAppliedRef = useRef(false)
+  const needsLayoutRef = useRef(true)
   const edgesRef = useRef(initialEdges)
   const { fitView } = useReactFlow()
 
@@ -95,37 +106,31 @@ export function useDagreLayout(
       prevInitialRef.current = { nodes: initialNodes, edges: initialEdges }
       setNodes(initialNodes)
       setEdges(initialEdges)
-      layoutAppliedRef.current = false
+      needsLayoutRef.current = true
     }
     edgesRef.current = initialEdges
   }, [initialNodes, initialEdges, setNodes, setEdges])
 
   // Two-pass layout: wait for nodes to be measured, then apply dagre
   useEffect(() => {
-    if (nodesInitialized && !layoutAppliedRef.current) {
+    if (nodesInitialized && needsLayoutRef.current) {
       setNodes((currentNodes) => {
         if (currentNodes.length === 0) return currentNodes
+        needsLayoutRef.current = false
         const layouted = getLayoutedElements(currentNodes, edgesRef.current, direction)
-        layoutAppliedRef.current = true
         requestAnimationFrame(() => {
           fitView({ padding: 0.15, duration: 300 })
         })
         return layouted
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nodesInitialized, direction, fitView])
+  }, [nodesInitialized, direction, fitView, setNodes])
 
   // Manual relayout (e.g. after direction toggle or node expand)
   const relayout = useCallback(() => {
-    setNodes((currentNodes) => {
-      const layouted = getLayoutedElements(currentNodes, edgesRef.current, direction)
-      requestAnimationFrame(() => {
-        fitView({ padding: 0.15, duration: 300 })
-      })
-      return layouted
-    })
-  }, [direction, fitView, setNodes])
+    needsLayoutRef.current = true
+    setNodes((n) => [...n])
+  }, [setNodes])
 
   return { nodes, edges, setNodes, setEdges, onNodesChange, onEdgesChange, relayout }
 }

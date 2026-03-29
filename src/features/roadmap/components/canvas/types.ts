@@ -48,6 +48,24 @@ export interface GoalNodeData extends InteractionState {
   areaColor: string
   parentAreaId?: string
   ancestorWhys?: AncestorWhy[]
+  isExpanded?: boolean
+  [key: string]: unknown
+}
+
+export interface GroupNodeData extends InteractionState {
+  treeNode: VisualTreeNode
+  areaColor: string
+  parentGoalId: string
+  ancestorWhys?: AncestorWhy[]
+  [key: string]: unknown
+}
+
+export interface TaskNodeData extends InteractionState {
+  treeNode: VisualTreeNode
+  areaColor: string
+  parentGoalId: string
+  parentGroupId?: string
+  ancestorWhys?: AncestorWhy[]
   [key: string]: unknown
 }
 
@@ -98,6 +116,8 @@ export interface BalanceOverlay {
 
 export interface HierarchyEdgeData {
   edgeType: 'hierarchy'
+  /** 0=dir→area, 1=area→goal, 2=goal→group/task, 3=group→task */
+  depth?: number
   [key: string]: unknown
 }
 
@@ -122,6 +142,8 @@ export type WhyMapNode =
   | Node<DirectionNodeData, 'direction'>
   | Node<AreaNodeData, 'area'>
   | Node<GoalNodeData, 'goal'>
+  | Node<GroupNodeData, 'group'>
+  | Node<TaskNodeData, 'task'>
   | Node<StickyNodeData, 'sticky'>
 
 export type WhyMapEdge = Edge<HierarchyEdgeData | SharedTaskEdgeData | DependencyEdgeData>

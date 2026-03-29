@@ -17,7 +17,7 @@ export function RoadmapHeader() {
     <div className="space-y-4">
       {/* Title Row */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-0">
-        <div>
+        <div className="pointer-events-auto lg:drop-shadow-sm">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold">로드맵</h1>
             {direction && direction.version > 1 && (
@@ -31,7 +31,7 @@ export function RoadmapHeader() {
           </p>
         </div>
         {!isDemoMode && (
-          <div className="flex items-center gap-1.5">
+          <div className="pointer-events-auto flex items-center gap-1.5">
             <Button
               variant="ghost"
               size="sm"
@@ -54,7 +54,9 @@ export function RoadmapHeader() {
       </div>
 
       {/* Filter Row */}
-      <StatusFilter />
+      <div className="pointer-events-auto w-fit">
+        <StatusFilter />
+      </div>
     </div>
   )
 }

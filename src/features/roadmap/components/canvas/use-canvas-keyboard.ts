@@ -22,6 +22,8 @@ interface UseCanvasKeyboardOptions {
   // Brainstorm mode callbacks
   isBrainstormMode?: boolean
   onToggleBrainstorm?: () => void
+  // Floating panel toggle
+  onToggleFloatingPanel?: () => void
 }
 
 /**
@@ -45,6 +47,7 @@ export function useCanvasKeyboard({
   onWhyWalkNext,
   isBrainstormMode,
   onToggleBrainstorm,
+  onToggleFloatingPanel,
 }: UseCanvasKeyboardOptions) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -97,6 +100,12 @@ export function useCanvasKeyboard({
       // B → toggle Brainstorm mode
       if (e.key === 'b' || e.key === 'B') {
         onToggleBrainstorm?.()
+        return
+      }
+
+      // ] → toggle floating panel
+      if (e.key === ']') {
+        onToggleFloatingPanel?.()
         return
       }
 
@@ -160,6 +169,7 @@ export function useCanvasKeyboard({
     onWhyWalkNext,
     isBrainstormMode,
     onToggleBrainstorm,
+    onToggleFloatingPanel,
   ])
 }
 

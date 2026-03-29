@@ -9,6 +9,7 @@ export interface CanvasInteractionsValue {
   handleCancelAdd: () => void
   getQuickAddContent: (node: VisualTreeNode) => ReactNode
   addingToId: string | null
+  toggleGoalExpand: (goalId: string) => void
 }
 
 export const CanvasInteractionsContext = createContext<CanvasInteractionsValue>(null!)

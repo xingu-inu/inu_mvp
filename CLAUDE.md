@@ -51,6 +51,12 @@ Goal statuses: Active / Backlog / Completed / Maintenance / Paused / Archive
 
 Details: @docs/plan/core/data-model.md
 
+## Notion 연동
+
+- 기능 명세서 DB: `331ff360838e80c3b9aec2983cac67d1` (data_source: `331ff360-838e-8089-b7ba-000bf0e15691`, view: `331ff360838e80a59d06000c9fdb629c`)
+- 기능 명세 작업 시 이 Notion DB를 조회/업데이트하여 사용할 것
+- MCP 도구: `mcp__notion__API-*` 시리즈 사용
+
 ## Docs
 
 - Screen specs + wireframes: @docs/plan/screens/

@@ -1,24 +1,13 @@
 'use client'
 
-import { memo, useState, useCallback } from 'react'
-import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from '@xyflow/react'
-import { AnimatePresence, motion } from 'framer-motion'
-import {
-  ChevronDown,
-  ChevronRight,
-  Circle,
-  CheckCircle2,
-  Calendar1,
-  Repeat,
-  Pause,
-  Link,
-  AlertTriangle,
-} from 'lucide-react'
+import { memo, useCallback } from 'react'
+import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import { ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
 import { ZOOM_COMPACT, ZOOM_FULL, type GoalNodeData } from '../types'
-import { TreeNodeCard, type VisualTreeNode } from '../../visual-tree/tree-node-card'
+import { TreeNodeCard } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 import { WhyChainTooltip } from './why-chain-tooltip'
@@ -33,30 +22,31 @@ export const GoalNode = memo(function GoalNode({
 }: NodeProps<Node<GoalNodeData, 'goal'>>) {
   const {
     treeNode,
-    areaColor,
     ancestorWhys,
     isSelected,
     isSearchMatch,
     searchQuery,
     zoomLevel = ZOOM_FULL,
     balanceWarning,
+    isExpanded,
   } = data
   const hasChildren = !!treeNode.children?.length
   const isDraft = treeNode.status === 'backlog'
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
 
-  const [isExpandedRaw, setIsExpandedRaw] = useState(false)
-  // Only allow expansion in full zoom — AnimatePresence handles exit animation
-  const isExpanded = isFull && isExpandedRaw
-  const updateNodeInternals = useUpdateNodeInternals()
-  const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
-    useCanvasInteractionsContext()
+  const {
+    handleNodeSelect,
+    handleDeleteNode,
+    handleStartAdd,
+    addingToId,
+    getQuickAddContent,
+    toggleGoalExpand,
+  } = useCanvasInteractionsContext()
 
   const handleToggle = useCallback(() => {
-    setIsExpandedRaw((prev) => !prev)
-    requestAnimationFrame(() => updateNodeInternals(id))
-  }, [id, updateNodeInternals])
+    toggleGoalExpand(id)
+  }, [id, toggleGoalExpand])
 
   const handleSelect = useCallback(() => {
     handleNodeSelect('goal', id)
@@ -69,7 +59,6 @@ export const GoalNode = memo(function GoalNode({
     <div
       className={cn(
         'group/why max-w-[300px] min-w-[220px]',
-        isExpanded && hasChildren && 'nowheel',
         isDraft && 'rounded-xl border-2 border-dashed border-[var(--color-border)]',
         isDraft && '[&_[data-node-card]]:border-transparent'
       )}
@@ -109,7 +98,7 @@ export const GoalNode = memo(function GoalNode({
               <TreeNodeCard
                 node={treeNode}
                 isSelected={isSelected ?? false}
-                isExpanded={isExpanded}
+                isExpanded={isExpanded ?? false}
                 hasChildren={hasChildren}
                 onSelect={handleSelect}
                 onToggle={handleToggle}
@@ -154,25 +143,30 @@ export const GoalNode = memo(function GoalNode({
             </div>
           )}
 
-          {/* Expanded content: Group → Task list (auto-collapses when leaving full zoom) */}
-          <AnimatePresence initial={false}>
-            {isExpanded && hasChildren && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-                onAnimationComplete={() => updateNodeInternals(id)}
+          {/* Expand/collapse children indicator */}
+          {hasChildren && isFull && (
+            <div className="flex justify-center pb-1">
+              <button
+                className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleToggle()
+                }}
               >
-                <div className="space-y-0.5 border-t border-[var(--color-border)] px-3 py-2">
-                  {treeNode.children?.map((child) => (
-                    <GoalChildItem key={child.id} node={child} areaColor={areaColor} />
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                {isExpanded ? (
+                  <>
+                    <ChevronDown className="h-3 w-3" />
+                    <span>접기</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight className="h-3 w-3" />
+                    <span>{treeNode.children?.length}개 항목</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -180,120 +174,3 @@ export const GoalNode = memo(function GoalNode({
     </div>
   )
 })
-
-// ── Recursive child renderer (Group / Task) ────────────────
-
-const GoalChildItem = memo(function GoalChildItem({
-  node,
-  areaColor,
-  depth = 0,
-}: {
-  node: VisualTreeNode
-  areaColor: string
-  depth?: number
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  const hasChildren = !!node.children?.length
-
-  return (
-    <div style={{ paddingLeft: depth * 12 }}>
-      <div className="flex items-center gap-1.5 py-0.5">
-        {/* Expand toggle for groups */}
-        {hasChildren ? (
-          <button
-            className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded transition-colors hover:bg-[var(--color-bg-tertiary)]"
-            onClick={() => setIsOpen((prev) => !prev)}
-          >
-            {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </button>
-        ) : (
-          <span className="w-4 flex-shrink-0" />
-        )}
-
-        {/* Icon */}
-        <ChildIcon node={node} />
-
-        {/* Name */}
-        <span
-          className={cn(
-            'min-w-0 flex-1 truncate text-xs',
-            node.type === 'group' && 'font-medium',
-            node.type === 'group' &&
-              node.meta?.isCompleted &&
-              'text-[var(--color-text-tertiary)] line-through',
-            node.type === 'task' && 'text-[var(--color-text-secondary)]',
-            node.type === 'task' &&
-              node.meta?.isDone &&
-              'text-[var(--color-text-tertiary)] line-through',
-            node.type === 'task' && node.meta?.isPaused && 'text-[var(--color-text-tertiary)]',
-            node.type === 'task' &&
-              node.meta?.isCompletedTask &&
-              'text-[var(--color-text-tertiary)] line-through'
-          )}
-        >
-          {node.name}
-        </span>
-
-        {/* Minimal badges */}
-        <ChildBadge node={node} />
-      </div>
-
-      {/* Nested children */}
-      {isOpen &&
-        hasChildren &&
-        node.children!.map((child) => (
-          <GoalChildItem key={child.id} node={child} areaColor={areaColor} depth={depth + 1} />
-        ))}
-    </div>
-  )
-})
-
-// ── Sub-components ─────────────────────────────────────────
-
-function ChildIcon({ node }: { node: VisualTreeNode }) {
-  if (node.type === 'group') {
-    return node.meta?.isCompleted ? (
-      <CheckCircle2 className="h-3 w-3 flex-shrink-0 text-[var(--color-done)]" />
-    ) : (
-      <Circle className="h-3 w-3 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-    )
-  }
-
-  // Task icons
-  if (node.meta?.isCompletedTask || node.meta?.isDone) {
-    return <CheckCircle2 className="h-3 w-3 flex-shrink-0 text-[var(--color-done)]" />
-  }
-  if (node.meta?.isPaused) {
-    return <Pause className="h-3 w-3 flex-shrink-0 text-[var(--color-paused)]" />
-  }
-  return node.meta?.repeatType === 'once' ? (
-    <Calendar1 className="h-3 w-3 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-  ) : (
-    <Repeat className="h-3 w-3 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-  )
-}
-
-function ChildBadge({ node }: { node: VisualTreeNode }) {
-  if (node.type === 'group' && node.meta?.count) {
-    return (
-      <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-tertiary)] px-1 py-px text-[9px] font-medium text-[var(--color-text-secondary)]">
-        {node.meta.count}
-      </span>
-    )
-  }
-
-  if (node.type === 'task') {
-    if (node.meta?.hasCrossLinks) {
-      return <Link className="h-2.5 w-2.5 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-    }
-    if (node.meta?.streak && node.meta.streak > 0) {
-      return (
-        <span className="flex-shrink-0 text-[9px] font-semibold text-[var(--color-streak)]">
-          🔥{node.meta.streak}
-        </span>
-      )
-    }
-  }
-
-  return null
-}

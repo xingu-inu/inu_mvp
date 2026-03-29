@@ -10,6 +10,7 @@ export const HierarchyEdge = memo(function HierarchyEdge({
   sourcePosition,
   targetPosition,
   style,
+  data,
   markerStart,
   markerEnd,
   interactionWidth,
@@ -24,10 +25,15 @@ export const HierarchyEdge = memo(function HierarchyEdge({
     borderRadius: 12,
   })
 
+  // Deeper hierarchy levels get thinner, subtler edges
+  const depth = data?.depth ?? 0
+  const strokeWidth = depth >= 2 ? 1 : 1.5
+  const opacity = depth >= 2 ? 0.6 : 1
+
   return (
     <BaseEdge
       path={edgePath}
-      style={{ strokeWidth: 1.5, stroke: 'var(--color-border)', ...style }}
+      style={{ strokeWidth, stroke: 'var(--color-border)', opacity, ...style }}
       markerStart={markerStart}
       markerEnd={markerEnd}
       interactionWidth={interactionWidth}

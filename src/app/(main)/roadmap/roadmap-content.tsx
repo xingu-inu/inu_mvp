@@ -11,6 +11,7 @@ import {
 } from '@/features/roadmap'
 import { MobileRoadmapFab } from '@/features/roadmap/components/mobile-roadmap-fab'
 import { MobileRoadmapView } from '@/features/roadmap/components/mobile-roadmap-view'
+import { FloatingPanel } from '@/features/roadmap/components/floating-panel'
 import { RoadmapAiModals } from './roadmap-ai-modals'
 
 const NewVersionWizard = dynamic(
@@ -45,14 +46,18 @@ const DeleteVersionDialog = dynamic(
 export default function RoadmapContent() {
   return (
     <>
-      {/* Desktop: Visual Tree — outside PageContainer so it fills viewport exactly */}
-      <div className="hidden h-full bg-[var(--color-bg-primary)] lg:flex lg:flex-col">
-        <div className="shrink-0 px-8 pt-6 pb-4">
-          <RoadmapHeader />
+      {/* Desktop: Visual Tree — canvas fills entire area, header floats on top */}
+      <div className="relative hidden h-full lg:flex lg:flex-col">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <Suspense fallback={<VisualTreeSkeleton />}>
+            <VisualTreeWrapper />
+          </Suspense>
+          {/* Floating header overlay — pointer-events only on content, not full width */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 px-8 pt-6 pb-4">
+            <RoadmapHeader />
+          </div>
+          <FloatingPanel />
         </div>
-        <Suspense fallback={<VisualTreeSkeleton />}>
-          <VisualTreeWrapper />
-        </Suspense>
       </div>
 
       {/* Mobile: Card-based layout */}

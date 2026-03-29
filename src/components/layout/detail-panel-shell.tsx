@@ -1,3 +1,6 @@
+'use client'
+
+import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 interface DetailPanelShellProps {
@@ -10,12 +13,16 @@ interface DetailPanelShellProps {
  * Shared detail panel shell used across all main pages (Home, Roadmap, Review).
  * Provides consistent width, height, border, and background styling.
  * Desktop only — hidden on mobile (lg breakpoint).
+ * Hidden on /roadmap — replaced by floating panel overlay.
  */
 export function DetailPanelShell({
   children,
   className,
   variant = 'default',
 }: DetailPanelShellProps) {
+  const pathname = usePathname()
+  if (pathname.startsWith('/roadmap')) return null
+
   return (
     <aside
       className={cn(

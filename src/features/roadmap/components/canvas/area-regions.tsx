@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { useNodes, ViewportPortal } from '@xyflow/react'
-import type { WhyMapNode, AreaNodeData, GoalNodeData } from './types'
+import type { WhyMapNode, AreaNodeData, GoalNodeData, GroupNodeData, TaskNodeData } from './types'
 
 interface AreaRegion {
   areaId: string
@@ -68,12 +68,30 @@ function computeAreaRegions(nodes: WhyMapNode[]): AreaRegion[] {
     }
   }
 
+  // Build goalId → areaId lookup for group/task association
+  const goalToAreaMap = new Map<string, string>()
+
   // Associate goal nodes with their parent area
   for (const node of nodes) {
     if (node.type === 'goal') {
       const data = node.data as GoalNodeData
       if (data.parentAreaId) {
+        goalToAreaMap.set(node.id, data.parentAreaId)
         const entry = areaMap.get(data.parentAreaId)
+        if (entry) {
+          entry.nodeIds.push(node.id)
+        }
+      }
+    }
+  }
+
+  // Associate group/task nodes with their parent area (via goal)
+  for (const node of nodes) {
+    if (node.type === 'group' || node.type === 'task') {
+      const data = node.data as GroupNodeData | TaskNodeData
+      const areaId = goalToAreaMap.get(data.parentGoalId)
+      if (areaId) {
+        const entry = areaMap.get(areaId)
         if (entry) {
           entry.nodeIds.push(node.id)
         }

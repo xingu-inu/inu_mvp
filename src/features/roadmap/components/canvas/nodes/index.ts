@@ -2,6 +2,8 @@ import type { NodeTypes } from '@xyflow/react'
 import { DirectionNode } from './direction-node'
 import { AreaNode } from './area-node'
 import { GoalNode } from './goal-node'
+import { GroupNode } from './group-node'
+import { TaskNode } from './task-node'
 import { StickyNode } from './sticky-node'
 
 /**
@@ -12,5 +14,7 @@ export const nodeTypes: NodeTypes = {
   direction: DirectionNode,
   area: AreaNode,
   goal: GoalNode,
+  group: GroupNode,
+  task: TaskNode,
   sticky: StickyNode,
 }

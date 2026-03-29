@@ -102,6 +102,11 @@ interface RoadmapState {
   deleteTargetDirectionId: string | null
   setDeleteTargetDirectionId: (id: string | null) => void
 
+  // Floating panel (roadmap only)
+  isFloatingPanelOpen: boolean
+  setFloatingPanelOpen: (open: boolean) => void
+  toggleFloatingPanel: () => void
+
   // Mobile goal detail drawer
   mobileDrawerGoalId: string | null
   openMobileDrawer: (goalId: string) => void
@@ -130,6 +135,7 @@ const initialState = {
   restoreSourceDirectionId: null as string | null,
   deleteTargetDirectionId: null as string | null,
   mobileDrawerGoalId: null as string | null,
+  isFloatingPanelOpen: false,
 }
 
 export const useRoadmapStore = create<RoadmapState>()(
@@ -168,7 +174,12 @@ export const useRoadmapStore = create<RoadmapState>()(
                       ? 'edit-task'
                       : 'browse'
 
-        set({ selection: sel, panelMode, rightPanelTab: 'roadmap' })
+        set({
+          selection: sel,
+          panelMode,
+          rightPanelTab: 'roadmap',
+          isFloatingPanelOpen: sel.type !== 'none',
+        })
       },
 
       setStatusFilter: (filter) => set({ statusFilter: filter }),
@@ -191,6 +202,7 @@ export const useRoadmapStore = create<RoadmapState>()(
           focusedGoalId: null,
           inlineMode: null,
           panelMode: 'browse',
+          isFloatingPanelOpen: false,
         }),
 
       focusGoal: (id) => {
@@ -200,6 +212,7 @@ export const useRoadmapStore = create<RoadmapState>()(
             selection: { type: 'none' },
             focusedGoalId: null,
             inlineMode: null,
+            isFloatingPanelOpen: false,
           })
           return
         }
@@ -207,6 +220,7 @@ export const useRoadmapStore = create<RoadmapState>()(
           selection: { type: 'goal', id },
           focusedGoalId: id,
           inlineMode: null,
+          isFloatingPanelOpen: true,
           // Do NOT change panelMode — stays 'browse' for desktop
         })
       },
@@ -240,6 +254,9 @@ export const useRoadmapStore = create<RoadmapState>()(
       setIsNewVersionWizardOpen: (open) => set({ isNewVersionWizardOpen: open }),
       setRestoreSourceDirectionId: (id) => set({ restoreSourceDirectionId: id }),
       setDeleteTargetDirectionId: (id) => set({ deleteTargetDirectionId: id }),
+
+      setFloatingPanelOpen: (open) => set({ isFloatingPanelOpen: open }),
+      toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
 
       openMobileDrawer: (goalId) => set({ mobileDrawerGoalId: goalId }),
       closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
@@ -276,3 +293,4 @@ export const selectRightPanelTab = (s: RoadmapState) => s.rightPanelTab
 export const selectInlineMode = (s: RoadmapState) => s.inlineMode
 export const selectStatusFilter = (s: RoadmapState) => s.statusFilter
 export const selectMobileDrawerGoalId = (s: RoadmapState) => s.mobileDrawerGoalId
+export const selectIsFloatingPanelOpen = (s: RoadmapState) => s.isFloatingPanelOpen
