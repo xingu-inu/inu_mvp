@@ -1,50 +1,35 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import {
-  Trash2,
-  Plus,
-  Target,
-  X,
-  ArrowLeft,
-  Sparkles,
-  Circle,
-  CheckCircle2,
-  Pencil,
-} from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Target, Sparkles } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { PanelLoadingSpinner } from '@/features/roadmap/components/shared/panel-loading-spinner'
-import { Chip } from '@/components/ui/chip'
 import { PeriodBadge } from '@/components/ui/badge'
-import { ResponsiveModal, ModalBody, ModalFooter } from '@/components/ui/responsive-modal'
+import { ResponsiveModal, ModalBody } from '@/components/ui/responsive-modal'
 import { ProgressBar } from '@/components/ui/progress'
 import { useGoals, useGoalWithRelations, useUpdateGoal, useDeleteGoal } from '@/queries/use-goals'
-import { useDeleteGroup, useEnableGoalGroups, useDisableGoalGroups } from '@/queries/use-groups'
+import { useEnableGoalGroups, useDisableGoalGroups } from '@/queries/use-groups'
 import { useAreas } from '@/queries/use-areas'
 import { useDirection } from '@/queries/use-direction'
-import { useRoadmapStore, selectGoalId, selectInlineMode } from '@/stores/roadmap.store'
-import { cn } from '@/lib/utils'
+import { useRoadmapStore, selectGoalId } from '@/stores/roadmap.store'
 import { needsTransitionDialog } from '@/lib/goal-status'
 import { useAiSuggest } from '@/hooks/use-ai-suggest'
-import {
-  InlineTaskQuickInput,
-  InlineGroupCreate,
-  InlineGroupEdit,
-  InlineDeleteConfirm,
-  InlineGoalEdit,
-} from '../inline-forms'
-import { GoalTaskItem } from '../shared/goal-task-item'
+import { InlineDeleteConfirm, InlineGoalEdit } from '../inline-forms'
 import { StatusTransitionDialog } from '../status-transition-dialog'
 import { GoalCompletionDialog } from '../goal-completion-dialog'
-import { useDeleteConfirm, useCrossLinkedTasks } from '@/features/roadmap/hooks'
+import { useCrossLinkedTasks } from '@/features/roadmap/hooks'
 import { useUpdateTask } from '@/queries/use-tasks'
 import { CrossLinkTaskPicker } from '../shared/cross-link-task-picker'
-import { CrossLinkedTaskSection } from '../shared/cross-linked-task-section'
 import { AiDecomposeSection } from './ai-decompose-section'
 import { StatusTransitionSection } from './status-transition-section'
-import type { GoalStatus, Area } from '@/types/entities'
+import { GoalViewHeader } from './goal-view-header'
+import { GoalDeleteDialog } from './goal-delete-dialog'
+import { GoalFlatTasksSection } from './goal-flat-tasks-section'
+import { GoalGroupsSection } from './goal-groups-section'
+import { ImpactAreaPicker } from './impact-area-picker'
+import type { GoalStatus } from '@/types/entities'
 import type { AiDecomposeResponse } from '@/lib/ai/types'
 
 interface GoalViewModeProps {
@@ -63,7 +48,6 @@ export function GoalViewMode({
   onBack,
 }: GoalViewModeProps) {
   const storeGoalId = useRoadmapStore(selectGoalId)
-  const inlineMode = useRoadmapStore(selectInlineMode)
   const setInlineMode = useRoadmapStore((s) => s.setInlineMode)
   const goalId = propGoalId || storeGoalId
 
@@ -73,7 +57,6 @@ export function GoalViewMode({
   const updateGoal = useUpdateGoal()
   const deleteGoal = useDeleteGoal()
   const aiSuggest = useAiSuggest()
-  const deleteGroup = useDeleteGroup()
   const enableGroups = useEnableGoalGroups()
   const disableGroups = useDisableGoalGroups()
   const [showDisableConfirm, setShowDisableConfirm] = useState(false)
@@ -81,8 +64,6 @@ export function GoalViewMode({
   const [aiTarget, setAiTarget] = useState<'decompose' | null>(null)
   const [decomposeData, setDecomposeData] = useState<AiDecomposeResponse | null>(null)
   const [crossLinkPickerOpen, setCrossLinkPickerOpen] = useState(false)
-  const groupDelete = useDeleteConfirm()
-  const taskDelete = useDeleteConfirm()
   const { crossLinkedByGroup } = useCrossLinkedTasks(goalId)
   const { data: allGoals } = useGoals()
   const { data: allAreas } = useAreas()
@@ -119,15 +100,10 @@ export function GoalViewMode({
     }
 
     if (dialogType === 'pause') {
-      setTransitionDialog({
-        open: true,
-        type: dialogType,
-        targetStatus: status,
-      })
+      setTransitionDialog({ open: true, type: dialogType, targetStatus: status })
       return
     }
 
-    // Direct transition (e.g. backlog→active)
     updateGoal.mutate({ id: goal.id, input: { status }, previousStatus: goal.status })
   }
 
@@ -149,24 +125,15 @@ export function GoalViewMode({
     if (!goal) return
     updateGoal.mutate({
       id: goal.id,
-      input: {
-        status: 'completed' as GoalStatus,
-        status_change_note: note,
-      },
+      input: { status: 'completed' as GoalStatus, status_change_note: note },
       previousStatus: goal.status,
     })
     setCompletionDialogOpen(false)
   }
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true)
-  }
-
   const handleDeleteConfirm = () => {
     if (!goal) return
-    deleteGoal.mutate(goal.id, {
-      onSuccess: () => handleClose(),
-    })
+    deleteGoal.mutate(goal.id, { onSuccess: () => handleClose() })
     setDeleteDialogOpen(false)
   }
 
@@ -175,24 +142,6 @@ export function GoalViewMode({
     updateGoal.mutate({ id: goal.id, input: { status: 'paused' }, previousStatus: goal.status })
     setDeleteDialogOpen(false)
   }
-
-  const handleGroupClick = useCallback(
-    (groupId: string) => {
-      setInlineMode({ type: 'edit-group', groupId })
-    },
-    [setInlineMode]
-  )
-
-  const handleAddGroup = () => {
-    setInlineMode('create-group')
-  }
-
-  const handleTaskClick = useCallback(
-    (taskId: string) => {
-      setInlineMode({ type: 'edit-task', taskId })
-    },
-    [setInlineMode]
-  )
 
   const handleDecompose = () => {
     if (!goal) return
@@ -238,59 +187,24 @@ export function GoalViewMode({
     return <PanelLoadingSpinner />
   }
 
-  // Calculate group progress
+  // Derived state
   const completedGroups = groups.filter((g) => g.is_completed).length
   const totalGroups = groups.length
-
-  // Calculate task progress
   const activeTasks = tasks.filter((t) => t.is_active)
   const hasGroups = groups.length > 0
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-start justify-between border-b border-[var(--color-border)] p-4">
-        <div className="flex-1">
-          {showBackButton && (
-            <Button variant="ghost" size="sm" onClick={onBack} className="mb-2 -ml-2 gap-1">
-              <ArrowLeft className="h-4 w-4" />
-              뒤로
-            </Button>
-          )}
-          {goal.area && (
-            <Chip variant="area" emoji={goal.area.emoji} color={goal.area.color} className="mb-2">
-              {goal.area.name}
-            </Chip>
-          )}
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-[var(--color-primary-500)]" />
-            <h2 className="text-xl font-bold">{goal.name}</h2>
-            {(goal.start_date || goal.target_date) && (
-              <PeriodBadge startDate={goal.start_date} targetDate={goal.target_date} />
-            )}
-          </div>
-        </div>
-        <div className="flex gap-1">
-          {goal.area && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setGoalEditOpen(true)}
-              aria-label="편집"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="삭제">
-            <Trash2 className="h-4 w-4 text-[var(--color-miss)]" />
-          </Button>
-          {showCloseButton && (
-            <Button variant="ghost" size="icon" onClick={handleClose} aria-label="닫기">
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      </div>
+      <GoalViewHeader
+        goal={goal}
+        showBackButton={showBackButton}
+        showCloseButton={showCloseButton}
+        onBack={onBack}
+        onClose={handleClose}
+        onEdit={() => setGoalEditOpen(true)}
+        onDelete={() => setDeleteDialogOpen(true)}
+      />
 
       {/* Content */}
       <div className="flex-1 space-y-5 overflow-y-auto p-4 pb-8 lg:pb-4">
@@ -384,7 +298,12 @@ export function GoalViewMode({
                 AI로 구성
               </Button>
               {hasGroups && (
-                <Button variant="ghost" size="sm" onClick={handleAddGroup} className="gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setInlineMode('create-group')}
+                  className="gap-1"
+                >
                   <Plus className="h-4 w-4" />
                   그룹
                 </Button>
@@ -412,217 +331,33 @@ export function GoalViewMode({
             )}
           </AnimatePresence>
 
+          {/* AI Decompose */}
+          <AiDecomposeSection
+            isPending={aiSuggest.isPending && aiTarget === 'decompose'}
+            error={aiSuggest.error && aiTarget === 'decompose' ? aiSuggest.error : null}
+            decomposeData={decomposeData}
+            goalId={goalId}
+            onComplete={() => setDecomposeData(null)}
+            onCancel={() => setDecomposeData(null)}
+          />
+
           {!hasGroups ? (
-            /* ── Groups OFF: flat task list ── */
-            <>
-              <AiDecomposeSection
-                isPending={aiSuggest.isPending && aiTarget === 'decompose'}
-                error={aiSuggest.error && aiTarget === 'decompose' ? aiSuggest.error : null}
-                decomposeData={decomposeData}
-                goalId={goalId!}
-                onComplete={() => setDecomposeData(null)}
-                onCancel={() => setDecomposeData(null)}
-              />
-
-              {/* Flat task list */}
-              {activeTasks.length > 0 && (
-                <div className="space-y-1">
-                  {activeTasks.map((task) => {
-                    const isEditingTask =
-                      inlineMode !== null &&
-                      typeof inlineMode === 'object' &&
-                      inlineMode.type === 'edit-task' &&
-                      inlineMode.taskId === task.id
-
-                    return (
-                      <GoalTaskItem
-                        key={task.id}
-                        task={task}
-                        isEditing={isEditingTask}
-                        isDeleting={taskDelete.isDeleting(task.id)}
-                        onEdit={() => handleTaskClick(task.id)}
-                        onEditDone={() => setInlineMode(null)}
-                        onDeleteToggle={() => taskDelete.toggleDelete(task.id)}
-                        onDeleteClear={taskDelete.clearDelete}
-                        variant="flat"
-                      />
-                    )
-                  })}
-                </div>
-              )}
-
-              <InlineTaskQuickInput goalId={goal.id} />
-
-              {/* Cross-linked tasks (flat / no groups) */}
-              <CrossLinkedTaskSection
-                crossLinkedTasks={crossLinkedByGroup.get(null)}
-                goalId={goalId!}
-                goalAreaId={goal!.area_id}
-                allGoals={allGoals ?? []}
-                onNavigate={(sourceGoalId) =>
-                  useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
-                }
-                className="mt-1 space-y-0.5"
-              />
-            </>
+            <GoalFlatTasksSection
+              goalId={goalId}
+              goalAreaId={goal.area_id}
+              activeTasks={activeTasks}
+              crossLinkedTasks={crossLinkedByGroup.get(null)}
+              allGoals={allGoals ?? []}
+            />
           ) : (
-            /* ── Groups ON: group structure with tasks ── */
-            <>
-              <AiDecomposeSection
-                isPending={aiSuggest.isPending && aiTarget === 'decompose'}
-                error={aiSuggest.error && aiTarget === 'decompose' ? aiSuggest.error : null}
-                decomposeData={decomposeData}
-                goalId={goalId!}
-                onComplete={() => setDecomposeData(null)}
-                onCancel={() => setDecomposeData(null)}
-              />
-
-              {/* Inline Group Create */}
-              <AnimatePresence>
-                {inlineMode === 'create-group' && (
-                  <div className="mb-2">
-                    <InlineGroupCreate goalId={goalId!} onDone={() => setInlineMode(null)} />
-                  </div>
-                )}
-              </AnimatePresence>
-
-              {/* Group Sections */}
-              <div className="space-y-3">
-                {groups.map((group) => {
-                  // Backward compat: merge orphaned direct tasks into first non-completed group
-                  const ownTasks = activeTasks.filter((t) => t.group_id === group.id)
-                  const groupTasks = !group.is_completed
-                    ? [...ownTasks, ...activeTasks.filter((t) => !t.group_id)]
-                    : ownTasks
-                  const isEditingGroup =
-                    inlineMode !== null &&
-                    typeof inlineMode === 'object' &&
-                    inlineMode.type === 'edit-group' &&
-                    inlineMode.groupId === group.id
-                  return (
-                    <div key={group.id}>
-                      {/* Group edit inline */}
-                      <AnimatePresence>
-                        {isEditingGroup && (
-                          <InlineGroupEdit
-                            goalId={goalId!}
-                            groupId={group.id}
-                            onDone={() => setInlineMode(null)}
-                          />
-                        )}
-                      </AnimatePresence>
-
-                      {!isEditingGroup && (
-                        <>
-                          {/* Group header */}
-                          <div className="group/grp flex items-center gap-1">
-                            <button
-                              className="flex flex-1 items-center justify-between rounded-lg bg-[var(--color-bg-secondary)] p-3 transition-colors hover:bg-[var(--color-bg-tertiary)]"
-                              onClick={() => handleGroupClick(group.id)}
-                            >
-                              <div className="flex items-center gap-3">
-                                {group.is_completed ? (
-                                  <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-done)]" />
-                                ) : (
-                                  <Circle className="h-5 w-5 shrink-0 text-[var(--color-primary-500)]" />
-                                )}
-                                <span
-                                  className={cn(
-                                    group.is_completed &&
-                                      'text-[var(--color-text-tertiary)] line-through'
-                                  )}
-                                >
-                                  {group.name}
-                                </span>
-                              </div>
-                            </button>
-                            <button
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[var(--color-miss)] transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/grp:opacity-100"
-                              onClick={() => groupDelete.toggleDelete(group.id)}
-                              title="그룹 삭제"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                          {/* Group delete confirmation */}
-                          <AnimatePresence>
-                            {groupDelete.isDeleting(group.id) && (
-                              <InlineDeleteConfirm
-                                title="이 그룹을 삭제할까요?"
-                                description="그룹에 포함된 할 일은 삭제되지 않아요."
-                                onCancel={groupDelete.clearDelete}
-                                onConfirm={() => {
-                                  deleteGroup.mutate(
-                                    { id: group.id, goalId: goalId! },
-                                    { onSuccess: groupDelete.clearDelete }
-                                  )
-                                }}
-                                isLoading={deleteGroup.isPending}
-                              />
-                            )}
-                          </AnimatePresence>
-                          {/* Nested tasks under this group */}
-                          {groupTasks.length > 0 && (
-                            <div className="mt-1 ml-4 space-y-1 border-l-2 border-[var(--color-border)] pl-3">
-                              {groupTasks.map((task) => {
-                                const isEditingTask =
-                                  inlineMode !== null &&
-                                  typeof inlineMode === 'object' &&
-                                  inlineMode.type === 'edit-task' &&
-                                  inlineMode.taskId === task.id
-
-                                return (
-                                  <GoalTaskItem
-                                    key={task.id}
-                                    task={task}
-                                    isEditing={isEditingTask}
-                                    isDeleting={taskDelete.isDeleting(task.id)}
-                                    onEdit={() => handleTaskClick(task.id)}
-                                    onEditDone={() => setInlineMode(null)}
-                                    onDeleteToggle={() => taskDelete.toggleDelete(task.id)}
-                                    onDeleteClear={taskDelete.clearDelete}
-                                    variant="nested"
-                                  />
-                                )
-                              })}
-                            </div>
-                          )}
-                          {/* Quick task input (hidden for completed groups) */}
-                          {!group.is_completed && (
-                            <div className="ml-4">
-                              <InlineTaskQuickInput goalId={goal.id} groupId={group.id} />
-                            </div>
-                          )}
-                          {/* Cross-linked tasks for this group */}
-                          <CrossLinkedTaskSection
-                            crossLinkedTasks={crossLinkedByGroup.get(group.id)}
-                            goalId={goalId!}
-                            goalAreaId={goal!.area_id}
-                            allGoals={allGoals ?? []}
-                            onNavigate={(sourceGoalId) =>
-                              useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
-                            }
-                            className="mt-1 ml-4 space-y-0.5 border-l-2 border-dashed border-[var(--color-border)] pl-3"
-                          />
-                        </>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Orphaned cross-linked tasks (no group assigned) */}
-              <CrossLinkedTaskSection
-                crossLinkedTasks={crossLinkedByGroup.get(null)}
-                goalId={goalId!}
-                goalAreaId={goal!.area_id}
-                allGoals={allGoals ?? []}
-                onNavigate={(sourceGoalId) =>
-                  useRoadmapStore.getState().select({ type: 'goal', id: sourceGoalId })
-                }
-                className="mt-2 space-y-0.5"
-              />
-            </>
+            <GoalGroupsSection
+              goalId={goalId}
+              goalAreaId={goal.area_id}
+              groups={groups}
+              activeTasks={activeTasks}
+              crossLinkedByGroup={crossLinkedByGroup}
+              allGoals={allGoals ?? []}
+            />
           )}
         </div>
 
@@ -685,33 +420,15 @@ export function GoalViewMode({
 
       {/* Delete Confirmation Dialog */}
       {goal && (
-        <ResponsiveModal
+        <GoalDeleteDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          title="이 목표를 삭제할까요?"
-          description="연결된 그룹과 할 일도 함께 삭제됩니다."
-        >
-          <ModalBody>
-            <p className="text-sm text-[var(--color-text-secondary)]">
-              삭제 대신 &quot;일시정지&quot;로 기록을 보존할 수도 있어요.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="secondary" className="flex-1" onClick={handleDeletePause}>
-              일시정지로 변경
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1 bg-[var(--color-miss)] hover:bg-[var(--color-miss)]"
-              onClick={handleDeleteConfirm}
-            >
-              삭제하기
-            </Button>
-          </ModalFooter>
-        </ResponsiveModal>
+          onConfirm={handleDeleteConfirm}
+          onPause={handleDeletePause}
+        />
       )}
 
-      {/* Goal Edit Modal (dialog on desktop, drawer on mobile) */}
+      {/* Goal Edit Modal */}
       {goal && goal.area && (
         <ResponsiveModal open={goalEditOpen} onOpenChange={setGoalEditOpen} title="목표 편집">
           <ModalBody className="px-4 pb-6">
@@ -719,73 +436,6 @@ export function GoalViewMode({
           </ModalBody>
         </ResponsiveModal>
       )}
-    </div>
-  )
-}
-
-// ── Impact Area Picker ──────────────────────────────────────────────────────
-
-interface ImpactAreaPickerProps {
-  areaId: string
-  selectedIds: string[]
-  areas: Area[]
-  onUpdate: (ids: string[]) => void
-}
-
-function ImpactAreaPicker({ areaId, selectedIds, areas, onUpdate }: ImpactAreaPickerProps) {
-  const secondaryAreas = areas.filter((a) => a.id !== areaId)
-  const atMax = selectedIds.length >= 3
-
-  const toggle = (id: string) => {
-    if (selectedIds.includes(id)) {
-      onUpdate(selectedIds.filter((x) => x !== id))
-    } else if (!atMax) {
-      onUpdate([...selectedIds, id])
-    }
-  }
-
-  return (
-    <div>
-      <div className="mb-2">
-        <p className="text-sm font-medium text-[var(--color-text-primary)]">영향 영역</p>
-        <p className="text-xs text-[var(--color-text-tertiary)]">
-          이 목표가 도움이 되는 영역 (최대 3개)
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {secondaryAreas.map((area) => {
-          const isSelected = selectedIds.includes(area.id)
-          const isDisabled = atMax && !isSelected
-
-          return (
-            <button
-              key={area.id}
-              type="button"
-              disabled={isDisabled}
-              onClick={() => toggle(area.id)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
-                isSelected
-                  ? 'border border-solid'
-                  : 'border border-dashed border-[var(--color-border)] bg-transparent text-[var(--color-text-secondary)] hover:border-[var(--color-border-hover)]',
-                isDisabled && 'pointer-events-none opacity-50'
-              )}
-              style={
-                isSelected
-                  ? {
-                      backgroundColor: `${area.color}26`,
-                      borderColor: area.color,
-                      color: area.color,
-                    }
-                  : undefined
-              }
-            >
-              <span>{area.emoji}</span>
-              <span>{area.name}</span>
-            </button>
-          )
-        })}
-      </div>
     </div>
   )
 }
