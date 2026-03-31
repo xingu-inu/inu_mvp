@@ -84,9 +84,7 @@ export function useDagreLayout(
   const needsLayoutRef = useRef(true)
   const [layoutVersion, setLayoutVersion] = useState(0)
   const edgesRef = useRef(initialEdges)
-  const directionAnchorRef = useRef<{ x: number; y: number; direction: 'TB' | 'LR' } | null>(null)
   const isFirstLayoutRef = useRef(true)
-  const prevDirectionRef = useRef(direction)
   const { fitView } = useReactFlow()
 
   // Track the previous initialNodes/initialEdges identity to detect data changes
@@ -105,13 +103,17 @@ export function useDagreLayout(
 
       prevInitialRef.current = { nodes: initialNodes, edges: initialEdges }
 
-      // Preserve existing node positions so nodes don't flash to {x:0,y:0}
+      // Preserve existing node positions and measured dimensions
       setNodes((currentNodes) => {
-        const posMap = new Map(currentNodes.map((n) => [n.id, n.position]))
-        return initialNodes.map((n) => ({
-          ...n,
-          position: posMap.get(n.id) ?? n.position,
-        }))
+        const currentMap = new Map(currentNodes.map((n) => [n.id, n]))
+        return initialNodes.map((n) => {
+          const existing = currentMap.get(n.id)
+          return {
+            ...n,
+            position: existing?.position ?? n.position,
+            measured: existing?.measured,
+          }
+        })
       })
       setEdges(initialEdges)
 
@@ -128,12 +130,11 @@ export function useDagreLayout(
 
   // Detect direction change (TB↔LR) — node IDs stay the same so the sync
   // effect above won't flag it as a structural change; handle separately.
+  const prevDirectionRef = useRef(direction)
   useEffect(() => {
     if (prevDirectionRef.current !== direction) {
       prevDirectionRef.current = direction
       needsLayoutRef.current = true
-      // Axis changed, so the previous anchor is meaningless
-      directionAnchorRef.current = null
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: trigger dagre relayout when layout direction changes
       setLayoutVersion((v) => v + 1)
     }
@@ -144,29 +145,15 @@ export function useDagreLayout(
     if (nodesInitialized && needsLayoutRef.current) {
       setNodes((currentNodes) => {
         if (currentNodes.length === 0) return currentNodes
+
+        // Guard: skip layout if any node lacks measured dimensions.
+        // Dagre would fall back to DEFAULT_DIMENSIONS producing wrong positions,
+        // and needsLayoutRef stays true so a corrective pass runs once measured.
+        const hasUnmeasured = currentNodes.some((n) => !n.measured?.width || !n.measured?.height)
+        if (hasUnmeasured) return currentNodes
+
         needsLayoutRef.current = false
         const layouted = getLayoutedElements(currentNodes, edgesRef.current, direction)
-
-        // Anchor Direction node: keep it at the same position across relayouts
-        const dirNode = layouted.find((n) => n.type === 'direction')
-        if (dirNode) {
-          const anchor = directionAnchorRef.current
-          if (anchor && anchor.direction === direction) {
-            const dx = anchor.x - dirNode.position.x
-            const dy = anchor.y - dirNode.position.y
-            for (const node of layouted) {
-              node.position = {
-                x: node.position.x + dx,
-                y: node.position.y + dy,
-              }
-            }
-          }
-          directionAnchorRef.current = {
-            x: dirNode.position.x,
-            y: dirNode.position.y,
-            direction,
-          }
-        }
 
         // Only fitView on initial layout; subsequent relayouts keep viewport stable
         if (isFirstLayoutRef.current) {

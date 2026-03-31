@@ -6,6 +6,29 @@
 @import '../styles/animations.css';
 @import '../styles/underwater.css';
 
+/* Override ReactFlow built-in node styles — project uses custom node components.
+   The custom 'group' node type name collides with ReactFlow's built-in group type. */
+.react-flow__node-group {
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  width: auto;
+  font-size: inherit;
+  text-align: inherit;
+  border-radius: unset;
+  color: inherit;
+}
+
+.react-flow__node-group.selectable:hover {
+  box-shadow: none;
+}
+
+.react-flow__node.selectable.selected,
+.react-flow__node.selectable:focus,
+.react-flow__node.selectable:focus-visible {
+  box-shadow: none !important;
+}
+
 @custom-variant dark (&:where([data-theme="dark"] *));
 
 @theme inline {
