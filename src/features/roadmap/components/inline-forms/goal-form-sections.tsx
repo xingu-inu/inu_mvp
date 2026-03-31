@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Target, Heart, Calendar } from 'lucide-react'
 import { AnimatedCollapse } from '@/features/roadmap/components/shared/animated-collapse'
@@ -43,6 +44,10 @@ export function GoalNameSection<T extends FieldValues>({
   onGoalGenerate,
   idPrefix = 'goal-name',
 }: GoalNameSectionProps<T>) {
+  const isCreateMode = !idPrefix.startsWith('edit-')
+  const [isNameFocused, setIsNameFocused] = useState(isCreateMode)
+  const nameRegistration = form.register('name' as never)
+
   return (
     <>
       <div className="space-y-1.5">
@@ -53,23 +58,38 @@ export function GoalNameSection<T extends FieldValues>({
         <Input
           id={idPrefix}
           placeholder="예: 10km 달리기 완주"
-          autoFocus={!idPrefix.startsWith('edit-')}
-          {...form.register('name' as never)}
+          autoFocus={isCreateMode}
+          {...nameRegistration}
+          onFocus={(e) => {
+            nameRegistration.onBlur(e)
+            setIsNameFocused(true)
+          }}
+          onBlur={(e) => {
+            nameRegistration.onBlur(e)
+            setIsNameFocused(false)
+          }}
         />
         {form.formState.errors.name && (
           <p className="text-xs text-[var(--color-miss)]">
             {form.formState.errors.name.message as string}
           </p>
         )}
-        <SampleChips
-          items={sampleGoals}
-          selectedValue={currentName ?? ''}
-          onToggle={(val) =>
-            form.setValue('name' as never, (currentName === val ? '' : val) as never, {
-              shouldValidate: true,
-            })
-          }
-        />
+        <AnimatePresence>
+          {isNameFocused && (
+            <AnimatedCollapse>
+              <SampleChips
+                items={sampleGoals}
+                selectedValue={currentName ?? ''}
+                preventBlur
+                onToggle={(val) =>
+                  form.setValue('name' as never, (currentName === val ? '' : val) as never, {
+                    shouldValidate: true,
+                  })
+                }
+              />
+            </AnimatedCollapse>
+          )}
+        </AnimatePresence>
       </div>
 
       <AiSuggestionPanel
@@ -107,6 +127,8 @@ export function GoalWhySection<T extends FieldValues>({
   onWhyGenerate,
   idPrefix = 'goal-why',
 }: GoalWhySectionProps<T>) {
+  const [isWhyFocused, setIsWhyFocused] = useState(false)
+
   return (
     <div className="space-y-2 rounded-lg bg-[var(--color-primary-50)]/40 p-2.5">
       <Label
@@ -120,12 +142,23 @@ export function GoalWhySection<T extends FieldValues>({
         placeholder="이유나 달성 후 기대하는 변화를 적어보세요"
         value={currentWhy}
         onChange={(e) => form.setValue('why' as never, e.target.value as never)}
+        onFocus={() => setIsWhyFocused(true)}
+        onBlur={() => setIsWhyFocused(false)}
       />
-      <SampleChips
-        items={sampleWhys}
-        selectedValue={currentWhy}
-        onToggle={(val) => form.setValue('why' as never, (currentWhy === val ? '' : val) as never)}
-      />
+      <AnimatePresence>
+        {isWhyFocused && (
+          <AnimatedCollapse>
+            <SampleChips
+              items={sampleWhys}
+              selectedValue={currentWhy}
+              preventBlur
+              onToggle={(val) =>
+                form.setValue('why' as never, (currentWhy === val ? '' : val) as never)
+              }
+            />
+          </AnimatedCollapse>
+        )}
+      </AnimatePresence>
       <AiSuggestionPanel
         triggerLabel="AI 도움받기"
         isLoading={whyAi.isLoading}

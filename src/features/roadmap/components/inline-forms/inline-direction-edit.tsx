@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { AnimatePresence } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AnimatedCollapse } from '@/features/roadmap/components/shared/animated-collapse'
 import { SampleChips } from '@/features/roadmap/components/shared/sample-chips'
 import { Input } from '@/components/ui/input'
 import { useUpdateDirection } from '@/queries/use-direction'
@@ -42,6 +45,9 @@ export function InlineDirectionEdit({
   const watchedStatement = useWatch({ control: form.control, name: 'statement' })
   const watchedWhy = useWatch({ control: form.control, name: 'why' })
 
+  const [isStatementFocused, setIsStatementFocused] = useState(false)
+  const [isWhyFocused, setIsWhyFocused] = useState(false)
+
   const handleSubmit = (values: z.infer<typeof directionSchema>) => {
     updateDirection.mutate(
       {
@@ -66,26 +72,74 @@ export function InlineDirectionEdit({
       className="space-y-3 border-t border-[var(--color-border)] px-3 py-3"
     >
       <div className="space-y-1.5">
-        <Input placeholder="나의 방향..." className="text-sm" {...form.register('statement')} />
+        {(() => {
+          const reg = form.register('statement')
+          return (
+            <Input
+              placeholder="나의 방향..."
+              className="text-sm"
+              {...reg}
+              onFocus={(e) => {
+                reg.onBlur(e)
+                setIsStatementFocused(true)
+              }}
+              onBlur={(e) => {
+                reg.onBlur(e)
+                setIsStatementFocused(false)
+              }}
+            />
+          )
+        })()}
         {form.formState.errors.statement && (
           <p className="text-xs text-[var(--color-miss)]">
             {form.formState.errors.statement.message}
           </p>
         )}
-        <SampleChips
-          items={SAMPLE_DIRECTION_STATEMENTS}
-          selectedValue={watchedStatement}
-          onToggle={(val) =>
-            form.setValue('statement', form.getValues('statement') === val ? '' : val)
-          }
-        />
+        <AnimatePresence>
+          {isStatementFocused && (
+            <AnimatedCollapse>
+              <SampleChips
+                items={SAMPLE_DIRECTION_STATEMENTS}
+                selectedValue={watchedStatement}
+                preventBlur
+                onToggle={(val) =>
+                  form.setValue('statement', form.getValues('statement') === val ? '' : val)
+                }
+              />
+            </AnimatedCollapse>
+          )}
+        </AnimatePresence>
       </div>
-      <Input placeholder="왜 이 방향인가요? (선택)" className="text-sm" {...form.register('why')} />
-      <SampleChips
-        items={SAMPLE_DIRECTION_WHYS}
-        selectedValue={watchedWhy ?? ''}
-        onToggle={(val) => form.setValue('why', form.getValues('why') === val ? '' : val)}
-      />
+      {(() => {
+        const reg = form.register('why')
+        return (
+          <Input
+            placeholder="왜 이 방향인가요? (선택)"
+            className="text-sm"
+            {...reg}
+            onFocus={(e) => {
+              reg.onBlur(e)
+              setIsWhyFocused(true)
+            }}
+            onBlur={(e) => {
+              reg.onBlur(e)
+              setIsWhyFocused(false)
+            }}
+          />
+        )
+      })()}
+      <AnimatePresence>
+        {isWhyFocused && (
+          <AnimatedCollapse>
+            <SampleChips
+              items={SAMPLE_DIRECTION_WHYS}
+              selectedValue={watchedWhy ?? ''}
+              preventBlur
+              onToggle={(val) => form.setValue('why', form.getValues('why') === val ? '' : val)}
+            />
+          </AnimatedCollapse>
+        )}
+      </AnimatePresence>
       <div className="flex gap-2">
         <Button
           type="button"
