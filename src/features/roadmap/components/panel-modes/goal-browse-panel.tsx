@@ -188,7 +188,11 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
       setExpandedGoalIds((prev) => new Set(prev).add(goalId))
       setAreaDetailId(null)
       setEditingGoalId(null)
-      select({ type: 'goal', id: goalId })
+      // Only select if not already selected — avoids store's toggle logic closing the panel
+      const current = useRoadmapStore.getState().selection
+      if (!(current.type === 'goal' && current.id === goalId)) {
+        select({ type: 'goal', id: goalId })
+      }
       onGoalSelect?.(goalId)
     }
   }
