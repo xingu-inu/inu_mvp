@@ -11,7 +11,7 @@ import { useRoadmapStore } from '@/stores/roadmap.store'
 import {
   useNotifications,
   useNotificationCount,
-  dismissAnnouncement,
+  dismissNotification,
 } from '@/queries/use-notifications'
 import type { AppNotification } from '@/types/entities'
 
@@ -28,13 +28,11 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
   const badgeCount = useNotificationCount()
 
   const select = useRoadmapStore((s) => s.select)
-  const openMobileDrawer = useRoadmapStore((s) => s.openMobileDrawer)
 
   const handleClick = (notification: AppNotification) => {
     if (notification.relatedGoalId) {
       const goalId = notification.relatedGoalId
       select({ type: 'goal', id: goalId })
-      openMobileDrawer(goalId)
       if (!pathname.startsWith('/roadmap')) {
         router.push('/roadmap')
       }
@@ -44,8 +42,7 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
 
   const handleDismiss = useCallback(
     (notification: AppNotification) => {
-      const announcementId = notification.id.replace('announcement-', '')
-      dismissAnnouncement(announcementId)
+      dismissNotification(notification.id)
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.today() })
     },
     [queryClient]
@@ -96,7 +93,7 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
                 key={n.id}
                 notification={n}
                 onClick={() => handleClick(n)}
-                onDismiss={n.type === 'announcement' ? () => handleDismiss(n) : undefined}
+                onDismiss={() => handleDismiss(n)}
               />
             ))
           )}
@@ -113,7 +110,7 @@ function NotificationItem({
 }: {
   notification: AppNotification
   onClick: () => void
-  onDismiss?: () => void
+  onDismiss: () => void
 }) {
   const isClickable = !!notification.relatedGoalId
 
@@ -142,23 +139,17 @@ function NotificationItem({
         <p className="text-sm font-medium">{notification.title}</p>
         <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">{notification.message}</p>
       </div>
-      {onDismiss ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDismiss()
-          }}
-          className="mt-0.5 shrink-0 rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
-          aria-label="알림 닫기"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      ) : (
-        notification.priority >= 4 && (
-          <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[var(--color-streak)]" />
-        )
-      )}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          onDismiss()
+        }}
+        className="mt-0.5 shrink-0 rounded-md p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-primary)]"
+        aria-label="알림 닫기"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
     </div>
   )
 }

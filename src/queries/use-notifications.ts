@@ -11,7 +11,7 @@ import { getActiveAnnouncements } from '@/actions/announcement.actions'
 import type { AppNotification } from '@/types/entities'
 import type { Announcement } from '@/repositories/announcement.repository'
 
-const DISMISSED_KEY = 'inu-dismissed-announcements'
+const DISMISSED_KEY = 'inu-dismissed-notifications'
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
 
 interface DismissedEntry {
@@ -24,7 +24,6 @@ function parseDismissedEntries(raw: string | null): DismissedEntry[] {
   try {
     const parsed = JSON.parse(raw) as DismissedEntry[] | string[]
     if (parsed.length === 0) return []
-    // Migrate legacy string[] format
     if (typeof parsed[0] === 'string') {
       return (parsed as string[]).map((id) => ({ id, at: Date.now() }))
     }
@@ -39,7 +38,6 @@ function getDismissedIds(): string[] {
   try {
     const entries = parseDismissedEntries(localStorage.getItem(DISMISSED_KEY))
     if (entries.length === 0) return []
-    // Auto-prune entries older than 30 days
     const now = Date.now()
     const valid = entries.filter((e) => now - e.at < THIRTY_DAYS)
     if (valid.length < entries.length) {
@@ -51,11 +49,11 @@ function getDismissedIds(): string[] {
   }
 }
 
-export function dismissAnnouncement(id: string) {
+export function dismissNotification(notificationId: string) {
   if (typeof window === 'undefined') return
   const entries = parseDismissedEntries(localStorage.getItem(DISMISSED_KEY))
-  if (!entries.some((e) => e.id === id)) {
-    entries.push({ id, at: Date.now() })
+  if (!entries.some((e) => e.id === notificationId)) {
+    entries.push({ id: notificationId, at: Date.now() })
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(entries))
   }
 }
@@ -67,18 +65,15 @@ const ANNOUNCEMENT_EMOJI: Record<string, string> = {
 }
 
 function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNotification[] {
-  const dismissedIds = getDismissedIds()
-  return announcements
-    .filter((a) => !dismissedIds.includes(a.id))
-    .map((a) => ({
-      id: `announcement-${a.id}`,
-      type: 'announcement' as const,
-      title: a.title,
-      message: a.content,
-      emoji: ANNOUNCEMENT_EMOJI[a.type] ?? '\u{1F4E2}',
-      priority: 5,
-      autoResolve: false,
-    }))
+  return announcements.map((a) => ({
+    id: `announcement-${a.id}`,
+    type: 'announcement' as const,
+    title: a.title,
+    message: a.content,
+    emoji: ANNOUNCEMENT_EMOJI[a.type] ?? '\u{1F4E2}',
+    priority: 5,
+    autoResolve: false,
+  }))
 }
 
 async function fetchNotifications(queryClient: QueryClient): Promise<AppNotification[]> {
@@ -103,8 +98,10 @@ async function fetchNotifications(queryClient: QueryClient): Promise<AppNotifica
 
   const computed = computeNotifications(activeGoals, completedGoals, recentGroups, today)
   const announcementNotifications = mapAnnouncementsToNotifications(announcements)
+  const dismissedIds = getDismissedIds()
 
-  return [...announcementNotifications, ...computed]
+  const all = [...announcementNotifications, ...computed]
+  return all.filter((n) => !dismissedIds.includes(n.id))
 }
 
 export function useNotifications() {
