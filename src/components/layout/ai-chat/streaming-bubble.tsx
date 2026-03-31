@@ -5,8 +5,9 @@ import type { UIMessage } from 'ai'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Loader2 } from 'lucide-react'
-import { getMessageText, isProposalPart } from './chat-utils'
+import { getMessageText, isProposalPart, isTraitSuggestionPart } from './chat-utils'
 import { ProposalCard } from './proposal-card'
+import { TraitSuggestionCard } from './trait-suggestion-card'
 
 const markdownComponents = {
   p: ({ children }: { children?: React.ReactNode }) => (
@@ -62,10 +63,10 @@ export const StreamingBubble = memo(function StreamingBubble({
 
   // Assistant messages: iterate parts to detect tool invocations
   const parts = message.parts ?? []
-  const hasProposal = parts.some(isProposalPart)
+  const hasToolCard = parts.some((p) => isProposalPart(p) || isTraitSuggestionPart(p))
 
-  // If no proposal parts, render the simple way (text only)
-  if (!hasProposal) {
+  // If no tool card parts, render the simple way (text only)
+  if (!hasToolCard) {
     const text = getMessageText(message)
     return (
       <div className="flex justify-start">
@@ -108,7 +109,6 @@ export const StreamingBubble = memo(function StreamingBubble({
             if (part.state === 'output-available' && part.output != null) {
               return <ProposalCard key={part.toolCallId} output={part.output} />
             }
-            // Tool is still executing
             return (
               <div
                 key={part.toolCallId}
@@ -116,6 +116,22 @@ export const StreamingBubble = memo(function StreamingBubble({
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 <span>구조를 정리하는 중...</span>
+              </div>
+            )
+          }
+
+          // Trait suggestion tool parts
+          if (isTraitSuggestionPart(part)) {
+            if (part.state === 'output-available' && part.output != null) {
+              return <TraitSuggestionCard key={part.toolCallId} output={part.output} />
+            }
+            return (
+              <div
+                key={part.toolCallId}
+                className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-[var(--color-bg-secondary)] px-3.5 py-2.5 text-sm text-[var(--color-text-secondary)]"
+              >
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>프로필을 정리하는 중...</span>
               </div>
             )
           }

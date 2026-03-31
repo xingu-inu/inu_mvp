@@ -99,6 +99,31 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
       },
     }),
 
+    suggest_profile_traits: tool({
+      description:
+        '대화 중 사용자에 대해 알게 된 정보를 프로필 항목으로 제안합니다. ' +
+        '자연스러운 대화 중에는 1-2개, "나에 대해 정리해줘" 요청 시 여러 개 제안.',
+      inputSchema: z.object({
+        traits: z
+          .array(
+            z.object({
+              label: z.string().max(50).describe('항목 이름 (예: MBTI, 강점, 현재 고민)'),
+              value: z.string().max(500).describe('항목 내용'),
+              reason: z.string().max(200).describe('이 항목을 제안하는 이유 (1문장)'),
+              existing_trait_id: z
+                .string()
+                .optional()
+                .describe('기존 프로필 항목 ID (업데이트 시)'),
+            })
+          )
+          .min(1)
+          .max(10),
+      }),
+      execute: async ({ traits }) => {
+        return sanitizeToolResult({ type: 'suggest_profile_traits', traits })
+      },
+    }),
+
     propose_structure: tool({
       description:
         '쏟아내기 모드에서 사용자의 아이디어를 Area/Goal/Task 구조로 제안합니다. 사용자가 충분히 이야기한 후에 호출하세요. 사용자는 이 제안을 미리보고 "반영하기"로 실제 생성할 수 있습니다.',

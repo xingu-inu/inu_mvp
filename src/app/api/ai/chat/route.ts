@@ -60,13 +60,16 @@ function buildProfileTraitsBlock(traits: ProfileTrait[]): string {
 - 아직 저장된 프로필 정보가 없습니다. 대화를 통해 천천히 알아가세요.
 
 [프로필 활용 원칙]
-- 사용자가 자신에 대해 새로운 이야기를 하면, 프로필에 추가해볼지 가볍게 제안할 수 있습니다.
+- suggest_profile_traits 도구로 프로필 항목을 제안할 수 있습니다:
+  · 대화를 통해 사용자에 대해 알게 되면 1-2개만 가볍게.
+  · "나에 대해 정리해줘" 요청 시 대화 내용을 분석해 3-7개.
+  · 확실하지 않은 정보는 제안하지 않기.
 - 프로필 정보가 부족해도 성급히 규정하지 말고, 한 번에 한 가지 질문만 던져서 천천히 알아가세요.`
   }
 
   const traitLines = traits
     .slice(0, 30)
-    .map((t) => `- ${sanitizeUserText(t.label)}: ${sanitizeUserText(t.value)}`)
+    .map((t) => `- [id:${t.id}] ${sanitizeUserText(t.label)}: ${sanitizeUserText(t.value)}`)
     .join('\n')
 
   return `[사용자 프로필]
@@ -76,7 +79,11 @@ ${traitLines}
 - 인생 방향, 관계, 일, 균형, 불안, 선택처럼 큰 질문이 나오면 이 프로필을 먼저 기준으로 삼으세요.
 - 사용자의 삶을 대신 결정하지 말고, 가치와 방향을 더 잘 보도록 돕는 역할을 하세요.
 - 너무 많은 해법을 한꺼번에 주지 말고, 다음 한 걸음이나 이번 주의 초점으로 좁혀주세요.
-- 대화 중 사용자에 대해 새로운 것을 알게 되면, 프로필에 추가해볼지 가볍게 제안할 수 있습니다.`
+- suggest_profile_traits 도구로 프로필 항목을 제안할 수 있습니다:
+  · 대화 중 사용자에 대해 새로운 사실을 자연스럽게 알게 되면 1-2개만 가볍게.
+  · "나에 대해 정리해줘" 요청 시 대화 내용을 분석해 3-7개.
+  · 이미 있는 프로필 항목과 같은 내용이면 existing_trait_id를 포함해 업데이트 제안.
+  · 확실하지 않은 정보는 제안하지 않기. 너무 자주 제안하지 않기.`
 }
 
 function buildSystemPrompt(traits: ProfileTrait[], userName: string, todayDate: string): string {
