@@ -12,7 +12,46 @@ import {
 } from './base.repository'
 import type { Group, CreateGroupInput, UpdateGroupInput } from '@/types/entities'
 
+/** Lightweight group shape for milestone notifications */
+export interface NotificationGroup {
+  id: string
+  name: string
+  goal_id: string
+  goal_name: string
+  completed_at: string | null
+}
+
 export const groupRepository = {
+  /**
+   * 최근 완료된 Group 조회 (Milestone 알림용)
+   * goal name을 join하여 알림 메시지 생성에 활용
+   */
+  async getRecentlyCompleted(
+    supabase: TypedSupabaseClient,
+    userId: string,
+    withinDays: number = 3
+  ): Promise<NotificationGroup[]> {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - withinDays)
+
+    const { data, error } = await supabase
+      .from('groups')
+      .select('id, name, goal_id, completed_at, goal:goals!inner(name, user_id)')
+      .eq('is_completed', true)
+      .gte('completed_at', cutoff.toISOString())
+      .eq('goal.user_id', userId)
+
+    if (error) handleSupabaseError(error)
+
+    return (data ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      goal_id: g.goal_id,
+      goal_name: (g.goal as unknown as { name: string }).name,
+      completed_at: g.completed_at,
+    }))
+  },
+
   /**
    * Goal의 모든 Group 조회
    */

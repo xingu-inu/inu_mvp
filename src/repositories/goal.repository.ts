@@ -23,6 +23,17 @@ export interface MinimalGoal {
   target_date: string | null
 }
 
+/** Extended goal shape for the redesigned notification system */
+export interface NotificationGoal {
+  id: string
+  name: string
+  status: GoalStatus
+  target_date: string | null
+  updated_at: string | null
+  completed_at: string | null
+  task_count: number
+}
+
 export const goalRepository = {
   /**
    * Active Goal을 경량 쿼리로 조회 (notifications 전용)
@@ -37,6 +48,65 @@ export const goalRepository = {
 
     if (error) handleSupabaseError(error)
     return (data ?? []) as MinimalGoal[]
+  },
+
+  /**
+   * Active Goal을 알림 시스템용으로 조회 (확장된 필드)
+   * updated_at, completed_at, task count 포함
+   */
+  async getForNotifications(
+    supabase: TypedSupabaseClient,
+    userId: string
+  ): Promise<NotificationGoal[]> {
+    const { data, error } = await supabase
+      .from('goals')
+      .select('id, name, status, target_date, updated_at, completed_at, tasks(id)')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+
+    if (error) handleSupabaseError(error)
+
+    return (data ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      status: g.status as GoalStatus,
+      target_date: g.target_date,
+      updated_at: g.updated_at,
+      completed_at: g.completed_at,
+      task_count: Array.isArray(g.tasks) ? g.tasks.length : 0,
+    }))
+  },
+
+  /**
+   * 최근 완료된 Goal 조회 (Milestone 알림용)
+   * completed 상태 & completed_at 최근 N일 이내
+   */
+  async getRecentlyCompleted(
+    supabase: TypedSupabaseClient,
+    userId: string,
+    withinDays: number = 7
+  ): Promise<NotificationGoal[]> {
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - withinDays)
+
+    const { data, error } = await supabase
+      .from('goals')
+      .select('id, name, status, target_date, updated_at, completed_at, tasks(id)')
+      .eq('user_id', userId)
+      .eq('status', 'completed')
+      .gte('completed_at', cutoff.toISOString())
+
+    if (error) handleSupabaseError(error)
+
+    return (data ?? []).map((g) => ({
+      id: g.id,
+      name: g.name,
+      status: g.status as GoalStatus,
+      target_date: g.target_date,
+      updated_at: g.updated_at,
+      completed_at: g.completed_at,
+      task_count: Array.isArray(g.tasks) ? g.tasks.length : 0,
+    }))
   },
 
   /**

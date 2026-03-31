@@ -53,6 +53,13 @@ export interface Profile extends BaseEntity {
   ai_model: string | null
 }
 
+export interface ProfileTrait extends BaseEntity {
+  user_id: string
+  label: string
+  value: string
+  sort_order: string
+}
+
 export interface Direction extends BaseEntity {
   user_id: string
   statement: string
@@ -278,6 +285,16 @@ export interface UpdateProfileInput {
   ai_model?: string
 }
 
+export interface CreateProfileTraitInput {
+  label: string
+  value: string
+}
+
+export interface UpdateProfileTraitInput {
+  label?: string
+  value?: string
+}
+
 // ============================================
 // Roadmap Versioning Types
 // ============================================
@@ -405,7 +422,12 @@ export interface Feedback {
 // ============================================
 // Notifications (computed, no DB table)
 // ============================================
-export type NotificationType = 'goal_deadline' | 'goal_progress' | 'announcement'
+export type NotificationType =
+  | 'milestone_goal'
+  | 'milestone_group'
+  | 'deadline'
+  | 'insight'
+  | 'announcement'
 
 export interface AppNotification {
   id: string
@@ -414,10 +436,7 @@ export interface AppNotification {
   message: string
   emoji: string
   priority: number // 1-5 (5=highest)
-  actionPath?: string
-  actionLabel?: string
   relatedGoalId?: string
-  relatedTaskId?: string
   autoResolve: boolean // true = disappears when condition met
 }
 

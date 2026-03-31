@@ -5,11 +5,11 @@ import { queryKeys } from '@/lib/query/keys'
 import { STALE_TIMES } from '@/lib/query/stale-times'
 import { computeNotifications, countActionableNotifications } from '@/lib/notifications'
 import { unwrapResponse } from '@/lib/api'
-import { getActiveGoalsMinimal } from '@/actions/goal.actions'
+import { getGoalsForNotifications, getRecentlyCompletedGoals } from '@/actions/goal.actions'
+import { getRecentlyCompletedGroups } from '@/actions/group.actions'
 import { getActiveAnnouncements } from '@/actions/announcement.actions'
 import type { AppNotification } from '@/types/entities'
 import type { Announcement } from '@/repositories/announcement.repository'
-import type { MinimalGoal } from '@/repositories/goal.repository'
 
 const DISMISSED_KEY = 'inu-dismissed-announcements'
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000
@@ -52,6 +52,7 @@ function getDismissedIds(): string[] {
 }
 
 export function dismissAnnouncement(id: string) {
+  if (typeof window === 'undefined') return
   const entries = parseDismissedEntries(localStorage.getItem(DISMISSED_KEY))
   if (!entries.some((e) => e.id === id)) {
     entries.push({ id, at: Date.now() })
@@ -83,18 +84,24 @@ function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNoti
 async function fetchNotifications(queryClient: QueryClient): Promise<AppNotification[]> {
   const today = new Date()
 
-  const [goalsResponse, announcements] = await Promise.all([
-    getActiveGoalsMinimal(),
-    queryClient.ensureQueryData<Announcement[]>({
-      queryKey: queryKeys.announcements.active,
-      queryFn: () => getActiveAnnouncements().then(unwrapResponse),
-      staleTime: STALE_TIMES.ANNOUNCEMENTS,
-    }),
+  const [activeGoalsRes, completedGoalsRes, recentGroupsRes, announcements] = await Promise.all([
+    getGoalsForNotifications(),
+    getRecentlyCompletedGoals(),
+    getRecentlyCompletedGroups(),
+    queryClient
+      .ensureQueryData<Announcement[]>({
+        queryKey: queryKeys.announcements.active,
+        queryFn: () => getActiveAnnouncements().then(unwrapResponse),
+        staleTime: STALE_TIMES.ANNOUNCEMENTS,
+      })
+      .catch(() => [] as Announcement[]),
   ])
 
-  const activeGoals: MinimalGoal[] = goalsResponse.success ? goalsResponse.data : []
+  const activeGoals = activeGoalsRes.success ? activeGoalsRes.data : []
+  const completedGoals = completedGoalsRes.success ? completedGoalsRes.data : []
+  const recentGroups = recentGroupsRes.success ? recentGroupsRes.data : []
 
-  const computed = computeNotifications(activeGoals, today)
+  const computed = computeNotifications(activeGoals, completedGoals, recentGroups, today)
   const announcementNotifications = mapAnnouncementsToNotifications(announcements)
 
   return [...announcementNotifications, ...computed]

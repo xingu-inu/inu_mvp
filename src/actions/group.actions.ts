@@ -7,10 +7,22 @@ import { ErrorCode } from '@/lib/api/errors'
 import { createGroupSchema, updateGroupSchema } from '@/lib/validations'
 
 import type { Group, CreateGroupInput, UpdateGroupInput, ApiResponse, ApiListResult } from '@/types'
+import type { NotificationGroup } from '@/repositories/group.repository'
 
 const NOT_FOUND_ERROR_MAP = {
   NOT_FOUND: { code: ErrorCode.NOT_FOUND, message: '그룹을 찾을 수 없습니다.' },
 } as const
+
+/**
+ * 최근 완료된 Group 조회 (Milestone 알림용)
+ */
+export const getRecentlyCompletedGroups = authAction(
+  'getRecentlyCompletedGroups',
+  async ({ supabase, user }): Promise<ApiListResult<NotificationGroup>> => {
+    const groups = await groupRepository.getRecentlyCompleted(supabase, user.id)
+    return listResponse(groups)
+  }
+)
 
 /**
  * Goal의 모든 Group 조회

@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Bell, X } from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query/keys'
+import { useRoadmapStore } from '@/stores/roadmap.store'
 import {
   useNotifications,
   useNotificationCount,
@@ -21,13 +22,22 @@ interface NotificationPopoverProps {
 export function NotificationPopover({ className }: NotificationPopoverProps) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
   const { data: notifications = [], isLoading } = useNotifications()
   const badgeCount = useNotificationCount()
 
+  const select = useRoadmapStore((s) => s.select)
+  const openMobileDrawer = useRoadmapStore((s) => s.openMobileDrawer)
+
   const handleClick = (notification: AppNotification) => {
-    if (notification.actionPath) {
-      router.push(notification.actionPath)
+    if (notification.relatedGoalId) {
+      const goalId = notification.relatedGoalId
+      select({ type: 'goal', id: goalId })
+      openMobileDrawer(goalId)
+      if (!pathname.startsWith('/roadmap')) {
+        router.push('/roadmap')
+      }
       setOpen(false)
     }
   }
@@ -105,7 +115,7 @@ function NotificationItem({
   onClick: () => void
   onDismiss?: () => void
 }) {
-  const isClickable = !!notification.actionPath
+  const isClickable = !!notification.relatedGoalId
 
   return (
     <div
@@ -114,6 +124,16 @@ function NotificationItem({
         isClickable && 'cursor-pointer hover:bg-[var(--color-bg-secondary)]'
       )}
       onClick={isClickable ? onClick : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onClick()
+              }
+            }
+          : undefined
+      }
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
     >
@@ -121,11 +141,6 @@ function NotificationItem({
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{notification.title}</p>
         <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">{notification.message}</p>
-        {notification.actionLabel && (
-          <p className="mt-1 text-xs font-medium text-[var(--color-primary-500)]">
-            {notification.actionLabel} →
-          </p>
-        )}
       </div>
       {onDismiss ? (
         <button

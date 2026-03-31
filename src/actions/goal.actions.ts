@@ -6,7 +6,7 @@ import { getActiveDirectionId } from '@/repositories/base.repository'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createGoalSchema, updateGoalSchema } from '@/lib/validations'
-import type { MinimalGoal } from '@/repositories/goal.repository'
+import type { MinimalGoal, NotificationGoal } from '@/repositories/goal.repository'
 
 import type {
   Goal,
@@ -29,6 +29,29 @@ export const getActiveGoalsMinimal = authAction(
   'getActiveGoalsMinimal',
   async ({ supabase, user }): Promise<ApiListResult<MinimalGoal>> => {
     const goals = await goalRepository.getActiveMinimal(supabase, user.id)
+    return listResponse(goals)
+  }
+)
+
+/**
+ * Active Goal 확장 조회 (알림 시스템 전용)
+ * updated_at, completed_at, task_count 포함
+ */
+export const getGoalsForNotifications = authAction(
+  'getGoalsForNotifications',
+  async ({ supabase, user }): Promise<ApiListResult<NotificationGoal>> => {
+    const goals = await goalRepository.getForNotifications(supabase, user.id)
+    return listResponse(goals)
+  }
+)
+
+/**
+ * 최근 완료된 Goal 조회 (Milestone 알림용)
+ */
+export const getRecentlyCompletedGoals = authAction(
+  'getRecentlyCompletedGoals',
+  async ({ supabase, user }): Promise<ApiListResult<NotificationGoal>> => {
+    const goals = await goalRepository.getRecentlyCompleted(supabase, user.id)
     return listResponse(goals)
   }
 )
