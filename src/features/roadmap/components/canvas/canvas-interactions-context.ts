@@ -10,6 +10,12 @@ export interface CanvasInteractionsValue {
   getQuickAddContent: (node: VisualTreeNode) => ReactNode
   addingToId: string | null
   toggleGoalExpand: (goalId: string) => void
+  toggleGroupExpand: (groupId: string) => void
+  editingNodeId: string | null
+  directionId: string | null
+  handleQuickCreate: (parentType: SelectedNodeType, parentId: string) => void
+  handleRenameCommit: (nodeType: SelectedNodeType, nodeId: string, newName: string) => void
+  handleCancelEdit: () => void
 }
 
 export const CanvasInteractionsContext = createContext<CanvasInteractionsValue>(null!)

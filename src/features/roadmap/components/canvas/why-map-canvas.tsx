@@ -105,19 +105,45 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     rawZoom < ZOOM_THRESHOLD_COMPACT ? 0 : rawZoom > ZOOM_THRESHOLD_FULL ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
+  // Interaction logic (selection, delete, quick-add, focus)
+  const interactions = useCanvasInteractions(treeData, goals, areas)
+  const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap } = interactions
+
   // Goal expand/collapse: which goals show Group/Task as canvas nodes
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
   // Group expand/collapse: which groups show Task children as canvas nodes
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
 
-  const toggleGoalExpand = useCallback((goalId: string) => {
-    setExpandedGoalIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(goalId)) next.delete(goalId)
-      else next.add(goalId)
-      return next
-    })
-  }, [])
+  // Clear expanded group IDs that belong to a given goal
+  const clearChildGroupExpands = useCallback(
+    (goalId: string) => {
+      setExpandedGroupIds((prev) => {
+        if (prev.size === 0) return prev
+        const next = new Set(prev)
+        for (const groupId of prev) {
+          if (parentGoalMap.get(groupId) === goalId) next.delete(groupId)
+        }
+        return next.size === prev.size ? prev : next
+      })
+    },
+    [parentGoalMap]
+  )
+
+  const toggleGoalExpand = useCallback(
+    (goalId: string) => {
+      setExpandedGoalIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(goalId)) {
+          next.delete(goalId)
+          clearChildGroupExpands(goalId)
+        } else {
+          next.add(goalId)
+        }
+        return next
+      })
+    },
+    [clearChildGroupExpands]
+  )
 
   const expandGoal = useCallback((goalId: string) => {
     setExpandedGoalIds((prev) => {
@@ -128,14 +154,18 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     })
   }, [])
 
-  const collapseGoal = useCallback((goalId: string) => {
-    setExpandedGoalIds((prev) => {
-      if (!prev.has(goalId)) return prev
-      const next = new Set(prev)
-      next.delete(goalId)
-      return next
-    })
-  }, [])
+  const collapseGoal = useCallback(
+    (goalId: string) => {
+      setExpandedGoalIds((prev) => {
+        if (!prev.has(goalId)) return prev
+        const next = new Set(prev)
+        next.delete(goalId)
+        return next
+      })
+      clearChildGroupExpands(goalId)
+    },
+    [clearChildGroupExpands]
+  )
 
   const toggleGroupExpand = useCallback((groupId: string) => {
     setExpandedGroupIds((prev) => {
@@ -148,10 +178,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // Dependency edges (user-created Goal↔Goal relations, not in dagre layout)
   const [dependencyEdges, setDependencyEdges] = useState<WhyMapEdge[]>([])
-
-  // Interaction logic (selection, delete, quick-add, focus)
-  const interactions = useCanvasInteractions(treeData, goals, areas)
-  const { selectedNodeId, focusedIds, parentGoalMap } = interactions
 
   const interactionsContextValue = useMemo(
     () => ({ ...interactions, toggleGoalExpand, toggleGroupExpand }),
@@ -221,6 +247,53 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // ── Keyboard shortcuts ────────────────────────────────────
 
+  // Unified expand/collapse dispatchers — route by node type
+  const resolveNodeType = useCallback(
+    (nodeId: string) => nodes.find((n) => n.id === nodeId)?.type,
+    [nodes]
+  )
+
+  const toggleNodeExpand = useCallback(
+    (nodeId: string) => {
+      const type = resolveNodeType(nodeId)
+      if (type === 'goal') toggleGoalExpand(nodeId)
+      else if (type === 'group') toggleGroupExpand(nodeId)
+    },
+    [resolveNodeType, toggleGoalExpand, toggleGroupExpand]
+  )
+
+  const expandNode = useCallback(
+    (nodeId: string) => {
+      const type = resolveNodeType(nodeId)
+      if (type === 'goal') expandGoal(nodeId)
+      else if (type === 'group') {
+        setExpandedGroupIds((prev) => {
+          if (prev.has(nodeId)) return prev
+          const next = new Set(prev)
+          next.add(nodeId)
+          return next
+        })
+      }
+    },
+    [resolveNodeType, expandGoal]
+  )
+
+  const collapseNode = useCallback(
+    (nodeId: string) => {
+      const type = resolveNodeType(nodeId)
+      if (type === 'goal') collapseGoal(nodeId)
+      else if (type === 'group') {
+        setExpandedGroupIds((prev) => {
+          if (!prev.has(nodeId)) return prev
+          const next = new Set(prev)
+          next.delete(nodeId)
+          return next
+        })
+      }
+    },
+    [resolveNodeType, collapseGoal]
+  )
+
   useCanvasKeyboard({
     nodes,
     edges,
@@ -229,9 +302,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     handleQuickCreate: interactions.handleQuickCreate,
     handleNodeSelect: interactions.handleNodeSelect,
     handleDeleteNode: interactions.handleDeleteNode,
-    toggleNodeExpand: toggleGoalExpand,
-    expandNode: expandGoal,
-    collapseNode: collapseGoal,
+    toggleNodeExpand,
+    expandNode,
+    collapseNode,
     clearSelection,
     onToggleFloatingPanel: useRoadmapStore.getState().toggleFloatingPanel,
     onFitView: () => fitView({ padding: 0.15, duration: 300 }),
@@ -249,20 +322,38 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     ref,
     () => ({
       focusNode: (nodeId: string) => {
-        // If the nodeId is a group/task, find the parent goal
-        let targetId = nodeId
-        if (!nodes.some((n) => n.id === nodeId)) {
-          const goalId = parentGoalMap.get(nodeId)
-          if (goalId) targetId = goalId
+        // If node is visible, focus it directly
+        if (nodes.some((n) => n.id === nodeId)) {
+          fitView({ nodes: [{ id: nodeId }], padding: 0.5, duration: 300 })
+          return
         }
-        fitView({ nodes: [{ id: targetId }], padding: 0.5, duration: 300 })
+
+        // Node not visible — auto-expand ancestors so it becomes visible
+        const goalId = parentGoalMap.get(nodeId)
+        if (!goalId) return
+
+        expandGoal(goalId)
+        const groupId = parentGroupMap.get(nodeId)
+        if (groupId) {
+          setExpandedGroupIds((prev) => {
+            if (prev.has(groupId)) return prev
+            const next = new Set(prev)
+            next.add(groupId)
+            return next
+          })
+        }
+
+        // Wait for next render so the node exists, then focus it
+        requestAnimationFrame(() => {
+          fitView({ nodes: [{ id: nodeId }], padding: 0.5, duration: 300 })
+        })
       },
       fitView: () => {
         fitView({ padding: 0.15, duration: 300 })
       },
       toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
     }),
-    [nodes, parentGoalMap, fitView]
+    [nodes, parentGoalMap, parentGroupMap, expandGoal, fitView]
   )
 
   // ── Dependency edge: onConnect handler (Goal↔Goal only) ──

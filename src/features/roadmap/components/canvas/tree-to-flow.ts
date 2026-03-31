@@ -23,7 +23,8 @@ import type {
 export function treeToFlowElements(
   tree: VisualTreeNode | null,
   crossLinks: CrossLink[],
-  expandedGoalIds: Set<string> = new Set()
+  expandedGoalIds: Set<string> = new Set(),
+  expandedGroupIds: Set<string> = new Set()
 ): { nodes: WhyMapNode[]; edges: WhyMapEdge[] } {
   if (!tree) return { nodes: [], edges: [] }
 
@@ -112,7 +113,7 @@ export function treeToFlowElements(
           ...goalAncestorWhys,
           { name: goal.name, why: goal.why },
         ]
-        emitGoalChildren(goal, goal.id, areaColor, goalChildWhys, nodes, edges)
+        emitGoalChildren(goal, goal.id, areaColor, goalChildWhys, nodes, edges, expandedGroupIds)
       }
     }
   }
@@ -170,10 +171,13 @@ function emitGoalChildren(
   areaColor: string,
   ancestorWhys: AncestorWhy[],
   nodes: WhyMapNode[],
-  edges: WhyMapEdge[]
+  edges: WhyMapEdge[],
+  expandedGroupIds: Set<string>
 ): void {
   for (const child of goal.children ?? []) {
     if (child.type === 'group') {
+      const isGroupExpanded = expandedGroupIds.has(child.id)
+
       nodes.push({
         id: child.id,
         type: 'group',
@@ -183,6 +187,7 @@ function emitGoalChildren(
           areaColor,
           parentGoalId: goalId,
           ancestorWhys,
+          isExpanded: isGroupExpanded,
         } satisfies GroupNodeData,
       })
 
@@ -195,29 +200,31 @@ function emitGoalChildren(
         data: { edgeType: 'hierarchy', depth: 2 } satisfies HierarchyEdgeData,
       })
 
-      // Group → Task edges
-      for (const task of child.children ?? []) {
-        if (task.type === 'task') {
-          nodes.push({
-            id: task.id,
-            type: 'task',
-            position: { x: 0, y: 0 },
-            data: {
-              treeNode: task,
-              areaColor,
-              parentGoalId: goalId,
-              parentGroupId: child.id,
-              ancestorWhys,
-            } satisfies TaskNodeData,
-          })
+      // Group → Task edges (only when group is expanded)
+      if (isGroupExpanded) {
+        for (const task of child.children ?? []) {
+          if (task.type === 'task') {
+            nodes.push({
+              id: task.id,
+              type: 'task',
+              position: { x: 0, y: 0 },
+              data: {
+                treeNode: task,
+                areaColor,
+                parentGoalId: goalId,
+                parentGroupId: child.id,
+                ancestorWhys,
+              } satisfies TaskNodeData,
+            })
 
-          edges.push({
-            id: `e-${child.id}-${task.id}`,
-            source: child.id,
-            target: task.id,
-            type: 'hierarchy',
-            data: { edgeType: 'hierarchy', depth: 3 } satisfies HierarchyEdgeData,
-          })
+            edges.push({
+              id: `e-${child.id}-${task.id}`,
+              source: child.id,
+              target: task.id,
+              type: 'hierarchy',
+              data: { edgeType: 'hierarchy', depth: 3 } satisfies HierarchyEdgeData,
+            })
+          }
         }
       }
     } else if (child.type === 'task') {

@@ -57,6 +57,7 @@ export interface GroupNodeData extends InteractionState {
   areaColor: string
   parentGoalId: string
   ancestorWhys?: AncestorWhy[]
+  isExpanded?: boolean
   [key: string]: unknown
 }
 

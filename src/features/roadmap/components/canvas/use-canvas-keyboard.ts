@@ -9,13 +9,15 @@ interface UseCanvasKeyboardOptions {
   edges: WhyMapEdge[]
   selectedNodeId: string | null
   direction: 'TB' | 'LR'
-  /** Note: the type param is currently unused by the underlying implementation (setAddingToId ignores it),
-   *  but we pass it for forward-compatibility if handleStartAdd is ever refactored to use it. */
-  handleStartAdd: (type: SelectedNodeType, id: string) => void
+  handleQuickCreate: (type: SelectedNodeType, id: string) => void
   handleNodeSelect: (type: SelectedNodeType, id: string) => void
   clearSelection: () => void
-  // Floating panel toggle
+  handleDeleteNode: (type: SelectedNodeType, id: string) => void
+  toggleNodeExpand: (nodeId: string) => void
+  expandNode: (nodeId: string) => void
+  collapseNode: (nodeId: string) => void
   onToggleFloatingPanel?: () => void
+  onFitView?: () => void
 }
 
 /**
@@ -30,10 +32,15 @@ export function useCanvasKeyboard({
   edges,
   selectedNodeId,
   direction,
-  handleStartAdd,
+  handleQuickCreate,
   handleNodeSelect,
   clearSelection,
+  handleDeleteNode,
+  toggleNodeExpand,
+  expandNode,
+  collapseNode,
   onToggleFloatingPanel,
+  onFitView,
 }: UseCanvasKeyboardOptions) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -59,19 +66,72 @@ export function useCanvasKeyboard({
       const current = nodes.find((n) => n.id === selectedNodeId)
       if (!current) return
 
+      // Delete / Backspace: delete selected node (not direction)
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (current.type !== 'direction') {
+          e.preventDefault()
+          handleDeleteNode(current.type as SelectedNodeType, current.id)
+        }
+        return
+      }
+
+      // F2: trigger inline edit (same as double-click select)
+      if (e.key === 'F2') {
+        e.preventDefault()
+        handleNodeSelect(current.type as SelectedNodeType, current.id)
+        return
+      }
+
+      // Space: toggle expand/collapse
+      if (e.key === ' ') {
+        e.preventDefault()
+        toggleNodeExpand(current.id)
+        return
+      }
+
+      // - key: collapse children
+      if (e.key === '-') {
+        e.preventDefault()
+        collapseNode(current.id)
+        return
+      }
+
+      // + or = key: expand children
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        expandNode(current.id)
+        return
+      }
+
+      // Home: jump to root (direction) node
+      if (e.key === 'Home') {
+        e.preventDefault()
+        const directionNode = nodes.find((n) => n.type === 'direction')
+        if (directionNode) {
+          handleNodeSelect('direction', directionNode.id)
+          onFitView?.()
+        }
+        return
+      }
+
       switch (e.key) {
         case 'Tab': {
           e.preventDefault()
-          // Add child: only direction and area can have canvas-level children
-          if (current.type === 'direction' || current.type === 'area' || current.type === 'goal') {
-            handleStartAdd(current.type as SelectedNodeType, current.id)
+          // Add child: instantly create and enter inline edit
+          if (
+            current.type === 'direction' ||
+            current.type === 'area' ||
+            current.type === 'goal' ||
+            current.type === 'group'
+          ) {
+            handleQuickCreate(current.type as SelectedNodeType, current.id)
           }
           break
         }
 
         case 'Enter': {
           e.preventDefault()
-          // Add sibling: find parent via edges, then handleStartAdd on parent
+          // Add sibling: find parent via edges, then quick-create on parent
           const parentEdge = edges.find(
             (edge) => edge.target === selectedNodeId && edge.data?.edgeType === 'hierarchy'
           )
@@ -79,7 +139,7 @@ export function useCanvasKeyboard({
 
           const parentNode = nodes.find((n) => n.id === parentEdge.source)
           if (parentNode) {
-            handleStartAdd(parentNode.type as SelectedNodeType, parentNode.id)
+            handleQuickCreate(parentNode.type as SelectedNodeType, parentNode.id)
           }
           break
         }
@@ -105,10 +165,15 @@ export function useCanvasKeyboard({
     edges,
     selectedNodeId,
     direction,
-    handleStartAdd,
+    handleQuickCreate,
     handleNodeSelect,
     clearSelection,
+    handleDeleteNode,
+    toggleNodeExpand,
+    expandNode,
+    collapseNode,
     onToggleFloatingPanel,
+    onFitView,
   ])
 }
 
