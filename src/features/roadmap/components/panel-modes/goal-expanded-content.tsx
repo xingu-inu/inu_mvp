@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { memo, useState, useEffect, useMemo, useCallback } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -166,30 +166,13 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
 
   const clearInline = useCallback(() => setInlineMode(null), [setInlineMode])
 
-  // Auto-expand group and scroll into view when inlineMode targets a group/task
-  const contentRef = useRef<HTMLDivElement>(null)
+  // Auto-expand parent group when inlineMode targets a task inside it
   useEffect(() => {
-    if (!inlineMode || typeof inlineMode !== 'object') return
-
-    let selector: string | null = null
-    if (inlineMode.type === 'edit-group') {
-      selector = `[data-group-id="${inlineMode.groupId}"]`
-    } else if (inlineMode.type === 'edit-task') {
-      selector = `[data-task-id="${inlineMode.taskId}"]`
-      // Auto-expand the parent group so the task is visible
-      const task = tasksById.get(inlineMode.taskId)
-      if (task?.group_id) {
-        setGroupToggles((prev) => ({ ...prev, [task.group_id!]: true }))
-      }
+    if (!inlineMode || typeof inlineMode !== 'object' || inlineMode.type !== 'edit-task') return
+    const task = tasksById.get(inlineMode.taskId)
+    if (task?.group_id) {
+      setGroupToggles((prev) => ({ ...prev, [task.group_id!]: true }))
     }
-
-    if (!selector) return
-    // Wait for render (animation/expand) then scroll
-    const timer = setTimeout(() => {
-      const el = contentRef.current?.querySelector(selector)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    }, 250)
-    return () => clearTimeout(timer)
   }, [inlineMode, tasksById])
 
   // ── Cross-group DnD (extracted hook) ──
@@ -249,7 +232,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
   }
 
   return (
-    <div ref={contentRef} className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
+    <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
       {/* Why */}
       {goal.why && (
         <div className="rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-3 py-2.5">

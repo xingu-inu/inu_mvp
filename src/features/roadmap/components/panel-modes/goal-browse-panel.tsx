@@ -104,14 +104,66 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
           })
         }
 
-        // Scroll into view after accordion expansion
-        requestAnimationFrame(() => {
-          const el = goalRefsMap.current.get(focusId)
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        // Determine scroll target: group/task if inlineMode is set, otherwise goal
+        const inline = state.inlineMode
+        let targetSelector: string | null = null
+        if (inline && typeof inline === 'object') {
+          if (inline.type === 'edit-group') {
+            targetSelector = `[data-group-id="${inline.groupId}"]`
+          } else if (inline.type === 'edit-task') {
+            targetSelector = `[data-task-id="${inline.taskId}"]`
           }
-        })
+        }
+
+        // Scroll after accordion expansion + content render
+        const container = scrollContainerRef.current
+        if (targetSelector && container) {
+          // Longer delay: goal accordion (200ms) + group expand (150ms) + buffer
+          setTimeout(() => {
+            const el = container.querySelector(targetSelector)
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            } else {
+              // Fallback: scroll to goal
+              const goalEl = goalRefsMap.current.get(focusId)
+              if (goalEl) goalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }, 450)
+        } else {
+          requestAnimationFrame(() => {
+            const el = goalRefsMap.current.get(focusId)
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          })
+        }
         return
+      }
+
+      // Handle inlineMode changes within the same goal (group/task clicks)
+      const inline = state.inlineMode
+      const prevInline = prevState.inlineMode
+      if (
+        inline &&
+        typeof inline === 'object' &&
+        inline !== prevInline &&
+        focusId === prevFocusId
+      ) {
+        let targetSelector: string | null = null
+        if (inline.type === 'edit-group') {
+          targetSelector = `[data-group-id="${inline.groupId}"]`
+        } else if (inline.type === 'edit-task') {
+          targetSelector = `[data-task-id="${inline.taskId}"]`
+        }
+        if (targetSelector) {
+          const container = scrollContainerRef.current
+          if (container) {
+            setTimeout(() => {
+              const el = container.querySelector(targetSelector)
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            }, 300)
+          }
+        }
       }
 
       // Handle direction/area node selections (from left tree Direction/Area clicks)
