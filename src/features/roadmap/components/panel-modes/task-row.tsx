@@ -3,11 +3,10 @@
 import { memo, useState, useMemo } from 'react'
 import {
   ArrowRightLeft,
+  CalendarDays,
   ChevronDown,
   Trash2,
   Edit2,
-  Calendar1,
-  Repeat,
   Pause,
   Play,
   CheckCircle2,
@@ -16,26 +15,17 @@ import {
 import { TaskPausePopover } from '../shared/task-pause-popover'
 import { TaskMoveGoalPopover } from '../shared/task-move-goal-popover'
 import { OverflowMenu, type OverflowMenuItem } from '../shared/overflow-menu'
-import { TIME_SLOT_CONFIG } from '@/lib/constants/time-slots'
-import { REPEAT_LABELS } from '@/lib/constants/repeat-labels'
+import { TASK_STATUS_CONFIG } from '@/lib/task-status'
 import { cn } from '@/lib/utils'
 import type { Area, Task, TaskStatus } from '@/types/entities'
 
-export function getTaskMetaLabel(task: Task): string {
-  const parts: string[] = []
-  if (task.repeat_type === 'once') {
-    parts.push('1회')
-  } else {
-    parts.push(`반복 · ${REPEAT_LABELS[task.repeat_type]}`)
+function formatPeriod(startDate: string | null, endDate: string | null): string | null {
+  if (!startDate) return null
+  const fmt = (d: string) => {
+    const date = new Date(d + 'T00:00:00')
+    return `${date.getFullYear()}.${date.getMonth() + 1}.${date.getDate()}`
   }
-  if (task.time_slot !== 'anytime') {
-    const config = TIME_SLOT_CONFIG[task.time_slot]
-    parts.push(`${config.emoji} ${config.label}`)
-  }
-  if (task.duration_minutes > 0) {
-    parts.push(`${task.duration_minutes}분`)
-  }
-  return parts.join(' · ')
+  return endDate ? `${fmt(startDate)}~${fmt(endDate)}` : `${fmt(startDate)}~`
 }
 
 export const TaskRow = memo(function TaskRow({
@@ -60,8 +50,8 @@ export const TaskRow = memo(function TaskRow({
   const [showPausePopover, setShowPausePopover] = useState(false)
   const [showMovePopover, setShowMovePopover] = useState(false)
 
-  const metaLabel = getTaskMetaLabel(task)
-  const RepeatIcon = task.repeat_type === 'once' ? Calendar1 : Repeat
+  const period = formatPeriod(task.start_date, task.end_date)
+  const statusConfig = task.status !== 'active' ? TASK_STATUS_CONFIG[task.status] : null
 
   const linkedAreas = task.related_area_ids
     ?.map((id) => areaMap.get(id))
@@ -113,10 +103,9 @@ export const TaskRow = memo(function TaskRow({
         className={cn('flex flex-1 flex-col px-2.5 py-2', onToggle && 'cursor-pointer')}
         onClick={onToggle}
       >
-        {/* Line 1: name + streak */}
+        {/* Line 1: name + status badge + streak */}
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
-            <RepeatIcon className="h-4 w-4 shrink-0 text-[var(--color-text-tertiary)]" />
             <span
               className={cn(
                 'flex-1 truncate text-sm font-medium',
@@ -125,6 +114,17 @@ export const TaskRow = memo(function TaskRow({
             >
               {task.name}
             </span>
+            {statusConfig && (
+              <span
+                className={cn(
+                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] leading-none font-medium',
+                  statusConfig.bg,
+                  statusConfig.text
+                )}
+              >
+                {statusConfig.label}
+              </span>
+            )}
           </div>
           {task.streak_count > 0 && (
             <span className="shrink-0 text-xs text-[var(--color-streak)]">
@@ -132,13 +132,16 @@ export const TaskRow = memo(function TaskRow({
             </span>
           )}
         </div>
-        {/* Line 2: metadata */}
-        <p className="mt-0.5 truncate pl-5 text-xs text-[var(--color-text-secondary)]">
-          {metaLabel}
-        </p>
+        {/* Line 2: period */}
+        {period && (
+          <div className="mt-0.5 flex items-center gap-1">
+            <CalendarDays className="h-3 w-3 shrink-0 text-[var(--color-text-tertiary)]" />
+            <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">{period}</p>
+          </div>
+        )}
         {/* Line 3: cross-linked areas (conditional) */}
         {linkedAreas && linkedAreas.length > 0 && (
-          <div className="mt-0.5 flex items-center gap-1 pl-5">
+          <div className="mt-0.5 flex items-center gap-1">
             <Link className="h-2.5 w-2.5 shrink-0 text-[var(--color-text-tertiary)]" />
             <p className="truncate text-[11px] text-[var(--color-text-tertiary)]">
               {linkedAreas.map((a) => `${a.emoji} ${a.name}`).join(' · ')}
