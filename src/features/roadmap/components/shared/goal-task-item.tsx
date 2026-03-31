@@ -1,6 +1,6 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
+import { Trash2, Footprints } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { useDeleteTask } from '@/queries/use-tasks'
 import { cn } from '@/lib/utils'
@@ -54,6 +54,7 @@ export function GoalTaskItem({
               )}
               onClick={onEdit}
             >
+              <Footprints className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
               <span className="text-sm">{task.name}</span>
               {task.streak_count > 0 && (
                 <span className="text-xs text-[var(--color-streak)]">🔥 {task.streak_count}</span>

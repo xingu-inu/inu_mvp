@@ -10,6 +10,7 @@ import {
   Pause,
   Play,
   CheckCircle2,
+  Footprints,
   Link,
 } from 'lucide-react'
 import { TaskPausePopover } from '../shared/task-pause-popover'
@@ -106,6 +107,7 @@ export const TaskRow = memo(function TaskRow({
         {/* Line 1: name + status badge + streak */}
         <div className="flex w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
+            <Footprints className="h-3.5 w-3.5 shrink-0 text-[var(--color-text-tertiary)]" />
             <span
               className={cn(
                 'flex-1 truncate text-sm font-medium',

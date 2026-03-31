@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Trash2, Circle, CheckCircle2 } from 'lucide-react'
+import { Trash2, Folder, FolderCheck } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import { useRoadmapStore, selectInlineMode } from '@/stores/roadmap.store'
 import { useDeleteGroup } from '@/queries/use-groups'
@@ -92,9 +92,9 @@ export function GoalGroupsSection({
                     >
                       <div className="flex items-center gap-3">
                         {group.is_completed ? (
-                          <CheckCircle2 className="h-5 w-5 shrink-0 text-[var(--color-done)]" />
+                          <FolderCheck className="h-5 w-5 shrink-0 text-[var(--color-done)]" />
                         ) : (
-                          <Circle className="h-5 w-5 shrink-0 text-[var(--color-primary-500)]" />
+                          <Folder className="h-5 w-5 shrink-0 text-[var(--color-primary-500)]" />
                         )}
                         <span
                           className={cn(
