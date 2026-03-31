@@ -1,4 +1,5 @@
 export { NewVersionWizard } from './new-version-wizard'
+export { VersionDropdown } from './version-dropdown'
 export { VersionHistoryPanel } from './version-history-panel'
 export { RestoreConfirmDialog } from './restore-confirm-dialog'
 export { DeleteVersionDialog } from './delete-version-dialog'
