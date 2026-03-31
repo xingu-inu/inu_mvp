@@ -84,46 +84,48 @@ export const TaskList = memo(function TaskList({
 
           return (
             <SortableTaskItem key={task.id} id={task.id}>
-              <TaskRow
-                task={task}
-                areaMap={areaMap}
-                goalId={goalId}
-                onEdit={() => onTaskClick(task.id)}
-                onDelete={() => taskDelete.toggleDelete(task.id)}
-                onStatusChange={(status, reason, note) =>
-                  handleStatusChange(task.id, status, reason, note)
-                }
-                isExpanded={isEditingTask}
-                onToggle={() => onTaskClick(task.id)}
-              />
-              <AnimatePresence initial={false}>
-                {isEditingTask && (
-                  <motion.div
-                    key="edit-form"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    className="overflow-hidden"
-                  >
-                    <InlineTaskEdit task={task} onDone={clearInline} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <AnimatePresence>
-                {taskDelete.isDeleting(task.id) && (
-                  <InlineDeleteConfirm
-                    title="이 할 일을 삭제할까요?"
-                    onCancel={taskDelete.clearDelete}
-                    onConfirm={() => {
-                      deleteTask.mutate(task.id, {
-                        onSuccess: taskDelete.clearDelete,
-                      })
-                    }}
-                    isLoading={deleteTask.isPending}
-                  />
-                )}
-              </AnimatePresence>
+              <div data-task-id={task.id}>
+                <TaskRow
+                  task={task}
+                  areaMap={areaMap}
+                  goalId={goalId}
+                  onEdit={() => onTaskClick(task.id)}
+                  onDelete={() => taskDelete.toggleDelete(task.id)}
+                  onStatusChange={(status, reason, note) =>
+                    handleStatusChange(task.id, status, reason, note)
+                  }
+                  isExpanded={isEditingTask}
+                  onToggle={() => onTaskClick(task.id)}
+                />
+                <AnimatePresence initial={false}>
+                  {isEditingTask && (
+                    <motion.div
+                      key="edit-form"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      <InlineTaskEdit task={task} onDone={clearInline} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <AnimatePresence>
+                  {taskDelete.isDeleting(task.id) && (
+                    <InlineDeleteConfirm
+                      title="이 할 일을 삭제할까요?"
+                      onCancel={taskDelete.clearDelete}
+                      onConfirm={() => {
+                        deleteTask.mutate(task.id, {
+                          onSuccess: taskDelete.clearDelete,
+                        })
+                      }}
+                      isLoading={deleteTask.isPending}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
             </SortableTaskItem>
           )
         })}

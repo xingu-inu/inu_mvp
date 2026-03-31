@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useEffect, useMemo, useCallback } from 'react'
+import { memo, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import {
   ChevronDown,
   ChevronRight,
@@ -166,6 +166,32 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
 
   const clearInline = useCallback(() => setInlineMode(null), [setInlineMode])
 
+  // Auto-expand group and scroll into view when inlineMode targets a group/task
+  const contentRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!inlineMode || typeof inlineMode !== 'object') return
+
+    let selector: string | null = null
+    if (inlineMode.type === 'edit-group') {
+      selector = `[data-group-id="${inlineMode.groupId}"]`
+    } else if (inlineMode.type === 'edit-task') {
+      selector = `[data-task-id="${inlineMode.taskId}"]`
+      // Auto-expand the parent group so the task is visible
+      const task = tasksById.get(inlineMode.taskId)
+      if (task?.group_id) {
+        setGroupToggles((prev) => ({ ...prev, [task.group_id!]: true }))
+      }
+    }
+
+    if (!selector) return
+    // Wait for render (animation/expand) then scroll
+    const timer = setTimeout(() => {
+      const el = contentRef.current?.querySelector(selector)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [inlineMode, tasksById])
+
   // ── Cross-group DnD (extracted hook) ──
 
   const {
@@ -223,7 +249,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
   }
 
   return (
-    <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
+    <div ref={contentRef} className="space-y-4 border-t border-[var(--color-border)] px-4 py-4">
       {/* Why */}
       {goal.why && (
         <div className="rounded-lg border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] px-3 py-2.5">
@@ -350,6 +376,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
                         <SortableGroupItem key={group.id} id={group.id}>
                           {(dragHandleProps) => (
                             <div
+                              data-group-id={group.id}
                               className={cn(
                                 'overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)]',
                                 group.is_completed && 'opacity-60'
