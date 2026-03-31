@@ -252,6 +252,9 @@ export function useUpdateTask() {
       if (Object.keys(variables.input).some((k) => structuralKeys.includes(k))) {
         queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
       }
+      if (variables.input.status) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
+      }
     },
     onSuccess: (_data, { input }) => {
       // Suppress toast for DnD operations (only sort_order/group_id changes)

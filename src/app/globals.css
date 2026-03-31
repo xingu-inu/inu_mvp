@@ -248,3 +248,12 @@
   background: var(--color-border);
   border-radius: 2px;
 }
+
+/* Hidden scrollbar (for horizontal chip rows, etc.) */
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -1,7 +1,7 @@
 'use server'
 
 import { authAction, validate } from '@/lib/security'
-import { directionRepository } from '@/repositories'
+import { directionRepository, directionHistoryRepository } from '@/repositories'
 import { successResponse, errorResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createDirectionSchema, updateDirectionSchema } from '@/lib/validations'
@@ -52,7 +52,29 @@ export const updateDirection = authAction(
     const v = validate(updateDirectionSchema, input)
     if (!v.success) return v.response
 
+    // 변경 전 상태 조회 (히스토리 기록용)
+    const existing = await directionRepository.getById(supabase, id, user.id)
+
     const direction = await directionRepository.update(supabase, id, user.id, v.data)
+
+    // 변경 히스토리 기록
+    if (existing) {
+      const changes: Array<{ field: string; old: string | null; new: string | null }> = []
+
+      if (v.data.statement !== undefined && v.data.statement !== existing.statement) {
+        changes.push({ field: 'statement', old: existing.statement, new: v.data.statement })
+      }
+      if (v.data.why !== undefined && v.data.why !== existing.why) {
+        changes.push({ field: 'why', old: existing.why, new: v.data.why ?? null })
+      }
+
+      await Promise.all(
+        changes.map((c) =>
+          directionHistoryRepository.insert(supabase, user.id, id, 'updated', c.field, c.old, c.new)
+        )
+      )
+    }
+
     return successResponse(direction)
   },
   {

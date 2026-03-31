@@ -334,6 +334,50 @@ export type Database = {
           },
         ]
       }
+      direction_history: {
+        Row: {
+          change_type: string
+          created_at: string
+          direction_id: string
+          field_changed: string | null
+          id: string
+          new_value: string | null
+          note: string | null
+          old_value: string | null
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          created_at?: string
+          direction_id: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          direction_id?: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'direction_history_direction_id_fkey'
+            columns: ['direction_id']
+            isOneToOne: false
+            referencedRelation: 'directions'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       directions: {
         Row: {
           archived_at: string | null
@@ -419,13 +463,104 @@ export type Database = {
           },
         ]
       }
+      goal_reflections: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          next_focus: string | null
+          period_end: string
+          period_start: string
+          progress_feeling: string | null
+          summary: string | null
+          updated_at: string
+          user_id: string
+          why_temperature: number | null
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          next_focus?: string | null
+          period_end: string
+          period_start: string
+          progress_feeling?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id: string
+          why_temperature?: number | null
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          next_focus?: string | null
+          period_end?: string
+          period_start?: string
+          progress_feeling?: string | null
+          summary?: string | null
+          updated_at?: string
+          user_id?: string
+          why_temperature?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'goal_reflections_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      goal_status_history: {
+        Row: {
+          created_at: string
+          from_status: Database['public']['Enums']['goal_status']
+          goal_id: string
+          id: string
+          note: string | null
+          reason: string | null
+          to_status: Database['public']['Enums']['goal_status']
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_status: Database['public']['Enums']['goal_status']
+          goal_id: string
+          id?: string
+          note?: string | null
+          reason?: string | null
+          to_status: Database['public']['Enums']['goal_status']
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_status?: Database['public']['Enums']['goal_status']
+          goal_id?: string
+          id?: string
+          note?: string | null
+          reason?: string | null
+          to_status?: Database['public']['Enums']['goal_status']
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'goal_status_history_goal_id_fkey'
+            columns: ['goal_id']
+            isOneToOne: false
+            referencedRelation: 'goals'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       goals: {
         Row: {
           area_id: string
           completed_at: string | null
           created_at: string | null
           id: string
-          impact_area_ids: string[]
+          impact_area_ids: string[] | null
           name: string
           sort_order: string | null
           start_date: string | null
@@ -443,7 +578,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           id?: string
-          impact_area_ids?: string[]
+          impact_area_ids?: string[] | null
           name: string
           sort_order?: string | null
           start_date?: string | null
@@ -461,7 +596,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           id?: string
-          impact_area_ids?: string[]
+          impact_area_ids?: string[] | null
           name?: string
           sort_order?: string | null
           start_date?: string | null
@@ -484,54 +619,6 @@ export type Database = {
           },
           {
             foreignKeyName: 'goals_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
-      goal_status_history: {
-        Row: {
-          id: string
-          goal_id: string
-          user_id: string
-          from_status: Database['public']['Enums']['goal_status']
-          to_status: Database['public']['Enums']['goal_status']
-          reason: string | null
-          note: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          goal_id: string
-          user_id: string
-          from_status: Database['public']['Enums']['goal_status']
-          to_status: Database['public']['Enums']['goal_status']
-          reason?: string | null
-          note?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          goal_id?: string
-          user_id?: string
-          from_status?: Database['public']['Enums']['goal_status']
-          to_status?: Database['public']['Enums']['goal_status']
-          reason?: string | null
-          note?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'goal_status_history_goal_id_fkey'
-            columns: ['goal_id']
-            isOneToOne: false
-            referencedRelation: 'goals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'goal_status_history_user_id_fkey'
             columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'profiles'
@@ -627,7 +714,9 @@ export type Database = {
       }
       monthly_reflections: {
         Row: {
+          challenge: string | null
           created_at: string
+          highlight: string | null
           id: string
           month_start: string
           summary: string | null
@@ -635,7 +724,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          challenge?: string | null
           created_at?: string
+          highlight?: string | null
           id?: string
           month_start: string
           summary?: string | null
@@ -643,7 +734,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          challenge?: string | null
           created_at?: string
+          highlight?: string | null
           id?: string
           month_start?: string
           summary?: string | null
@@ -654,31 +747,31 @@ export type Database = {
       }
       profile_traits: {
         Row: {
-          id: string
-          user_id: string
-          label: string
-          value: string
-          sort_order: string
           created_at: string
+          id: string
+          label: string
+          sort_order: string
           updated_at: string
+          user_id: string
+          value: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          label: string
-          value: string
-          sort_order: string
           created_at?: string
+          id?: string
+          label: string
+          sort_order: string
           updated_at?: string
+          user_id: string
+          value: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          label?: string
-          value?: string
-          sort_order?: string
           created_at?: string
+          id?: string
+          label?: string
+          sort_order?: string
           updated_at?: string
+          user_id?: string
+          value?: string
         }
         Relationships: [
           {
@@ -731,35 +824,76 @@ export type Database = {
       }
       task_date_sort_orders: {
         Row: {
-          id: string
-          task_id: string
-          date: string
-          sort_order: string
-          user_id: string
           created_at: string | null
+          date: string
+          id: string
+          sort_order: string
+          task_id: string
           updated_at: string | null
+          user_id: string
         }
         Insert: {
-          id?: string
-          task_id: string
-          date: string
-          sort_order: string
-          user_id: string
           created_at?: string | null
+          date: string
+          id?: string
+          sort_order: string
+          task_id: string
           updated_at?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          task_id?: string
-          date?: string
-          sort_order?: string
-          user_id?: string
           created_at?: string | null
+          date?: string
+          id?: string
+          sort_order?: string
+          task_id?: string
           updated_at?: string | null
+          user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: 'task_date_sort_orders_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'tasks'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      task_status_history: {
+        Row: {
+          created_at: string
+          from_status: Database['public']['Enums']['task_status']
+          id: string
+          note: string | null
+          reason: string | null
+          task_id: string
+          to_status: Database['public']['Enums']['task_status']
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_status: Database['public']['Enums']['task_status']
+          id?: string
+          note?: string | null
+          reason?: string | null
+          task_id: string
+          to_status: Database['public']['Enums']['task_status']
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          from_status?: Database['public']['Enums']['task_status']
+          id?: string
+          note?: string | null
+          reason?: string | null
+          task_id?: string
+          to_status?: Database['public']['Enums']['task_status']
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'task_status_history_task_id_fkey'
             columns: ['task_id']
             isOneToOne: false
             referencedRelation: 'tasks'
@@ -898,54 +1032,6 @@ export type Database = {
           },
         ]
       }
-      task_status_history: {
-        Row: {
-          id: string
-          task_id: string
-          user_id: string
-          from_status: Database['public']['Enums']['task_status']
-          to_status: Database['public']['Enums']['task_status']
-          reason: string | null
-          note: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          task_id: string
-          user_id: string
-          from_status: Database['public']['Enums']['task_status']
-          to_status: Database['public']['Enums']['task_status']
-          reason?: string | null
-          note?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          task_id?: string
-          user_id?: string
-          from_status?: Database['public']['Enums']['task_status']
-          to_status?: Database['public']['Enums']['task_status']
-          reason?: string | null
-          note?: string | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'task_status_history_task_id_fkey'
-            columns: ['task_id']
-            isOneToOne: false
-            referencedRelation: 'tasks'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'task_status_history_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       weekly_reflections: {
         Row: {
           challenge: string | null
@@ -988,24 +1074,44 @@ export type Database = {
         Args: { p_table_name: string; p_updates: Json }
         Returns: undefined
       }
-      complete_onboarding: {
-        Args: {
-          p_areas: Json
-          p_direction: Json
-          p_first_goal?: Json
-          p_first_task?: Json
-        }
-        Returns: Json
-      }
-      create_checkin_with_streak: {
-        Args: {
-          p_date?: string
-          p_note?: string
-          p_status: Database['public']['Enums']['checkin_status']
-          p_task_id: string
-        }
-        Returns: Json
-      }
+      complete_onboarding:
+        | {
+            Args: {
+              p_areas: Json
+              p_direction: Json
+              p_first_goal?: Json
+              p_first_task?: Json
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_areas: Json
+              p_direction: Json
+              p_first_goal?: Json
+              p_user_id: string
+            }
+            Returns: Json
+          }
+      create_checkin_with_streak:
+        | {
+            Args: {
+              p_date?: string
+              p_note?: string
+              p_status: Database['public']['Enums']['checkin_status']
+              p_task_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_note?: string
+              p_status: Database['public']['Enums']['checkin_status']
+              p_task_id: string
+              p_user_id: string
+            }
+            Returns: Json
+          }
       create_new_roadmap_version: {
         Args: {
           p_carry_over_goal_ids?: string[]
@@ -1019,21 +1125,24 @@ export type Database = {
         Args: { p_direction_id: string }
         Returns: Json
       }
-      get_admin_engagement_stats: {
-        Args: { p_days?: number }
-        Returns: Json
-      }
-      get_admin_feature_adoption: {
-        Args: Record<string, never>
-        Returns: Json
-      }
-      get_admin_onboarding_funnel: {
-        Args: Record<string, never>
-        Returns: Json
-      }
+      get_admin_engagement_stats: { Args: { p_days?: number }; Returns: Json }
+      get_admin_feature_adoption: { Args: never; Returns: Json }
+      get_admin_onboarding_funnel: { Args: never; Returns: Json }
       get_admin_retention_cohorts: {
         Args: { p_cohort_count?: number }
-        Returns: Json
+        Returns: {
+          cohort_size: number
+          cohort_week: string
+          week_0: number
+          week_1: number
+          week_2: number
+          week_3: number
+          week_4: number
+          week_5: number
+          week_6: number
+          week_7: number
+          week_8: number
+        }[]
       }
       get_admin_signup_chart: {
         Args: { p_days?: number }
@@ -1044,42 +1153,40 @@ export type Database = {
       }
       get_admin_stats: { Args: never; Returns: Json }
       get_admin_streak_distribution: {
-        Args: Record<string, never>
-        Returns: Json
-      }
-      get_archived_roadmap: {
-        Args: { p_direction_id: string }
-        Returns: Json
-      }
-      get_direction_history: { Args: Record<string, never>; Returns: Json }
-      get_reason_counts: {
-        Args: { p_start_date: string; p_end_date: string }
+        Args: never
         Returns: {
-          reason: string
-          entity_count: number
-          entity_type: string
+          bucket: string
+          count: number
         }[]
       }
-      get_roadmap_data: { Args: Record<string, never>; Returns: Json }
-      get_today_dashboard: { Args: Record<string, never>; Returns: Json }
+      get_archived_roadmap: { Args: { p_direction_id: string }; Returns: Json }
+      get_direction_history: { Args: never; Returns: Json }
+      get_reason_counts: {
+        Args: { p_end_date: string; p_start_date: string }
+        Returns: {
+          entity_count: number
+          entity_type: string
+          reason: string
+        }[]
+      }
+      get_roadmap_data: { Args: never; Returns: Json }
+      get_today_dashboard: { Args: never; Returns: Json }
       get_today_tasks: {
         Args: { p_date?: string; p_direction_id?: string }
         Returns: Json
       }
       get_week_tasks: {
-        Args: { p_end_date: string; p_start_date: string; p_direction_id?: string }
+        Args: {
+          p_direction_id?: string
+          p_end_date: string
+          p_start_date: string
+        }
         Returns: Json
       }
-      get_weekly_stats: {
-        Args: { p_week_start: string }
-        Returns: Json
-      }
+      get_weekly_stats: { Args: { p_week_start: string }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       reset_missed_streaks: { Args: never; Returns: undefined }
-      resolve_direction_for_date: {
-        Args: { p_date: string }
-        Returns: string
-      }
+      resolve_direction_for_date: { Args: { p_date: string }; Returns: string }
       resolve_directions_for_date: {
         Args: { p_date: string }
         Returns: string[]
@@ -1089,7 +1196,7 @@ export type Database = {
         Returns: Json
       }
       upsert_task_date_sort_order: {
-        Args: { p_task_id: string; p_date: string; p_sort_order: string }
+        Args: { p_date: string; p_sort_order: string; p_task_id: string }
         Returns: undefined
       }
     }

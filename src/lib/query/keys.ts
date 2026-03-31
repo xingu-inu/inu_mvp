@@ -153,6 +153,14 @@ export const queryKeys = {
       ['review', 'obstacle-analysis', start, end] as const,
   },
   // ============================================
+  // Timeline (나의 흐름)
+  // ============================================
+  timeline: {
+    all: ['timeline'] as const,
+    events: (areaId?: string) => ['timeline', 'events', areaId] as const,
+  },
+
+  // ============================================
   // Notifications (computed from tasks/goals)
   // ============================================
   notifications: {

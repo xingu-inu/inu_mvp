@@ -229,6 +229,7 @@ export function useUpdateGoal() {
     onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
       // Goal 상태 변경 시 Home 캐시 갱신
       if (variables.input.status) {
         queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.home })

@@ -79,6 +79,7 @@ export function useCreateProfileTrait() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profileTraits.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
   })
 }
@@ -120,6 +121,7 @@ export function useUpdateProfileTrait() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profileTraits.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
   })
 }
@@ -158,6 +160,7 @@ export function useDeleteProfileTrait() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profileTraits.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
   })
 }

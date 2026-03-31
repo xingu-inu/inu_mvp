@@ -132,6 +132,7 @@ export function useUpdateDirection() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.direction.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('방향이 수정되었습니다.')
