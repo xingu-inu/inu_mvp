@@ -3,7 +3,20 @@
 import { useState, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, X } from 'lucide-react'
+import {
+  Bell,
+  X,
+  Trophy,
+  Sparkles,
+  AlertTriangle,
+  Calendar,
+  Lightbulb,
+  CircleCheck,
+  Megaphone,
+  ArrowUpCircle,
+  PartyPopper,
+  type LucideIcon,
+} from 'lucide-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { queryKeys } from '@/lib/query/keys'
@@ -14,6 +27,28 @@ import {
   dismissNotification,
 } from '@/queries/use-notifications'
 import type { AppNotification } from '@/types/entities'
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Trophy,
+  Sparkles,
+  AlertTriangle,
+  Calendar,
+  Lightbulb,
+  Megaphone,
+  ArrowUpCircle,
+  PartyPopper,
+}
+
+const ICON_COLOR: Record<string, string> = {
+  Trophy: 'text-green-500',
+  Sparkles: 'text-green-500',
+  AlertTriangle: 'text-red-500',
+  Calendar: 'text-blue-500',
+  Lightbulb: 'text-amber-500',
+  Megaphone: 'text-purple-500',
+  ArrowUpCircle: 'text-blue-500',
+  PartyPopper: 'text-green-500',
+}
 
 interface NotificationPopoverProps {
   className?: string
@@ -53,6 +88,7 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
       <PopoverTrigger asChild>
         <button
           aria-label="알림"
+          title={badgeCount > 0 && notifications.length > 0 ? notifications[0].title : undefined}
           className={cn(
             'relative rounded-lg p-2 transition-colors',
             open
@@ -82,7 +118,7 @@ export function NotificationPopover({ className }: NotificationPopoverProps) {
             </div>
           ) : notifications.length === 0 ? (
             <div className="px-4 py-8 text-center">
-              <p className="text-2xl">✅</p>
+              <CircleCheck className="mx-auto h-6 w-6 text-green-500" />
               <p className="mt-2 text-sm text-[var(--color-text-tertiary)]">
                 모든 알림을 확인했어요
               </p>
@@ -134,7 +170,15 @@ function NotificationItem({
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
     >
-      <span className="mt-0.5 text-lg leading-none">{notification.emoji}</span>
+      {(() => {
+        const IconComponent = ICON_MAP[notification.icon]
+        const colorClass = ICON_COLOR[notification.icon] ?? 'text-[var(--color-text-secondary)]'
+        return IconComponent ? (
+          <IconComponent className={cn('mt-0.5 h-4.5 w-4.5 shrink-0', colorClass)} />
+        ) : (
+          <Bell className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[var(--color-text-secondary)]" />
+        )
+      })()}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{notification.title}</p>
         <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">{notification.message}</p>

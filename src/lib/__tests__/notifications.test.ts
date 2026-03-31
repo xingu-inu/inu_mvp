@@ -43,7 +43,7 @@ describe('computeDeadlines', () => {
     expect(deadlines).toHaveLength(1)
     expect(deadlines[0].title).toContain('D-0')
     expect(deadlines[0].priority).toBe(5)
-    expect(deadlines[0].emoji).toBe('🚨')
+    expect(deadlines[0].icon).toBe('AlertTriangle')
     expect(deadlines[0].message).toBe('목표 마감일이 오늘이에요!')
   })
 
@@ -67,7 +67,7 @@ describe('computeDeadlines', () => {
     expect(deadlines).toHaveLength(1)
     expect(deadlines[0].title).toContain('D-7')
     expect(deadlines[0].priority).toBe(3)
-    expect(deadlines[0].emoji).toBe('📅')
+    expect(deadlines[0].icon).toBe('Calendar')
   })
 
   it('does NOT generate for deadline > 7 days away', () => {
@@ -129,7 +129,7 @@ describe('computeMilestones', () => {
 
     const milestones = result.filter((n) => n.type === 'milestone_goal')
     expect(milestones).toHaveLength(1)
-    expect(milestones[0].emoji).toBe('🎉')
+    expect(milestones[0].icon).toBe('Trophy')
     expect(milestones[0].title).toContain('달성')
     expect(milestones[0].relatedGoalId).toBe('g1')
   })
@@ -140,7 +140,7 @@ describe('computeMilestones', () => {
 
     const milestones = result.filter((n) => n.type === 'milestone_group')
     expect(milestones).toHaveLength(1)
-    expect(milestones[0].emoji).toBe('✨')
+    expect(milestones[0].icon).toBe('Sparkles')
     expect(milestones[0].message).toContain('Phase 1')
     expect(milestones[0].relatedGoalId).toBe('g1')
   })
@@ -217,7 +217,7 @@ describe('countActionableNotifications', () => {
         type: 'announcement',
         title: 'Update',
         message: 'New feature',
-        emoji: '📢',
+        icon: 'Megaphone',
         priority: 5,
         autoResolve: false,
       },
@@ -232,7 +232,7 @@ describe('countActionableNotifications', () => {
         type: 'deadline',
         title: 'Deadline',
         message: 'Soon',
-        emoji: '📅',
+        icon: 'Calendar',
         priority: 3,
         autoResolve: false,
       },
@@ -247,7 +247,7 @@ describe('countActionableNotifications', () => {
         type: 'milestone_goal',
         title: 'Goal 달성!',
         message: '축하!',
-        emoji: '🎉',
+        icon: 'Trophy',
         priority: 4,
         autoResolve: false,
       },
@@ -262,7 +262,7 @@ describe('countActionableNotifications', () => {
         type: 'insight',
         title: 'Goal',
         message: 'Stale',
-        emoji: '💡',
+        icon: 'Lightbulb',
         priority: 3,
         autoResolve: true,
       },
@@ -271,7 +271,7 @@ describe('countActionableNotifications', () => {
         type: 'insight',
         title: 'Goal 2',
         message: 'Low',
-        emoji: '💡',
+        icon: 'Lightbulb',
         priority: 2,
         autoResolve: true,
       },
@@ -286,7 +286,7 @@ describe('countActionableNotifications', () => {
         type: 'announcement',
         title: 'Update',
         message: 'New',
-        emoji: '📢',
+        icon: 'Megaphone',
         priority: 5,
         autoResolve: false,
       },
@@ -295,7 +295,7 @@ describe('countActionableNotifications', () => {
         type: 'deadline',
         title: 'Deadline',
         message: 'Soon',
-        emoji: '📅',
+        icon: 'Calendar',
         priority: 5,
         autoResolve: false,
       },
@@ -304,7 +304,7 @@ describe('countActionableNotifications', () => {
         type: 'milestone_goal',
         title: 'Done!',
         message: '축하!',
-        emoji: '🎉',
+        icon: 'Trophy',
         priority: 4,
         autoResolve: false,
       },

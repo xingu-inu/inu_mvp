@@ -58,10 +58,10 @@ export function dismissNotification(notificationId: string) {
   }
 }
 
-const ANNOUNCEMENT_EMOJI: Record<string, string> = {
-  info: '\u{1F4E2}',
-  update: '\u{1F195}',
-  event: '\u{1F389}',
+const ANNOUNCEMENT_ICON: Record<string, string> = {
+  info: 'Megaphone',
+  update: 'ArrowUpCircle',
+  event: 'PartyPopper',
 }
 
 function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNotification[] {
@@ -70,7 +70,7 @@ function mapAnnouncementsToNotifications(announcements: Announcement[]): AppNoti
     type: 'announcement' as const,
     title: a.title,
     message: a.content,
-    emoji: ANNOUNCEMENT_EMOJI[a.type] ?? '\u{1F4E2}',
+    icon: ANNOUNCEMENT_ICON[a.type] ?? 'Megaphone',
     priority: 5,
     autoResolve: false,
   }))

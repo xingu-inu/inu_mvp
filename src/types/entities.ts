@@ -434,7 +434,7 @@ export interface AppNotification {
   type: NotificationType
   title: string
   message: string
-  emoji: string
+  icon: string
   priority: number // 1-5 (5=highest)
   relatedGoalId?: string
   autoResolve: boolean // true = disappears when condition met
