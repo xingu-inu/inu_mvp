@@ -9,8 +9,8 @@ import {
   Edit2,
   Heart,
   ListChecks,
-  Circle,
-  Check,
+  Folder,
+  FolderCheck,
 } from 'lucide-react'
 import {
   DndContext,
@@ -76,7 +76,7 @@ const GroupCompleteBadge = memo(function GroupCompleteBadge({
         toggleComplete.isPending && 'animate-pulse'
       )}
     >
-      {group.is_completed ? <Check className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+      {group.is_completed ? <FolderCheck className="h-4 w-4" /> : <Folder className="h-4 w-4" />}
     </button>
   )
 })
@@ -257,7 +257,7 @@ export const GoalExpandedContent = memo(function GoalExpandedContent({
         <div>
           <div className="mb-2 flex items-center justify-between">
             <h4 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-[var(--color-text-secondary)] uppercase">
-              <Circle className="h-3.5 w-3.5 text-[var(--color-primary-500)]" />
+              <Folder className="h-3.5 w-3.5 text-[var(--color-primary-500)]" />
               그룹 현황
             </h4>
             <span className="text-xs">

@@ -6,10 +6,11 @@ import {
   ChevronDown,
   ChevronRight,
   Compass,
-  FolderOpen,
   Target,
   CheckCircle2,
-  Circle,
+  Folder,
+  FolderCheck,
+  Footprints,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_GROUPS } from '@/lib/goal-status'
@@ -235,7 +236,7 @@ function NodeIcon({ node }: { node: TreeNode }) {
     case 'direction':
       return <Compass className="h-5 w-5 text-[var(--color-primary-500)]" />
     case 'status-group':
-      return <FolderOpen className="h-4 w-4 text-[var(--color-text-tertiary)]" />
+      return <Folder className="h-4 w-4 text-[var(--color-text-tertiary)]" />
     case 'area':
       // Area uses its color or emoji
       if (node.color) {
@@ -252,21 +253,16 @@ function NodeIcon({ node }: { node: TreeNode }) {
     case 'goal':
       return <Target className="h-4 w-4 text-[var(--color-primary-500)]" />
     case 'group':
-      return (
-        <FolderOpen
-          className={cn(
-            'h-4 w-4',
-            node.meta?.isCompleted
-              ? 'text-[var(--color-done)]'
-              : 'text-[var(--color-text-tertiary)]'
-          )}
-        />
+      return node.meta?.isCompleted ? (
+        <FolderCheck className="h-4 w-4 text-[var(--color-done)]" />
+      ) : (
+        <Folder className="h-4 w-4 text-[var(--color-text-tertiary)]" />
       )
     case 'task':
       return node.meta?.isDone ? (
         <CheckCircle2 className="h-4 w-4 text-[var(--color-done)]" />
       ) : (
-        <Circle className="h-4 w-4 text-[var(--color-text-tertiary)]" />
+        <Footprints className="h-4 w-4 text-[var(--color-text-tertiary)]" />
       )
     default:
       return null
