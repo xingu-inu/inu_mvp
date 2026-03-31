@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { ZOOM_COMPACT, ZOOM_FULL, type DirectionNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
+import { AddChildButton } from './add-child-button'
 
 export const DirectionNode = memo(function DirectionNode({
   id,
@@ -18,14 +19,14 @@ export const DirectionNode = memo(function DirectionNode({
   const areaCount = treeNode.children?.length ?? 0
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
-  const { handleNodeSelect, handleStartAdd, addingToId, getQuickAddContent } =
+  const { handleNodeSelect, handleStartAdd, addingToId, getQuickAddContent, handleQuickCreate } =
     useCanvasInteractionsContext()
 
   const onSelect = useCallback(() => handleNodeSelect('direction', id), [handleNodeSelect, id])
   const onAddChild = useCallback(() => handleStartAdd('direction', id), [handleStartAdd, id])
 
   return (
-    <div>
+    <div className="group/add relative">
       <Handle type="target" position={targetPosition ?? Position.Top} className="!invisible" />
 
       <TreeContextMenu node={treeNode} onEdit={onSelect} onAddChild={onAddChild}>
@@ -42,7 +43,7 @@ export const DirectionNode = memo(function DirectionNode({
           {/* Main card */}
           <div
             className={cn(
-              'relative flex max-w-[400px] min-w-[280px] cursor-pointer items-center gap-3 rounded-2xl px-5 py-4 shadow-lg transition-all',
+              'relative flex max-w-[400px] min-w-[280px] cursor-pointer items-center gap-3 rounded-2xl px-5 py-4 shadow-lg transition-all hover:shadow-xl hover:brightness-105',
               'bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-600)]',
               isSelected &&
                 'ring-2 ring-white/60 ring-offset-2 ring-offset-[var(--color-primary-500)]',
@@ -80,6 +81,14 @@ export const DirectionNode = memo(function DirectionNode({
         <div className="mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 shadow-sm">
           {getQuickAddContent(treeNode)}
         </div>
+      )}
+
+      {addingToId !== id && (
+        <AddChildButton
+          onClick={() => handleQuickCreate('direction', id)}
+          label="영역 추가"
+          sourcePosition={sourcePosition}
+        />
       )}
 
       <Handle type="source" position={sourcePosition ?? Position.Bottom} />

@@ -112,6 +112,8 @@ export function useDagreLayout(
             ...n,
             position: existing?.position ?? n.position,
             measured: existing?.measured,
+            sourcePosition: existing?.sourcePosition,
+            targetPosition: existing?.targetPosition,
           }
         })
       })

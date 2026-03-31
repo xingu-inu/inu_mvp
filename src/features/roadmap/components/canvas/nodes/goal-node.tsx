@@ -160,7 +160,11 @@ export const GoalNode = memo(function GoalNode({
           )}
 
           {addingToId !== id && !isCompact && (
-            <AddChildButton onClick={() => handleQuickCreate('goal', id)} label="할일 추가" />
+            <AddChildButton
+              onClick={() => handleQuickCreate('goal', id)}
+              label="할일 추가"
+              sourcePosition={sourcePosition}
+            />
           )}
         </>
       )}

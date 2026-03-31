@@ -9,6 +9,8 @@ import { ZOOM_COMPACT, ZOOM_FULL, type AreaNodeData } from '../types'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 import { WhyChainTooltip } from './why-chain-tooltip'
+import { AddChildButton } from './add-child-button'
+import { InlineEditInput } from './inline-edit-input'
 
 export const AreaNode = memo(function AreaNode({
   id,
@@ -27,15 +29,26 @@ export const AreaNode = memo(function AreaNode({
   } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
-  const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
-    useCanvasInteractionsContext()
+  const {
+    handleNodeSelect,
+    handleDeleteNode,
+    handleStartAdd,
+    addingToId,
+    getQuickAddContent,
+    editingNodeId,
+    directionId,
+    handleQuickCreate,
+    handleRenameCommit,
+    handleCancelEdit,
+  } = useCanvasInteractionsContext()
+  const isEditing = editingNodeId === id
 
   const onSelect = useCallback(() => handleNodeSelect('area', id), [handleNodeSelect, id])
   const onAddChild = useCallback(() => handleStartAdd('area', id), [handleStartAdd, id])
   const onDelete = useCallback(() => handleDeleteNode('area', id), [handleDeleteNode, id])
 
   return (
-    <div className="group/why">
+    <div className="group/add group/why relative">
       {isFull && ancestorWhys && ancestorWhys.length > 0 && (
         <WhyChainTooltip
           ancestorWhys={ancestorWhys}
@@ -53,7 +66,7 @@ export const AreaNode = memo(function AreaNode({
       >
         <div
           className={cn(
-            'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-shadow',
+            'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}
@@ -84,9 +97,24 @@ export const AreaNode = memo(function AreaNode({
 
             {/* Name + Why */}
             <div className="min-w-0 flex-1">
-              <span className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
-                {treeNode.name}
-              </span>
+              {isEditing ? (
+                <InlineEditInput
+                  nodeType="area"
+                  nodeId={id}
+                  defaultValue={treeNode.name}
+                  className="text-[15px] font-semibold text-[var(--color-text-primary)]"
+                  onCommit={handleRenameCommit}
+                  onCancel={handleCancelEdit}
+                  onChainEnter={
+                    directionId ? () => handleQuickCreate('direction', directionId) : undefined
+                  }
+                  onChainTab={() => handleQuickCreate('area', id)}
+                />
+              ) : (
+                <span className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
+                  {treeNode.name}
+                </span>
+              )}
               {!isCompact && treeNode.why && (
                 <span className="block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
                   {treeNode.why}
@@ -132,6 +160,14 @@ export const AreaNode = memo(function AreaNode({
         <div className="mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 shadow-sm">
           {getQuickAddContent(treeNode)}
         </div>
+      )}
+
+      {addingToId !== id && (
+        <AddChildButton
+          onClick={() => handleQuickCreate('area', id)}
+          label="목표 추가"
+          sourcePosition={sourcePosition}
+        />
       )}
 
       <Handle type="source" position={sourcePosition ?? Position.Bottom} />

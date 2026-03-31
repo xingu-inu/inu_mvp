@@ -7,6 +7,8 @@ import { ZOOM_COMPACT, ZOOM_FULL, type GroupNodeData } from '../types'
 import { TreeNodeCard } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
+import { AddChildButton } from './add-child-button'
+import { InlineEditInput } from './inline-edit-input'
 
 export const GroupNode = memo(function GroupNode({
   id,
@@ -14,28 +16,50 @@ export const GroupNode = memo(function GroupNode({
   sourcePosition,
   targetPosition,
 }: NodeProps<Node<GroupNodeData, 'group'>>) {
-  const { treeNode, isSelected, isSearchMatch, searchQuery, zoomLevel = ZOOM_FULL } = data
+  const {
+    treeNode,
+    isSelected,
+    isSearchMatch,
+    searchQuery,
+    zoomLevel = ZOOM_FULL,
+    isExpanded,
+  } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const hasChildren = !!treeNode.children?.length
 
-  const { handleNodeSelect, handleDeleteNode, handleStartAdd, addingToId, getQuickAddContent } =
-    useCanvasInteractionsContext()
+  const {
+    handleNodeSelect,
+    handleDeleteNode,
+    handleStartAdd,
+    addingToId,
+    getQuickAddContent,
+    editingNodeId,
+    handleQuickCreate,
+    handleRenameCommit,
+    handleCancelEdit,
+    toggleGroupExpand,
+  } = useCanvasInteractionsContext()
+  const isEditing = editingNodeId === id
 
   const handleSelect = useCallback(() => {
     handleNodeSelect('group', id)
   }, [handleNodeSelect, id])
 
+  const handleToggle = useCallback(() => {
+    toggleGroupExpand(id)
+  }, [toggleGroupExpand, id])
+
   const onAddChild = useCallback(() => handleStartAdd('group', id), [handleStartAdd, id])
   const onDelete = useCallback(() => handleDeleteNode('group', id), [handleDeleteNode, id])
 
   return (
-    <div className={cn('group/why max-w-[260px] min-w-[180px]')}>
+    <div className={cn('group/add group/why relative max-w-[260px] min-w-[180px]')}>
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
       {isCompact ? (
         <div
           className={cn(
-            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm',
+            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}
@@ -47,30 +71,52 @@ export const GroupNode = memo(function GroupNode({
         </div>
       ) : (
         <>
-          <TreeContextMenu
-            node={treeNode}
-            onEdit={handleSelect}
-            onAddChild={onAddChild}
-            onDelete={onDelete}
-          >
-            <div>
-              <TreeNodeCard
-                node={treeNode}
-                isSelected={isSelected ?? false}
-                isExpanded={false}
-                hasChildren={hasChildren}
-                onSelect={handleSelect}
-                onToggle={handleSelect}
-                isSearchMatch={isSearchMatch}
-                searchQuery={searchQuery}
+          {isEditing ? (
+            <div className="rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm">
+              <InlineEditInput
+                nodeType="group"
+                nodeId={id}
+                defaultValue={treeNode.name}
+                className="text-sm font-medium text-[var(--color-text-primary)]"
+                onCommit={handleRenameCommit}
+                onCancel={handleCancelEdit}
+                onChainTab={() => handleQuickCreate('group', id)}
               />
             </div>
-          </TreeContextMenu>
+          ) : (
+            <TreeContextMenu
+              node={treeNode}
+              onEdit={handleSelect}
+              onAddChild={onAddChild}
+              onDelete={onDelete}
+            >
+              <div>
+                <TreeNodeCard
+                  node={treeNode}
+                  isSelected={isSelected ?? false}
+                  isExpanded={isExpanded ?? false}
+                  hasChildren={hasChildren}
+                  onSelect={handleSelect}
+                  onToggle={handleToggle}
+                  isSearchMatch={isSearchMatch}
+                  searchQuery={searchQuery}
+                />
+              </div>
+            </TreeContextMenu>
+          )}
 
           {addingToId === id && (
             <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2">
               {getQuickAddContent(treeNode)}
             </div>
+          )}
+
+          {addingToId !== id && !isCompact && (
+            <AddChildButton
+              onClick={() => handleQuickCreate('group', id)}
+              label="할일 추가"
+              sourcePosition={sourcePosition}
+            />
           )}
         </>
       )}

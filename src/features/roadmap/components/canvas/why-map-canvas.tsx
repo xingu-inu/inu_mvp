@@ -20,7 +20,9 @@ import {
   type Connection,
   type Edge,
 } from '@xyflow/react'
+import { ArrowRight, ArrowDown, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { CanvasChip } from './canvas-chip'
+import { CanvasToolbar } from './canvas-toolbar'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
@@ -96,7 +98,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   ref
 ) {
   const clearSelection = useRoadmapStore((s) => s.clearSelection)
-  const { fitView } = useReactFlow()
+  const { fitView, zoomIn, zoomOut } = useReactFlow()
   const { zoom: rawZoom } = useViewport()
   // Quantize zoom into 3 bands so enrichedNodes only recomputes at threshold crossings
   const zoomBand: number =
@@ -105,12 +107,41 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // Goal expand/collapse: which goals show Group/Task as canvas nodes
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
+  // Group expand/collapse: which groups show Task children as canvas nodes
+  const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
 
   const toggleGoalExpand = useCallback((goalId: string) => {
     setExpandedGoalIds((prev) => {
       const next = new Set(prev)
       if (next.has(goalId)) next.delete(goalId)
       else next.add(goalId)
+      return next
+    })
+  }, [])
+
+  const expandGoal = useCallback((goalId: string) => {
+    setExpandedGoalIds((prev) => {
+      if (prev.has(goalId)) return prev
+      const next = new Set(prev)
+      next.add(goalId)
+      return next
+    })
+  }, [])
+
+  const collapseGoal = useCallback((goalId: string) => {
+    setExpandedGoalIds((prev) => {
+      if (!prev.has(goalId)) return prev
+      const next = new Set(prev)
+      next.delete(goalId)
+      return next
+    })
+  }, [])
+
+  const toggleGroupExpand = useCallback((groupId: string) => {
+    setExpandedGroupIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(groupId)) next.delete(groupId)
+      else next.add(groupId)
       return next
     })
   }, [])
@@ -123,15 +154,15 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const { selectedNodeId, focusedIds, parentGoalMap } = interactions
 
   const interactionsContextValue = useMemo(
-    () => ({ ...interactions, toggleGoalExpand }),
-    [interactions, toggleGoalExpand]
+    () => ({ ...interactions, toggleGoalExpand, toggleGroupExpand }),
+    [interactions, toggleGoalExpand, toggleGroupExpand]
   )
 
   // ── Data pipeline: tree → flow elements → enrich → dagre ──
 
   const { nodes: rawNodes, edges: rawEdges } = useMemo(
-    () => treeToFlowElements(treeData, crossLinks, expandedGoalIds),
-    [treeData, crossLinks, expandedGoalIds]
+    () => treeToFlowElements(treeData, crossLinks, expandedGoalIds, expandedGroupIds),
+    [treeData, crossLinks, expandedGoalIds, expandedGroupIds]
   )
 
   // Enrich nodes with interaction state
@@ -195,11 +226,12 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     edges,
     selectedNodeId,
     direction,
-    handleStartAdd: interactions.handleStartAdd,
     handleQuickCreate: interactions.handleQuickCreate,
     handleNodeSelect: interactions.handleNodeSelect,
     handleDeleteNode: interactions.handleDeleteNode,
     toggleNodeExpand: toggleGoalExpand,
+    expandNode: expandGoal,
+    collapseNode: collapseGoal,
     clearSelection,
     onToggleFloatingPanel: useRoadmapStore.getState().toggleFloatingPanel,
     onFitView: () => fitView({ padding: 0.15, duration: 300 }),
@@ -315,6 +347,47 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           {isMinimapVisible && (
             <MiniMap nodeColor={minimapNodeColor} maskColor="rgba(0,0,0,0.08)" pannable zoomable />
           )}
+          {/* Canvas controls — bottom-left */}
+          <Panel position="bottom-left" className="!mb-3 !ml-3">
+            <CanvasToolbar className="gap-1 rounded-xl p-1.5">
+              <CanvasToolbar.Button
+                className="rounded-lg px-3 py-2.5 text-sm"
+                icon={<ZoomIn className="h-5 w-5" />}
+                onClick={() => zoomIn({ duration: 200 })}
+                title="확대"
+              />
+              <CanvasToolbar.Button
+                className="rounded-lg px-3 py-2.5 text-sm"
+                icon={<ZoomOut className="h-5 w-5" />}
+                onClick={() => zoomOut({ duration: 200 })}
+                title="축소"
+              />
+              <CanvasToolbar.Button
+                className="rounded-lg px-3 py-2.5 text-sm"
+                icon={<Maximize2 className="h-5 w-5" />}
+                onClick={() => fitView({ padding: 0.15, duration: 300 })}
+                title="전체 보기 (⌘0)"
+              />
+              <CanvasToolbar.Divider className="mx-1 h-5" />
+              <CanvasToolbar.Button
+                className="rounded-lg px-3 py-2.5 text-sm"
+                icon={
+                  direction === 'LR' ? (
+                    <ArrowRight className="h-5 w-5" />
+                  ) : (
+                    <ArrowDown className="h-5 w-5" />
+                  )
+                }
+                onClick={() => {
+                  const next = treeLayout === 'horizontal' ? 'vertical' : 'horizontal'
+                  useRoadmapStore.getState().setTreeLayout(next)
+                }}
+                title="레이아웃 전환 (L)"
+              >
+                {direction === 'LR' ? '가로' : '세로'}
+              </CanvasToolbar.Button>
+            </CanvasToolbar>
+          </Panel>
           {/* Canvas stats */}
           {canvasStats && (
             <Panel position="bottom-center" className="!mb-2">
