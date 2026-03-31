@@ -41,7 +41,7 @@ export const chatRepository = {
       .limit(50)
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as unknown as ChatConversation[]
+    return (data ?? []) as ChatConversation[]
   },
 
   /**
@@ -55,7 +55,7 @@ export const chatRepository = {
       .order('created_at', { ascending: true })
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as unknown as ChatMessage[]
+    return (data ?? []) as ChatMessage[]
   },
 
   /**
@@ -80,7 +80,7 @@ export const chatRepository = {
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as unknown as ChatConversation
+    return data as ChatConversation
   },
 
   /**
@@ -122,7 +122,7 @@ export const chatRepository = {
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId)
 
-    return data as unknown as ChatMessage
+    return data as ChatMessage
   },
 
   /**

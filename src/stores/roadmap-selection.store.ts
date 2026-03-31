@@ -77,6 +77,71 @@ function derivePanelMode(sel: Selection): PanelMode {
   }
 }
 
+// ── Shared action creators (DRY — used by both slice and standalone store) ─
+
+function createSelectionActions(
+  set: (partial: Partial<SelectionSlice>) => void,
+  get: () => SelectionSlice
+) {
+  return {
+    select: (sel: Selection) => {
+      const current = get()
+
+      // Toggle: clicking the same entity deselects
+      if (
+        sel.type !== 'none' &&
+        current.selection.type === sel.type &&
+        'id' in sel &&
+        'id' in current.selection &&
+        sel.id === current.selection.id
+      ) {
+        get().clearSelection()
+        return
+      }
+
+      set({
+        selection: sel,
+        panelMode: derivePanelMode(sel),
+        isFloatingPanelOpen: sel.type !== 'none',
+      })
+    },
+
+    clearSelection: () =>
+      set({
+        selection: { type: 'none' },
+        focusedGoalId: null,
+        inlineMode: null,
+        panelMode: 'browse',
+        isFloatingPanelOpen: false,
+      }),
+
+    focusGoal: (id: string) => {
+      const current = get()
+      if (current.focusedGoalId === id) {
+        set({
+          selection: { type: 'none' },
+          focusedGoalId: null,
+          inlineMode: null,
+          isFloatingPanelOpen: false,
+        })
+        return
+      }
+      set({
+        selection: { type: 'goal', id },
+        focusedGoalId: id,
+        inlineMode: null,
+        isFloatingPanelOpen: true,
+        // Do NOT change panelMode — stays 'browse' for desktop
+      })
+    },
+
+    setInlineMode: (mode: InlineMode) => set({ inlineMode: mode }),
+    setPanelMode: (mode: PanelMode) => set({ panelMode: mode }),
+    setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
+    toggleFloatingPanel: () => set({ isFloatingPanelOpen: !get().isFloatingPanelOpen }),
+  }
+}
+
 // ── Slice creator (for combined store composition) ─────
 
 export const createSelectionSlice: StateCreator<RoadmapState, [], [], SelectionSlice> = (
@@ -84,120 +149,14 @@ export const createSelectionSlice: StateCreator<RoadmapState, [], [], SelectionS
   get
 ) => ({
   ...selectionInitialState,
-
-  select: (sel: Selection) => {
-    const current = get()
-
-    // Toggle: clicking the same entity deselects
-    if (
-      sel.type !== 'none' &&
-      current.selection.type === sel.type &&
-      'id' in sel &&
-      'id' in current.selection &&
-      sel.id === current.selection.id
-    ) {
-      get().clearSelection()
-      return
-    }
-
-    set({
-      selection: sel,
-      panelMode: derivePanelMode(sel),
-      isFloatingPanelOpen: sel.type !== 'none',
-    })
-  },
-
-  clearSelection: () =>
-    set({
-      selection: { type: 'none' },
-      focusedGoalId: null,
-      inlineMode: null,
-      panelMode: 'browse',
-      isFloatingPanelOpen: false,
-    }),
-
-  focusGoal: (id: string) => {
-    const current = get()
-    if (current.focusedGoalId === id) {
-      set({
-        selection: { type: 'none' },
-        focusedGoalId: null,
-        inlineMode: null,
-        isFloatingPanelOpen: false,
-      })
-      return
-    }
-    set({
-      selection: { type: 'goal', id },
-      focusedGoalId: id,
-      inlineMode: null,
-      isFloatingPanelOpen: true,
-      // Do NOT change panelMode — stays 'browse' for desktop
-    })
-  },
-
-  setInlineMode: (mode: InlineMode) => set({ inlineMode: mode }),
-  setPanelMode: (mode: PanelMode) => set({ panelMode: mode }),
-  setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
-  toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
+  ...createSelectionActions(set, get),
 })
 
 // ── Standalone store (re-render isolation for new code) ─
 
 export const useRoadmapSelectionStore = create<SelectionSlice>()((set, get) => ({
   ...selectionInitialState,
-
-  select: (sel: Selection) => {
-    const current = get()
-    if (
-      sel.type !== 'none' &&
-      current.selection.type === sel.type &&
-      'id' in sel &&
-      'id' in current.selection &&
-      sel.id === current.selection.id
-    ) {
-      get().clearSelection()
-      return
-    }
-    set({
-      selection: sel,
-      panelMode: derivePanelMode(sel),
-      isFloatingPanelOpen: sel.type !== 'none',
-    })
-  },
-
-  clearSelection: () =>
-    set({
-      selection: { type: 'none' },
-      focusedGoalId: null,
-      inlineMode: null,
-      panelMode: 'browse',
-      isFloatingPanelOpen: false,
-    }),
-
-  focusGoal: (id: string) => {
-    const current = get()
-    if (current.focusedGoalId === id) {
-      set({
-        selection: { type: 'none' },
-        focusedGoalId: null,
-        inlineMode: null,
-        isFloatingPanelOpen: false,
-      })
-      return
-    }
-    set({
-      selection: { type: 'goal', id },
-      focusedGoalId: id,
-      inlineMode: null,
-      isFloatingPanelOpen: true,
-    })
-  },
-
-  setInlineMode: (mode: InlineMode) => set({ inlineMode: mode }),
-  setPanelMode: (mode: PanelMode) => set({ panelMode: mode }),
-  setFloatingPanelOpen: (open: boolean) => set({ isFloatingPanelOpen: open }),
-  toggleFloatingPanel: () => set((s) => ({ isFloatingPanelOpen: !s.isFloatingPanelOpen })),
+  ...createSelectionActions(set, get),
 }))
 
 // ── Selectors ──────────────────────────────────────────

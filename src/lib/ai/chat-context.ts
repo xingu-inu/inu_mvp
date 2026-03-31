@@ -63,16 +63,13 @@ export async function getActiveGoals(supabase: TypedSupabaseClient, userId: stri
   }
 }
 
-/** Shape returned by the get_today_tasks RPC */
+/** Shape returned by the get_today_tasks RPC (camelCase — matches SQL function output) */
 interface TodayTaskRpcRow {
   name: string
   todayCheckIn?: { status: string } | null
   streakCount?: number
-  streak_count?: number
   durationMinutes?: number
-  duration_minutes?: number
   timeSlot?: string
-  time_slot?: string
   goal?: { name?: string; area?: { name?: string } } | null
 }
 
@@ -97,9 +94,9 @@ export async function getTodayTasks(supabase: TypedSupabaseClient, _userId: stri
     tasks: tasks.map((t) => ({
       name: t.name,
       status: t.todayCheckIn?.status ?? 'pending',
-      streak: t.streakCount ?? t.streak_count ?? 0,
-      duration_minutes: t.durationMinutes ?? t.duration_minutes ?? 0,
-      time_slot: t.timeSlot ?? t.time_slot ?? 'anytime',
+      streak: t.streakCount ?? 0,
+      duration_minutes: t.durationMinutes ?? 0,
+      time_slot: t.timeSlot ?? 'anytime',
       goal_name: t.goal?.name ?? null,
       area_name: t.goal?.area?.name ?? null,
     })),

@@ -209,7 +209,10 @@ export function useCrossGroupDnd({
 
   // Derived values
   const activeTask = activeTaskId ? tasksById.get(activeTaskId) : undefined
-  const orphanedTaskIds = taskContainers[ORPHANS_CONTAINER_ID] ?? []
+  const orphanedTaskIds = useMemo(
+    () => taskContainers[ORPHANS_CONTAINER_ID] ?? [],
+    [taskContainers]
+  )
 
   return {
     taskContainers,
