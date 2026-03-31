@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useEffect, useRef } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { format } from 'date-fns'
@@ -13,12 +13,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Chip } from '@/components/ui/chip'
 import { SampleChips } from '@/features/roadmap/components/shared/sample-chips'
+import { AiSuggestionPanel } from '@/components/common/ai-suggestion-panel'
 import { useUpdateTask } from '@/queries/use-tasks'
 import { useGoals } from '@/queries/use-goals'
 import { useAreas } from '@/queries/use-areas'
+import { useDirection } from '@/queries/use-direction'
+import { useAiWhySuggestions } from '@/hooks/use-ai-why-suggestions'
 import { updateTaskSchema, type UpdateTaskSchema } from '@/lib/validations'
 import { cn } from '@/lib/utils'
-import { chipClass } from '@/lib/utils/chip-class'
 import { getWhySuggestions } from '@/lib/utils/why-generator'
 import { TASK_STATUS_CONFIG } from '@/lib/task-status'
 import { CrossAreaPicker } from '@/features/roadmap/components/shared/cross-area-picker'
@@ -49,7 +51,9 @@ interface InlineTaskEditProps {
 export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
   const { data: areas = [] } = useAreas()
   const { data: allGoals = [] } = useGoals()
+  const { data: direction } = useDirection()
   const updateTask = useUpdateTask()
+  const aiWhy = useAiWhySuggestions({ target: 'task-why' })
 
   // Find the goal for cross-linking and why suggestions
   const goal = useMemo(
@@ -90,6 +94,7 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
   const crossLinkGroupMap = useMemo(() => rawCrossLinkGroupMap ?? {}, [rawCrossLinkGroupMap])
 
   const currentStatus: TaskStatus = (watchedStatus ?? task.status) as TaskStatus
+  const [whyFocused, setWhyFocused] = useState(false)
 
   // Build cross-linked goals with their available groups
   const crossLinkedGoalsWithGroups = useMemo(() => {
@@ -195,156 +200,160 @@ export function InlineTaskEdit({ task, onDone }: InlineTaskEditProps) {
         )}
       </div>
 
-      {/* Period — start_date + end_date only */}
-      <FormSection
-        icon={CalendarDays}
-        label="기간"
-        defaultOpen
-        preview={
-          <span>
-            {watchedStartDate ? `${watchedStartDate} ~` : '시작 미설정'}
-            {watchedEndDate ? ` ${watchedEndDate}` : ' 종료 없음'}
-          </span>
-        }
-      >
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] text-[var(--color-text-tertiary)]">시작</Label>
+      {/* Period — inline one-row layout */}
+      <div>
+        <span className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <CalendarDays className="h-3 w-3" />
+          기간
+        </span>
+        <div className="mt-2 flex items-center gap-2">
+          <DatePicker
+            value={watchedStartDate ?? null}
+            onChange={(d) => form.setValue('start_date', d ?? null, { shouldDirty: true })}
+            compact
+            placeholder="시작 날짜"
+            className="min-w-0 flex-1"
+          />
+          <span className="shrink-0 text-xs text-[var(--color-text-tertiary)]">~</span>
+          {watchedEndDate ? (
             <DatePicker
-              value={watchedStartDate ?? null}
-              onChange={(d) => form.setValue('start_date', d ?? null, { shouldDirty: true })}
+              value={watchedEndDate}
+              onChange={(d) => form.setValue('end_date', d ?? null, { shouldDirty: true })}
               compact
-              placeholder="시작 날짜 (선택)"
+              placeholder="종료 날짜"
+              className="min-w-0 flex-1"
             />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-[10px] text-[var(--color-text-tertiary)]">종료</Label>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => form.setValue('end_date', null, { shouldDirty: true })}
-                className={chipClass(!watchedEndDate)}
-              >
-                없음 (계속)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!watchedEndDate) {
-                    const defaultEnd = format(
-                      new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                      'yyyy-MM-dd'
-                    )
-                    form.setValue('end_date', defaultEnd, { shouldDirty: true })
-                  }
-                }}
-                className={chipClass(!!watchedEndDate)}
-              >
-                날짜 선택
-              </button>
-            </div>
-            {watchedEndDate && (
-              <DatePicker
-                value={watchedEndDate}
-                onChange={(d) => form.setValue('end_date', d ?? null, { shouldDirty: true })}
-                compact
-                placeholder="종료 날짜"
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const defaultEnd = format(
+                  new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                  'yyyy-MM-dd'
+                )
+                form.setValue('end_date', defaultEnd, { shouldDirty: true })
+              }}
+              className="inline-flex h-8 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 text-xs text-[var(--color-text-tertiary)] transition-colors hover:border-[var(--color-border-hover)]"
+            >
+              <CalendarDays className="h-3.5 w-3.5 shrink-0" />
+              계속
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Why / Motivation — inline with preset chips on focus */}
+      <div>
+        <span className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+          <Heart className="h-3 w-3" />
+          동기
+        </span>
+        <div
+          className="mt-2 space-y-1.5 rounded-lg bg-[var(--color-primary-50)]/40 px-3 py-2.5"
+          onFocus={() => setWhyFocused(true)}
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setWhyFocused(false)
+          }}
+        >
+          <Input
+            id={`task-why-${task.id}`}
+            {...form.register('why')}
+            placeholder="왜 이 할 일을? (선택)"
+          />
+          {whyFocused && (
+            <>
+              <SampleChips
+                items={whySuggestions.map((s) => s.text)}
+                selectedValue={currentWhy ?? ''}
+                onToggle={(val) =>
+                  form.setValue('why', currentWhy === val ? '' : val, { shouldDirty: true })
+                }
+                preventBlur
               />
+              <AiSuggestionPanel
+                triggerLabel="AI 추천받기"
+                isLoading={aiWhy.isLoading}
+                error={aiWhy.error}
+                suggestions={aiWhy.suggestions}
+                selectedValue={currentWhy ?? ''}
+                onSelect={(s) => form.setValue('why', s.text, { shouldDirty: true })}
+                onGenerate={() =>
+                  aiWhy.generate({
+                    direction: direction?.statement,
+                    areaName: goalArea?.name,
+                    goalName: goal?.name,
+                  })
+                }
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Cross-Linking — always visible (only for goal-linked tasks) */}
+      {goal?.area_id && task.goal_id && (
+        <div>
+          <span className="flex items-center gap-1.5 text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
+            <Link2 className="h-3 w-3" />
+            연결
+          </span>
+          <div className="mt-2 space-y-3 rounded-lg bg-[var(--color-bg-secondary)] px-3 py-2.5">
+            {/* Cross-Area Linking */}
+            <CrossAreaPicker
+              primaryAreaId={goal.area_id}
+              selectedIds={relatedAreaIds}
+              onChange={(ids: string[]) =>
+                form.setValue('related_area_ids', ids, { shouldDirty: true })
+              }
+            />
+
+            {/* Cross-Goal Linking */}
+            <CrossGoalPicker
+              primaryGoalId={task.goal_id}
+              selectedGoalIds={relatedGoalIds}
+              onChange={(ids: string[]) =>
+                form.setValue('related_goal_ids', ids, { shouldDirty: true })
+              }
+              filterByAreaIds={relatedAreaIds}
+            />
+
+            {/* Cross-Link Group Selection per linked goal */}
+            {crossLinkedGoalsWithGroups.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs">연결 목표별 그룹 지정</Label>
+                {crossLinkedGoalsWithGroups.map(({ goal: linkedGoal, groups: linkedGroups }) => (
+                  <div key={linkedGoal.id} className="space-y-1">
+                    <span className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
+                      {linkedGoal.name}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {linkedGroups.map((gr) => (
+                        <Chip
+                          key={gr.id}
+                          variant="selection"
+                          selected={crossLinkGroupMap[linkedGoal.id] === gr.id}
+                          onClick={() =>
+                            form.setValue(
+                              'cross_link_group_map',
+                              {
+                                ...crossLinkGroupMap,
+                                [linkedGoal.id]: gr.id,
+                              },
+                              { shouldDirty: true }
+                            )
+                          }
+                          className="cursor-pointer text-xs"
+                        >
+                          {gr.name}
+                        </Chip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </div>
-      </FormSection>
-
-      {/* Why / Motivation */}
-      <FormSection
-        icon={Heart}
-        label="동기"
-        bgClassName="bg-[var(--color-primary-50)]/40"
-        preview={<span>{currentWhy || '미설정'}</span>}
-      >
-        <div className="space-y-1.5">
-          <Label htmlFor={`task-why-${task.id}`} className="text-xs">
-            왜 이 할 일을? (선택)
-          </Label>
-          <Input id={`task-why-${task.id}`} {...form.register('why')} />
-          <SampleChips
-            items={whySuggestions.map((s) => s.text)}
-            selectedValue={currentWhy ?? ''}
-            onToggle={(val) =>
-              form.setValue('why', currentWhy === val ? '' : val, { shouldDirty: true })
-            }
-          />
-        </div>
-      </FormSection>
-
-      {/* Cross-Linking (only for goal-linked tasks) */}
-      {goal?.area_id && task.goal_id && (
-        <FormSection
-          icon={Link2}
-          label="연결"
-          preview={
-            <span>
-              {relatedAreaIds.length > 0 || relatedGoalIds.length > 0
-                ? `${relatedAreaIds.length}개 영역 · ${relatedGoalIds.length}개 목표`
-                : '연결 없음'}
-            </span>
-          }
-        >
-          {/* Cross-Area Linking */}
-          <CrossAreaPicker
-            primaryAreaId={goal.area_id}
-            selectedIds={relatedAreaIds}
-            onChange={(ids: string[]) =>
-              form.setValue('related_area_ids', ids, { shouldDirty: true })
-            }
-          />
-
-          {/* Cross-Goal Linking */}
-          <CrossGoalPicker
-            primaryGoalId={task.goal_id}
-            selectedGoalIds={relatedGoalIds}
-            onChange={(ids: string[]) =>
-              form.setValue('related_goal_ids', ids, { shouldDirty: true })
-            }
-            filterByAreaIds={relatedAreaIds}
-          />
-
-          {/* Cross-Link Group Selection per linked goal */}
-          {crossLinkedGoalsWithGroups.length > 0 && (
-            <div className="space-y-2">
-              <Label className="text-xs">연결 목표별 그룹 지정</Label>
-              {crossLinkedGoalsWithGroups.map(({ goal: linkedGoal, groups: linkedGroups }) => (
-                <div key={linkedGoal.id} className="space-y-1">
-                  <span className="text-[10px] font-medium text-[var(--color-text-tertiary)]">
-                    {linkedGoal.name}
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {linkedGroups.map((gr) => (
-                      <Chip
-                        key={gr.id}
-                        variant="selection"
-                        selected={crossLinkGroupMap[linkedGoal.id] === gr.id}
-                        onClick={() =>
-                          form.setValue(
-                            'cross_link_group_map',
-                            {
-                              ...crossLinkGroupMap,
-                              [linkedGoal.id]: gr.id,
-                            },
-                            { shouldDirty: true }
-                          )
-                        }
-                        className="cursor-pointer text-xs"
-                      >
-                        {gr.name}
-                      </Chip>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </FormSection>
       )}
 
       {/* Status — 달성 여부 */}
