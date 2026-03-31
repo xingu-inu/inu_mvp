@@ -29,6 +29,10 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { Goal, GoalStatus } from '@/types/entities'
 
+// Animation durations: accordion expand (200ms) + group expand (150ms) + render buffer
+const SCROLL_DELAY_CROSS_GOAL = 450
+const SCROLL_DELAY_SAME_GOAL = 300
+
 interface GoalBrowsePanelProps {
   onGoalSelect?: (goalId: string) => void
   onTaskSelect?: (taskId: string) => void
@@ -118,7 +122,6 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
         // Scroll after accordion expansion + content render
         const container = scrollContainerRef.current
         if (targetSelector && container) {
-          // Longer delay: goal accordion (200ms) + group expand (150ms) + buffer
           setTimeout(() => {
             const el = container.querySelector(targetSelector)
             if (el) {
@@ -128,7 +131,7 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
               const goalEl = goalRefsMap.current.get(focusId)
               if (goalEl) goalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
             }
-          }, 450)
+          }, SCROLL_DELAY_CROSS_GOAL)
         } else {
           requestAnimationFrame(() => {
             const el = goalRefsMap.current.get(focusId)
@@ -160,8 +163,14 @@ export function GoalBrowsePanel({ onGoalSelect, onTaskSelect }: GoalBrowsePanelP
           if (container) {
             setTimeout(() => {
               const el = container.querySelector(targetSelector)
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-            }, 300)
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              } else if (focusId) {
+                // Fallback: scroll to parent goal
+                const goalEl = goalRefsMap.current.get(focusId)
+                if (goalEl) goalEl.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }, SCROLL_DELAY_SAME_GOAL)
           }
         }
       }

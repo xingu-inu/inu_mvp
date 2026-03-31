@@ -132,7 +132,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const interactions = useCanvasInteractions(treeData, goals, areas, expandGoal, expandGroup)
   const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap } = interactions
 
-  // Clear expanded group IDs that belong to a given goal
+  // Clear expanded group IDs that belong to a given goal.
+  // Safe: expandedGroupIds only contains group IDs, and parentGoalMap maps
+  // both group and task IDs to their parent goal — but we only iterate group IDs here.
   const clearChildGroupExpands = useCallback(
     (goalId: string) => {
       setExpandedGroupIds((prev) => {
@@ -275,16 +277,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     (nodeId: string) => {
       const type = resolveNodeType(nodeId)
       if (type === 'goal') expandGoal(nodeId)
-      else if (type === 'group') {
-        setExpandedGroupIds((prev) => {
-          if (prev.has(nodeId)) return prev
-          const next = new Set(prev)
-          next.add(nodeId)
-          return next
-        })
-      }
+      else if (type === 'group') expandGroup(nodeId)
     },
-    [resolveNodeType, expandGoal]
+    [resolveNodeType, expandGoal, expandGroup]
   )
 
   const collapseNode = useCallback(
@@ -343,26 +338,19 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
         expandGoal(goalId)
         const groupId = parentGroupMap.get(nodeId)
-        if (groupId) {
-          setExpandedGroupIds((prev) => {
-            if (prev.has(groupId)) return prev
-            const next = new Set(prev)
-            next.add(groupId)
-            return next
-          })
-        }
+        if (groupId) expandGroup(groupId)
 
-        // Wait for next render so the node exists, then focus it
-        requestAnimationFrame(() => {
+        // Wait for dagre layout recalculation + node positioning
+        setTimeout(() => {
           fitView({ nodes: [{ id: nodeId }], padding: 0.5, duration: 300 })
-        })
+        }, 400)
       },
       fitView: () => {
         fitView({ padding: 0.15, duration: 300 })
       },
       toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
     }),
-    [nodes, parentGoalMap, parentGroupMap, expandGoal, fitView]
+    [nodes, parentGoalMap, parentGroupMap, expandGoal, expandGroup, fitView]
   )
 
   // ── Dependency edge: onConnect handler (Goal↔Goal only) ──
