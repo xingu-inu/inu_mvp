@@ -20,7 +20,9 @@ import type { AreaType } from '@/types/entities'
 export function useCanvasInteractions(
   treeData: VisualTreeNode | null,
   goals: Goal[],
-  areas: Area[]
+  areas: Area[],
+  expandGoal?: (goalId: string) => void,
+  expandGroup?: (groupId: string) => void
 ) {
   const selectedNodeId = useRoadmapStore(selectSelectedNodeId)
   const select = useRoadmapStore((s) => s.select)
@@ -213,17 +215,25 @@ export function useCanvasInteractions(
             break
           }
           case 'goal': {
-            const data = await createTask.mutateAsync({ goal_id: parentId, name: '새 할일' })
+            expandGoal?.(parentId)
+            const data = await createTask.mutateAsync({
+              goal_id: parentId,
+              name: '새 할일',
+              repeat_type: 'daily',
+            })
             if (data) setEditingNodeId(data.id)
             break
           }
           case 'group': {
             const goalId = parentGoalMap.get(parentId)
             if (!goalId) return
+            expandGoal?.(goalId)
+            expandGroup?.(parentId)
             const data = await createTask.mutateAsync({
               goal_id: goalId,
               group_id: parentId,
               name: '새 할일',
+              repeat_type: 'daily',
             })
             if (data) setEditingNodeId(data.id)
             break
@@ -233,7 +243,7 @@ export function useCanvasInteractions(
         // Mutation error already handled by onError in each hook
       }
     },
-    [createArea, createGoal, createTask, parentGoalMap]
+    [createArea, createGoal, createTask, parentGoalMap, expandGoal, expandGroup]
   )
 
   const handleRenameCommit = useCallback(

@@ -105,14 +105,32 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     rawZoom < ZOOM_THRESHOLD_COMPACT ? 0 : rawZoom > ZOOM_THRESHOLD_FULL ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
-  // Interaction logic (selection, delete, quick-add, focus)
-  const interactions = useCanvasInteractions(treeData, goals, areas)
-  const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap } = interactions
-
   // Goal expand/collapse: which goals show Group/Task as canvas nodes
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
   // Group expand/collapse: which groups show Task children as canvas nodes
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(new Set())
+
+  const expandGoal = useCallback((goalId: string) => {
+    setExpandedGoalIds((prev) => {
+      if (prev.has(goalId)) return prev
+      const next = new Set(prev)
+      next.add(goalId)
+      return next
+    })
+  }, [])
+
+  const expandGroup = useCallback((groupId: string) => {
+    setExpandedGroupIds((prev) => {
+      if (prev.has(groupId)) return prev
+      const next = new Set(prev)
+      next.add(groupId)
+      return next
+    })
+  }, [])
+
+  // Interaction logic (selection, delete, quick-add, focus)
+  const interactions = useCanvasInteractions(treeData, goals, areas, expandGoal, expandGroup)
+  const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap } = interactions
 
   // Clear expanded group IDs that belong to a given goal
   const clearChildGroupExpands = useCallback(
@@ -144,15 +162,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     },
     [clearChildGroupExpands]
   )
-
-  const expandGoal = useCallback((goalId: string) => {
-    setExpandedGoalIds((prev) => {
-      if (prev.has(goalId)) return prev
-      const next = new Set(prev)
-      next.add(goalId)
-      return next
-    })
-  }, [])
 
   const collapseGoal = useCallback(
     (goalId: string) => {
