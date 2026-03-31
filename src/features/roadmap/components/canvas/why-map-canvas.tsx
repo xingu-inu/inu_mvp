@@ -20,10 +20,8 @@ import {
   type Connection,
   type Edge,
 } from '@xyflow/react'
-import { PanelRight } from 'lucide-react'
-import { CanvasToolbar } from './canvas-toolbar'
 import { CanvasChip } from './canvas-chip'
-import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
+import { useRoadmapStore } from '@/stores/roadmap.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type { Area, Goal } from '@/types/entities'
@@ -77,23 +75,6 @@ function minimapNodeColor(node: WhyMapNode): string {
     default:
       return '#64748b'
   }
-}
-
-// ── Panel toggle button (isolated to avoid canvas re-renders) ──
-
-function PanelToggleButton() {
-  const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
-  const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
-  return (
-    <CanvasToolbar.Toggle
-      active={isOpen}
-      icon={<PanelRight className="h-3.5 w-3.5" />}
-      onClick={toggle}
-      title="패널 토글 (])"
-    >
-      Panel
-    </CanvasToolbar.Toggle>
-  )
 }
 
 // ── Outer wrapper (provides ReactFlowProvider) ─────────────
@@ -215,9 +196,13 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     selectedNodeId,
     direction,
     handleStartAdd: interactions.handleStartAdd,
+    handleQuickCreate: interactions.handleQuickCreate,
     handleNodeSelect: interactions.handleNodeSelect,
+    handleDeleteNode: interactions.handleDeleteNode,
+    toggleNodeExpand: toggleGoalExpand,
     clearSelection,
     onToggleFloatingPanel: useRoadmapStore.getState().toggleFloatingPanel,
+    onFitView: () => fitView({ padding: 0.15, duration: 300 }),
   })
 
   // ── Event handlers ─────────────────────────────────────────
@@ -341,13 +326,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
               </CanvasChip>
             </Panel>
           )}
-
-          {/* Canvas top-right toolbar — pushed below floating header */}
-          <Panel position="top-right" className="!mt-20 !mr-3">
-            <CanvasToolbar className="flex-col">
-              <PanelToggleButton />
-            </CanvasToolbar>
-          </Panel>
         </ReactFlow>
       </CanvasInteractionsContext.Provider>
     </div>
