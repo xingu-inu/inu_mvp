@@ -2,7 +2,6 @@
 
 import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
-import { ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
@@ -11,6 +10,8 @@ import { TreeNodeCard } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
 import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 import { WhyChainTooltip } from './why-chain-tooltip'
+import { AddChildButton } from './add-child-button'
+import { InlineEditInput } from './inline-edit-input'
 
 // ── Main component ─────────────────────────────────────────
 
@@ -41,7 +42,12 @@ export const GoalNode = memo(function GoalNode({
     addingToId,
     getQuickAddContent,
     toggleGoalExpand,
+    editingNodeId,
+    handleQuickCreate,
+    handleRenameCommit,
+    handleCancelEdit,
   } = useCanvasInteractionsContext()
+  const isEditing = editingNodeId === id
 
   const handleToggle = useCallback(() => {
     toggleGoalExpand(id)
@@ -57,7 +63,7 @@ export const GoalNode = memo(function GoalNode({
   return (
     <div
       className={cn(
-        'group/why max-w-[300px] min-w-[220px]',
+        'group/add group/why relative max-w-[300px] min-w-[220px]',
         isDraft && 'rounded-xl border-2 border-dashed border-[var(--color-border)]',
         isDraft && '[&_[data-node-card]]:border-transparent'
       )}
@@ -75,7 +81,7 @@ export const GoalNode = memo(function GoalNode({
         /* Compact zoom: name-only simplified box */
         <div
           className={cn(
-            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm',
+            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}
@@ -87,25 +93,44 @@ export const GoalNode = memo(function GoalNode({
         </div>
       ) : (
         <>
-          <TreeContextMenu
-            node={treeNode}
-            onEdit={handleSelect}
-            onAddChild={onAddChild}
-            onDelete={onDelete}
-          >
-            <div>
-              <TreeNodeCard
-                node={treeNode}
-                isSelected={isSelected ?? false}
-                isExpanded={isExpanded ?? false}
-                hasChildren={hasChildren}
-                onSelect={handleSelect}
-                onToggle={handleToggle}
-                isSearchMatch={isSearchMatch}
-                searchQuery={searchQuery}
+          {isEditing ? (
+            <div className="rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] px-3 py-2.5 shadow-sm">
+              <InlineEditInput
+                nodeType="goal"
+                nodeId={id}
+                defaultValue={treeNode.name}
+                className="text-sm font-medium text-[var(--color-text-primary)]"
+                onCommit={handleRenameCommit}
+                onCancel={handleCancelEdit}
+                onChainEnter={
+                  data.parentAreaId
+                    ? () => handleQuickCreate('area', data.parentAreaId!)
+                    : undefined
+                }
+                onChainTab={() => handleQuickCreate('goal', id)}
               />
             </div>
-          </TreeContextMenu>
+          ) : (
+            <TreeContextMenu
+              node={treeNode}
+              onEdit={handleSelect}
+              onAddChild={onAddChild}
+              onDelete={onDelete}
+            >
+              <div>
+                <TreeNodeCard
+                  node={treeNode}
+                  isSelected={isSelected ?? false}
+                  isExpanded={isExpanded ?? false}
+                  hasChildren={hasChildren}
+                  onSelect={handleSelect}
+                  onToggle={handleToggle}
+                  isSearchMatch={isSearchMatch}
+                  searchQuery={searchQuery}
+                />
+              </div>
+            </TreeContextMenu>
+          )}
 
           {/* Status tag (non-active only) */}
           {(() => {
@@ -134,29 +159,8 @@ export const GoalNode = memo(function GoalNode({
             </div>
           )}
 
-          {/* Expand/collapse children indicator */}
-          {hasChildren && isFull && (
-            <div className="flex justify-center pb-1">
-              <button
-                className="flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleToggle()
-                }}
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronDown className="h-3 w-3" />
-                    <span>접기</span>
-                  </>
-                ) : (
-                  <>
-                    <ChevronRight className="h-3 w-3" />
-                    <span>{treeNode.children?.length}개 항목</span>
-                  </>
-                )}
-              </button>
-            </div>
+          {addingToId !== id && !isCompact && (
+            <AddChildButton onClick={() => handleQuickCreate('goal', id)} label="할일 추가" />
           )}
         </>
       )}

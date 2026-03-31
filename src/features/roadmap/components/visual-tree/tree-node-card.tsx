@@ -204,7 +204,7 @@ export const TreeNodeCard = memo(function TreeNodeCard({
       {/* Icon */}
       <NodeIcon node={node} />
 
-      {/* Name + optional subtitle */}
+      {/* Name + optional subtitle + date */}
       <div className="min-w-0 flex-1">
         <span className={cn('block truncate', getNameStyles(node))}>
           {isSearchMatch && searchQuery ? highlightText(node.name, searchQuery) : node.name}
@@ -219,6 +219,11 @@ export const TreeNodeCard = memo(function TreeNodeCard({
             )}
           >
             {node.why}
+          </span>
+        )}
+        {node.type === 'goal' && (node.meta?.startDate || node.meta?.endDate) && (
+          <span className="block text-[10px] text-[var(--color-text-tertiary)]">
+            {formatDateRange(node.meta?.startDate, node.meta?.endDate)}
           </span>
         )}
       </div>
@@ -335,6 +340,13 @@ function formatDateShort(dateStr: string): string {
   return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
+function formatDateRange(startDate?: string, endDate?: string): string {
+  if (!startDate && !endDate) return ''
+  if (startDate && endDate) return `${formatDateShort(startDate)} ~ ${formatDateShort(endDate)}`
+  if (startDate) return `${formatDateShort(startDate)} ~`
+  return `~ ${formatDateShort(endDate!)}`
+}
+
 export function DateRangeBadge({ startDate, endDate }: { startDate?: string; endDate?: string }) {
   if (!startDate && !endDate) return null
   const label =
@@ -395,6 +407,8 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
     const totalCount = node.meta?.totalCount ?? node.meta?.count ?? 0
     const showRing = totalCount > 0
 
+    const childCount = node.children?.length ?? 0
+
     return (
       <div className="ml-auto flex flex-shrink-0 items-center gap-1">
         <span
@@ -404,8 +418,10 @@ function NodeBadge({ node }: { node: VisualTreeNode }) {
         {showRing && (
           <ProgressRing doneCount={doneCount} totalCount={totalCount} color={node.areaColor} />
         )}
-        {(node.meta?.startDate || node.meta?.endDate) && (
-          <DateRangeBadge startDate={node.meta?.startDate} endDate={node.meta?.endDate} />
+        {childCount > 0 && (
+          <span className="rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+            {childCount}
+          </span>
         )}
         {(node.meta?.totalStreak ?? 0) > 0 && <StreakBadge streak={node.meta!.totalStreak!} />}
       </div>
