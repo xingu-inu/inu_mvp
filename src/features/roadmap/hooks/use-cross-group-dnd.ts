@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { arrayMove } from '@dnd-kit/sortable'
 import type { DragEndEvent, DragOverEvent, DragStartEvent, UniqueIdentifier } from '@dnd-kit/core'
+import { toast } from 'sonner'
 import { useUpdateTask, useReorderTasks } from '@/queries/use-tasks'
 import type { Task, Group } from '@/types/entities'
 
@@ -52,7 +53,10 @@ export function useCrossGroupDnd({
     return containers
   }, [groups, tasksByGroup])
 
-  // Local override during drag — null means "use server containers"
+  // Local override during drag — null means "use server containers".
+  // Note: during an active drag, serverContainers may update via React Query
+  // invalidation. This is safe because dragContainers takes precedence and the
+  // drag duration is short (sub-second). On drop, we mutate then revert to server state.
   const [dragContainers, setDragContainers] = useState<Record<string, string[]> | null>(null)
 
   // Use local override during drag/mutation, otherwise server data
@@ -178,9 +182,15 @@ export function useCrossGroupDnd({
               onSuccess: () =>
                 reorderTasks.mutate(
                   { goalId, ids: finalItems },
-                  { onSettled: () => setDragContainers(null) }
+                  {
+                    onSettled: () => setDragContainers(null),
+                    onError: () => toast.error('태스크 순서 변경에 실패했어요'),
+                  }
                 ),
-              onError: () => setDragContainers(null),
+              onError: () => {
+                setDragContainers(null)
+                toast.error('태스크 이동에 실패했어요')
+              },
             }
           )
         } else if (finalItems !== items) {

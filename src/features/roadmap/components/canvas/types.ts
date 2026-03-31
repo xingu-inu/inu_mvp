@@ -9,6 +9,10 @@ export const ZOOM_COMPACT = 0
 export const ZOOM_MEDIUM = 1
 export const ZOOM_FULL = 2
 
+/** Raw zoom thresholds for band quantization */
+export const ZOOM_THRESHOLD_COMPACT = 0.4
+export const ZOOM_THRESHOLD_FULL = 0.8
+
 // ── Node data payloads ──────────────────────────────────────
 
 /** Shared interaction state injected into all canvas nodes */

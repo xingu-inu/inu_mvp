@@ -116,6 +116,9 @@ export function useCanvasKeyboard({
 
 type ArrowKey = 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'
 
+/** Minimum pixel offset to consider a node as a candidate in the given direction */
+const DIRECTION_THRESHOLD_PX = 5
+
 function findNearestNode(
   current: WhyMapNode,
   nodes: WhyMapNode[],
@@ -136,13 +139,13 @@ function findNearestNode(
 
     switch (key) {
       case 'ArrowUp':
-        return dy < -10
+        return dy < -DIRECTION_THRESHOLD_PX
       case 'ArrowDown':
-        return dy > 10
+        return dy > DIRECTION_THRESHOLD_PX
       case 'ArrowLeft':
-        return dx < -10
+        return dx < -DIRECTION_THRESHOLD_PX
       case 'ArrowRight':
-        return dx > 10
+        return dx > DIRECTION_THRESHOLD_PX
       default:
         return false
     }

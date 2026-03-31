@@ -37,7 +37,9 @@ export function useCanvasInteractions(
   const deleteGroup = useDeleteGroup()
   const deleteTask = useDeleteTask()
 
-  // Map group/task IDs → parent goal ID
+  // Map group/task IDs → parent goal ID.
+  // Note: uses ALL goals regardless of statusFilter. Filtered-out goals' nodes
+  // don't appear on canvas, so lookups for them are harmless no-ops.
   const parentGoalMap = useMemo(() => {
     const map = new Map<string, string>()
     for (const goal of goals) {
@@ -104,6 +106,9 @@ export function useCanvasInteractions(
   const handleDeleteNode = useCallback(
     (type: SelectedNodeType, id: string) => {
       switch (type) {
+        case 'direction':
+          // Direction node cannot be deleted from canvas
+          return
         case 'area':
           deleteArea.mutate(id)
           break

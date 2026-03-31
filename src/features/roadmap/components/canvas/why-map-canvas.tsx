@@ -28,8 +28,8 @@ import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type { Area, Goal } from '@/types/entities'
 import type { TreeLayoutDirection } from '@/stores/roadmap.store'
-import type { WhyMapNode, WhyMapEdge } from './types'
-import type { DependencyEdgeData } from './types'
+import type { WhyMapNode, WhyMapEdge, DependencyEdgeData } from './types'
+import { ZOOM_THRESHOLD_COMPACT, ZOOM_THRESHOLD_FULL } from './types'
 
 import { treeToFlowElements } from './tree-to-flow'
 import { useDagreLayout } from './use-dagre-layout'
@@ -118,7 +118,8 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const { fitView } = useReactFlow()
   const { zoom: rawZoom } = useViewport()
   // Quantize zoom into 3 bands so enrichedNodes only recomputes at threshold crossings
-  const zoomBand: number = rawZoom < 0.4 ? 0 : rawZoom > 0.8 ? 2 : 1
+  const zoomBand: number =
+    rawZoom < ZOOM_THRESHOLD_COMPACT ? 0 : rawZoom > ZOOM_THRESHOLD_FULL ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
   // Goal expand/collapse: which goals show Group/Task as canvas nodes
@@ -227,21 +228,25 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // ── Imperative ref for parent ──────────────────────────────
 
-  useImperativeHandle(ref, () => ({
-    focusNode: (nodeId: string) => {
-      // If the nodeId is a group/task, find the parent goal
-      let targetId = nodeId
-      if (!nodes.some((n) => n.id === nodeId)) {
-        const goalId = parentGoalMap.get(nodeId)
-        if (goalId) targetId = goalId
-      }
-      fitView({ nodes: [{ id: targetId }], padding: 0.5, duration: 300 })
-    },
-    fitView: () => {
-      fitView({ padding: 0.15, duration: 300 })
-    },
-    toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
-  }))
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusNode: (nodeId: string) => {
+        // If the nodeId is a group/task, find the parent goal
+        let targetId = nodeId
+        if (!nodes.some((n) => n.id === nodeId)) {
+          const goalId = parentGoalMap.get(nodeId)
+          if (goalId) targetId = goalId
+        }
+        fitView({ nodes: [{ id: targetId }], padding: 0.5, duration: 300 })
+      },
+      fitView: () => {
+        fitView({ padding: 0.15, duration: 300 })
+      },
+      toggleMinimap: () => setIsMinimapVisible((prev) => !prev),
+    }),
+    [nodes, parentGoalMap, fitView]
+  )
 
   // ── Dependency edge: onConnect handler (Goal↔Goal only) ──
 
@@ -313,9 +318,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           onPaneClick={handlePaneClick}
           panOnScroll
           zoomOnScroll
-          panOnDrag={[1, 2]}
-          selectionOnDrag
-          panActivationKeyCode="Space"
+          panOnDrag
           snapToGrid
           snapGrid={[20, 20]}
           minZoom={0.15}

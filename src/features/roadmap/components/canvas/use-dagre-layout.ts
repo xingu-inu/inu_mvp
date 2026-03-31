@@ -86,6 +86,7 @@ export function useDagreLayout(
   const edgesRef = useRef(initialEdges)
   const directionAnchorRef = useRef<{ x: number; y: number; direction: 'TB' | 'LR' } | null>(null)
   const isFirstLayoutRef = useRef(true)
+  const prevDirectionRef = useRef(direction)
   const { fitView } = useReactFlow()
 
   // Track the previous initialNodes/initialEdges identity to detect data changes
@@ -124,6 +125,19 @@ export function useDagreLayout(
     }
     edgesRef.current = initialEdges
   }, [initialNodes, initialEdges, setNodes, setEdges])
+
+  // Detect direction change (TB↔LR) — node IDs stay the same so the sync
+  // effect above won't flag it as a structural change; handle separately.
+  useEffect(() => {
+    if (prevDirectionRef.current !== direction) {
+      prevDirectionRef.current = direction
+      needsLayoutRef.current = true
+      // Axis changed, so the previous anchor is meaningless
+      directionAnchorRef.current = null
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: trigger dagre relayout when layout direction changes
+      setLayoutVersion((v) => v + 1)
+    }
+  }, [direction])
 
   // Two-pass layout: wait for nodes to be measured, then apply dagre
   useEffect(() => {
