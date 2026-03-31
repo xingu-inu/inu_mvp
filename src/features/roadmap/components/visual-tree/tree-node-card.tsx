@@ -8,11 +8,11 @@ import {
   ChevronDown,
   ChevronRight,
   Pause,
-  Calendar1,
-  Repeat,
+  Footprints,
   Link,
   Target,
-  Circle,
+  Folder,
+  FolderCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
@@ -260,9 +260,9 @@ function NodeIcon({ node }: { node: VisualTreeNode }) {
       return <Target className="h-4 w-4 flex-shrink-0 text-[var(--color-text-secondary)]" />
     case 'group':
       return node.meta?.isCompleted ? (
-        <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[var(--color-done)]" />
+        <FolderCheck className="h-4 w-4 flex-shrink-0 text-[var(--color-done)]" />
       ) : (
-        <Circle className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
+        <Folder className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
       )
     case 'task':
       if (node.meta?.isCompletedTask) {
@@ -274,12 +274,7 @@ function NodeIcon({ node }: { node: VisualTreeNode }) {
       if (node.meta?.isDone) {
         return <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[var(--color-done)]" />
       }
-      // Default: show repeat type icon
-      return node.meta?.repeatType === 'once' ? (
-        <Calendar1 className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-      ) : (
-        <Repeat className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
-      )
+      return <Footprints className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
   }
 }
 

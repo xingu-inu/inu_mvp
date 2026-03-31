@@ -1,7 +1,7 @@
 'use client'
 
 import { memo } from 'react'
-import { Link, Link2Off, Calendar1, Repeat } from 'lucide-react'
+import { Link, Link2Off, Footprints } from 'lucide-react'
 import type { Task } from '@/types/entities'
 
 interface CrossLinkedTaskRowProps {
@@ -25,7 +25,6 @@ export const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
   onNavigate,
   size = 'default',
 }: CrossLinkedTaskRowProps) {
-  const RepeatIcon = task.repeat_type === 'once' ? Calendar1 : Repeat
   const isCompact = size === 'compact'
 
   return (
@@ -41,7 +40,7 @@ export const CrossLinkedTaskRow = memo(function CrossLinkedTaskRow({
             <Link
               className={`${isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'} shrink-0 text-[var(--color-text-tertiary)]`}
             />
-            <RepeatIcon
+            <Footprints
               className={`${isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'} shrink-0 text-[var(--color-text-tertiary)]`}
             />
             <span className={`flex-1 truncate ${isCompact ? 'text-xs' : 'text-sm'} font-medium`}>
