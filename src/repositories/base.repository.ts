@@ -90,7 +90,7 @@ export function isValidFractionalKey(key: string): boolean {
  */
 export async function batchReorder(
   supabase: TypedSupabaseClient,
-  tableName: 'areas' | 'goals' | 'groups' | 'tasks',
+  tableName: 'areas' | 'goals' | 'groups' | 'tasks' | 'profile_traits',
   orderedIds: string[]
 ): Promise<void> {
   if (orderedIds.length === 0) return

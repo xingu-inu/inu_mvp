@@ -1,9 +1,9 @@
 # inu
 
 Self-development app. Direction → Area → Goal → Group → Task (5-level structure).
-Core loop: Roadmap (Why Map) → Timeline
+Core loop: Roadmap (Why Map) → 기록
 
-2-page structure: Roadmap (`/roadmap`, Why Map 캔버스) · Timeline (`/timeline`)
+2-page structure: Roadmap (`/roadmap`, Why Map 캔버스) · 기록 (`/record`, 자유 프로필 + 타임라인)
 
 ## Tech Stack
 

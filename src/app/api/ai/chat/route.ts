@@ -6,7 +6,9 @@ import { getModel, DEFAULT_MODEL, type AiModelId } from '@/lib/ai/provider'
 import { createChatTools } from '@/lib/ai/tools'
 import { CORE_PRINCIPLES, SECURITY_PRINCIPLES } from '@/lib/ai/constants'
 import { profileRepository } from '@/repositories/profile.repository'
+import { profileTraitRepository } from '@/repositories/profile-trait.repository'
 import { sanitizeUserText, getInjectionSeverity, validateAiOutput } from '@/lib/ai/sanitize'
+import type { ProfileTrait } from '@/types/entities'
 
 /**
  * Create a transform stream that monitors AI output for sensitive data leakage.
@@ -52,7 +54,32 @@ function createSecureOutputTransform(): TransformStream<Uint8Array, Uint8Array> 
   })
 }
 
-function buildSystemPrompt(userName: string, todayDate: string): string {
+function buildProfileTraitsBlock(traits: ProfileTrait[]): string {
+  if (traits.length === 0) {
+    return `[사용자 프로필]
+- 아직 저장된 프로필 정보가 없습니다. 대화를 통해 천천히 알아가세요.
+
+[프로필 활용 원칙]
+- 사용자가 자신에 대해 새로운 이야기를 하면, 프로필에 추가해볼지 가볍게 제안할 수 있습니다.
+- 프로필 정보가 부족해도 성급히 규정하지 말고, 한 번에 한 가지 질문만 던져서 천천히 알아가세요.`
+  }
+
+  const traitLines = traits
+    .slice(0, 30)
+    .map((t) => `- ${sanitizeUserText(t.label)}: ${sanitizeUserText(t.value)}`)
+    .join('\n')
+
+  return `[사용자 프로필]
+${traitLines}
+
+[프로필 활용 원칙]
+- 인생 방향, 관계, 일, 균형, 불안, 선택처럼 큰 질문이 나오면 이 프로필을 먼저 기준으로 삼으세요.
+- 사용자의 삶을 대신 결정하지 말고, 가치와 방향을 더 잘 보도록 돕는 역할을 하세요.
+- 너무 많은 해법을 한꺼번에 주지 말고, 다음 한 걸음이나 이번 주의 초점으로 좁혀주세요.
+- 대화 중 사용자에 대해 새로운 것을 알게 되면, 프로필에 추가해볼지 가볍게 제안할 수 있습니다.`
+}
+
+function buildSystemPrompt(traits: ProfileTrait[], userName: string, todayDate: string): string {
   return `당신은 inu(이누) 앱의 AI 동행자 '이누'입니다.
 
 [성격]
@@ -61,6 +88,7 @@ function buildSystemPrompt(userName: string, todayDate: string): string {
 - 데이터에 기반한 구체적 관찰을 먼저, 그 다음에 제안.
 - 빈말 금지. "잘하고 계시네요!"보다 "러닝 7일 연속이면 습관이 잡혀가고 있는 거예요" 같이 구체적으로.
 - 한 번에 여러 조언 나열보다, 하나의 핵심 관찰 + 후속 질문이 효과적입니다.
+- 사용자의 인생 방향을 대신 정하는 코치가 아니라, 사용자가 자기 삶을 더 선명하게 보도록 돕는 동행자입니다.
 
 ${CORE_PRINCIPLES}
 
@@ -72,6 +100,10 @@ ${CORE_PRINCIPLES}
 - 이전 대화 맥락이 있으면 자연스럽게 연결하세요 ("아까 얘기했던 ~", "지난번에 ~").
 - 필요 시 이모지를 적절히 사용합니다.
 - 질문으로 사용자의 생각을 이끌어냅니다.
+- 사용자가 삶의 방향이나 선택을 묻는다면:
+  · 먼저 지금 무엇이 중요한지, 무엇이 충돌하는지 정리하세요.
+  · 사용자의 가치/시즌/방향에 맞는 선택지를 1-3개만 제시하세요.
+  · 마지막에는 "이번 주에 같이 붙잡을 한 가지" 수준으로 좁혀주세요.
 
 [좋은 답변 예시]
 사용자: "오늘 러닝 스킵했어"
@@ -93,6 +125,8 @@ ${CORE_PRINCIPLES}
 
 오늘 날짜: ${todayDate}
 사용자 이름: ${userName}
+
+${buildProfileTraitsBlock(traits)}
 
 데이터 활용 원칙:
 - 사용자의 실제 데이터를 참고해서 개인화된 답변을 합니다.
@@ -136,13 +170,16 @@ export const POST = authRoute(
       )
     }
 
-    const profile = await profileRepository.get(ctx.supabase, ctx.user.id)
+    const [profile, traits] = await Promise.all([
+      profileRepository.get(ctx.supabase, ctx.user.id),
+      profileTraitRepository.getByUser(ctx.supabase, ctx.user.id),
+    ])
     const userName = profile?.name ?? '사용자'
     const todayDate = new Date().toISOString().split('T')[0]
     const modelId = (profile?.ai_model as AiModelId) ?? DEFAULT_MODEL
 
     // Build system prompt with optional context hint
-    let systemPrompt = buildSystemPrompt(userName, todayDate)
+    let systemPrompt = buildSystemPrompt(traits, userName, todayDate)
     const { context } = parsed.data
     if (context) {
       if (context.type === 'brain-dump') {

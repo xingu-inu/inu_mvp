@@ -52,6 +52,14 @@ export {
 export { getProfile, updateProfile, updateAvatar, isOnboardingCompleted } from './profile.actions'
 
 export {
+  getProfileTraits,
+  createProfileTrait,
+  updateProfileTrait,
+  deleteProfileTrait,
+  reorderProfileTraits,
+} from './profile-trait.actions'
+
+export {
   getAllMessages,
   getUnreadMessages,
   getUnreadCount,

@@ -7,8 +7,9 @@ import { ProfileMainView } from './profile-main-view'
 import { NotificationSettingsView } from './notification-settings'
 import { PrivacySettingsView } from './privacy-settings'
 import { FeedbackView } from './feedback-view'
+import { CompanionSettingsView } from './companion-settings-view'
 
-export type ModalView = 'main' | 'notifications' | 'privacy' | 'feedback'
+export type ModalView = 'main' | 'companion' | 'notifications' | 'privacy' | 'feedback'
 
 interface ProfileModalProps {
   open: boolean
@@ -40,6 +41,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
 
   const viewTitles: Record<ModalView, string> = {
     main: '프로필',
+    companion: '나에 대한 데이터',
     notifications: '알림 설정',
     privacy: '개인정보 보호',
     feedback: '의견 보내기',
@@ -51,6 +53,7 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
         <ProfileMainView onNavigate={setView} onClose={() => handleClose(false)} />
       ) : (
         <SubViewWrapper onBack={() => setView('main')}>
+          {view === 'companion' && <CompanionSettingsView />}
           {view === 'notifications' && <NotificationSettingsView />}
           {view === 'privacy' && <PrivacySettingsView />}
           {view === 'feedback' && <FeedbackView />}

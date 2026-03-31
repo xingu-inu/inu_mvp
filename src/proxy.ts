@@ -2,10 +2,10 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Protected routes - require authentication
-const protectedPaths = ['/roadmap', '/timeline', '/profile', '/ai-hub', '/admin']
+const protectedPaths = ['/roadmap', '/record', '/profile', '/ai-hub', '/admin']
 
 // Routes that require onboarding completion
-const requiresOnboardingPaths = ['/roadmap', '/timeline', '/ai-hub']
+const requiresOnboardingPaths = ['/roadmap', '/record', '/ai-hub']
 
 // API routes that should be public
 const publicApiPaths = ['/api/health', '/api/auth/callback']

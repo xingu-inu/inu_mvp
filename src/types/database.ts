@@ -652,8 +652,47 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_traits: {
+        Row: {
+          id: string
+          user_id: string
+          label: string
+          value: string
+          sort_order: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          label: string
+          value: string
+          sort_order: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          label?: string
+          value?: string
+          sort_order?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'profile_traits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       profiles: {
         Row: {
+          ai_model: string | null
           avatar_url: string | null
           created_at: string | null
           email: string
@@ -665,6 +704,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_model?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email: string
@@ -676,6 +716,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_model?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string

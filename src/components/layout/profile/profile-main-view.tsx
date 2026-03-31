@@ -181,6 +181,7 @@ export function ProfileMainView({
   }
 
   const settingsLinks: { view: ModalView; icon: typeof Bell; label: string }[] = [
+    { view: 'companion', icon: Compass, label: '나에 대한 데이터' },
     { view: 'feedback', icon: MessageSquare, label: '의견 보내기' },
     { view: 'notifications', icon: Bell, label: '알림 설정' },
     { view: 'privacy', icon: Shield, label: '개인정보 보호' },

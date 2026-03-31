@@ -245,6 +245,22 @@ export const updateProfileSchema = z.object({
 export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>
 
 // ============================================
+// Profile Trait Schemas
+// ============================================
+export const createProfileTraitSchema = z.object({
+  label: z.string().trim().min(1, '항목 이름을 입력해주세요').max(50, '최대 50자'),
+  value: z.string().trim().min(1, '내용을 입력해주세요').max(500, '최대 500자'),
+})
+
+export const updateProfileTraitSchema = z.object({
+  label: z.string().trim().min(1).max(50).optional(),
+  value: z.string().trim().min(1).max(500).optional(),
+})
+
+export type CreateProfileTraitSchema = z.infer<typeof createProfileTraitSchema>
+export type UpdateProfileTraitSchema = z.infer<typeof updateProfileTraitSchema>
+
+// ============================================
 // Auth Schemas
 // ============================================
 export const loginSchema = z.object({

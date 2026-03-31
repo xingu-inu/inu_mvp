@@ -3,13 +3,13 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Map, Clock } from 'lucide-react'
+import { Map, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 
 const navItems = [
   { href: '/roadmap', icon: Map, label: '로드맵' },
-  { href: '/timeline', icon: Clock, label: '타임라인' },
+  { href: '/record', icon: BookOpen, label: '기록' },
 ]
 
 export function BottomNav() {

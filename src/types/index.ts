@@ -31,6 +31,9 @@ export type {
   CreateTaskInput,
   UpdateTaskInput,
   UpdateProfileInput,
+  ProfileTrait,
+  CreateProfileTraitInput,
+  UpdateProfileTraitInput,
   // Roadmap Versioning
   CreateRoadmapVersionInput,
   RoadmapVersionResult,
