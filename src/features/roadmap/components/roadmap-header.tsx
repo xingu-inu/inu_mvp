@@ -1,7 +1,8 @@
 'use client'
 
-import { PanelRight } from 'lucide-react'
+import { Lightbulb, PanelRight } from 'lucide-react'
 import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
+import { useAiChatStore } from '@/stores/ai-chat.store'
 import { useGoalStats } from '../hooks/use-goal-stats'
 import { CanvasToolbar } from './canvas/canvas-toolbar'
 import { RoadmapStatsSummary } from './roadmap-stats-summary'
@@ -27,6 +28,13 @@ export function RoadmapHeader() {
           </p>
         </div>
         <CanvasToolbar className="hidden lg:flex">
+          <CanvasToolbar.Toggle
+            active={false}
+            icon={<Lightbulb className="h-5 w-5" />}
+            onClick={() => useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })}
+            aria-label="쏟아내기"
+            title="생각 쏟아내기"
+          />
           <CanvasToolbar.Toggle
             active={isOpen}
             icon={<PanelRight className="h-5 w-5" />}
