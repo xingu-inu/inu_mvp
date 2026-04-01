@@ -98,6 +98,16 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
     if (context.type === 'brain-dump') {
       return { context: { type: 'brain-dump' as const } }
     }
+    if (context.type === 'observation') {
+      return {
+        context: {
+          type: 'observation' as const,
+          message: context.message,
+          nodeId: context.nodeId,
+          relatedGoalId: context.relatedGoalId,
+        },
+      }
+    }
     return {
       context: {
         type: context.type,
@@ -170,7 +180,12 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
       let convId = activeConversationId
       if (!convId) {
         const conv = await createConversation.mutateAsync({
-          relatedGoalId: context && context.type !== 'brain-dump' ? context.goalId : undefined,
+          relatedGoalId:
+            context && context.type !== 'brain-dump' && context.type !== 'observation'
+              ? context.goalId
+              : context?.type === 'observation'
+                ? context.relatedGoalId
+                : undefined,
           relatedTaskId: context && context.type === 'task' ? context.entityId : undefined,
         })
         convId = conv.id
@@ -258,12 +273,17 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
           </button>
           <span className="text-base">🐾</span>
           <h3 className="text-sm font-semibold">동행 이누</h3>
-          {/* Goal/Task context badge (not brain-dump — that uses mode chips) */}
+          {/* Goal/Task/Observation context badge (not brain-dump — that uses mode chips) */}
           {context && context.type !== 'brain-dump' && (
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
-              <span>{context.type === 'goal' ? '🎯' : '✅'}</span>
-              <span className="max-w-[120px] truncate" title={context.entityName}>
-                {context.entityName}
+              <span>
+                {context.type === 'observation' ? '✨' : context.type === 'goal' ? '🎯' : '✅'}
+              </span>
+              <span
+                className="max-w-[120px] truncate"
+                title={context.type === 'observation' ? '타임라인 관찰' : context.entityName}
+              >
+                {context.type === 'observation' ? '타임라인 관찰' : context.entityName}
               </span>
               <button
                 onClick={clearContext}

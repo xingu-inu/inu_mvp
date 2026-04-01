@@ -1,6 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query/keys'
-import { STALE_TIMES } from '@/lib/query/stale-times'
 import type { TimelineAiNode } from '@/types/timeline'
 
 interface TimelineObservationsResponse {
@@ -32,8 +31,10 @@ export function useTimelineObservations() {
 
       return json.data
     },
-    staleTime: STALE_TIMES.AI_ANALYSIS, // 30 min
+    // Server returns DB-cached data instantly — short staleTime for freshness
+    staleTime: 5 * 60 * 1000, // 5 min
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    // Keep previous data visible during background refetch
+    placeholderData: keepPreviousData,
   })
 }

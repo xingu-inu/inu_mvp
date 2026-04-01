@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
-import { BotMessageSquare, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
@@ -17,7 +17,10 @@ export function FloatingAIButton() {
   const isOpen = useAiChatStore((s) => s.isOpen)
   const toggleChat = useAiChatStore((s) => s.toggleChat)
   const pathname = usePathname()
-  const isRoadmap = pathname?.startsWith('/roadmap')
+  const isRecord = pathname?.startsWith('/record')
+
+  // Only render on record page — roadmap has its own embedded AI chat panel
+  if (!isRecord && !isOpen) return null
 
   const handleClick = () => {
     if (!isOpen) {
@@ -31,7 +34,7 @@ export function FloatingAIButton() {
       {/* Chat Panel */}
       <AnimatePresence>{isOpen && <AiChatPanel />}</AnimatePresence>
 
-      {/* Floating Button — hidden on mobile for roadmap, visible on desktop */}
+      {/* Floating Button */}
       <motion.button
         onClick={handleClick}
         className={cn(
@@ -40,8 +43,7 @@ export function FloatingAIButton() {
           'mb-20 lg:mb-0',
           isOpen
             ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
-            : 'bg-gradient-to-br from-[var(--color-ai)] to-[var(--color-primary-600)] text-white',
-          isRoadmap && 'hidden lg:flex'
+            : 'bg-gradient-to-br from-[var(--color-ai)] to-[var(--color-primary-600)] text-white'
         )}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
@@ -66,28 +68,13 @@ export function FloatingAIButton() {
               exit={{ rotate: -90, opacity: 0 }}
               transition={{ duration: 0.15 }}
             >
-              <BotMessageSquare className="h-6 w-6" />
+              <span className="text-2xl" style={{ filter: 'grayscale(1) brightness(10)' }}>
+                🐾
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
       </motion.button>
-
-      {/* Roadmap mobile close button — only when chat is open on roadmap (mobile only) */}
-      {isRoadmap && isOpen && (
-        <motion.button
-          onClick={handleClick}
-          className={cn(
-            'fixed z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-colors lg:hidden',
-            'right-6 bottom-6',
-            'mb-20',
-            'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
-          )}
-          whileTap={{ scale: 0.95 }}
-          aria-label="AI 채팅 닫기"
-        >
-          <X className="h-6 w-6" />
-        </motion.button>
-      )}
     </>
   )
 }

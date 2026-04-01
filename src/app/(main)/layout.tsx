@@ -5,6 +5,7 @@ import {
   AuthGuard,
   DetailPanelShell,
   DateTaskPanel,
+  FloatingAIButton,
 } from '@/components/layout'
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
       {/* Mobile: BottomNav */}
       <BottomNav />
+
+      {/* Floating AI chat — available on all pages */}
+      <FloatingAIButton />
     </AuthGuard>
   )
 }

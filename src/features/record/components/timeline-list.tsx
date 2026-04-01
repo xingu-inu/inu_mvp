@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 import { Clock, Sparkles } from 'lucide-react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useTimelineEvents } from '@/queries/use-timeline'
 import { useTimelineObservations } from '@/queries/use-timeline-observations'
 import { TimelineDateGroup } from './timeline-date-group'
@@ -44,14 +44,41 @@ interface TimelineListProps {
   selectedAreaId: string | undefined
 }
 
+function AiObservationSkeleton() {
+  return (
+    <div className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4">
+      <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
+        <Sparkles className="h-3 w-3 animate-pulse text-blue-500/50" />
+      </div>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+        <div className="rounded-xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 p-px">
+          <div className="rounded-xl bg-[var(--color-bg-secondary)] px-3 py-2.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-3 w-3 shrink-0 animate-pulse text-blue-500/40" />
+              <p className="text-[13px] text-blue-500/60">이누가 흐름을 살펴보고 있어요...</p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 export function TimelineList({ selectedAreaId }: TimelineListProps) {
   const { data: groups, isLoading, error } = useTimelineEvents(selectedAreaId)
-  const { data: observationsData } = useTimelineObservations()
+  const {
+    data: observationsData,
+    isLoading: isObservationsLoading,
+    isPlaceholderData,
+  } = useTimelineObservations()
 
   const mergedItems = useMemo(
     () => mergeTimelineItems(groups ?? [], observationsData?.nodes, selectedAreaId),
     [groups, observationsData?.nodes, selectedAreaId]
   )
+
+  // Show skeleton when observations are loading for the first time (cold start)
+  const showAiSkeleton = isObservationsLoading && !isPlaceholderData && !observationsData
 
   if (isLoading) {
     return (
@@ -101,22 +128,25 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
   return (
     <div className="pb-8">
       <AnimatePresence>
-        {mergedItems.map((item) =>
-          item.kind === 'date-group' ? (
-            <TimelineDateGroup key={item.data.date} group={item.data} />
-          ) : (
-            <div
-              key={item.data.id}
-              className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4"
-            >
-              {/* Sparkle icon on timeline line */}
-              <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
-                <Sparkles className="h-3 w-3 text-blue-500" />
+        {mergedItems.map((item, idx) => (
+          <div key={item.kind === 'date-group' ? item.data.date : item.data.id}>
+            {item.kind === 'date-group' ? (
+              <>
+                <TimelineDateGroup group={item.data} />
+                {/* Show AI skeleton after first date group on cold start */}
+                {idx === 0 && showAiSkeleton && <AiObservationSkeleton />}
+              </>
+            ) : (
+              <div className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4">
+                {/* Sparkle icon on timeline line */}
+                <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
+                  <Sparkles className="h-3 w-3 text-blue-500" />
+                </div>
+                <TimelineAiCard node={item.data} />
               </div>
-              <TimelineAiCard node={item.data} />
-            </div>
-          )
-        )}
+            )}
+          </div>
+        ))}
       </AnimatePresence>
     </div>
   )

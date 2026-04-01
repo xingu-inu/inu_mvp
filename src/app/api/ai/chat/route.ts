@@ -181,7 +181,7 @@ const brainDumpContextSchema = z.object({
 
 const observationContextSchema = z.object({
   type: z.literal('observation'),
-  message: z.string(),
+  message: z.string().max(500),
   nodeId: z.string(),
   relatedGoalId: z.string().optional(),
 })
@@ -240,7 +240,7 @@ export const POST = authRoute(
       } else if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
-"${context.message}"
+"${sanitizeUserText(context.message)}"
 
 이 관찰에 대해 자연스럽게 대화를 이어가세요.
 - 관찰 내용을 반복하지 말고, 사용자가 이 주제에 대해 더 이야기하고 싶어한다고 가정하세요.

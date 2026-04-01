@@ -15,7 +15,6 @@ export function TimelineAiCard({ node }: TimelineAiCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const openChat = useAiChatStore((s) => s.openChat)
   const openChatWithContext = useAiChatStore((s) => s.openChatWithContext)
   const upsertNote = useUpsertTimelineNote()
 
@@ -56,17 +55,14 @@ export function TimelineAiCard({ node }: TimelineAiCardProps) {
   }, [node.userResponse])
 
   const handleChatLink = useCallback(() => {
-    if (node.chatContext) {
-      openChatWithContext({
-        type: node.chatContext.type,
-        entityId: node.chatContext.entityId,
-        entityName: node.chatContext.entityName,
-        goalId: node.chatContext.goalId,
-      })
-    } else {
-      openChat()
-    }
-  }, [node.chatContext, openChat, openChatWithContext])
+    // Always pass observation context so the chat continues from this observation
+    openChatWithContext({
+      type: 'observation',
+      message: node.message,
+      nodeId: node.id,
+      relatedGoalId: node.chatContext?.goalId,
+    })
+  }, [node.chatContext?.goalId, node.id, node.message, openChatWithContext])
 
   return (
     <motion.div
