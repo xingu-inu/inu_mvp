@@ -2,12 +2,16 @@
 
 import { PanelRight } from 'lucide-react'
 import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
+import { useGoalStats } from '../hooks/use-goal-stats'
+import { CanvasToolbar } from './canvas/canvas-toolbar'
+import { RoadmapStatsSummary } from './roadmap-stats-summary'
 import { VersionDropdown } from './version/version-dropdown'
 import { StatusFilter } from './status-filter'
 
 export function RoadmapHeader() {
   const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
   const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
+  const stats = useGoalStats()
 
   return (
     <div className="space-y-4">
@@ -19,20 +23,18 @@ export function RoadmapHeader() {
             <VersionDropdown />
           </div>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            인생의 큰 그림을 그려보세요
+            <RoadmapStatsSummary stats={stats} />
           </p>
         </div>
-        <button
-          onClick={toggle}
-          aria-label="패널 토글"
-          className={`hidden rounded-lg p-2 transition-colors lg:flex ${
-            isOpen
-              ? 'bg-[var(--color-primary-500)] text-white'
-              : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-secondary)] hover:text-[var(--color-text-secondary)]'
-          }`}
-        >
-          <PanelRight className="h-4 w-4" />
-        </button>
+        <CanvasToolbar className="hidden lg:flex">
+          <CanvasToolbar.Toggle
+            active={isOpen}
+            icon={<PanelRight className="h-5 w-5" />}
+            onClick={toggle}
+            aria-label="패널 토글"
+            title={isOpen ? '패널 닫기 (])' : '패널 열기 (])'}
+          />
+        </CanvasToolbar>
       </div>
 
       {/* Filter Row */}
