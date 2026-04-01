@@ -38,6 +38,9 @@ import { nodeTypes } from './nodes'
 import { edgeTypes } from './edges'
 import { AreaRegions } from './area-regions'
 import { useCanvasKeyboard } from './use-canvas-keyboard'
+import { useCanvasReorder } from './use-canvas-reorder'
+import { useBrainDumpPreviewStore } from '@/stores/brain-dump-preview.store'
+import { injectGhostNodes } from './inject-ghost-nodes'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -103,6 +106,14 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const zoomBand: number =
     rawZoom < ZOOM_THRESHOLD_COMPACT ? 0 : rawZoom > ZOOM_THRESHOLD_FULL ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
+
+  // Drag reorder state — lifted here to feed both dagre guard and enrichedNodes
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+
+  // Ghost node preview state
+  const ghostProposal = useBrainDumpPreviewStore((s) => s.proposal)
+  const ghostCheckedItems = useBrainDumpPreviewStore((s) => s.checkedItems)
+  const isGhostPulsing = useBrainDumpPreviewStore((s) => s.isPulsing)
 
   // Goal expand/collapse: which goals show Group/Task as canvas nodes
   const [expandedGoalIds, setExpandedGoalIds] = useState<Set<string>>(new Set())
@@ -195,16 +206,23 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     [interactions, toggleGoalExpand, toggleGroupExpand]
   )
 
-  // ── Data pipeline: tree → flow elements → enrich → dagre ──
+  // ── Data pipeline: tree → flow elements → ghost inject → enrich → dagre ──
 
-  const { nodes: rawNodes, edges: rawEdges } = useMemo(
+  const { nodes: treeNodes, edges: treeEdges } = useMemo(
     () => treeToFlowElements(treeData, crossLinks, expandedGoalIds, expandedGroupIds),
     [treeData, crossLinks, expandedGoalIds, expandedGroupIds]
   )
 
+  // Inject ghost nodes from brain-dump proposal
+  const { nodes: rawNodes, edges: rawEdges } = useMemo(() => {
+    if (!ghostProposal || !treeData) return { nodes: treeNodes, edges: treeEdges }
+    return injectGhostNodes(treeNodes, treeEdges, ghostProposal, ghostCheckedItems, treeData.id)
+  }, [treeNodes, treeEdges, ghostProposal, ghostCheckedItems, treeData])
+
   // Enrich nodes with interaction state
   const enrichedNodes = useMemo(() => {
     return rawNodes.map((node) => {
+      const isGhost = node.data.isGhost === true
       const isSelected = node.id === selectedNodeId
       const isSearchMatch = searchMatchedIds.has(node.id)
 
@@ -216,6 +234,21 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           : { opacity: 0.15, transition: 'opacity 0.2s', pointerEvents: 'none' as const }
       }
 
+      // Ghost node opacity override
+      if (isGhost && !style) {
+        style = { opacity: 0.6, transition: 'opacity 0.3s' }
+      }
+
+      // Drag visual feedback
+      if (node.id === draggingNodeId) {
+        style = {
+          ...style,
+          opacity: 0.8,
+          zIndex: 1000,
+          filter: 'drop-shadow(0 8px 25px rgba(0,0,0,0.15))',
+        }
+      }
+
       return {
         ...node,
         data: {
@@ -224,12 +257,23 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           isSearchMatch,
           searchQuery: isSearchMatch ? searchQuery : undefined,
           zoomLevel: zoomBand,
+          isGhostPulsing: isGhost ? isGhostPulsing : undefined,
         },
         style,
         selected: isSelected,
+        draggable: node.type !== 'direction' && !isGhost,
       }
     })
-  }, [rawNodes, selectedNodeId, focusedIds, searchMatchedIds, searchQuery, zoomBand])
+  }, [
+    rawNodes,
+    selectedNodeId,
+    focusedIds,
+    searchMatchedIds,
+    searchQuery,
+    zoomBand,
+    draggingNodeId,
+    isGhostPulsing,
+  ])
 
   // Merge dependency edges with raw edges, then apply focus dimming
   const allEdges = useMemo(() => [...rawEdges, ...dependencyEdges], [rawEdges, dependencyEdges])
@@ -250,11 +294,24 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   }, [allEdges, focusedIds])
 
   const direction = treeLayout === 'horizontal' ? 'LR' : 'TB'
-  const { nodes, edges, onNodesChange, onEdgesChange } = useDagreLayout(
+  const { nodes, edges, setNodes, onNodesChange, onEdgesChange, relayout } = useDagreLayout(
     enrichedNodes as WhyMapNode[],
     enrichedEdges,
-    direction
+    direction,
+    draggingNodeId
   )
+
+  // ── Drag reorder ───────────────────────────────────────────
+
+  const canvasReorder = useCanvasReorder({
+    nodes,
+    edges,
+    direction,
+    setNodes,
+    setDraggingNodeId,
+    editingNodeId: interactions.editingNodeId,
+    relayout,
+  })
 
   // ── Keyboard shortcuts ────────────────────────────────────
 
@@ -311,6 +368,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     expandNode,
     collapseNode,
     clearSelection,
+    cancelDrag: canvasReorder.cancelDrag,
     onToggleFloatingPanel: useRoadmapStore.getState().toggleFloatingPanel,
     onFitView: () => fitView({ padding: 0.15, duration: 300 }),
   })
@@ -400,6 +458,8 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   return (
     <div className="absolute inset-0">
+      {/* Transition for sibling slot swaps during drag reorder */}
+      <style>{'.react-flow__node.reordering { transition: transform 200ms ease; }'}</style>
       <CanvasInteractionsContext.Provider value={interactionsContextValue}>
         <ReactFlow
           nodes={nodes}
@@ -411,9 +471,13 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           onConnect={handleConnect}
           onPaneClick={handlePaneClick}
           onNodeDoubleClick={handleNodeDoubleClick}
+          onNodeDragStart={canvasReorder.onNodeDragStart}
+          onNodeDrag={canvasReorder.onNodeDrag}
+          onNodeDragStop={canvasReorder.onNodeDragStop}
           panOnScroll
           zoomOnScroll
-          panOnDrag
+          panOnDrag={[1, 2]}
+          nodesDraggable
           snapToGrid
           snapGrid={[20, 20]}
           minZoom={0.15}
