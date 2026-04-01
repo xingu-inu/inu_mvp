@@ -1,10 +1,16 @@
 'use client'
 
-import { memo, useCallback } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import { Target, CalendarDays } from 'lucide-react'
+import { format, parse, isValid } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { GOAL_STATUS_CONFIG } from '@/lib/goal-status'
 import type { GoalStatus } from '@/types/entities'
+import type { SelectedNodeType } from '@/stores/roadmap.store'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { useUpdateGoal } from '@/queries/use-goals'
 import { ZOOM_COMPACT, ZOOM_FULL, type GoalNodeData } from '../types'
 import { TreeNodeCard } from '../../visual-tree/tree-node-card'
 import { useCanvasInteractionsContext } from '../canvas-interactions-context'
@@ -12,6 +18,68 @@ import { TreeContextMenu } from '../../visual-tree/tree-context-menu'
 import { WhyChainTooltip } from './why-chain-tooltip'
 import { AddChildButton } from './add-child-button'
 import { InlineEditInput } from './inline-edit-input'
+
+// ── Inline date trigger (local) ────────────────────────────
+
+function InlineDateTrigger({
+  value,
+  onChange,
+  placeholder,
+  onOpenChange,
+}: {
+  value?: string | null
+  onChange: (date: string | null) => void
+  placeholder: string
+  onOpenChange?: (open: boolean) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const dateObj = value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined
+  const valid = dateObj ? isValid(dateObj) : false
+
+  const toggle = (o: boolean) => {
+    setOpen(o)
+    onOpenChange?.(o)
+  }
+
+  return (
+    <Popover open={open} onOpenChange={toggle}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="rounded px-1 py-0.5 text-[10px] text-[var(--color-text-tertiary)] transition-colors hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {valid && dateObj ? format(dateObj, 'M/d') : placeholder}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={valid && dateObj ? dateObj : undefined}
+          onSelect={(date) => {
+            onChange(date ? format(date, 'yyyy-MM-dd') : null)
+            toggle(false)
+          }}
+          defaultMonth={valid && dateObj ? dateObj : undefined}
+        />
+        {valid && (
+          <div className="border-t border-[var(--color-border)] px-3 py-2">
+            <button
+              type="button"
+              onClick={() => {
+                onChange(null)
+                toggle(false)
+              }}
+              className="text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)]"
+            >
+              날짜 해제
+            </button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 // ── Main component ─────────────────────────────────────────
 
@@ -66,6 +134,76 @@ export const GoalNode = memo(function GoalNode({
   const onAddChild = useCallback(() => handleStartAdd('goal', id), [handleStartAdd, id])
   const onDelete = useCallback(() => handleDeleteNode('goal', id), [handleDeleteNode, id])
 
+  // ── Multi-field edit state ──
+  const editContainerRef = useRef<HTMLDivElement>(null)
+  const whyInputRef = useRef<HTMLInputElement>(null)
+  const committedRef = useRef(false)
+  const openPopoversRef = useRef(0)
+  const updateGoalMutation = useUpdateGoal()
+
+  // Reset committed guard when entering edit mode
+  useEffect(() => {
+    if (isEditing) committedRef.current = false
+  }, [isEditing])
+
+  const handleGoalCommit = useCallback(
+    (nodeType: SelectedNodeType, nodeId: string, newName: string) => {
+      if (committedRef.current) return
+      committedRef.current = true
+      const extra: Record<string, unknown> = {}
+      const whyValue = whyInputRef.current?.value
+      if (whyValue !== undefined && whyValue !== (treeNode.why ?? '')) {
+        extra.why = whyValue || null
+      }
+      handleRenameCommit(
+        nodeType,
+        nodeId,
+        newName,
+        Object.keys(extra).length > 0 ? extra : undefined
+      )
+    },
+    [handleRenameCommit, treeNode.why]
+  )
+
+  const handleDateChange = useCallback(
+    (field: 'start_date' | 'target_date', value: string | null) => {
+      updateGoalMutation.mutate({ id, input: { [field]: value } })
+    },
+    [id, updateGoalMutation]
+  )
+
+  const handleDatePickerToggle = useCallback((open: boolean) => {
+    openPopoversRef.current += open ? 1 : -1
+  }, [])
+
+  const handleContainerBlur = useCallback(() => {
+    setTimeout(() => {
+      if (committedRef.current) return
+      if (!editContainerRef.current) return
+      if (editContainerRef.current.contains(document.activeElement)) return
+      // Check for open Radix popovers (rendered in portal)
+      if (openPopoversRef.current > 0) return
+      // Focus left entirely — commit
+      const currentName = pendingEditValueRef.current ?? treeNode.name
+      handleGoalCommit('goal', id, currentName)
+    }, 0)
+  }, [handleGoalCommit, id, treeNode.name, pendingEditValueRef])
+
+  const handleWhyKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        handleCancelEdit()
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        const currentName = pendingEditValueRef.current ?? treeNode.name
+        handleGoalCommit('goal', id, currentName)
+      }
+    },
+    [handleCancelEdit, handleGoalCommit, id, treeNode.name, pendingEditValueRef]
+  )
+
   return (
     <div
       className={cn(
@@ -100,22 +238,75 @@ export const GoalNode = memo(function GoalNode({
       ) : (
         <>
           {isEditing ? (
-            <div className="rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] px-3 py-2.5 shadow-sm">
-              <InlineEditInput
-                nodeType="goal"
-                nodeId={id}
-                defaultValue={treeNode.name}
-                className="text-sm font-medium text-[var(--color-text-primary)]"
-                onCommit={handleRenameCommit}
-                onCancel={handleCancelEdit}
-                pendingValueRef={pendingEditValueRef}
-                onChainEnter={
-                  data.parentAreaId
-                    ? () => handleQuickCreate('area', data.parentAreaId!)
-                    : undefined
-                }
-                onChainTab={() => handleQuickCreate('goal', id)}
-              />
+            <div
+              ref={editContainerRef}
+              className="relative overflow-hidden rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] shadow-sm"
+              onBlur={handleContainerBlur}
+            >
+              {treeNode.areaColor && (
+                <div
+                  className="absolute inset-y-0 left-0 w-1"
+                  style={{ backgroundColor: treeNode.areaColor }}
+                />
+              )}
+              <div className="py-2 pr-3 pl-4">
+                {/* Name row: icon + input */}
+                <div className="flex items-center gap-2">
+                  {treeNode.vibe?.emoji ? (
+                    <span className="flex-shrink-0 text-base leading-none">
+                      {treeNode.vibe.emoji}
+                    </span>
+                  ) : (
+                    <Target className="h-4 w-4 flex-shrink-0 text-[var(--color-text-secondary)]" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <InlineEditInput
+                      nodeType="goal"
+                      nodeId={id}
+                      defaultValue={treeNode.name}
+                      className="text-sm font-medium text-[var(--color-text-primary)]"
+                      onCommit={handleGoalCommit}
+                      onCancel={handleCancelEdit}
+                      pendingValueRef={pendingEditValueRef}
+                      editContainerRef={editContainerRef}
+                      onChainEnter={
+                        data.parentAreaId
+                          ? () => handleQuickCreate('area', data.parentAreaId!)
+                          : undefined
+                      }
+                      onChainTab={() => handleQuickCreate('goal', id)}
+                    />
+                  </div>
+                </div>
+                {/* Why row */}
+                <div className="mt-1 pl-6">
+                  <input
+                    ref={whyInputRef}
+                    defaultValue={treeNode.why ?? ''}
+                    placeholder="왜 이 목표를?"
+                    className="w-full bg-transparent text-[10px] text-[var(--color-text-tertiary)] italic outline-none placeholder:opacity-50"
+                    onKeyDown={handleWhyKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                {/* Date row */}
+                <div className="mt-1 flex items-center gap-1 pl-6">
+                  <CalendarDays className="h-3 w-3 flex-shrink-0 text-[var(--color-text-tertiary)]" />
+                  <InlineDateTrigger
+                    value={treeNode.meta?.startDate}
+                    onChange={(date) => handleDateChange('start_date', date)}
+                    placeholder="시작일"
+                    onOpenChange={handleDatePickerToggle}
+                  />
+                  <span className="text-[10px] text-[var(--color-text-tertiary)]">~</span>
+                  <InlineDateTrigger
+                    value={treeNode.meta?.endDate}
+                    onChange={(date) => handleDateChange('target_date', date)}
+                    placeholder="목표일"
+                    onOpenChange={handleDatePickerToggle}
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             <TreeContextMenu

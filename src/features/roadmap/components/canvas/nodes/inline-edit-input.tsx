@@ -16,6 +16,8 @@ interface InlineEditInputProps {
   onChainTab?: () => void
   /** Shared ref to preserve typed text across node ID swaps (temp → real) */
   pendingValueRef?: RefObject<string | null>
+  /** Container ref for multi-field edit — skip blur commit when focus stays in container */
+  editContainerRef?: RefObject<HTMLElement | null>
 }
 
 export const InlineEditInput = memo(function InlineEditInput({
@@ -28,6 +30,7 @@ export const InlineEditInput = memo(function InlineEditInput({
   onChainEnter,
   onChainTab,
   pendingValueRef,
+  editContainerRef,
 }: InlineEditInputProps) {
   const committedRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -63,6 +66,14 @@ export const InlineEditInput = memo(function InlineEditInput({
   const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
     if (committedRef.current) {
       committedRef.current = false
+      return
+    }
+    // Skip commit when focus moves within the edit container (multi-field edit)
+    if (
+      editContainerRef?.current &&
+      e.relatedTarget instanceof Node &&
+      editContainerRef.current.contains(e.relatedTarget)
+    ) {
       return
     }
     onCommit(nodeType, nodeId, e.target.value)

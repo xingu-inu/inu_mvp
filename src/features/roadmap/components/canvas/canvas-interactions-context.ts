@@ -16,7 +16,12 @@ export interface CanvasInteractionsValue {
   pendingEditValueRef: RefObject<string | null>
   handleStartEdit: (type: SelectedNodeType, id: string) => void
   handleQuickCreate: (parentType: SelectedNodeType, parentId: string) => void
-  handleRenameCommit: (nodeType: SelectedNodeType, nodeId: string, newName: string) => void
+  handleRenameCommit: (
+    nodeType: SelectedNodeType,
+    nodeId: string,
+    newName: string,
+    extra?: Record<string, unknown>
+  ) => void
   handleCancelEdit: () => void
 }
 

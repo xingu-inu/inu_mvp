@@ -40,6 +40,7 @@ export function useCanvasInteractions(
     nodeType: SelectedNodeType
     tempId: string
     name: string
+    extra?: Record<string, unknown>
   } | null>(null)
 
   // Focus mode
@@ -206,13 +207,13 @@ export function useCanvasInteractions(
 
   /** Fire the actual rename mutation for a resolved (real) ID. */
   const dispatchRename = useCallback(
-    (nodeType: SelectedNodeType, id: string, name: string) => {
+    (nodeType: SelectedNodeType, id: string, name: string, extra?: Record<string, unknown>) => {
       switch (nodeType) {
         case 'area':
           updateArea.mutate({ id, input: { name } })
           break
         case 'goal':
-          updateGoal.mutate({ id, input: { name } })
+          updateGoal.mutate({ id, input: { name, ...extra } })
           break
         case 'group': {
           const goalId = parentGoalMap.get(id)
@@ -240,7 +241,7 @@ export function useCanvasInteractions(
       const pending = pendingRenameRef.current
       if (pending?.tempId === tempId) {
         pendingRenameRef.current = null
-        dispatchRename(pending.nodeType, data.id, pending.name)
+        dispatchRename(pending.nodeType, data.id, pending.name, pending.extra)
       }
 
       // Clean up mapping after 10s
@@ -318,7 +319,12 @@ export function useCanvasInteractions(
   )
 
   const handleRenameCommit = useCallback(
-    (nodeType: SelectedNodeType, nodeId: string, newName: string) => {
+    (
+      nodeType: SelectedNodeType,
+      nodeId: string,
+      newName: string,
+      extra?: Record<string, unknown>
+    ) => {
       const trimmed = newName.trim()
       setEditingNodeId(null)
       pendingEditValueRef.current = null
@@ -331,9 +337,9 @@ export function useCanvasInteractions(
 
       if (pendingTempIdsRef.current.has(nodeId)) {
         // Server hasn't responded yet — defer rename until resolveCreatedNode fires
-        pendingRenameRef.current = { nodeType, tempId: nodeId, name: trimmed }
+        pendingRenameRef.current = { nodeType, tempId: nodeId, name: trimmed, extra }
       } else {
-        dispatchRename(nodeType, resolvedId, trimmed)
+        dispatchRename(nodeType, resolvedId, trimmed, extra)
       }
     },
     [dispatchRename]

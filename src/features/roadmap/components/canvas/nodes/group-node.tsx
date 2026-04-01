@@ -2,6 +2,7 @@
 
 import { memo, useCallback } from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
+import { Folder } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ZOOM_COMPACT, ZOOM_FULL, type GroupNodeData } from '../types'
 import { TreeNodeCard } from '../../visual-tree/tree-node-card'
@@ -79,16 +80,21 @@ export const GroupNode = memo(function GroupNode({
         <>
           {isEditing ? (
             <div className="rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm">
-              <InlineEditInput
-                nodeType="group"
-                nodeId={id}
-                defaultValue={treeNode.name}
-                className="text-sm font-medium text-[var(--color-text-primary)]"
-                onCommit={handleRenameCommit}
-                onCancel={handleCancelEdit}
-                pendingValueRef={pendingEditValueRef}
-                onChainTab={() => handleQuickCreate('group', id)}
-              />
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4 flex-shrink-0 text-[var(--color-text-tertiary)]" />
+                <div className="min-w-0 flex-1">
+                  <InlineEditInput
+                    nodeType="group"
+                    nodeId={id}
+                    defaultValue={treeNode.name}
+                    className="text-sm font-medium text-[var(--color-text-primary)]"
+                    onCommit={handleRenameCommit}
+                    onCancel={handleCancelEdit}
+                    pendingValueRef={pendingEditValueRef}
+                    onChainTab={() => handleQuickCreate('group', id)}
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             <TreeContextMenu
