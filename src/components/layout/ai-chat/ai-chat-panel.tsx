@@ -65,7 +65,10 @@ interface AiChatPanelProps {
   hideBrainDump?: boolean
 }
 
-export function AiChatPanel({ embedded = false, hideBrainDump = false }: AiChatPanelProps) {
+export function AiChatPanel({
+  embedded = false,
+  hideBrainDump: _hideBrainDump = false,
+}: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
