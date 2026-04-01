@@ -257,7 +257,7 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
             )}
           </button>
           <span className="text-base">🐾</span>
-          <h3 className="text-sm font-semibold">AI 이누</h3>
+          <h3 className="text-sm font-semibold">동행 이누</h3>
           {/* Goal/Task context badge (not brain-dump — that uses mode chips) */}
           {context && context.type !== 'brain-dump' && (
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
@@ -332,8 +332,8 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
             <Mascot mood="happy" size="md" />
             <p className="text-center text-sm text-[var(--color-text-secondary)]">
               {context?.type === 'brain-dump'
-                ? '하고 싶은 것들을 자유롭게 이야기해주세요'
-                : '무엇이든 물어보세요'}
+                ? '머릿속 이야기부터 그대로 꺼내주세요. 이누가 같이 정리할게요'
+                : '방향이 흐릴 때도, 마음이 복잡할 때도 편하게 이야기해보세요'}
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               {(context?.type === 'brain-dump'
@@ -391,7 +391,7 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
             onKeyDown={handleKeyDown}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
-            placeholder="메시지를 입력하세요..."
+            placeholder="지금 떠오르는 생각을 적어보세요..."
             disabled={isStreaming}
             rows={1}
             className="flex-1 resize-none overflow-y-auto bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
