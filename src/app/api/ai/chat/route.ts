@@ -219,6 +219,16 @@ export const POST = authRoute(
 
     // Build system prompt with optional context hint
     let systemPrompt = buildSystemPrompt(traits, userName, todayDate)
+
+    // 구조 제안 기능 — 일반 대화에서도 적용
+    systemPrompt += `\n\n[구조 제안 기능]
+사용자가 "하고 싶은 것들이 많아", "정리가 필요해", "새로운 목표를 세우고 싶어",
+"요즘 이것저것 해보고 싶은 게 많은데" 등 구조 정리가 필요한 의도를 보이면:
+1. 먼저 충분히 이야기를 들으세요
+2. get_user_overview 도구로 기존 구조를 확인하세요
+3. propose_structure 도구를 사용해 구조를 제안하세요
+명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
+
     const { context } = parsed.data
     if (context) {
       if (context.type === 'brain-dump') {
