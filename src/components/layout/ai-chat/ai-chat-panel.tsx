@@ -315,6 +315,27 @@ export function AiChatPanel({
                 ? '머릿속 이야기부터 그대로 꺼내주세요. 이누가 같이 정리할게요'
                 : '방향이 흐릴 때도, 마음이 복잡할 때도 편하게 이야기해보세요'}
             </p>
+
+            {/* Brain dump promotion card — only when no context */}
+            {!context && (
+              <button
+                onClick={() =>
+                  useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
+                }
+                className="group w-full max-w-xs rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-900/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    생각 쏟아내기
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-600/80 dark:text-amber-400/70">
+                  머릿속에 떠오르는 것들을 자유롭게 이야기하면 함께 정리해줄게
+                </p>
+              </button>
+            )}
+
             <div className="flex flex-wrap justify-center gap-2">
               {(context?.type === 'brain-dump'
                 ? BRAIN_DUMP_QUICK_ACTIONS
