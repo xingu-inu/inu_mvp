@@ -247,14 +247,25 @@ export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>
 // ============================================
 // Profile Trait Schemas
 // ============================================
+const traitCategoryEnum = z.enum([
+  'identity',
+  'stats',
+  'interests',
+  'description',
+  'habits',
+  'general',
+])
+
 export const createProfileTraitSchema = z.object({
   label: z.string().trim().min(1, '항목 이름을 입력해주세요').max(50, '최대 50자'),
   value: z.string().trim().min(1, '내용을 입력해주세요').max(500, '최대 500자'),
+  category: traitCategoryEnum.default('general'),
 })
 
 export const updateProfileTraitSchema = z.object({
   label: z.string().trim().min(1).max(50).optional(),
   value: z.string().trim().min(1).max(500).optional(),
+  category: traitCategoryEnum.optional(),
 })
 
 export type CreateProfileTraitSchema = z.infer<typeof createProfileTraitSchema>

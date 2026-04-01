@@ -54,6 +54,7 @@ export const profileTraitRepository = {
         user_id: userId,
         label: input.label,
         value: input.value,
+        category: input.category ?? 'general',
         sort_order: newSortOrder,
       })
       .select()

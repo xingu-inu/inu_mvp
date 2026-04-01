@@ -53,10 +53,19 @@ export interface Profile extends BaseEntity {
   ai_model: string | null
 }
 
+export type TraitCategory =
+  | 'identity'
+  | 'stats'
+  | 'interests'
+  | 'description'
+  | 'habits'
+  | 'general'
+
 export interface ProfileTrait extends BaseEntity {
   user_id: string
   label: string
   value: string
+  category: TraitCategory
   sort_order: string
 }
 
@@ -294,11 +303,13 @@ export interface UpdateProfileInput {
 export interface CreateProfileTraitInput {
   label: string
   value: string
+  category?: TraitCategory
 }
 
 export interface UpdateProfileTraitInput {
   label?: string
   value?: string
+  category?: TraitCategory
 }
 
 // ============================================
@@ -449,7 +460,7 @@ export interface AppNotification {
 // ============================================
 // Chat (AI Coach Conversations)
 // ============================================
-export type ChatContext = ChatEntityContext | ChatBrainDumpContext
+export type ChatContext = ChatEntityContext | ChatBrainDumpContext | ChatObservationContext
 
 export interface ChatEntityContext {
   type: 'goal' | 'task'
@@ -462,6 +473,13 @@ export interface ChatEntityContext {
 
 export interface ChatBrainDumpContext {
   type: 'brain-dump'
+}
+
+export interface ChatObservationContext {
+  type: 'observation'
+  message: string
+  nodeId: string
+  relatedGoalId?: string
 }
 
 export interface ChatConversation extends BaseEntity {

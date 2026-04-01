@@ -67,13 +67,34 @@ function buildProfileTraitsBlock(traits: ProfileTrait[]): string {
 - 프로필 정보가 부족해도 성급히 규정하지 말고, 한 번에 한 가지 질문만 던져서 천천히 알아가세요.`
   }
 
-  const traitLines = traits
-    .slice(0, 30)
-    .map((t) => `- [id:${t.id}] ${sanitizeUserText(t.label)}: ${sanitizeUserText(t.value)}`)
-    .join('\n')
+  const CATEGORY_LABELS: Record<string, string> = {
+    identity: '성격 유형',
+    stats: '능력/강점',
+    interests: '관심사',
+    description: '자기 소개',
+    habits: '습관/루틴',
+    general: '기타 정보',
+  }
+
+  const grouped = new Map<string, typeof traits>()
+  for (const t of traits.slice(0, 30)) {
+    const cat = t.category ?? 'general'
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push(t)
+  }
+
+  const sections = [...grouped.entries()]
+    .map(([cat, items]) => {
+      const label = CATEGORY_LABELS[cat] ?? cat
+      const lines = items
+        .map((t) => `  - [id:${t.id}] ${sanitizeUserText(t.label)}: ${sanitizeUserText(t.value)}`)
+        .join('\n')
+      return `[${label}]\n${lines}`
+    })
+    .join('\n\n')
 
   return `[사용자 프로필]
-${traitLines}
+${sections}
 
 [프로필 활용 원칙]
 - 인생 방향, 관계, 일, 균형, 불안, 선택처럼 큰 질문이 나오면 이 프로필을 먼저 기준으로 삼으세요.
@@ -158,7 +179,18 @@ const brainDumpContextSchema = z.object({
   type: z.literal('brain-dump'),
 })
 
-const contextSchema = z.discriminatedUnion('type', [entityContextSchema, brainDumpContextSchema])
+const observationContextSchema = z.object({
+  type: z.literal('observation'),
+  message: z.string(),
+  nodeId: z.string(),
+  relatedGoalId: z.string().optional(),
+})
+
+const contextSchema = z.discriminatedUnion('type', [
+  entityContextSchema,
+  brainDumpContextSchema,
+  observationContextSchema,
+])
 
 const chatSchema = z.object({
   messages: z.array(z.record(z.string(), z.unknown())).max(50),
@@ -205,6 +237,14 @@ export const POST = authRoute(
 - 처음부터 구조화하지 마세요. 먼저 자유롭게 이야기하게 하세요.
 - 한 번에 너무 많이 만들지 마세요. 핵심부터 시작.
 - 기존 Area/Goal과 중복되지 않게 확인하세요.`
+      } else if (context.type === 'observation') {
+        systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
+사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
+"${context.message}"
+
+이 관찰에 대해 자연스럽게 대화를 이어가세요.
+- 관찰 내용을 반복하지 말고, 사용자가 이 주제에 대해 더 이야기하고 싶어한다고 가정하세요.
+- 필요하면 get_user_overview, get_active_goals 등의 도구로 관련 데이터를 확인하세요.${context.relatedGoalId ? `\n- 관련 목표가 있습니다. get_goal_detail 도구를 goal_id="${context.relatedGoalId}"로 호출할 수 있습니다.` : ''}`
       } else {
         const entity =
           context.type === 'goal'

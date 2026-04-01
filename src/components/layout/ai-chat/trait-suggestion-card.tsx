@@ -11,10 +11,13 @@ import {
 
 const MAX_TRAITS = 30
 
+import type { TraitCategory } from '@/types/entities'
+
 interface TraitSuggestion {
   label: string
   value: string
   reason: string
+  category?: TraitCategory
   existing_trait_id?: string
 }
 
@@ -97,10 +100,14 @@ function TraitSuggestionCardInner({ data }: { data: SuggestProfileTraitsOutput }
         if (existingValid) {
           await updateTrait.mutateAsync({
             id: trait.existing_trait_id!,
-            input: { label: trait.label, value: trait.value },
+            input: { label: trait.label, value: trait.value, category: trait.category },
           })
         } else {
-          await createTrait.mutateAsync({ label: trait.label, value: trait.value })
+          await createTrait.mutateAsync({
+            label: trait.label,
+            value: trait.value,
+            category: trait.category,
+          })
         }
         return trait.label
       })

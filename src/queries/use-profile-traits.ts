@@ -59,6 +59,7 @@ export function useCreateProfileTrait() {
         user_id: '',
         label: input.label,
         value: input.value,
+        category: input.category ?? 'general',
         sort_order: generateKeyBetween(lastSortOrder, null),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

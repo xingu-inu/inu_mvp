@@ -66,6 +66,33 @@ export type Database = {
           },
         ]
       }
+      ai_observations: {
+        Row: {
+          created_at: string
+          data_hash: string | null
+          generated_at: string
+          id: string
+          nodes: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_hash?: string | null
+          generated_at?: string
+          id?: string
+          nodes?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_hash?: string | null
+          generated_at?: string
+          id?: string
+          nodes?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           content: string
@@ -747,6 +774,7 @@ export type Database = {
       }
       profile_traits: {
         Row: {
+          category: string
           created_at: string
           id: string
           label: string
@@ -756,6 +784,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
           label: string
@@ -765,6 +794,7 @@ export type Database = {
           value: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
           label?: string

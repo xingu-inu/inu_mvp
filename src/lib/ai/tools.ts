@@ -110,6 +110,12 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
               label: z.string().max(50).describe('항목 이름 (예: MBTI, 강점, 현재 고민)'),
               value: z.string().max(500).describe('항목 내용'),
               reason: z.string().max(200).describe('이 항목을 제안하는 이유 (1문장)'),
+              category: z
+                .enum(['identity', 'stats', 'interests', 'description', 'habits', 'general'])
+                .default('general')
+                .describe(
+                  '항목 카테고리: identity(성격유형), stats(능력/강점), interests(관심사), description(자기소개), habits(습관/루틴), general(기타)'
+                ),
               existing_trait_id: z
                 .string()
                 .optional()
