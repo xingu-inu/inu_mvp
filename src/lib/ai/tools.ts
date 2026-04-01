@@ -132,7 +132,7 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
 
     propose_structure: tool({
       description:
-        '쏟아내기 모드에서 사용자의 아이디어를 Area/Goal/Task 구조로 제안합니다. 사용자가 충분히 이야기한 후에 호출하세요. 사용자는 이 제안을 미리보고 "반영하기"로 실제 생성할 수 있습니다.',
+        '사용자의 아이디어나 계획을 Area/Goal/Task 구조로 정리해서 제안합니다. 쏟아내기 모드뿐 아니라 일반 대화에서도 구조 정리가 필요할 때 사용할 수 있습니다. 사용자가 충분히 이야기한 후에 호출하세요. 사용자는 이 제안을 미리보고 "반영하기"로 실제 생성할 수 있습니다.',
       inputSchema: z.object({
         summary: z.string().describe('정리된 내용의 한 줄 요약'),
         areas: z.array(
