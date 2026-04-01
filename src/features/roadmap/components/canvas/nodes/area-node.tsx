@@ -29,6 +29,8 @@ export const AreaNode = memo(function AreaNode({
   } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
+  const isGhost = data.isGhost === true
+  const isGhostPulsing = data.isGhostPulsing === true
   const {
     handleNodeSelect,
     handleDeleteNode,
@@ -61,7 +63,7 @@ export const AreaNode = memo(function AreaNode({
       )}
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
-      {isEditing ? (
+      {isEditing && !isGhost ? (
         <div
           className={cn(
             'relative max-w-[280px] min-w-[200px] overflow-hidden rounded-xl border-2 border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] shadow-sm'
@@ -101,6 +103,50 @@ export const AreaNode = memo(function AreaNode({
                 onChainTab={() => handleQuickCreate('area', id)}
               />
             </div>
+          </div>
+        </div>
+      ) : isGhost ? (
+        <div
+          className={cn(
+            'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
+            isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
+            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
+            isGhostPulsing && 'animate-pulse'
+          )}
+          onClick={onSelect}
+        >
+          {treeNode.color && (
+            <div
+              className="absolute inset-y-0 left-0 w-1"
+              style={{ backgroundColor: treeNode.color }}
+            />
+          )}
+          <div className="flex items-center gap-2 py-2.5 pr-3 pl-4">
+            <div className="flex flex-shrink-0 items-center gap-1.5">
+              {treeNode.color && (
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{
+                    backgroundColor: treeNode.color,
+                    boxShadow: `0 0 0 2px color-mix(in srgb, ${treeNode.color} 30%, transparent)`,
+                  }}
+                />
+              )}
+              {!isCompact && treeNode.emoji && <span className="text-base">{treeNode.emoji}</span>}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
+                {treeNode.name}
+              </span>
+              {!isCompact && treeNode.why && (
+                <span className="block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
+                  {treeNode.why}
+                </span>
+              )}
+            </div>
+            <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
+              NEW
+            </span>
           </div>
         </div>
       ) : (
@@ -183,13 +229,13 @@ export const AreaNode = memo(function AreaNode({
       )}
 
       {/* Quick-add popover */}
-      {addingToId === id && (
+      {!isGhost && addingToId === id && (
         <div className="mt-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2 shadow-sm">
           {getQuickAddContent(treeNode)}
         </div>
       )}
 
-      {addingToId !== id && (
+      {!isGhost && addingToId !== id && (
         <AddChildButton
           onClick={() => handleQuickCreate('area', id)}
           label="목표 추가"

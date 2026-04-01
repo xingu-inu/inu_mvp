@@ -102,6 +102,8 @@ export const GoalNode = memo(function GoalNode({
   const isDraft = treeNode.status === 'backlog'
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isFull = zoomLevel >= ZOOM_FULL
+  const isGhost = data.isGhost === true
+  const isGhostPulsing = data.isGhostPulsing === true
 
   const {
     handleNodeSelect,
@@ -227,7 +229,13 @@ export const GoalNode = memo(function GoalNode({
           className={cn(
             'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
-            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
+            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
+            isGhost && [
+              'border-dashed',
+              'border-amber-300 dark:border-amber-600',
+              'bg-amber-50/50 dark:bg-amber-900/20',
+            ],
+            isGhostPulsing && 'animate-pulse'
           )}
           onClick={handleSelect}
         >
@@ -237,7 +245,7 @@ export const GoalNode = memo(function GoalNode({
         </div>
       ) : (
         <>
-          {isEditing ? (
+          {isEditing && !isGhost ? (
             <div
               ref={editContainerRef}
               className="relative overflow-hidden rounded-lg border border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] shadow-sm"
@@ -308,6 +316,30 @@ export const GoalNode = memo(function GoalNode({
                 </div>
               </div>
             </div>
+          ) : isGhost ? (
+            <div
+              className={cn(
+                'cursor-pointer overflow-hidden rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-3 py-2 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
+                isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
+                isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
+                isGhostPulsing && 'animate-pulse'
+              )}
+              onClick={handleSelect}
+            >
+              <div className="flex items-center gap-2">
+                <span className="block truncate text-sm font-medium text-[var(--color-text-primary)]">
+                  {treeNode.name}
+                </span>
+                <span className="ml-auto flex-shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:bg-amber-900/50 dark:text-amber-400">
+                  NEW
+                </span>
+              </div>
+              {treeNode.why && (
+                <span className="mt-0.5 block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
+                  {treeNode.why}
+                </span>
+              )}
+            </div>
           ) : (
             <TreeContextMenu
               node={treeNode}
@@ -351,13 +383,13 @@ export const GoalNode = memo(function GoalNode({
           })()}
 
           {/* Quick-add popover */}
-          {addingToId === id && (
+          {!isGhost && addingToId === id && (
             <div className="border-t border-[var(--color-border)] bg-[var(--color-bg-primary)] p-2">
               {getQuickAddContent(treeNode)}
             </div>
           )}
 
-          {addingToId !== id && !isCompact && (
+          {!isGhost && addingToId !== id && !isCompact && (
             <AddChildButton
               onClick={() => handleQuickCreate('goal', id)}
               label="할일 추가"

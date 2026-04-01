@@ -17,6 +17,8 @@ export const TaskNode = memo(function TaskNode({
 }: NodeProps<Node<TaskNodeData, 'task'>>) {
   const { treeNode, isSelected, isSearchMatch, searchQuery, zoomLevel = ZOOM_FULL } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
+  const isGhost = data.isGhost === true
+  const isGhostPulsing = data.isGhostPulsing === true
 
   const {
     handleNodeSelect,
@@ -41,7 +43,15 @@ export const TaskNode = memo(function TaskNode({
   const onDelete = useCallback(() => handleDeleteNode('task', id), [handleDeleteNode, id])
 
   return (
-    <div className={cn('group/add group/why max-w-[240px] min-w-[160px]')}>
+    <div
+      className={cn(
+        'group/add group/why max-w-[240px] min-w-[160px]',
+        isGhost && [
+          'rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
+        ],
+        isGhostPulsing && 'animate-pulse'
+      )}
+    >
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
       {isCompact ? (

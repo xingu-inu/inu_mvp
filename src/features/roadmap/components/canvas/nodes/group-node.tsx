@@ -27,6 +27,8 @@ export const GroupNode = memo(function GroupNode({
   } = data
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const hasChildren = !!treeNode.children?.length
+  const isGhost = data.isGhost === true
+  const isGhostPulsing = data.isGhostPulsing === true
 
   const {
     handleNodeSelect,
@@ -60,7 +62,15 @@ export const GroupNode = memo(function GroupNode({
   const onDelete = useCallback(() => handleDeleteNode('group', id), [handleDeleteNode, id])
 
   return (
-    <div className={cn('group/add group/why relative max-w-[260px] min-w-[180px]')}>
+    <div
+      className={cn(
+        'group/add group/why relative max-w-[260px] min-w-[180px]',
+        isGhost && [
+          'rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
+        ],
+        isGhostPulsing && 'animate-pulse'
+      )}
+    >
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
       {isCompact ? (
