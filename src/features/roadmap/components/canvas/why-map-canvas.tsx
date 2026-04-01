@@ -21,13 +21,12 @@ import {
   type Edge,
 } from '@xyflow/react'
 import { ArrowRight, ArrowDown, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
-import { CanvasChip } from './canvas-chip'
 import { CanvasToolbar } from './canvas-toolbar'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type { Area, Goal } from '@/types/entities'
-import type { TreeLayoutDirection } from '@/stores/roadmap.store'
+import type { TreeLayoutDirection, SelectedNodeType } from '@/stores/roadmap.store'
 import type { WhyMapNode, WhyMapEdge, DependencyEdgeData } from './types'
 import { ZOOM_THRESHOLD_COMPACT, ZOOM_THRESHOLD_FULL } from './types'
 
@@ -130,7 +129,8 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // Interaction logic (selection, delete, quick-add, focus)
   const interactions = useCanvasInteractions(treeData, goals, areas, expandGoal, expandGroup)
-  const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap } = interactions
+  const { selectedNodeId, focusedIds, parentGoalMap, parentGroupMap, handleStartEdit } =
+    interactions
 
   // Clear expanded group IDs that belong to a given goal.
   // Safe: expandedGroupIds only contains group IDs, and parentGoalMap maps
@@ -305,6 +305,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     direction,
     handleQuickCreate: interactions.handleQuickCreate,
     handleNodeSelect: interactions.handleNodeSelect,
+    handleStartEdit,
     handleDeleteNode: interactions.handleDeleteNode,
     toggleNodeExpand,
     expandNode,
@@ -319,6 +320,14 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const handlePaneClick = useCallback(() => {
     clearSelection()
   }, [clearSelection])
+
+  const handleNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: WhyMapNode) => {
+      if (node.type === 'direction') return
+      handleStartEdit(node.type as SelectedNodeType, node.id)
+    },
+    [handleStartEdit]
+  )
 
   // ── Imperative ref for parent ──────────────────────────────
 
@@ -387,26 +396,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     [rawNodes]
   )
 
-  // ── Canvas stats ───────────────────────────────────────────
-
-  const canvasStats = useMemo(() => {
-    const goalNodes = rawNodes.filter(
-      (n): n is Extract<WhyMapNode, { type: 'goal' }> => n.type === 'goal'
-    )
-    const totalGoals = goalNodes.length
-    if (totalGoals === 0) return null
-
-    let activeCount = 0
-    let completedCount = 0
-    for (const n of goalNodes) {
-      const status = n.data.treeNode.status ?? 'active'
-      if (status === 'active' || status === 'maintenance') activeCount++
-      else if (status === 'completed') completedCount++
-    }
-    const completionRate = (completedCount / totalGoals) * 100
-    return { totalGoals, activeCount, completedCount, completionRate }
-  }, [rawNodes])
-
   // ── Render ─────────────────────────────────────────────────
 
   return (
@@ -421,6 +410,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           onEdgesChange={onEdgesChange}
           onConnect={handleConnect}
           onPaneClick={handlePaneClick}
+          onNodeDoubleClick={handleNodeDoubleClick}
           panOnScroll
           zoomOnScroll
           panOnDrag
@@ -476,17 +466,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
               </CanvasToolbar.Button>
             </CanvasToolbar>
           </Panel>
-          {/* Canvas stats */}
-          {canvasStats && (
-            <Panel position="bottom-center" className="!mb-2">
-              <CanvasChip variant="info" className="gap-3">
-                <span>{canvasStats.totalGoals} goals</span>
-                <span className="text-[var(--color-done)]">{canvasStats.completedCount} done</span>
-                <span>{canvasStats.activeCount} active</span>
-                <span>{Math.round(canvasStats.completionRate)}%</span>
-              </CanvasChip>
-            </Panel>
-          )}
         </ReactFlow>
       </CanvasInteractionsContext.Provider>
     </div>

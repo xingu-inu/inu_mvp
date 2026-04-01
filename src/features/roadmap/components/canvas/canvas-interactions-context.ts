@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react'
+import { createContext, useContext, type ReactNode, type RefObject } from 'react'
 import type { SelectedNodeType } from '@/stores/roadmap.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 
@@ -13,6 +13,8 @@ export interface CanvasInteractionsValue {
   toggleGroupExpand: (groupId: string) => void
   editingNodeId: string | null
   directionId: string | null
+  pendingEditValueRef: RefObject<string | null>
+  handleStartEdit: (type: SelectedNodeType, id: string) => void
   handleQuickCreate: (parentType: SelectedNodeType, parentId: string) => void
   handleRenameCommit: (nodeType: SelectedNodeType, nodeId: string, newName: string) => void
   handleCancelEdit: () => void

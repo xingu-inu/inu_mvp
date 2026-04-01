@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useRef, type KeyboardEvent, type FocusEvent } from 'react'
+import { memo, useRef, useEffect, type KeyboardEvent, type FocusEvent, type RefObject } from 'react'
 import type { SelectedNodeType } from '@/stores/roadmap.store'
 
 interface InlineEditInputProps {
@@ -14,6 +14,8 @@ interface InlineEditInputProps {
   onChainEnter?: () => void
   /** Called after commit on Tab — create child */
   onChainTab?: () => void
+  /** Shared ref to preserve typed text across node ID swaps (temp → real) */
+  pendingValueRef?: RefObject<string | null>
 }
 
 export const InlineEditInput = memo(function InlineEditInput({
@@ -25,8 +27,18 @@ export const InlineEditInput = memo(function InlineEditInput({
   onCancel,
   onChainEnter,
   onChainTab,
+  pendingValueRef,
 }: InlineEditInputProps) {
   const committedRef = useRef(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Restore pending value (from a previous input instance after temp→real ID swap)
+  useEffect(() => {
+    if (pendingValueRef?.current != null && inputRef.current) {
+      inputRef.current.value = pendingValueRef.current
+      pendingValueRef.current = null
+    }
+  }, [pendingValueRef])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -58,11 +70,17 @@ export const InlineEditInput = memo(function InlineEditInput({
 
   return (
     <input
+      ref={inputRef}
       autoFocus
       defaultValue={defaultValue}
       className={`w-full bg-transparent outline-none ${className}`}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
+      onInput={(e) => {
+        if (pendingValueRef) {
+          pendingValueRef.current = (e.target as HTMLInputElement).value
+        }
+      }}
       onClick={(e) => e.stopPropagation()}
     />
   )

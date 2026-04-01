@@ -32,10 +32,12 @@ export const AreaNode = memo(function AreaNode({
   const {
     handleNodeSelect,
     handleDeleteNode,
+    handleStartEdit,
     handleStartAdd,
     addingToId,
     getQuickAddContent,
     editingNodeId,
+    pendingEditValueRef,
     directionId,
     handleQuickCreate,
     handleRenameCommit,
@@ -44,6 +46,7 @@ export const AreaNode = memo(function AreaNode({
   const isEditing = editingNodeId === id
 
   const onSelect = useCallback(() => handleNodeSelect('area', id), [handleNodeSelect, id])
+  const onEdit = useCallback(() => handleStartEdit('area', id), [handleStartEdit, id])
   const onAddChild = useCallback(() => handleStartAdd('area', id), [handleStartAdd, id])
   const onDelete = useCallback(() => handleDeleteNode('area', id), [handleDeleteNode, id])
 
@@ -58,30 +61,19 @@ export const AreaNode = memo(function AreaNode({
       )}
       <Handle type="target" position={targetPosition ?? Position.Top} />
 
-      <TreeContextMenu
-        node={treeNode}
-        onEdit={onSelect}
-        onAddChild={onAddChild}
-        onDelete={onDelete}
-      >
+      {isEditing ? (
         <div
           className={cn(
-            'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
-            isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
-            isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
+            'relative max-w-[280px] min-w-[200px] overflow-hidden rounded-xl border-2 border-[var(--color-primary-400)] bg-[var(--color-bg-primary)] shadow-sm'
           )}
-          onClick={onSelect}
         >
-          {/* Left color accent bar */}
           {treeNode.color && (
             <div
               className="absolute inset-y-0 left-0 w-1"
               style={{ backgroundColor: treeNode.color }}
             />
           )}
-
           <div className="flex items-center gap-2 py-2.5 pr-3 pl-4">
-            {/* Color dot + emoji */}
             <div className="flex flex-shrink-0 items-center gap-1.5">
               {treeNode.color && (
                 <span
@@ -94,66 +86,101 @@ export const AreaNode = memo(function AreaNode({
               )}
               {!isCompact && treeNode.emoji && <span className="text-base">{treeNode.emoji}</span>}
             </div>
-
-            {/* Name + Why */}
             <div className="min-w-0 flex-1">
-              {isEditing ? (
-                <InlineEditInput
-                  nodeType="area"
-                  nodeId={id}
-                  defaultValue={treeNode.name}
-                  className="text-[15px] font-semibold text-[var(--color-text-primary)]"
-                  onCommit={handleRenameCommit}
-                  onCancel={handleCancelEdit}
-                  onChainEnter={
-                    directionId ? () => handleQuickCreate('direction', directionId) : undefined
-                  }
-                  onChainTab={() => handleQuickCreate('area', id)}
-                />
-              ) : (
+              <InlineEditInput
+                nodeType="area"
+                nodeId={id}
+                defaultValue={treeNode.name}
+                className="text-[15px] font-semibold text-[var(--color-text-primary)]"
+                onCommit={handleRenameCommit}
+                onCancel={handleCancelEdit}
+                pendingValueRef={pendingEditValueRef}
+                onChainEnter={
+                  directionId ? () => handleQuickCreate('direction', directionId) : undefined
+                }
+                onChainTab={() => handleQuickCreate('area', id)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <TreeContextMenu
+          node={treeNode}
+          onEdit={onEdit}
+          onAddChild={onAddChild}
+          onDelete={onDelete}
+        >
+          <div
+            className={cn(
+              'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
+              isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
+              isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
+            )}
+            onClick={onSelect}
+          >
+            {treeNode.color && (
+              <div
+                className="absolute inset-y-0 left-0 w-1"
+                style={{ backgroundColor: treeNode.color }}
+              />
+            )}
+            <div className="flex items-center gap-2 py-2.5 pr-3 pl-4">
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                {treeNode.color && (
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full"
+                    style={{
+                      backgroundColor: treeNode.color,
+                      boxShadow: `0 0 0 2px color-mix(in srgb, ${treeNode.color} 30%, transparent)`,
+                    }}
+                  />
+                )}
+                {!isCompact && treeNode.emoji && (
+                  <span className="text-base">{treeNode.emoji}</span>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
                   {treeNode.name}
                 </span>
-              )}
-              {!isCompact && treeNode.why && (
-                <span className="block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
-                  {treeNode.why}
-                </span>
-              )}
-            </div>
-
-            {/* Goal status counts badge */}
-            {!isCompact && goalCount > 0 && (
-              <div className="flex flex-shrink-0 items-center gap-1">
-                {isFull && statusCounts && Object.keys(statusCounts).length > 1 ? (
-                  (Object.entries(statusCounts) as [GoalStatus, number][]).map(
-                    ([status, count]) => {
-                      const config = GOAL_STATUS_CONFIG[status]
-                      if (!config || !count) return null
-                      return (
-                        <span
-                          key={status}
-                          className={cn(
-                            'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                            config.bg,
-                            config.text
-                          )}
-                        >
-                          {count}
-                        </span>
-                      )
-                    }
-                  )
-                ) : (
-                  <span className="rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
-                    {goalCount}
+                {!isCompact && treeNode.why && (
+                  <span className="block truncate text-[10px] text-[var(--color-text-tertiary)] italic">
+                    {treeNode.why}
                   </span>
                 )}
               </div>
-            )}
+              {!isCompact && goalCount > 0 && (
+                <div className="flex flex-shrink-0 items-center gap-1">
+                  {isFull && statusCounts && Object.keys(statusCounts).length > 1 ? (
+                    (Object.entries(statusCounts) as [GoalStatus, number][]).map(
+                      ([status, count]) => {
+                        const config = GOAL_STATUS_CONFIG[status]
+                        if (!config || !count) return null
+                        return (
+                          <span
+                            key={status}
+                            className={cn(
+                              'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                              config.bg,
+                              config.text
+                            )}
+                          >
+                            {count}
+                          </span>
+                        )
+                      }
+                    )
+                  ) : (
+                    <span className="rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--color-text-secondary)]">
+                      {goalCount}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </TreeContextMenu>
+        </TreeContextMenu>
+      )}
 
       {/* Quick-add popover */}
       {addingToId === id && (

@@ -20,7 +20,9 @@ export const TaskNode = memo(function TaskNode({
   const {
     handleNodeSelect,
     handleDeleteNode,
+    handleStartEdit,
     editingNodeId,
+    pendingEditValueRef,
     handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,
@@ -30,6 +32,10 @@ export const TaskNode = memo(function TaskNode({
   const handleSelect = useCallback(() => {
     handleNodeSelect('task', id)
   }, [handleNodeSelect, id])
+
+  const handleEdit = useCallback(() => {
+    handleStartEdit('task', id)
+  }, [handleStartEdit, id])
 
   const onDelete = useCallback(() => handleDeleteNode('task', id), [handleDeleteNode, id])
 
@@ -59,6 +65,7 @@ export const TaskNode = memo(function TaskNode({
             className="text-sm font-medium text-[var(--color-text-primary)]"
             onCommit={handleRenameCommit}
             onCancel={handleCancelEdit}
+            pendingValueRef={pendingEditValueRef}
             onChainEnter={() => {
               const parentId = data.parentGroupId || data.parentGoalId
               const parentType = data.parentGroupId ? ('group' as const) : ('goal' as const)
@@ -69,7 +76,7 @@ export const TaskNode = memo(function TaskNode({
       ) : (
         <TreeContextMenu
           node={treeNode}
-          onEdit={handleSelect}
+          onEdit={handleEdit}
           onAddChild={handleSelect}
           onDelete={onDelete}
         >

@@ -30,10 +30,12 @@ export const GroupNode = memo(function GroupNode({
   const {
     handleNodeSelect,
     handleDeleteNode,
+    handleStartEdit,
     handleStartAdd,
     addingToId,
     getQuickAddContent,
     editingNodeId,
+    pendingEditValueRef,
     handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,
@@ -44,6 +46,10 @@ export const GroupNode = memo(function GroupNode({
   const handleSelect = useCallback(() => {
     handleNodeSelect('group', id)
   }, [handleNodeSelect, id])
+
+  const handleEdit = useCallback(() => {
+    handleStartEdit('group', id)
+  }, [handleStartEdit, id])
 
   const handleToggle = useCallback(() => {
     toggleGroupExpand(id)
@@ -80,13 +86,14 @@ export const GroupNode = memo(function GroupNode({
                 className="text-sm font-medium text-[var(--color-text-primary)]"
                 onCommit={handleRenameCommit}
                 onCancel={handleCancelEdit}
+                pendingValueRef={pendingEditValueRef}
                 onChainTab={() => handleQuickCreate('group', id)}
               />
             </div>
           ) : (
             <TreeContextMenu
               node={treeNode}
-              onEdit={handleSelect}
+              onEdit={handleEdit}
               onAddChild={onAddChild}
               onDelete={onDelete}
             >

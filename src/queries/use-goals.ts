@@ -129,7 +129,7 @@ export function useCreateGoal() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: CreateGoalInput) => {
+    mutationFn: async ({ _tempId, ...input }: CreateGoalInput) => {
       const response = await createGoalAction(input)
       if (!response.success) {
         throw new Error(response.error.message)
@@ -142,7 +142,7 @@ export function useCreateGoal() {
 
       const now = new Date().toISOString()
       const tempGoal: Goal = {
-        id: crypto.randomUUID(),
+        id: input._tempId ?? crypto.randomUUID(),
         user_id: '',
         area_id: input.area_id,
         name: input.name,

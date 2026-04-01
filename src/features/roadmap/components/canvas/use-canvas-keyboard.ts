@@ -11,6 +11,7 @@ interface UseCanvasKeyboardOptions {
   direction: 'TB' | 'LR'
   handleQuickCreate: (type: SelectedNodeType, id: string) => void
   handleNodeSelect: (type: SelectedNodeType, id: string) => void
+  handleStartEdit: (type: SelectedNodeType, id: string) => void
   clearSelection: () => void
   handleDeleteNode: (type: SelectedNodeType, id: string) => void
   toggleNodeExpand: (nodeId: string) => void
@@ -34,6 +35,7 @@ export function useCanvasKeyboard({
   direction,
   handleQuickCreate,
   handleNodeSelect,
+  handleStartEdit,
   clearSelection,
   handleDeleteNode,
   toggleNodeExpand,
@@ -75,10 +77,10 @@ export function useCanvasKeyboard({
         return
       }
 
-      // F2: trigger inline edit (same as double-click select)
+      // F2: trigger inline edit
       if (e.key === 'F2') {
         e.preventDefault()
-        handleNodeSelect(current.type as SelectedNodeType, current.id)
+        handleStartEdit(current.type as SelectedNodeType, current.id)
         return
       }
 
@@ -167,6 +169,7 @@ export function useCanvasKeyboard({
     direction,
     handleQuickCreate,
     handleNodeSelect,
+    handleStartEdit,
     clearSelection,
     handleDeleteNode,
     toggleNodeExpand,

@@ -63,7 +63,7 @@ export function useCreateArea() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: CreateAreaInput) => {
+    mutationFn: async ({ _tempId, ...input }: CreateAreaInput) => {
       const response = await createAreaAction(input)
       if (!response.success) {
         throw new Error(response.error.message)
@@ -76,7 +76,7 @@ export function useCreateArea() {
 
       const now = new Date().toISOString()
       const tempArea: Area = {
-        id: crypto.randomUUID(),
+        id: input._tempId ?? crypto.randomUUID(),
         user_id: '',
         direction_id: '',
         name: input.name,

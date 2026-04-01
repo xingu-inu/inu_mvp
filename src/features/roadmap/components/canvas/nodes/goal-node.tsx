@@ -38,11 +38,13 @@ export const GoalNode = memo(function GoalNode({
   const {
     handleNodeSelect,
     handleDeleteNode,
+    handleStartEdit,
     handleStartAdd,
     addingToId,
     getQuickAddContent,
     toggleGoalExpand,
     editingNodeId,
+    pendingEditValueRef,
     handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,
@@ -56,6 +58,10 @@ export const GoalNode = memo(function GoalNode({
   const handleSelect = useCallback(() => {
     handleNodeSelect('goal', id)
   }, [handleNodeSelect, id])
+
+  const handleEdit = useCallback(() => {
+    handleStartEdit('goal', id)
+  }, [handleStartEdit, id])
 
   const onAddChild = useCallback(() => handleStartAdd('goal', id), [handleStartAdd, id])
   const onDelete = useCallback(() => handleDeleteNode('goal', id), [handleDeleteNode, id])
@@ -102,6 +108,7 @@ export const GoalNode = memo(function GoalNode({
                 className="text-sm font-medium text-[var(--color-text-primary)]"
                 onCommit={handleRenameCommit}
                 onCancel={handleCancelEdit}
+                pendingValueRef={pendingEditValueRef}
                 onChainEnter={
                   data.parentAreaId
                     ? () => handleQuickCreate('area', data.parentAreaId!)
@@ -113,7 +120,7 @@ export const GoalNode = memo(function GoalNode({
           ) : (
             <TreeContextMenu
               node={treeNode}
-              onEdit={handleSelect}
+              onEdit={handleEdit}
               onAddChild={onAddChild}
               onDelete={onDelete}
             >

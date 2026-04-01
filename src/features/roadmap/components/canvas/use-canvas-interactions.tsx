@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useCallback, type ReactNode } from 'react'
+import { useMemo, useState, useCallback, useRef, type ReactNode } from 'react'
 import {
   useRoadmapStore,
   selectSelectedNodeId,
@@ -31,6 +31,16 @@ export function useCanvasInteractions(
   const [addingToId, setAddingToId] = useState<string | null>(null)
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
   const directionId = treeData?.id ?? null
+
+  // Refs for optimistic quick-create → instant inline editing
+  const pendingEditValueRef = useRef<string | null>(null)
+  const tempToRealIdRef = useRef<Map<string, string>>(new Map())
+  const pendingTempIdsRef = useRef<Set<string>>(new Set())
+  const pendingRenameRef = useRef<{
+    nodeType: SelectedNodeType
+    tempId: string
+    name: string
+  } | null>(null)
 
   // Focus mode
   const focusedIds = useFocusBranch(treeData, selectedNodeId)
@@ -194,34 +204,91 @@ export function useCanvasInteractions(
     [areaTypeMap, goalAreaMap, parentGoalMap, handleCancelAdd]
   )
 
+  /** Fire the actual rename mutation for a resolved (real) ID. */
+  const dispatchRename = useCallback(
+    (nodeType: SelectedNodeType, id: string, name: string) => {
+      switch (nodeType) {
+        case 'area':
+          updateArea.mutate({ id, input: { name } })
+          break
+        case 'goal':
+          updateGoal.mutate({ id, input: { name } })
+          break
+        case 'group': {
+          const goalId = parentGoalMap.get(id)
+          if (goalId) updateGroup.mutate({ id, input: { name }, goalId })
+          break
+        }
+        case 'task':
+          updateTask.mutate({ id, input: { name } })
+          break
+      }
+    },
+    [updateArea, updateGoal, updateGroup, updateTask, parentGoalMap]
+  )
+
+  /** Swap editingNodeId from temp to real and flush any pending rename. */
+  const resolveCreatedNode = useCallback(
+    (tempId: string, data: { id: string } | null) => {
+      pendingTempIdsRef.current.delete(tempId)
+      if (!data) return
+
+      tempToRealIdRef.current.set(tempId, data.id)
+      setEditingNodeId((prev) => (prev === tempId ? data.id : prev))
+
+      // Flush pending rename committed before server responded
+      const pending = pendingRenameRef.current
+      if (pending?.tempId === tempId) {
+        pendingRenameRef.current = null
+        dispatchRename(pending.nodeType, data.id, pending.name)
+      }
+
+      // Clean up mapping after 10s
+      setTimeout(() => tempToRealIdRef.current.delete(tempId), 10_000)
+    },
+    [dispatchRename]
+  )
+
   const handleQuickCreate = useCallback(
     async (parentType: SelectedNodeType, parentId: string) => {
       setAddingToId(null)
+      const tempId = crypto.randomUUID()
+      pendingEditValueRef.current = null
+      pendingTempIdsRef.current.add(tempId)
+
+      // Set editing immediately so inline input appears on the optimistic node
+      setEditingNodeId(tempId)
 
       try {
         switch (parentType) {
           case 'direction': {
             const data = await createArea.mutateAsync({
+              _tempId: tempId,
               name: '새 영역',
               emoji: '📌',
               color: '#6366f1',
             })
-            if (data) setEditingNodeId(data.id)
+            resolveCreatedNode(tempId, data)
             break
           }
           case 'area': {
-            const data = await createGoal.mutateAsync({ area_id: parentId, name: '새 목표' })
-            if (data) setEditingNodeId(data.id)
+            const data = await createGoal.mutateAsync({
+              _tempId: tempId,
+              area_id: parentId,
+              name: '새 목표',
+            })
+            resolveCreatedNode(tempId, data)
             break
           }
           case 'goal': {
             expandGoal?.(parentId)
             const data = await createTask.mutateAsync({
+              _tempId: tempId,
               goal_id: parentId,
               name: '새 할일',
               repeat_type: 'daily',
             })
-            if (data) setEditingNodeId(data.id)
+            resolveCreatedNode(tempId, data)
             break
           }
           case 'group': {
@@ -230,53 +297,57 @@ export function useCanvasInteractions(
             expandGoal?.(goalId)
             expandGroup?.(parentId)
             const data = await createTask.mutateAsync({
+              _tempId: tempId,
               goal_id: goalId,
               group_id: parentId,
               name: '새 할일',
               repeat_type: 'daily',
             })
-            if (data) setEditingNodeId(data.id)
+            resolveCreatedNode(tempId, data)
             break
           }
         }
       } catch {
-        // Mutation error already handled by onError in each hook
+        // Mutation error handled by onError in each hook; clear editing state
+        pendingTempIdsRef.current.delete(tempId)
+        setEditingNodeId((prev) => (prev === tempId ? null : prev))
+        pendingEditValueRef.current = null
       }
     },
-    [createArea, createGoal, createTask, parentGoalMap, expandGoal, expandGroup]
+    [createArea, createGoal, createTask, parentGoalMap, expandGoal, expandGroup, resolveCreatedNode]
   )
 
   const handleRenameCommit = useCallback(
     (nodeType: SelectedNodeType, nodeId: string, newName: string) => {
       const trimmed = newName.trim()
-      if (!trimmed) {
-        setEditingNodeId(null)
-        return
-      }
       setEditingNodeId(null)
+      pendingEditValueRef.current = null
+      pendingRenameRef.current = null
 
-      switch (nodeType) {
-        case 'area':
-          updateArea.mutate({ id: nodeId, input: { name: trimmed } })
-          break
-        case 'goal':
-          updateGoal.mutate({ id: nodeId, input: { name: trimmed } })
-          break
-        case 'group': {
-          const goalId = parentGoalMap.get(nodeId)
-          if (goalId) updateGroup.mutate({ id: nodeId, input: { name: trimmed }, goalId })
-          break
-        }
-        case 'task':
-          updateTask.mutate({ id: nodeId, input: { name: trimmed } })
-          break
+      if (!trimmed) return
+
+      // Resolve temp ID → real ID if server already responded
+      const resolvedId = tempToRealIdRef.current.get(nodeId) ?? nodeId
+
+      if (pendingTempIdsRef.current.has(nodeId)) {
+        // Server hasn't responded yet — defer rename until resolveCreatedNode fires
+        pendingRenameRef.current = { nodeType, tempId: nodeId, name: trimmed }
+      } else {
+        dispatchRename(nodeType, resolvedId, trimmed)
       }
     },
-    [updateArea, updateGoal, updateGroup, updateTask, parentGoalMap]
+    [dispatchRename]
   )
+
+  const handleStartEdit = useCallback((type: SelectedNodeType, id: string) => {
+    if (type === 'direction') return
+    pendingEditValueRef.current = null
+    setEditingNodeId(id)
+  }, [])
 
   const handleCancelEdit = useCallback(() => {
     setEditingNodeId(null)
+    pendingEditValueRef.current = null
   }, [])
 
   return {
@@ -285,11 +356,13 @@ export function useCanvasInteractions(
     addingToId,
     editingNodeId,
     directionId,
+    pendingEditValueRef,
     handleNodeSelect,
     handleDeleteNode,
     handleStartAdd,
     handleCancelAdd,
     getQuickAddContent,
+    handleStartEdit,
     handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,

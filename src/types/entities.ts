@@ -187,6 +187,8 @@ export interface CreateAreaInput {
   emoji: string
   color: string
   why?: string
+  /** Client-only: pre-generated UUID for optimistic updates */
+  _tempId?: string
 }
 
 export interface UpdateAreaInput {
@@ -208,6 +210,8 @@ export interface CreateGoalInput {
   start_date?: string
   target_date?: string
   impact_area_ids?: string[]
+  /** Client-only: pre-generated UUID for optimistic updates */
+  _tempId?: string
 }
 
 export interface UpdateGoalInput {
@@ -254,6 +258,8 @@ export interface CreateTaskInput {
   scheduled_date?: string
   start_date?: string
   end_date?: string
+  /** Client-only: pre-generated UUID for optimistic updates */
+  _tempId?: string
 }
 
 export interface UpdateTaskInput {

@@ -100,7 +100,7 @@ export function useCreateTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (input: CreateTaskInput) => {
+    mutationFn: async ({ _tempId, ...input }: CreateTaskInput) => {
       const response = await createTaskAction(input)
       if (!response.success) {
         throw new Error(response.error.message)
@@ -113,7 +113,7 @@ export function useCreateTask() {
 
       const now = new Date().toISOString()
       const tempTask: Task = {
-        id: crypto.randomUUID(),
+        id: input._tempId ?? crypto.randomUUID(),
         user_id: '',
         goal_id: input.goal_id ?? null,
         group_id: input.group_id ?? null,
