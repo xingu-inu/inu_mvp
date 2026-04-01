@@ -1,8 +1,44 @@
 'use client'
 
-import { Clock } from 'lucide-react'
+import { useMemo } from 'react'
+import { Clock, Sparkles } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import { useTimelineEvents } from '@/queries/use-timeline'
+import { useTimelineObservations } from '@/queries/use-timeline-observations'
 import { TimelineDateGroup } from './timeline-date-group'
+import { TimelineAiCard } from './timeline-ai-card'
+import type {
+  TimelineDateGroup as TimelineDateGroupType,
+  TimelineAiNode,
+  TimelineItem,
+} from '@/types/timeline'
+
+function mergeTimelineItems(
+  groups: TimelineDateGroupType[],
+  aiNodes: TimelineAiNode[] | undefined,
+  selectedAreaId: string | undefined
+): TimelineItem[] {
+  const items: TimelineItem[] = []
+
+  const filtered =
+    aiNodes?.filter((n) => !selectedAreaId || n.relatedAreaIds.includes(selectedAreaId)) ?? []
+
+  const nodesByDate = new Map<string, TimelineAiNode[]>()
+  for (const node of filtered) {
+    const list = nodesByDate.get(node.afterDate) ?? []
+    list.push(node)
+    nodesByDate.set(node.afterDate, list)
+  }
+
+  for (const group of groups) {
+    items.push({ kind: 'date-group', data: group })
+    for (const node of nodesByDate.get(group.date) ?? []) {
+      items.push({ kind: 'ai-node', data: node })
+    }
+  }
+
+  return items
+}
 
 interface TimelineListProps {
   selectedAreaId: string | undefined
@@ -10,6 +46,12 @@ interface TimelineListProps {
 
 export function TimelineList({ selectedAreaId }: TimelineListProps) {
   const { data: groups, isLoading, error } = useTimelineEvents(selectedAreaId)
+  const { data: observationsData } = useTimelineObservations()
+
+  const mergedItems = useMemo(
+    () => mergeTimelineItems(groups ?? [], observationsData?.nodes, selectedAreaId),
+    [groups, observationsData?.nodes, selectedAreaId]
+  )
 
   if (isLoading) {
     return (
@@ -58,9 +100,24 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
 
   return (
     <div className="pb-8">
-      {groups.map((group) => (
-        <TimelineDateGroup key={group.date} group={group} />
-      ))}
+      <AnimatePresence>
+        {mergedItems.map((item) =>
+          item.kind === 'date-group' ? (
+            <TimelineDateGroup key={item.data.date} group={item.data} />
+          ) : (
+            <div
+              key={item.data.id}
+              className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4"
+            >
+              {/* Sparkle icon on timeline line */}
+              <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
+                <Sparkles className="h-3 w-3 text-blue-500" />
+              </div>
+              <TimelineAiCard node={item.data} />
+            </div>
+          )
+        )}
+      </AnimatePresence>
     </div>
   )
 }

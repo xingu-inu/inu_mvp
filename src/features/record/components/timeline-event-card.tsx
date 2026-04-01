@@ -1,11 +1,11 @@
 'use client'
 
-import { Target, CheckSquare, User, Compass } from 'lucide-react'
+import { Target, Footprints, User, Compass } from 'lucide-react'
 import type { TimelineEvent, TimelineEventType } from '@/types/timeline'
 
 const EVENT_ICONS: Record<TimelineEventType, typeof Target> = {
   goal_status: Target,
-  task_status: CheckSquare,
+  task_status: Footprints,
   profile_trait: User,
   direction_change: Compass,
 }

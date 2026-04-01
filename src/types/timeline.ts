@@ -21,3 +21,30 @@ export interface TimelineDateGroup {
   date: string
   events: TimelineEvent[]
 }
+
+// ============================================
+// AI Ambient Timeline Nodes
+// ============================================
+
+export type TimelineAiNodeType = 'observation' | 'question'
+
+export interface TimelineAiNode {
+  id: string
+  nodeType: TimelineAiNodeType
+  message: string
+  afterDate: string
+  relatedAreaIds: string[]
+  relatedEventIds: string[]
+  chatContext?: {
+    type: 'goal' | 'task'
+    entityId: string
+    entityName: string
+    goalId: string
+  }
+  userResponse?: string | null
+  respondedAt?: string | null
+}
+
+export type TimelineItem =
+  | { kind: 'date-group'; data: TimelineDateGroup }
+  | { kind: 'ai-node'; data: TimelineAiNode }

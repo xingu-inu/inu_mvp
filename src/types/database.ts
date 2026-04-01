@@ -1032,6 +1032,36 @@ export type Database = {
           },
         ]
       }
+      timeline_notes: {
+        Row: {
+          content: string
+          created_at: string
+          event_context: Json | null
+          id: string
+          observation_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          event_context?: Json | null
+          id?: string
+          observation_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          event_context?: Json | null
+          id?: string
+          observation_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_reflections: {
         Row: {
           challenge: string | null

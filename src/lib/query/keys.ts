@@ -193,6 +193,13 @@ export const queryKeys = {
   },
 
   // ============================================
+  // Insights (AI)
+  // ============================================
+  insights: {
+    timelineObservations: ['insights', 'timeline-observations'] as const,
+  },
+
+  // ============================================
   // Announcements (user-facing)
   // ============================================
   announcements: {

@@ -7,6 +7,7 @@ import { directionRepository } from '@/repositories/direction.repository'
 import { areaRepository } from '@/repositories/area.repository'
 import { goalRepository } from '@/repositories/goal.repository'
 import { taskRepository } from '@/repositories/task.repository'
+import { statusHistoryRepository } from '@/repositories/status-history.repository'
 
 function getWeekStart(): string {
   const now = new Date()
@@ -170,6 +171,37 @@ export async function getWeeklyStats(supabase: TypedSupabaseClient, _userId: str
     completion_rate: `${rate}%`,
     daily_breakdown: stats?.dailyBreakdown ?? [],
     area_breakdown: stats?.areaBreakdown ?? [],
+  }
+}
+
+export async function getTimelineSummary(supabase: TypedSupabaseClient, userId: string) {
+  const [goalHistory, taskHistory] = await Promise.all([
+    statusHistoryRepository.getAllGoalHistory(supabase, userId),
+    statusHistoryRepository.getAllTaskHistory(supabase, userId),
+  ])
+
+  const recentGoalChanges = goalHistory.slice(0, 10).map((h) => ({
+    type: 'goal' as const,
+    from: h.from_status,
+    to: h.to_status,
+    reason: h.reason,
+    date: h.created_at.split('T')[0],
+  }))
+
+  const recentTaskChanges = taskHistory.slice(0, 10).map((h) => ({
+    type: 'task' as const,
+    from: h.from_status,
+    to: h.to_status,
+    reason: h.reason,
+    date: h.created_at.split('T')[0],
+  }))
+
+  return {
+    total_goal_changes: goalHistory.length,
+    total_task_changes: taskHistory.length,
+    recent_changes: [...recentGoalChanges, ...recentTaskChanges]
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 15),
   }
 }
 
