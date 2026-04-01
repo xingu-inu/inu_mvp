@@ -22,6 +22,10 @@ interface InteractionState {
   searchQuery?: string
   /** Quantized zoom band: 0 = compact, 1 = medium, 2 = full */
   zoomLevel?: number
+  /** Ghost node from brain-dump preview */
+  isGhost?: boolean
+  /** Pulse animation during apply */
+  isGhostPulsing?: boolean
 }
 
 /** Ancestor why entry for Why Chain tooltip */
