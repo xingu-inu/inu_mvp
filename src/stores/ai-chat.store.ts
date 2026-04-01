@@ -24,6 +24,11 @@ interface AiChatState {
   context: ChatContext | null
   openChatWithContext: (context: ChatContext) => void
   clearContext: () => void
+
+  // 모바일 풀스크린 쏟아내기
+  isBrainDumpFullscreen: boolean
+  openBrainDumpFullscreen: () => void
+  closeBrainDumpFullscreen: () => void
 }
 
 export const useAiChatStore = create<AiChatState>((set) => ({
@@ -44,4 +49,13 @@ export const useAiChatStore = create<AiChatState>((set) => ({
   context: null,
   openChatWithContext: (context) => set({ context, isOpen: true, activeConversationId: null }),
   clearContext: () => set({ context: null }),
+
+  isBrainDumpFullscreen: false,
+  openBrainDumpFullscreen: () =>
+    set({
+      isBrainDumpFullscreen: true,
+      context: { type: 'brain-dump' },
+      activeConversationId: null,
+    }),
+  closeBrainDumpFullscreen: () => set({ isBrainDumpFullscreen: false }),
 }))

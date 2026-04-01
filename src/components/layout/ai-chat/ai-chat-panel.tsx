@@ -3,7 +3,16 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { Send, Square, Plus, PanelLeftClose, PanelLeftOpen, X, Lightbulb } from 'lucide-react'
+import {
+  Send,
+  Square,
+  Plus,
+  PanelLeftClose,
+  PanelLeftOpen,
+  X,
+  Lightbulb,
+  ArrowLeft,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -63,11 +72,17 @@ interface AiChatPanelProps {
   embedded?: boolean
   /** When true, hides brain-dump mode toggle (record tab only needs normal chat) */
   hideBrainDump?: boolean
+  /** When true, renders as mobile fullscreen (no sidebar, simplified header) */
+  fullscreen?: boolean
+  /** Called when fullscreen panel requests close */
+  onClose?: () => void
 }
 
 export function AiChatPanel({
   embedded = false,
   hideBrainDump: _hideBrainDump = false,
+  fullscreen = false,
+  onClose,
 }: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
@@ -419,6 +434,33 @@ export function AiChatPanel({
       </div>
     </div>
   )
+
+  // ── Fullscreen mode: mobile brain-dump ──
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-[var(--color-bg-primary)]">
+        {/* Fullscreen header */}
+        <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <h2 className="text-sm font-semibold">쏟아내기</h2>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {/* Reuse shared chat content (messages + input) */}
+        {chatContent}
+      </div>
+    )
+  }
 
   // ── Embedded mode: render inline without floating wrapper ──
 
