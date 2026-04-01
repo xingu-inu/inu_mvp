@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Check, ChevronDown, ChevronRight, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useBrainDumpApply } from '@/features/roadmap/hooks/use-brain-dump-apply'
+import { useBrainDumpPreviewStore } from '@/stores/brain-dump-preview.store'
 import type { BrainDumpReviewArea } from '@/features/roadmap/hooks/use-brain-dump-apply'
 import { toReviewAreas, parseProposalOutput, type ProposeStructureOutput } from './proposal-utils'
 
@@ -29,17 +30,51 @@ function ProposalCardInner({ data }: { data: ProposeStructureOutput }) {
   )
   const { apply, progress } = useBrainDumpApply()
 
+  const setProposal = useBrainDumpPreviewStore((s) => s.setProposal)
+  const setCheckedItems = useBrainDumpPreviewStore((s) => s.setCheckedItems)
+  const clearPreview = useBrainDumpPreviewStore((s) => s.clearPreview)
+  const setPulsing = useBrainDumpPreviewStore((s) => s.setPulsing)
+
+  // Sync proposal to store on mount, clear on unmount
+  useEffect(() => {
+    setProposal(data)
+    return () => {
+      clearPreview()
+    }
+  }, [data, setProposal, clearPreview])
+
+  // Sync checked items to store whenever areas change
+  useEffect(() => {
+    const items: Record<string, boolean> = {}
+    for (const area of areas) {
+      items[area._id] = area._checked
+      for (const goal of area.goals) {
+        items[goal._id] = goal._checked
+        for (const task of goal.tasks) {
+          items[task._id] = task._checked
+        }
+      }
+    }
+    setCheckedItems(items)
+  }, [areas, setCheckedItems])
+
   const checkedCount = countCheckedItems(areas)
 
   const handleApply = useCallback(async () => {
+    // Pulse ghost nodes briefly before applying
+    setPulsing(true)
+    await new Promise((r) => setTimeout(r, 600))
+    setPulsing(false)
+
     setCardState('applying')
     try {
       const ok = await apply(areas)
       setCardState(ok ? 'applied' : 'error')
+      if (ok) clearPreview()
     } catch {
       setCardState('error')
     }
-  }, [areas, apply])
+  }, [areas, apply, setPulsing, clearPreview])
 
   function toggleAreaExpanded(areaId: string) {
     setExpandedAreas((prev) => {
