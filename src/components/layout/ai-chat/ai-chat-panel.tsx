@@ -3,16 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import {
-  Send,
-  Square,
-  Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-  Lightbulb,
-  MessageCircle,
-} from 'lucide-react'
+import { Send, Square, Plus, PanelLeftClose, PanelLeftOpen, X, Lightbulb } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -70,9 +61,11 @@ function MobileHistoryButton() {
 interface AiChatPanelProps {
   /** When true, renders inline (no fixed positioning, no motion wrapper) */
   embedded?: boolean
+  /** When true, hides brain-dump mode toggle (record tab only needs normal chat) */
+  hideBrainDump?: boolean
 }
 
-export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
+export function AiChatPanel({ embedded = false, hideBrainDump = false }: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -308,42 +301,6 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
           )}
         </div>
       </div>
-
-      {/* Mode chips — only show when no goal/task context */}
-      {(!context || context.type === 'brain-dump') && (
-        <div className="flex gap-1.5 border-b border-[var(--color-border)] px-4 py-2">
-          <button
-            onClick={() => {
-              if (context?.type === 'brain-dump') clearContext()
-            }}
-            className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-              !context || context.type !== 'brain-dump'
-                ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'
-            )}
-          >
-            <MessageCircle className="h-3 w-3" />
-            일반
-          </button>
-          <button
-            onClick={() => {
-              if (context?.type !== 'brain-dump') {
-                useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
-              }
-            }}
-            className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-              context?.type === 'brain-dump'
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'
-            )}
-          >
-            <Lightbulb className="h-3 w-3" />
-            쏟아내기
-          </button>
-        </div>
-      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
