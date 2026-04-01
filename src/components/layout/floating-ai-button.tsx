@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { usePathname } from 'next/navigation'
 import { X } from 'lucide-react'
@@ -19,8 +20,13 @@ export function FloatingAIButton() {
   const pathname = usePathname()
   const isRecord = pathname?.startsWith('/record')
 
-  // Only render on record page — roadmap has its own embedded AI chat panel
-  if (!isRecord && !isOpen) return null
+  // Auto-close when leaving record page — roadmap has its own embedded AI chat panel
+  const closeChat = useAiChatStore((s) => s.closeChat)
+  useEffect(() => {
+    if (!isRecord && isOpen) closeChat()
+  }, [isRecord, isOpen, closeChat])
+
+  if (!isRecord) return null
 
   const handleClick = () => {
     if (!isOpen) {
@@ -32,7 +38,7 @@ export function FloatingAIButton() {
   return (
     <>
       {/* Chat Panel */}
-      <AnimatePresence>{isOpen && <AiChatPanel />}</AnimatePresence>
+      <AnimatePresence>{isOpen && <AiChatPanel hideBrainDump />}</AnimatePresence>
 
       {/* Floating Button */}
       <motion.button

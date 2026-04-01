@@ -3,16 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import {
-  Send,
-  Square,
-  Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-  Lightbulb,
-  MessageCircle,
-} from 'lucide-react'
+import { Send, Square, Plus, PanelLeftClose, PanelLeftOpen, X, Lightbulb } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -70,9 +61,14 @@ function MobileHistoryButton() {
 interface AiChatPanelProps {
   /** When true, renders inline (no fixed positioning, no motion wrapper) */
   embedded?: boolean
+  /** When true, hides brain-dump mode toggle (record tab only needs normal chat) */
+  hideBrainDump?: boolean
 }
 
-export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
+export function AiChatPanel({
+  embedded = false,
+  hideBrainDump: _hideBrainDump = false,
+}: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -309,42 +305,6 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
         </div>
       </div>
 
-      {/* Mode chips — only show when no goal/task context */}
-      {(!context || context.type === 'brain-dump') && (
-        <div className="flex gap-1.5 border-b border-[var(--color-border)] px-4 py-2">
-          <button
-            onClick={() => {
-              if (context?.type === 'brain-dump') clearContext()
-            }}
-            className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-              !context || context.type !== 'brain-dump'
-                ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'
-            )}
-          >
-            <MessageCircle className="h-3 w-3" />
-            일반
-          </button>
-          <button
-            onClick={() => {
-              if (context?.type !== 'brain-dump') {
-                useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
-              }
-            }}
-            className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-              context?.type === 'brain-dump'
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300'
-                : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-tertiary)]'
-            )}
-          >
-            <Lightbulb className="h-3 w-3" />
-            쏟아내기
-          </button>
-        </div>
-      )}
-
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {messages.length === 0 ? (
@@ -355,6 +315,27 @@ export function AiChatPanel({ embedded = false }: AiChatPanelProps) {
                 ? '머릿속 이야기부터 그대로 꺼내주세요. 이누가 같이 정리할게요'
                 : '방향이 흐릴 때도, 마음이 복잡할 때도 편하게 이야기해보세요'}
             </p>
+
+            {/* Brain dump promotion card — only when no context */}
+            {!context && (
+              <button
+                onClick={() =>
+                  useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
+                }
+                className="group w-full max-w-xs rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-900/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="h-5 w-5 text-amber-500" />
+                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    생각 쏟아내기
+                  </span>
+                </div>
+                <p className="mt-1.5 text-xs leading-relaxed text-amber-600/80 dark:text-amber-400/70">
+                  머릿속에 떠오르는 것들을 자유롭게 이야기하면 함께 정리해줄게
+                </p>
+              </button>
+            )}
+
             <div className="flex flex-wrap justify-center gap-2">
               {(context?.type === 'brain-dump'
                 ? BRAIN_DUMP_QUICK_ACTIONS
