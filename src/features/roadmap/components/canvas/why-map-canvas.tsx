@@ -6,6 +6,7 @@ import {
   useMemo,
   useCallback,
   useState,
+  useRef,
   type CSSProperties,
 } from 'react'
 import {
@@ -40,6 +41,7 @@ import { edgeTypes } from './edges'
 import { AreaRegions } from './area-regions'
 import { useCanvasKeyboard } from './use-canvas-keyboard'
 import { useCanvasReorder } from './use-canvas-reorder'
+import { useAutoPan } from './dnd/use-auto-pan'
 import { useBrainDumpPreviewStore } from '@/stores/brain-dump-preview.store'
 import { injectGhostNodes } from './inject-ghost-nodes'
 
@@ -100,6 +102,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   { treeData, crossLinks, goals, areas, treeLayout, searchQuery, searchMatchedIds },
   ref
 ) {
+  const containerRef = useRef<HTMLDivElement>(null)
   const clearSelection = useRoadmapStore((s) => s.clearSelection)
   const { fitView, zoomIn, zoomOut } = useReactFlow()
   const { zoom: rawZoom } = useViewport()
@@ -355,6 +358,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     relayout,
   })
 
+  // Auto-pan when dragging near canvas edges
+  const autoPan = useAutoPan({ containerRef, enabled: !!draggingNodeId })
+
   // Read dragGhost from ref (re-reads when draggingNodeId state changes)
   const dragGhost = draggingNodeId ? canvasReorder.dragGhostRef.current : null
 
@@ -502,7 +508,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   // ── Render ─────────────────────────────────────────────────
 
   return (
-    <div className="absolute inset-0">
+    <div ref={containerRef} className="absolute inset-0">
       {/* Transition for sibling slot swaps during drag reorder */}
       <style>{'.react-flow__node.reordering { transition: transform 140ms ease-out; }'}</style>
       <CanvasInteractionsContext.Provider value={interactionsContextValue}>
@@ -517,7 +523,10 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           onPaneClick={handlePaneClick}
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeDragStart={canvasReorder.onNodeDragStart}
-          onNodeDrag={canvasReorder.onNodeDrag}
+          onNodeDrag={(event, node) => {
+            canvasReorder.onNodeDrag(event, node)
+            autoPan.updateMousePosition(event.clientX, event.clientY)
+          }}
           onNodeDragStop={canvasReorder.onNodeDragStop}
           panOnScroll
           zoomOnScroll
