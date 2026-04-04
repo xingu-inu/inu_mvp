@@ -31,6 +31,7 @@ export const AreaNode = memo(function AreaNode({
   const isFull = zoomLevel >= ZOOM_FULL
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
+  const isDropTarget = data.isDropTarget === true
   const {
     handleNodeSelect,
     handleDeleteNode,
@@ -160,7 +161,8 @@ export const AreaNode = memo(function AreaNode({
             className={cn(
               'relative max-w-[280px] min-w-[200px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
               isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
-              isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
+              isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
+              isDropTarget && 'ring-dashed scale-[1.02] ring-2 ring-[var(--color-primary-400)]/60'
             )}
             onClick={onSelect}
           >

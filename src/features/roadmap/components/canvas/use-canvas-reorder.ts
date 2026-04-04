@@ -199,7 +199,46 @@ export function useCanvasReorder({
   const onNodeDrag = useCallback(
     (_event: React.MouseEvent, node: WhyMapNode) => {
       const s = stateRef.current
-      if (!s || s.noReorder) return
+      if (!s) return
+
+      // ── Cross-parent drop target detection ──
+      // Check proximity to valid drop targets regardless of noReorder
+      const curNodes = nodesRef.current
+      const DROP_THRESHOLD = 100 // px
+      const dragCenterX = node.position.x + (node.measured?.width ?? 200) / 2
+      const dragCenterY = node.position.y + (node.measured?.height ?? 60) / 2
+
+      let closestId: string | null = null
+      let closestDist = Infinity
+
+      for (const targetId of s.validDropTargets) {
+        const targetNode = curNodes.find((n) => n.id === targetId)
+        if (!targetNode) continue
+
+        const tw = targetNode.measured?.width ?? 200
+        const th = targetNode.measured?.height ?? 60
+        const tcx = targetNode.position.x + tw / 2
+        const tcy = targetNode.position.y + th / 2
+
+        // Bounding box distance (0 if overlapping)
+        const dx = Math.max(0, Math.abs(dragCenterX - tcx) - tw / 2)
+        const dy = Math.max(0, Math.abs(dragCenterY - tcy) - th / 2)
+        const dist = Math.sqrt(dx * dx + dy * dy)
+
+        if (dist < closestDist) {
+          closestDist = dist
+          closestId = targetId
+        }
+      }
+
+      const newDropTarget = closestDist <= DROP_THRESHOLD ? closestId : null
+      if (newDropTarget !== s.dropTargetId) {
+        s.dropTargetId = newDropTarget
+        setDropTargetId(newDropTarget)
+      }
+
+      // ── Sibling reorder (only when no cross-parent target active) ──
+      if (s.noReorder || newDropTarget) return
 
       // TB layout: siblings spread on x-axis; LR layout: y-axis
       const axis = directionRef.current === 'TB' ? 'x' : 'y'
@@ -236,7 +275,7 @@ export function useCanvasReorder({
         })
       )
     },
-    [setNodes]
+    [setNodes, setDropTargetId]
   )
 
   // ── Drag stop ──────────────────────────────────────────────
@@ -270,6 +309,94 @@ export function useCanvasReorder({
         }
         dragStartPosRef.current = null
         return
+      }
+
+      const { nodeType, dropTargetId: finalDropTarget, parentId: currentParentId } = s
+
+      // ── Cross-parent drop ──────────────────────────────────────
+      if (finalDropTarget && finalDropTarget !== currentParentId) {
+        // Clean up visual state
+        setNodes((ns) =>
+          ns.map((n) => {
+            if (s.siblingIds.includes(n.id)) {
+              return {
+                ...n,
+                className: removeClassName(n.className, 'reordering'),
+              } as WhyMapNode
+            }
+            return n
+          })
+        )
+
+        // Compute sort_order: append after the last child of the new parent
+        const curEdges = edgesRef.current
+        const curNodes = nodesRef.current
+        const newParentChildIds = curEdges
+          .filter((e) => e.source === finalDropTarget && e.data?.edgeType === 'hierarchy')
+          .map((e) => e.target)
+        const childSortOrders = newParentChildIds
+          .map((cid) => {
+            const cn = curNodes.find((n) => n.id === cid)
+            return cn?.data?.treeNode?.meta?.sortOrder ?? null
+          })
+          .filter((o): o is string => o != null)
+          .sort()
+        const lastOrder =
+          childSortOrders.length > 0 ? childSortOrders[childSortOrders.length - 1] : null
+        const newOrder = safeNewOrderBetween(lastOrder, null)
+
+        // Clear drag state before async server call
+        stateRef.current = null
+        dragStartPosRef.current = null
+        setDraggingNodeId(null)
+        setDropTargetId(null)
+
+        // Persist to server
+        const keyMap: Record<string, readonly string[]> = {
+          area: queryKeys.areas.all,
+          goal: queryKeys.goals.all,
+          group: queryKeys.groups.all,
+          task: queryKeys.tasks.all,
+        }
+        try {
+          await moveNode({
+            nodeId: node.id,
+            nodeType: nodeType as NodeType,
+            newOrder,
+            newParentId: finalDropTarget,
+          })
+        } catch (error) {
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('[DnD] cross-parent moveNode failed:', error)
+          }
+        } finally {
+          // Invalidate both old and new parent type caches + the node's own type
+          const keysToInvalidate = new Set<readonly string[]>()
+          keysToInvalidate.add(keyMap[nodeType] ?? queryKeys.goals.all)
+          // Find old parent type and new parent type for cache invalidation
+          const oldParentNode = curNodes.find((n) => n.id === currentParentId)
+          const newParentNode = curNodes.find((n) => n.id === finalDropTarget)
+          if (oldParentNode?.type)
+            keysToInvalidate.add(keyMap[oldParentNode.type] ?? queryKeys.goals.all)
+          if (newParentNode?.type)
+            keysToInvalidate.add(keyMap[newParentNode.type] ?? queryKeys.goals.all)
+
+          await Promise.all([
+            ...Array.from(keysToInvalidate).map((k) =>
+              queryClient.invalidateQueries({ queryKey: k })
+            ),
+            queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.roadmap }),
+          ])
+          relayout()
+        }
+        return
+      }
+
+      // ── Sibling reorder (no cross-parent target) ──────────────
+
+      // Clear drop target if it was set
+      if (s.dropTargetId) {
+        setDropTargetId(null)
       }
 
       // No change or can't reorder → snap back to original position
@@ -334,8 +461,6 @@ export function useCanvasReorder({
       const rightOrder = rightId ? (s.sortOrders.get(rightId) ?? null) : null
       const newOrder = safeNewOrderBetween(leftOrder, rightOrder)
 
-      const { nodeType } = s
-
       // Clear drag state before async server call
       stateRef.current = null
       dragStartPosRef.current = null
@@ -369,7 +494,7 @@ export function useCanvasReorder({
         relayout()
       }
     },
-    [setNodes, setDraggingNodeId, queryClient, relayout]
+    [setNodes, setDraggingNodeId, setDropTargetId, queryClient, relayout]
   )
 
   // ── Cancel (Escape key) ────────────────────────────────────

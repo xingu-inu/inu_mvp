@@ -29,6 +29,7 @@ export const GroupNode = memo(function GroupNode({
   const hasChildren = !!treeNode.children?.length
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
+  const isDropTarget = data.isDropTarget === true
 
   const {
     handleNodeSelect,
@@ -68,7 +69,9 @@ export const GroupNode = memo(function GroupNode({
         isGhost && [
           'rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
         ],
-        isGhostPulsing && 'animate-pulse'
+        isGhostPulsing && 'animate-pulse',
+        isDropTarget &&
+          'ring-dashed scale-[1.02] rounded-lg ring-2 ring-[var(--color-primary-400)]/60 transition-transform'
       )}
     >
       <Handle type="target" position={targetPosition ?? Position.Top} />

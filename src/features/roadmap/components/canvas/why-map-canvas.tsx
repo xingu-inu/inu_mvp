@@ -15,6 +15,7 @@ import {
   BackgroundVariant,
   MiniMap,
   Panel,
+  ViewportPortal,
   useReactFlow,
   useViewport,
   type Connection,
@@ -109,6 +110,8 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   // Drag reorder state — lifted here to feed both dagre guard and enrichedNodes
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  // Cross-parent drop target highlight
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null)
 
   // Ghost node preview state
   const ghostProposal = useBrainDumpPreviewStore((s) => s.proposal)
@@ -225,6 +228,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
       const isGhost = node.data.isGhost === true
       const isSelected = node.id === selectedNodeId
       const isSearchMatch = searchMatchedIds.has(node.id)
+      const isDropTargetNode = dropTargetId === node.id
 
       // Focus/dim logic
       let style: CSSProperties | undefined
@@ -258,6 +262,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           searchQuery: isSearchMatch ? searchQuery : undefined,
           zoomLevel: zoomBand,
           isGhostPulsing: isGhost ? isGhostPulsing : undefined,
+          isDropTarget: isDropTargetNode || undefined,
         },
         style,
         selected: isSelected,
@@ -272,6 +277,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     searchQuery,
     zoomBand,
     draggingNodeId,
+    dropTargetId,
     isGhostPulsing,
   ])
 
@@ -279,19 +285,33 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   const allEdges = useMemo(() => [...rawEdges, ...dependencyEdges], [rawEdges, dependencyEdges])
 
   const enrichedEdges = useMemo(() => {
-    if (!focusedIds) return allEdges
     return allEdges.map((edge) => {
-      const isRelevant = focusedIds.has(edge.source) && focusedIds.has(edge.target)
-      return {
-        ...edge,
-        style: {
-          ...edge.style,
-          opacity: isRelevant ? 1 : 0.1,
-          transition: 'opacity 0.2s',
-        },
+      // During cross-parent drag, dim the existing parent→drag node hierarchy edge
+      if (
+        draggingNodeId &&
+        dropTargetId &&
+        edge.target === draggingNodeId &&
+        edge.data?.edgeType === 'hierarchy'
+      ) {
+        return {
+          ...edge,
+          style: { ...edge.style, opacity: 0.2, transition: 'opacity 0.2s' },
+        }
       }
+      if (focusedIds) {
+        const isRelevant = focusedIds.has(edge.source) && focusedIds.has(edge.target)
+        return {
+          ...edge,
+          style: {
+            ...edge.style,
+            opacity: isRelevant ? 1 : 0.1,
+            transition: 'opacity 0.2s',
+          },
+        }
+      }
+      return edge
     })
-  }, [allEdges, focusedIds])
+  }, [allEdges, focusedIds, draggingNodeId, dropTargetId])
 
   const direction = treeLayout === 'horizontal' ? 'LR' : 'TB'
   const { nodes, edges, setNodes, onNodesChange, onEdgesChange, relayout } = useDagreLayout(
@@ -309,7 +329,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     direction,
     setNodes,
     setDraggingNodeId,
-    setDropTargetId: () => {}, // Phase 2: will wire to useState
+    setDropTargetId,
     editingNodeId: interactions.editingNodeId,
     relayout,
   })
@@ -485,6 +505,48 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >
+          {/* Dashed edge preview: drag node → drop target during cross-parent drag */}
+          {draggingNodeId &&
+            dropTargetId &&
+            (() => {
+              const dragNode = nodes.find((n) => n.id === draggingNodeId)
+              const targetNode = nodes.find((n) => n.id === dropTargetId)
+              if (!dragNode || !targetNode) return null
+              const dw = dragNode.measured?.width ?? 200
+              const dh = dragNode.measured?.height ?? 60
+              const tw = targetNode.measured?.width ?? 200
+              const th = targetNode.measured?.height ?? 60
+              const x1 = dragNode.position.x + dw / 2
+              const y1 = dragNode.position.y + dh / 2
+              const x2 = targetNode.position.x + tw / 2
+              const y2 = targetNode.position.y + th / 2
+              return (
+                <ViewportPortal>
+                  <svg
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
+                      overflow: 'visible',
+                    }}
+                  >
+                    <line
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke="var(--color-primary-400)"
+                      strokeDasharray="6 4"
+                      strokeWidth={2}
+                      opacity={0.6}
+                    />
+                  </svg>
+                </ViewportPortal>
+              )
+            })()}
           <AreaRegions />
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           {isMinimapVisible && (
