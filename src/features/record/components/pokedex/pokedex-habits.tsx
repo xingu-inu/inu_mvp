@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { X, RefreshCw } from 'lucide-react'
+import { Pencil, Trash2, RefreshCw } from 'lucide-react'
 import type { ProfileTrait } from '@/types/entities'
 import { PokedexTraitHistory } from './pokedex-trait-history'
 
@@ -20,7 +20,7 @@ export function PokedexHabits({ traits, onEditTrait, onDeleteTrait }: PokedexHab
       style={{ background: 'var(--color-bg-secondary)' }}
     >
       {/* Section header */}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="mb-2 flex items-center gap-2">
         <div
           className="flex h-5 w-5 items-center justify-center rounded-md"
           style={{
@@ -39,35 +39,39 @@ export function PokedexHabits({ traits, onEditTrait, onDeleteTrait }: PokedexHab
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div>
         {traits.map((trait, i) => (
-          <div key={trait.id}>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.88 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.04, duration: 0.2, ease: 'easeOut' }}
-              className="group inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1 transition-all hover:border-[var(--color-primary-200)] hover:shadow-sm"
-              style={{ background: 'var(--color-bg-primary)' }}
-            >
-              <span
-                className="h-2 w-2 shrink-0 rounded-full"
-                style={{ background: 'var(--color-area-health)' }}
-              />
+          <motion.div
+            key={trait.id}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04, duration: 0.18 }}
+            className={`group flex items-center px-2 py-2 ${i % 2 === 1 ? 'rounded-md bg-[var(--color-bg-tertiary)]' : ''}`}
+          >
+            <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
+              {trait.label}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm text-[var(--color-text-primary)]">
+                {trait.value}
+              </span>
+              <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
+            </div>
+            <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <button
                 onClick={() => onEditTrait(trait)}
-                className="max-w-[130px] truncate text-xs font-medium text-[var(--color-text-primary)]"
+                className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
               >
-                {trait.label}: {trait.value}
+                <Pencil className="h-3 w-3" />
               </button>
               <button
                 onClick={() => onDeleteTrait(trait.id)}
-                className="ml-0.5 shrink-0 text-[var(--color-text-disabled)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-miss)]"
+                className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-danger-hover-bg)] hover:text-[var(--color-miss)]"
               >
-                <X className="h-3 w-3" />
+                <Trash2 className="h-3 w-3" />
               </button>
-            </motion.div>
-            <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
-          </div>
+            </div>
+          </motion.div>
         ))}
       </div>
     </div>
