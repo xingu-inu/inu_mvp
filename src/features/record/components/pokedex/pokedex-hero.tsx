@@ -62,9 +62,9 @@ export function PokedexHero({
   const milestone = getMilestoneLabel(count)
 
   return (
-    <div className="p-4">
+    <div className="p-3">
       {/* Top row: title + dex badge */}
-      <div className="mb-3 flex items-start justify-between">
+      <div className="mb-2 flex items-start justify-between">
         <div>
           <p className="text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-tertiary)] uppercase">
             Character Entry
@@ -90,7 +90,7 @@ export function PokedexHero({
       </div>
 
       {/* Completion gauge */}
-      <div className="mb-3 space-y-1.5">
+      <div className="mb-1.5 space-y-1">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
             탐험한 나
@@ -100,7 +100,7 @@ export function PokedexHero({
           )}
         </div>
         <div
-          className="relative h-2.5 w-full overflow-hidden rounded-full"
+          className="relative h-2 w-full overflow-hidden rounded-full"
           style={{ background: 'var(--color-bg-canvas)' }}
         >
           {/* Track notches */}
@@ -130,8 +130,8 @@ export function PokedexHero({
 
       {/* Identity type badges */}
       {identityTraits.length > 0 && (
-        <div className="mt-3">
-          <p className="mb-1.5 text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-tertiary)] uppercase">
+        <div className="mt-2">
+          <p className="mb-1 text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-tertiary)] uppercase">
             타입
           </p>
           <div className="flex flex-wrap gap-1.5">

@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Pencil, Trash2, RefreshCw } from 'lucide-react'
+import { Pencil, Trash2 } from 'lucide-react'
 import type { ProfileTrait } from '@/types/entities'
 import { PokedexTraitHistory } from './pokedex-trait-history'
 
@@ -13,25 +13,13 @@ interface PokedexHabitsProps {
 
 export function PokedexHabits({ traits, onEditTrait, onDeleteTrait }: PokedexHabitsProps) {
   return (
-    <div className="border-t border-[var(--color-border)] px-4 py-3">
+    <div className="border-t border-[var(--color-border)] px-3 py-2">
       {/* Section header */}
-      <div className="mb-2 flex items-center gap-2">
-        <div
-          className="flex h-5 w-5 items-center justify-center rounded-md"
-          style={{
-            background: 'oklch(60% 0.12 160 / 12%)',
-            border: '1px solid oklch(60% 0.12 160 / 20%)',
-          }}
-        >
-          <RefreshCw className="h-3 w-3" style={{ color: 'var(--color-area-health)' }} />
-        </div>
-        <p className="text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-tertiary)] uppercase">
+      <div className="mb-1 flex items-center gap-2">
+        <p className="shrink-0 text-[10px] font-semibold tracking-[0.12em] text-[var(--color-text-tertiary)] uppercase">
           습관 &amp; 루틴
         </p>
         <div className="h-px flex-1" style={{ background: 'var(--color-border)' }} />
-        <span className="font-mono text-[10px] text-[var(--color-text-disabled)]">
-          {traits.length}
-        </span>
       </div>
 
       {traits.length > 0 ? (
@@ -71,11 +59,9 @@ export function PokedexHabits({ traits, onEditTrait, onDeleteTrait }: PokedexHab
           ))}
         </div>
       ) : (
-        <div className="flex items-center px-2 py-2">
-          <span className="w-20 shrink-0 text-xs font-medium text-[var(--color-text-disabled)]">
-            ???
-          </span>
-          <span className="text-sm text-[var(--color-text-disabled)]">미발견</span>
+        <div className="flex cursor-default items-center rounded-md px-2 py-1.5 text-[var(--color-text-disabled)]">
+          <span className="w-20 shrink-0 text-xs font-medium">???</span>
+          <span className="text-xs">미발견</span>
         </div>
       )}
     </div>
