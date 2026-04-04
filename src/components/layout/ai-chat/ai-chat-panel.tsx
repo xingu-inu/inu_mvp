@@ -70,20 +70,13 @@ function MobileHistoryButton() {
 interface AiChatPanelProps {
   /** When true, renders inline (no fixed positioning, no motion wrapper) */
   embedded?: boolean
-  /** When true, hides brain-dump mode toggle (record tab only needs normal chat) */
-  hideBrainDump?: boolean
   /** When true, renders as mobile fullscreen (no sidebar, simplified header) */
   fullscreen?: boolean
   /** Called when fullscreen panel requests close */
   onClose?: () => void
 }
 
-export function AiChatPanel({
-  embedded = false,
-  hideBrainDump: _hideBrainDump = false,
-  fullscreen = false,
-  onClose,
-}: AiChatPanelProps) {
+export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -284,7 +277,7 @@ export function AiChatPanel({
           </button>
           <span className="text-base">🐾</span>
           <h3 className="text-sm font-semibold">동행 이누</h3>
-          {/* Goal/Task/Observation context badge (not brain-dump — that uses mode chips) */}
+          {/* Goal/Task/Observation context badge */}
           {context && context.type !== 'brain-dump' && (
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
               <span>
