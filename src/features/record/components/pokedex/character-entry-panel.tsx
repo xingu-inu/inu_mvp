@@ -217,7 +217,7 @@ export function CharacterEntryPanel() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {/* Hero: always shown */}
       <PokedexHero
         traits={traits}
@@ -225,6 +225,10 @@ export function CharacterEntryPanel() {
         onEditTrait={handleEdit}
         onDeleteTrait={handleDelete}
       />
+
+      {/* General info list */}
+      {grouped.general.length > 0 &&
+        renderEditableZone('general', grouped.general, PokedexInfoList)}
 
       {/* Stat bars */}
       {grouped.stats.length > 0 && renderEditableZone('stats', grouped.stats, PokedexStatBars)}
@@ -245,10 +249,6 @@ export function CharacterEntryPanel() {
 
       {/* Habits chips */}
       {grouped.habits.length > 0 && renderEditableZone('habits', grouped.habits, PokedexHabits)}
-
-      {/* General info list */}
-      {grouped.general.length > 0 &&
-        renderEditableZone('general', grouped.general, PokedexInfoList)}
 
       {/* Radar chart */}
       <PokedexRadarChart traits={traits} />

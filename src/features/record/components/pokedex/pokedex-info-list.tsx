@@ -46,12 +46,8 @@ export function PokedexInfoList({ traits, onEditTrait, onDeleteTrait }: PokedexI
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04, duration: 0.18 }}
-            className="group flex items-center border-b border-[var(--color-border)] py-2 last:border-0"
+            className={`group flex items-center px-2 py-2 ${i % 2 === 1 ? 'rounded-md bg-[var(--color-bg-tertiary)]' : ''}`}
           >
-            <span
-              className="mr-2.5 h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{ background: 'var(--color-area-learning)' }}
-            />
             <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
               {trait.label}
             </span>
