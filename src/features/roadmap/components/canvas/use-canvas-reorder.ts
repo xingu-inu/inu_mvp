@@ -88,6 +88,13 @@ export function useCanvasReorder({
   })
 
   const stateRef = useRef<DragState | null>(null)
+  /** Ghost placeholder: original position + measured size at drag start */
+  const dragGhostRef = useRef<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
   /** Tracks cancelled drags so onNodeDragStop can snap the node back */
   const cancelledRef = useRef<{
     nodeId: string
@@ -154,6 +161,14 @@ export function useCanvasReorder({
       const validTargets = getValidDropTargets(node, curNodes, curEdges)
       const validDropTargetIds = new Set(validTargets.map((n) => n.id))
       const currentParentId = parentEdge.source
+
+      // Capture ghost position + size at drag start
+      dragGhostRef.current = {
+        x: node.position.x,
+        y: node.position.y,
+        width: node.measured?.width ?? 200,
+        height: node.measured?.height ?? 60,
+      }
 
       // ≤1 sibling → no reorder target, but still track for snap-back
       if (siblingIds.length <= 1 || originalIndex === -1) {
@@ -348,6 +363,7 @@ export function useCanvasReorder({
         // Clear drag state before async server call
         stateRef.current = null
         dragStartPosRef.current = null
+        dragGhostRef.current = null
         setDraggingNodeId(null)
         setDropTargetId(null)
 
@@ -464,6 +480,7 @@ export function useCanvasReorder({
       // Clear drag state before async server call
       stateRef.current = null
       dragStartPosRef.current = null
+      dragGhostRef.current = null
       setDraggingNodeId(null)
 
       // Persist to server — always invalidate so UI converges to server truth
@@ -532,9 +549,10 @@ export function useCanvasReorder({
 
     stateRef.current = null
     dragStartPosRef.current = null
+    dragGhostRef.current = null
     setDraggingNodeId(null)
     setDropTargetId(null)
   }, [setNodes, setDraggingNodeId, setDropTargetId])
 
-  return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelDrag }
+  return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelDrag, dragGhostRef }
 }

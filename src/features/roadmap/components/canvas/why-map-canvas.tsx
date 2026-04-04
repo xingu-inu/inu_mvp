@@ -247,9 +247,12 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
       if (node.id === draggingNodeId) {
         style = {
           ...style,
-          opacity: 0.8,
+          opacity: 1,
           zIndex: 1000,
-          filter: 'drop-shadow(0 8px 25px rgba(0,0,0,0.15))',
+          transform: 'scale(1.04)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)',
+          willChange: 'transform',
+          transition: 'box-shadow 0.15s ease, transform 0.15s ease',
         }
       }
 
@@ -286,18 +289,36 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   const enrichedEdges = useMemo(() => {
     return allEdges.map((edge) => {
-      // During cross-parent drag, dim the existing parent→drag node hierarchy edge
-      if (
-        draggingNodeId &&
-        dropTargetId &&
-        edge.target === draggingNodeId &&
-        edge.data?.edgeType === 'hierarchy'
-      ) {
+      // During any drag, dim unrelated edges for visual clarity
+      if (draggingNodeId) {
+        const edgeType = edge.data?.edgeType
+        const isRelated = edge.source === draggingNodeId || edge.target === draggingNodeId
+
+        if (edgeType === 'hierarchy') {
+          if (isRelated) {
+            // Cross-parent drag: dim existing parent→drag hierarchy edge
+            if (dropTargetId && edge.target === draggingNodeId) {
+              return {
+                ...edge,
+                style: { ...edge.style, opacity: 0.2, transition: 'opacity 0.2s' },
+              }
+            }
+            // Related hierarchy edges stay full opacity
+            return edge
+          }
+          // Unrelated hierarchy edges → dim
+          return {
+            ...edge,
+            style: { ...edge.style, opacity: 0.3, transition: 'opacity 0.2s' },
+          }
+        }
+        // shared-task, dependency, and other non-hierarchy edges → heavy dim
         return {
           ...edge,
-          style: { ...edge.style, opacity: 0.2, transition: 'opacity 0.2s' },
+          style: { ...edge.style, opacity: 0.1, transition: 'opacity 0.2s' },
         }
       }
+
       if (focusedIds) {
         const isRelevant = focusedIds.has(edge.source) && focusedIds.has(edge.target)
         return {
@@ -333,6 +354,9 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     editingNodeId: interactions.editingNodeId,
     relayout,
   })
+
+  // Read dragGhost from ref (re-reads when draggingNodeId state changes)
+  const dragGhost = draggingNodeId ? canvasReorder.dragGhostRef.current : null
 
   // ── Keyboard shortcuts ────────────────────────────────────
 
@@ -480,7 +504,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   return (
     <div className="absolute inset-0">
       {/* Transition for sibling slot swaps during drag reorder */}
-      <style>{'.react-flow__node.reordering { transition: transform 200ms ease; }'}</style>
+      <style>{'.react-flow__node.reordering { transition: transform 140ms ease-out; }'}</style>
       <CanvasInteractionsContext.Provider value={interactionsContextValue}>
         <ReactFlow
           nodes={nodes}
@@ -547,6 +571,25 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
                 </ViewportPortal>
               )
             })()}
+          {/* Ghost placeholder at original position during drag */}
+          {dragGhost && (
+            <ViewportPortal>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: dragGhost.x,
+                  top: dragGhost.y,
+                  width: dragGhost.width,
+                  height: dragGhost.height,
+                  opacity: 0.2,
+                  border: '2px dashed var(--color-border)',
+                  borderRadius: 12,
+                  pointerEvents: 'none',
+                  transition: 'opacity 0.2s ease',
+                }}
+              />
+            </ViewportPortal>
+          )}
           <AreaRegions />
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
           {isMinimapVisible && (
