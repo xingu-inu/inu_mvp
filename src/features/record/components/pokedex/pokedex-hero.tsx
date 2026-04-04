@@ -6,6 +6,14 @@ import type { ProfileTrait } from '@/types/entities'
 
 const MAX_TRAITS = 30
 
+function getMilestoneLabel(count: number): string {
+  if (count === 0) return ''
+  if (count <= 5) return '🌱 씨앗'
+  if (count <= 10) return '🌿 새싹'
+  if (count <= 20) return '🌳 나무'
+  return '🌲 숲'
+}
+
 // Distinct hue rotation per badge index so each type badge has its own color
 const BADGE_PALETTES = [
   {
@@ -51,6 +59,7 @@ export function PokedexHero({
   const count = traits.length
   const dexNumber = String(count).padStart(3, '0')
   const completionPercent = Math.min((count / MAX_TRAITS) * 100, 100)
+  const milestone = getMilestoneLabel(count)
 
   return (
     <div
@@ -90,12 +99,11 @@ export function PokedexHero({
       <div className="mb-3 space-y-1.5">
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)] uppercase">
-            기록 완성도
+            탐험한 나
           </span>
-          <span className="font-mono text-[10px] text-[var(--color-text-tertiary)]">
-            {count}
-            <span className="opacity-50"> / {MAX_TRAITS}</span>
-          </span>
+          {milestone && (
+            <span className="text-[10px] text-[var(--color-text-tertiary)]">{milestone}</span>
+          )}
         </div>
         <div
           className="relative h-2.5 w-full overflow-hidden rounded-full"

@@ -3,6 +3,7 @@
 import { Pencil, Trash2, Quote } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { ProfileTrait } from '@/types/entities'
+import { PokedexTraitHistory } from './pokedex-trait-history'
 
 interface PokedexDescriptionProps {
   traits: ProfileTrait[]
@@ -63,6 +64,7 @@ export function PokedexDescription({
               <p className="mt-1 text-right text-xs text-[var(--color-text-tertiary)]">
                 — {trait.label}
               </p>
+              <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
             </div>
             <div className="ml-2 flex shrink-0 flex-col gap-1 opacity-0 transition-opacity group-hover:opacity-100">
               <button

@@ -55,12 +55,22 @@ export function TimelineEventCard({ event }: TimelineEventCardProps) {
             {/* Title (status transition) */}
             <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{event.title}</p>
 
-            {/* Description */}
-            {event.description && (
-              <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-tertiary)]">
-                {event.description}
+            {/* Profile trait before/after */}
+            {event.type === 'profile_trait' && event.fromStatus && event.toStatus && (
+              <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                <span className="text-[var(--color-text-disabled)]">{event.fromStatus}</span>
+                <span className="mx-1">→</span>
+                <span className="text-[var(--color-text-secondary)]">{event.toStatus}</span>
               </p>
             )}
+
+            {/* Description (for non-trait events or trait creation) */}
+            {event.description &&
+              !(event.type === 'profile_trait' && event.fromStatus && event.toStatus) && (
+                <p className="mt-1 line-clamp-2 text-xs text-[var(--color-text-tertiary)]">
+                  {event.description}
+                </p>
+              )}
           </div>
 
           {/* Time + Area badge */}

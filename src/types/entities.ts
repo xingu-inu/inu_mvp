@@ -61,12 +61,18 @@ export type TraitCategory =
   | 'habits'
   | 'general'
 
+export interface TraitHistoryEntry {
+  value: string
+  changed_at: string // ISO timestamp
+}
+
 export interface ProfileTrait extends BaseEntity {
   user_id: string
   label: string
   value: string
   category: TraitCategory
   sort_order: string
+  history: TraitHistoryEntry[]
 }
 
 export interface Direction extends BaseEntity {

@@ -13,7 +13,7 @@ const SUGGESTIONS: {
   {
     category: 'identity',
     label: 'MBTI',
-    prompt: 'MBTI를 추가해보세요',
+    prompt: '나의 성격 유형은?',
     emoji: '🧬',
     hint: '성격 유형',
   },
@@ -34,21 +34,21 @@ const SUGGESTIONS: {
   {
     category: 'description',
     label: '올해의 테마',
-    prompt: '올해의 테마를 적어보세요',
+    prompt: '올해 나의 테마가 있다면?',
     emoji: '💭',
     hint: '자기 소개',
   },
   {
     category: 'habits',
     label: '루틴',
-    prompt: '나만의 루틴이 있나요?',
+    prompt: '나만의 루틴이 있어?',
     emoji: '🔄',
     hint: '습관/루틴',
   },
   {
     category: 'general',
     label: '',
-    prompt: '자유롭게 기록해보세요',
+    prompt: '떠오르는 게 있다면 자유롭게',
     emoji: '📝',
     hint: '기타',
   },
@@ -74,7 +74,7 @@ export function PokedexEmptySlots({ traits, onAddTrait }: PokedexEmptySlotsProps
   return (
     <div className="space-y-2">
       <p className="px-1 text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-disabled)] uppercase">
-        미발견 항목
+        이런 것도 기록해볼까요?
       </p>
       {slots.map((s, i) => (
         <motion.button

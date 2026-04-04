@@ -156,7 +156,7 @@ export const getTimelineEvents = authAction(
       events.push(mapTaskHistory(row, taskMap, goalMap, areaMap))
     }
 
-    // Profile trait events (created + updated)
+    // Profile trait events (created + each history change + latest update)
     for (const trait of traits) {
       events.push({
         id: `trait-created-${trait.id}`,
@@ -170,24 +170,27 @@ export const getTimelineEvents = authAction(
         entityId: trait.id,
         entityName: trait.label,
         fromStatus: null,
-        toStatus: null,
+        toStatus: trait.value,
       })
 
-      // If updated after creation (1s threshold to avoid near-simultaneous timestamps)
-      if (new Date(trait.updated_at).getTime() - new Date(trait.created_at).getTime() > 1000) {
+      // Generate events from history entries (each value change)
+      const history = trait.history ?? []
+      for (let i = 0; i < history.length; i++) {
+        const entry = history[i]
+        const nextValue = i < history.length - 1 ? history[i + 1].value : trait.value
         events.push({
-          id: `trait-updated-${trait.id}`,
+          id: `trait-history-${trait.id}-${i}`,
           type: 'profile_trait',
-          timestamp: trait.updated_at,
+          timestamp: entry.changed_at,
           title: '프로필 항목 수정',
-          description: trait.value,
+          description: null,
           areaId: null,
           areaName: null,
           areaEmoji: null,
           entityId: trait.id,
           entityName: trait.label,
-          fromStatus: null,
-          toStatus: null,
+          fromStatus: entry.value,
+          toStatus: nextValue,
         })
       }
     }

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { X, RefreshCw } from 'lucide-react'
 import type { ProfileTrait } from '@/types/entities'
+import { PokedexTraitHistory } from './pokedex-trait-history'
 
 interface PokedexHabitsProps {
   traits: ProfileTrait[]
@@ -40,31 +41,33 @@ export function PokedexHabits({ traits, onEditTrait, onDeleteTrait }: PokedexHab
 
       <div className="flex flex-wrap gap-1.5">
         {traits.map((trait, i) => (
-          <motion.div
-            key={trait.id}
-            initial={{ opacity: 0, scale: 0.88 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.04, duration: 0.2, ease: 'easeOut' }}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1 transition-all hover:border-[var(--color-primary-200)] hover:shadow-sm"
-            style={{ background: 'var(--color-bg-primary)' }}
-          >
-            <span
-              className="h-2 w-2 shrink-0 rounded-full"
-              style={{ background: 'var(--color-area-health)' }}
-            />
-            <button
-              onClick={() => onEditTrait(trait)}
-              className="max-w-[130px] truncate text-xs font-medium text-[var(--color-text-primary)]"
+          <div key={trait.id}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: i * 0.04, duration: 0.2, ease: 'easeOut' }}
+              className="group inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 py-1 transition-all hover:border-[var(--color-primary-200)] hover:shadow-sm"
+              style={{ background: 'var(--color-bg-primary)' }}
             >
-              {trait.label}: {trait.value}
-            </button>
-            <button
-              onClick={() => onDeleteTrait(trait.id)}
-              className="ml-0.5 shrink-0 text-[var(--color-text-disabled)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-miss)]"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </motion.div>
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ background: 'var(--color-area-health)' }}
+              />
+              <button
+                onClick={() => onEditTrait(trait)}
+                className="max-w-[130px] truncate text-xs font-medium text-[var(--color-text-primary)]"
+              >
+                {trait.label}: {trait.value}
+              </button>
+              <button
+                onClick={() => onDeleteTrait(trait.id)}
+                className="ml-0.5 shrink-0 text-[var(--color-text-disabled)] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[var(--color-miss)]"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </motion.div>
+            <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
+          </div>
         ))}
       </div>
     </div>

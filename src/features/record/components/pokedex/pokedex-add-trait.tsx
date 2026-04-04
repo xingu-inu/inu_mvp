@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, Check, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Input, Textarea } from '@/components/ui'
+import { SampleChips } from '@/features/roadmap/components/shared/sample-chips'
 import { useCreateProfileTrait } from '@/queries/use-profile-traits'
+import { TRAIT_PRESETS } from './trait-presets'
 import type { TraitCategory } from '@/types/entities'
 
 interface CategoryOption {
@@ -87,6 +89,8 @@ export function PokedexAddTrait({ onClose, initialCategory, initialLabel }: Poke
     }
   }, [step])
 
+  const valuePresets =
+    TRAIT_PRESETS[selectedCategory.category].find((p) => p.label === label)?.values ?? []
   const canSubmit = label.trim().length > 0 && value.trim().length > 0 && !createTrait.isPending
 
   const handleSelectCategory = (option: CategoryOption) => {
@@ -161,22 +165,40 @@ export function PokedexAddTrait({ onClose, initialCategory, initialLabel }: Poke
                 {selectedCategory.emoji} {selectedCategory.label}
               </span>
             </div>
-            <Input
-              ref={labelRef}
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              onKeyDown={handleKeyDown}
-              maxLength={50}
-              placeholder={selectedCategory.placeholderLabel}
-            />
-            <Textarea
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              maxLength={500}
-              className="min-h-[60px]"
-              placeholder={selectedCategory.placeholderValue}
-            />
+            <div className="space-y-1.5">
+              <SampleChips
+                items={TRAIT_PRESETS[selectedCategory.category].map((p) => p.label)}
+                selectedValue={label}
+                onToggle={(val) => setLabel((prev) => (prev === val ? '' : val))}
+                preventBlur
+              />
+              <Input
+                ref={labelRef}
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                onKeyDown={handleKeyDown}
+                maxLength={50}
+                placeholder={selectedCategory.placeholderLabel}
+              />
+            </div>
+            <div className="space-y-1.5">
+              {valuePresets.length > 0 && (
+                <SampleChips
+                  items={valuePresets}
+                  selectedValue={value}
+                  onToggle={(val) => setValue((prev) => (prev === val ? '' : val))}
+                  preventBlur
+                />
+              )}
+              <Textarea
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                maxLength={500}
+                className="min-h-[60px]"
+                placeholder={selectedCategory.placeholderValue}
+              />
+            </div>
             <div className="flex justify-end gap-2">
               <button
                 onClick={onClose}

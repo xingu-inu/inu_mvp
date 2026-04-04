@@ -6,9 +6,11 @@ import type { TypedSupabaseClient } from './base.repository'
 import { handleSupabaseError, now, isValidFractionalKey, batchReorder } from './base.repository'
 import type {
   ProfileTrait,
+  TraitHistoryEntry,
   CreateProfileTraitInput,
   UpdateProfileTraitInput,
 } from '@/types/entities'
+import type { Json } from '@/types/database'
 
 export const profileTraitRepository = {
   /**
@@ -22,7 +24,7 @@ export const profileTraitRepository = {
       .order('sort_order', { ascending: true })
 
     if (error) handleSupabaseError(error)
-    return (data ?? []) as ProfileTrait[]
+    return (data ?? []) as unknown as ProfileTrait[]
   },
 
   /**
@@ -61,7 +63,7 @@ export const profileTraitRepository = {
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as ProfileTrait
+    return data as unknown as ProfileTrait
   },
 
   /**
@@ -72,18 +74,39 @@ export const profileTraitRepository = {
     id: string,
     input: UpdateProfileTraitInput
   ): Promise<ProfileTrait> {
+    // Build update payload — only fetch current value when value is changing
+    // Note: read-then-write is not atomic; concurrent edits on the same trait
+    // could lose a history entry. Acceptable for single-user personal data.
+    let updatePayload: Record<string, unknown> = { ...input, updated_at: now() }
+
+    if (input.value !== undefined) {
+      const { data: current } = await supabase
+        .from('profile_traits')
+        .select('value, history')
+        .eq('id', id)
+        .single()
+
+      if (current && input.value !== current.value) {
+        const history = (current.history ?? []) as unknown as TraitHistoryEntry[]
+        updatePayload = {
+          ...updatePayload,
+          history: [
+            ...history,
+            { value: current.value, changed_at: new Date().toISOString() },
+          ] as unknown as Json,
+        }
+      }
+    }
+
     const { data, error } = await supabase
       .from('profile_traits')
-      .update({
-        ...input,
-        updated_at: now(),
-      })
+      .update(updatePayload)
       .eq('id', id)
       .select()
       .single()
 
     if (error) handleSupabaseError(error)
-    return data as ProfileTrait
+    return data as unknown as ProfileTrait
   },
 
   /**

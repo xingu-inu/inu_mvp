@@ -61,6 +61,7 @@ export function useCreateProfileTrait() {
         value: input.value,
         category: input.category ?? 'general',
         sort_order: generateKeyBetween(lastSortOrder, null),
+        history: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -106,9 +107,14 @@ export function useUpdateProfileTrait() {
       if (previous) {
         queryClient.setQueryData<ProfileTrait[]>(
           queryKeys.profileTraits.all,
-          previous.map((t) =>
-            t.id === id ? { ...t, ...input, updated_at: new Date().toISOString() } : t
-          )
+          previous.map((t) => {
+            if (t.id !== id) return t
+            const updatedHistory =
+              input.value !== undefined && input.value !== t.value
+                ? [...t.history, { value: t.value, changed_at: new Date().toISOString() }]
+                : t.history
+            return { ...t, ...input, history: updatedHistory, updated_at: new Date().toISOString() }
+          })
         )
       }
 

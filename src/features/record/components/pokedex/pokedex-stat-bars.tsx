@@ -3,6 +3,7 @@
 import { Pencil, Trash2, Zap } from 'lucide-react'
 import { motion, type Variants } from 'framer-motion'
 import type { ProfileTrait } from '@/types/entities'
+import { PokedexTraitHistory } from './pokedex-trait-history'
 
 interface PokedexStatBarsProps {
   traits: ProfileTrait[]
@@ -74,26 +75,29 @@ export function PokedexStatBars({ traits, onEditTrait, onDeleteTrait }: PokedexS
             <motion.div
               key={trait.id}
               variants={barVariants}
-              className="group flex items-center gap-2"
+              className="group flex items-start gap-2"
             >
               <span className="w-16 shrink-0 truncate text-xs font-medium text-[var(--color-text-secondary)]">
                 {trait.label}
               </span>
-              <div
-                className="h-3 flex-1 overflow-hidden rounded-full"
-                style={{ background: 'var(--color-bg-canvas)' }}
-              >
-                <motion.div
-                  className="h-full rounded-full"
-                  style={{ background: gradient }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${percent}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.06 }}
-                />
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <div
+                  className="h-3 w-full overflow-hidden rounded-full"
+                  style={{ background: 'var(--color-bg-canvas)' }}
+                >
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: gradient }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percent}%` }}
+                    transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.06 }}
+                  />
+                </div>
+                <span className="truncate text-xs text-[var(--color-text-tertiary)]">
+                  {trait.value}
+                </span>
+                <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
               </div>
-              <span className="w-20 shrink-0 truncate text-xs text-[var(--color-text-tertiary)]">
-                {trait.value}
-              </span>
               <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                   onClick={() => onEditTrait(trait)}

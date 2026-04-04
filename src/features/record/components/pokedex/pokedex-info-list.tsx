@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Pencil, Trash2, BookOpen } from 'lucide-react'
 import type { ProfileTrait } from '@/types/entities'
+import { PokedexTraitHistory } from './pokedex-trait-history'
 
 interface PokedexInfoListProps {
   traits: ProfileTrait[]
@@ -54,9 +55,12 @@ export function PokedexInfoList({ traits, onEditTrait, onDeleteTrait }: PokedexI
             <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
               {trait.label}
             </span>
-            <span className="flex-1 truncate text-sm text-[var(--color-text-primary)]">
-              {trait.value}
-            </span>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-sm text-[var(--color-text-primary)]">
+                {trait.value}
+              </span>
+              <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
+            </div>
             <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <button
                 onClick={() => onEditTrait(trait)}

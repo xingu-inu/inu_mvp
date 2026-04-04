@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Pencil, Trash2, Plus, Compass } from 'lucide-react'
 import type { ProfileTrait, TraitCategory } from '@/types/entities'
+import { PokedexTraitHistory } from './pokedex-trait-history'
 
 function getRelativeTime(dateStr: string): string {
   const now = Date.now()
@@ -89,6 +90,7 @@ export function PokedexInterests({
             <p className="mt-1.5 text-[10px] text-[var(--color-text-disabled)]">
               {getRelativeTime(trait.created_at)}
             </p>
+            <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
             <div className="absolute top-2 right-2 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
               <button
                 onClick={() => onEditTrait(trait)}
