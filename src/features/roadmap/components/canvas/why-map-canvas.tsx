@@ -41,6 +41,7 @@ import { edgeTypes } from './edges'
 import { AreaRegions } from './area-regions'
 import { useCanvasKeyboard } from './use-canvas-keyboard'
 import { useCanvasReorder } from './use-canvas-reorder'
+import { DropZoneIndicator } from './drop-zone-indicator'
 import { useAutoPan } from './dnd/use-auto-pan'
 import { useBrainDumpPreviewStore } from '@/stores/brain-dump-preview.store'
 import { injectGhostNodes } from './inject-ghost-nodes'
@@ -580,6 +581,10 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
                 </ViewportPortal>
               )
             })()}
+          {/* Gap insertion indicator during sibling reorder */}
+          {canvasReorder.reorderIndicator && (
+            <DropZoneIndicator {...canvasReorder.reorderIndicator} />
+          )}
           {/* Ghost placeholder at original position during drag */}
           {dragGhost && (
             <ViewportPortal>

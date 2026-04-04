@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useCallback, useEffect } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { WhyMapNode, WhyMapEdge } from './types'
 import { moveNode, type NodeType } from '@/actions/tree.actions'
@@ -45,6 +45,13 @@ interface DragState {
   validDropTargets: Set<string>
 }
 
+export interface ReorderIndicator {
+  slotPositions: { x: number; y: number }[]
+  insertIndex: number
+  direction: 'TB' | 'LR'
+  visible: boolean
+}
+
 // ── Hook interface ─────────────────────────────────────────────
 
 interface UseCanvasReorderOptions {
@@ -87,6 +94,7 @@ export function useCanvasReorder({
     editingRef.current = editingNodeId
   })
 
+  const [reorderIndicator, setReorderIndicator] = useState<ReorderIndicator | null>(null)
   const stateRef = useRef<DragState | null>(null)
   /** Ghost placeholder: original position + measured size at drag start */
   const dragGhostRef = useRef<{
@@ -272,6 +280,14 @@ export function useCanvasReorder({
       if (targetSlot === s.currentInsertIndex) return
       s.currentInsertIndex = targetSlot
 
+      // Update reorder indicator for visual gap line
+      setReorderIndicator({
+        slotPositions: s.slotPositions,
+        insertIndex: targetSlot,
+        direction: directionRef.current,
+        visible: true,
+      })
+
       // Build visual order: remove from original slot, insert at target slot
       const newOrder = [...s.siblingIds]
       newOrder.splice(s.originalIndex, 1)
@@ -298,6 +314,9 @@ export function useCanvasReorder({
   const onNodeDragStop = useCallback(
     async (_event: React.MouseEvent, node: WhyMapNode) => {
       // Handle cancelled drag: snap node back on mouse release
+      // Always clear indicator on drag stop
+      setReorderIndicator(null)
+
       const cancelled = cancelledRef.current
       if (cancelled?.nodeId === node.id) {
         setNodes((ns) =>
@@ -550,9 +569,10 @@ export function useCanvasReorder({
     stateRef.current = null
     dragStartPosRef.current = null
     dragGhostRef.current = null
+    setReorderIndicator(null)
     setDraggingNodeId(null)
     setDropTargetId(null)
   }, [setNodes, setDraggingNodeId, setDropTargetId])
 
-  return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelDrag, dragGhostRef }
+  return { onNodeDragStart, onNodeDrag, onNodeDragStop, cancelDrag, dragGhostRef, reorderIndicator }
 }
