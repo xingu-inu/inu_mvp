@@ -62,12 +62,7 @@ export function PokedexStatBars({ traits, onEditTrait, onDeleteTrait }: PokedexS
         </span>
       </div>
 
-      <motion.div
-        className="space-y-2.5"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <motion.div variants={containerVariants} initial="hidden" animate="visible">
         {traits.map((trait, index) => {
           const percent = Math.max(25, (trait.value.length / maxLen) * 100)
           const gradient = BAR_GRADIENTS[index % BAR_GRADIENTS.length]
