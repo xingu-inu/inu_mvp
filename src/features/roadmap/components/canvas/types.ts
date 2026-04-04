@@ -26,6 +26,8 @@ interface InteractionState {
   isGhost?: boolean
   /** Pulse animation during apply */
   isGhostPulsing?: boolean
+  /** Node is a valid drop target during cross-parent drag */
+  isDropTarget?: boolean
 }
 
 /** Ancestor why entry for Why Chain tooltip */

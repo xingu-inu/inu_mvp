@@ -309,6 +309,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     direction,
     setNodes,
     setDraggingNodeId,
+    setDropTargetId: () => {}, // Phase 2: will wire to useState
     editingNodeId: interactions.editingNodeId,
     relayout,
   })
