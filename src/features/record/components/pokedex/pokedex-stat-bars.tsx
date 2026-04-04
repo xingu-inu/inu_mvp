@@ -19,7 +19,7 @@ const containerVariants: Variants = {
 }
 
 const barVariants: Variants = {
-  hidden: { opacity: 0, x: -8 },
+  hidden: { opacity: 0, x: -4 },
   visible: { opacity: 1, x: 0, transition: { duration: 0.28, ease: 'easeOut' as const } },
 }
 
@@ -75,41 +75,48 @@ export function PokedexStatBars({ traits, onEditTrait, onDeleteTrait }: PokedexS
             <motion.div
               key={trait.id}
               variants={barVariants}
-              className="group flex items-start gap-2"
+              className={[
+                'group flex items-center rounded-md px-2 py-2',
+                index % 2 === 1 && 'bg-[var(--color-bg-tertiary)]',
+              ]
+                .filter(Boolean)
+                .join(' ')}
             >
-              <span className="w-16 shrink-0 truncate text-xs font-medium text-[var(--color-text-secondary)]">
+              <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
                 {trait.label}
               </span>
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <div
-                  className="h-3 w-full overflow-hidden rounded-full"
-                  style={{ background: 'var(--color-bg-canvas)' }}
-                >
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: gradient }}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percent}%` }}
-                    transition={{ duration: 0.6, ease: 'easeOut', delay: index * 0.06 }}
-                  />
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm text-[var(--color-text-primary)]">
+                    {trait.value}
+                  </span>
+                  <div
+                    className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full"
+                    style={{ background: 'var(--color-bg-canvas)' }}
+                  >
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: gradient }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${percent}%` }}
+                      transition={{ duration: 0.4, ease: 'easeOut', delay: index * 0.06 }}
+                    />
+                  </div>
                 </div>
-                <span className="truncate text-xs text-[var(--color-text-tertiary)]">
-                  {trait.value}
-                </span>
                 <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
               </div>
               <div className="flex shrink-0 gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                   onClick={() => onEditTrait(trait)}
-                  className="rounded-lg p-1.5 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
+                  className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <Pencil className="h-3 w-3" />
                 </button>
                 <button
                   onClick={() => onDeleteTrait(trait.id)}
-                  className="rounded-lg p-1.5 text-[var(--color-text-tertiary)] hover:bg-[var(--color-danger-hover-bg)] hover:text-[var(--color-miss)]"
+                  className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-danger-hover-bg)] hover:text-[var(--color-miss)]"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash2 className="h-3 w-3" />
                 </button>
               </div>
             </motion.div>

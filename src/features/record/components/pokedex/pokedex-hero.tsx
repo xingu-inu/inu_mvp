@@ -136,38 +136,43 @@ export function PokedexHero({
 
       {/* Identity type badges */}
       {identityTraits.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {identityTraits.map((trait, index) => {
-            const palette = BADGE_PALETTES[index % BADGE_PALETTES.length]
-            const displayText =
-              trait.label.length + trait.value.length <= 12
-                ? trait.value
-                : `${trait.label}: ${trait.value}`
-            return (
-              <div key={trait.id} className="group relative shrink-0">
-                <motion.button
-                  onClick={() => onEditTrait(trait)}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="rounded-full px-3 py-1 text-xs font-semibold transition-shadow hover:shadow-sm"
-                  style={{
-                    backgroundColor: palette.bg,
-                    border: `1.5px solid ${palette.border}`,
-                    color: palette.text,
-                    letterSpacing: '0.03em',
-                  }}
-                >
-                  {displayText}
-                </motion.button>
-                <button
-                  onClick={() => onDeleteTrait(trait.id)}
-                  className="absolute -top-1 -right-1 hidden h-4 w-4 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-miss)] group-hover:flex"
-                >
-                  <Trash2 className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            )
-          })}
+        <div className="mt-3">
+          <p className="mb-1.5 text-[10px] font-semibold tracking-[0.15em] text-[var(--color-text-tertiary)] uppercase">
+            타입
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {identityTraits.map((trait, index) => {
+              const palette = BADGE_PALETTES[index % BADGE_PALETTES.length]
+              const displayText =
+                trait.label.length + trait.value.length <= 12
+                  ? trait.value
+                  : `${trait.label}: ${trait.value}`
+              return (
+                <div key={trait.id} className="group relative shrink-0">
+                  <motion.button
+                    onClick={() => onEditTrait(trait)}
+                    whileHover={{ scale: 1.04 }}
+                    whileTap={{ scale: 0.97 }}
+                    className="rounded-full px-3 py-1 text-xs font-semibold transition-shadow hover:shadow-sm"
+                    style={{
+                      backgroundColor: palette.bg,
+                      border: `1.5px solid ${palette.border}`,
+                      color: palette.text,
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    {displayText}
+                  </motion.button>
+                  <button
+                    onClick={() => onDeleteTrait(trait.id)}
+                    className="absolute -top-1 -right-1 hidden h-4 w-4 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] text-[var(--color-miss)] group-hover:flex"
+                  >
+                    <Trash2 className="h-2.5 w-2.5" />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
     </div>
