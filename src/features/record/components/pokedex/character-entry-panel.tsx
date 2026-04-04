@@ -14,7 +14,7 @@ import { PokedexInterests } from './pokedex-interests'
 import { PokedexDescription } from './pokedex-description'
 import { PokedexHabits } from './pokedex-habits'
 import { PokedexInfoList } from './pokedex-info-list'
-import { PokedexEmptySlots } from './pokedex-empty-slots'
+
 import { PokedexAddTrait } from './pokedex-add-trait'
 import { PokedexRadarChart } from './pokedex-radar-chart'
 import { Plus, Check, X } from 'lucide-react'
@@ -218,43 +218,46 @@ export function CharacterEntryPanel() {
 
   return (
     <div className="space-y-2">
-      {/* Hero: always shown */}
-      <PokedexHero
-        traits={traits}
-        identityTraits={grouped.identity}
-        onEditTrait={handleEdit}
-        onDeleteTrait={handleDelete}
-      />
+      {/* Unified card */}
+      <div
+        className="overflow-hidden rounded-2xl border border-[var(--color-border)]"
+        style={{
+          background:
+            'linear-gradient(180deg, var(--color-bg-secondary) 0%, var(--color-bg-primary) 100%)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+      >
+        {/* Hero */}
+        <PokedexHero
+          traits={traits}
+          identityTraits={grouped.identity}
+          onEditTrait={handleEdit}
+          onDeleteTrait={handleDelete}
+        />
 
-      {/* General info list */}
-      {grouped.general.length > 0 &&
-        renderEditableZone('general', grouped.general, PokedexInfoList)}
+        {/* General info list */}
+        {renderEditableZone('general', grouped.general, PokedexInfoList)}
 
-      {/* Stat bars */}
-      {grouped.stats.length > 0 && renderEditableZone('stats', grouped.stats, PokedexStatBars)}
+        {/* Stat bars */}
+        {renderEditableZone('stats', grouped.stats, PokedexStatBars)}
 
-      {/* Interests grid */}
-      {grouped.interests.length > 0 && (
+        {/* Interests grid */}
         <PokedexInterests
           traits={grouped.interests}
           onEditTrait={handleEdit}
           onDeleteTrait={handleDelete}
           onAddTrait={handleAddTrait}
         />
-      )}
 
-      {/* Description quotes */}
-      {grouped.description.length > 0 &&
-        renderEditableZone('description', grouped.description, PokedexDescription)}
+        {/* Description quotes */}
+        {renderEditableZone('description', grouped.description, PokedexDescription)}
 
-      {/* Habits chips */}
-      {grouped.habits.length > 0 && renderEditableZone('habits', grouped.habits, PokedexHabits)}
+        {/* Habits chips */}
+        {renderEditableZone('habits', grouped.habits, PokedexHabits)}
+      </div>
 
       {/* Radar chart */}
       <PokedexRadarChart traits={traits} />
-
-      {/* Empty slots */}
-      <PokedexEmptySlots traits={traits} onAddTrait={handleAddTrait} />
 
       {/* Add button / form */}
       <AnimatePresence mode="wait">

@@ -62,13 +62,7 @@ export function PokedexHero({
   const milestone = getMilestoneLabel(count)
 
   return (
-    <div
-      className="rounded-2xl border border-[var(--color-border)] p-4"
-      style={{
-        background: `linear-gradient(145deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%)`,
-        boxShadow: 'var(--shadow-card)',
-      }}
-    >
+    <div className="p-4">
       {/* Top row: title + dex badge */}
       <div className="mb-3 flex items-start justify-between">
         <div>
