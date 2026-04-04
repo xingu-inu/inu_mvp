@@ -50,7 +50,7 @@ export function PokedexDescription({
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: i * 0.08, ease: 'easeOut' }}
-            className={`group flex items-center px-2 py-2 rounded-md${i % 2 === 1 ? 'bg-[var(--color-bg-tertiary)]' : ''}`}
+            className={`group flex items-center px-2 py-2 ${i % 2 === 1 ? 'rounded-md bg-[var(--color-bg-tertiary)]' : ''}`}
           >
             <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
               {trait.label}
