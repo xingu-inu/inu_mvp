@@ -59,7 +59,7 @@ export function CharacterEntryPanel() {
           boxShadow: 'var(--shadow-card)',
         }}
       >
-        {/* Header: avatar + nickname + dex number + gauge */}
+        {/* Header: avatar + nickname + dex number + badge */}
         <PokedexHeader
           traitCount={traits.length}
           nickname={null}
@@ -78,41 +78,35 @@ export function CharacterEntryPanel() {
           isPending={updateTrait.isPending}
         />
 
+        {/* Add button / inline form — between traits and AI insights */}
+        <AnimatePresence mode="wait">
+          {addingOpen ? (
+            <motion.div
+              key="add-form"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <PokedexAddTrait onClose={() => setAddingOpen(false)} />
+            </motion.div>
+          ) : (
+            <motion.button
+              key="add-button"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => setAddingOpen(true)}
+              className="flex min-h-[44px] w-full items-center justify-center gap-1.5 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:bg-[var(--color-primary-50)]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              항목 추가
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         {/* AI Insights */}
         <PokedexAiInsights />
       </div>
-
-      {/* Add button / form */}
-      <AnimatePresence mode="wait">
-        {addingOpen ? (
-          <motion.div
-            key="add-form"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-          >
-            <PokedexAddTrait onClose={() => setAddingOpen(false)} />
-          </motion.div>
-        ) : (
-          <motion.button
-            key="add-button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setAddingOpen(true)}
-            className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-[var(--color-primary-200)] py-3 text-sm font-medium text-[var(--color-primary-500)] transition-all hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] hover:shadow-sm"
-          >
-            <motion.div
-              animate={{ rotate: [0, 90, 0] }}
-              transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.5 }}
-            >
-              <Plus className="h-4 w-4" />
-            </motion.div>
-            항목 추가
-          </motion.button>
-        )}
-      </AnimatePresence>
     </div>
   )
 }

@@ -1,13 +1,15 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { MessageCircle, Sparkles } from 'lucide-react'
 import { useAiInsights, useUpdateAiInsight, useDeleteAiInsight } from '@/queries/use-ai-insights'
+import { useAiChatStore } from '@/stores/ai-chat.store'
 import { PokedexAiInsightCard } from './pokedex-ai-insight-card'
 
 export function PokedexAiInsights() {
   const { data: insights = [] } = useAiInsights()
   const { mutate: updateInsight, isPending: isUpdating } = useUpdateAiInsight()
   const { mutate: deleteInsight, isPending: isDeleting } = useDeleteAiInsight()
+  const openChat = useAiChatStore((s) => s.openChat)
 
   const isPending = isUpdating || isDeleting
 
@@ -40,8 +42,17 @@ export function PokedexAiInsights() {
           ))}
         </div>
       ) : (
-        <div className="px-3 py-4 text-center text-xs text-[var(--color-text-disabled)]">
-          아직 분석이 부족해요. 대화를 더 나누면 인사이트가 추가돼요
+        <div className="px-3 py-4 text-center">
+          <p className="text-xs text-[var(--color-text-disabled)]">
+            AI와 나에 대해 이야기하면 인사이트가 쌓여요
+          </p>
+          <button
+            onClick={openChat}
+            className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-[var(--color-primary-500)] transition-colors hover:bg-[var(--color-primary-50)]"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            대화 시작하기
+          </button>
         </div>
       )}
     </div>
