@@ -8,6 +8,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_insights: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          sort_order: string
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          sort_order: string
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          sort_order?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           content: string
@@ -776,7 +806,7 @@ export type Database = {
         Row: {
           category: string
           created_at: string
-          history: Json
+          history: Json | null
           id: string
           label: string
           sort_order: string
@@ -787,7 +817,7 @@ export type Database = {
         Insert: {
           category?: string
           created_at?: string
-          history?: Json
+          history?: Json | null
           id?: string
           label: string
           sort_order: string
@@ -798,7 +828,7 @@ export type Database = {
         Update: {
           category?: string
           created_at?: string
-          history?: Json
+          history?: Json | null
           id?: string
           label?: string
           sort_order?: string
@@ -819,6 +849,7 @@ export type Database = {
       profiles: {
         Row: {
           ai_model: string | null
+          avatar_preset: string | null
           avatar_url: string | null
           created_at: string | null
           email: string
@@ -831,6 +862,7 @@ export type Database = {
         }
         Insert: {
           ai_model?: string | null
+          avatar_preset?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email: string
@@ -843,6 +875,7 @@ export type Database = {
         }
         Update: {
           ai_model?: string | null
+          avatar_preset?: string | null
           avatar_url?: string | null
           created_at?: string | null
           email?: string
