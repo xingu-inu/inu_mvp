@@ -21,6 +21,13 @@ export function useAutoPan({ containerRef, enabled }: UseAutoPanOptions): {
   updateMousePosition: (clientX: number, clientY: number) => void
 } {
   const { getViewport, setViewport } = useReactFlow()
+  const getViewportRef = useRef(getViewport)
+  const setViewportRef = useRef(setViewport)
+  useEffect(() => {
+    getViewportRef.current = getViewport
+    setViewportRef.current = setViewport
+  })
+
   const mousePositionRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const rafIdRef = useRef<number | null>(null)
 
@@ -72,8 +79,8 @@ export function useAutoPan({ containerRef, enabled }: UseAutoPanOptions): {
       }
 
       if (dx !== 0 || dy !== 0) {
-        const vp = getViewport()
-        setViewport({ x: vp.x - dx, y: vp.y - dy, zoom: vp.zoom })
+        const vp = getViewportRef.current()
+        setViewportRef.current({ x: vp.x - dx, y: vp.y - dy, zoom: vp.zoom })
       }
 
       rafIdRef.current = requestAnimationFrame(tick)
@@ -87,7 +94,7 @@ export function useAutoPan({ containerRef, enabled }: UseAutoPanOptions): {
         rafIdRef.current = null
       }
     }
-  }, [enabled, containerRef, getViewport, setViewport])
+  }, [enabled, containerRef])
 
   const updateMousePosition = useCallback((clientX: number, clientY: number) => {
     mousePositionRef.current = { x: clientX, y: clientY }

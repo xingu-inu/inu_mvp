@@ -44,9 +44,9 @@ export function AreaRegions() {
             height={r.height}
             rx={16}
             ry={16}
-            fill={`color-mix(in srgb, ${r.color} 6%, transparent)`}
-            stroke={`color-mix(in srgb, ${r.color} 15%, transparent)`}
-            strokeWidth={1}
+            fill={`color-mix(in srgb, ${r.color} 8%, transparent)`}
+            stroke={`color-mix(in srgb, ${r.color} 20%, transparent)`}
+            strokeWidth={1.5}
           />
         ))}
       </svg>

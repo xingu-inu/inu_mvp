@@ -247,16 +247,13 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
         style = { opacity: 0.6, transition: 'opacity 0.3s' }
       }
 
-      // Drag visual feedback
+      // Drag visual feedback — only safe wrapper props here;
+      // scale + shadow applied via CSS .dragging > div to avoid overriding RF's translate transform
       if (node.id === draggingNodeId) {
         style = {
           ...style,
           opacity: 1,
           zIndex: 1000,
-          transform: 'scale(1.04)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)',
-          willChange: 'transform',
-          transition: 'box-shadow 0.15s ease, transform 0.15s ease',
         }
       }
 
@@ -362,8 +359,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   // Auto-pan when dragging near canvas edges
   const autoPan = useAutoPan({ containerRef, enabled: !!draggingNodeId })
 
-  // Read dragGhost from ref (re-reads when draggingNodeId state changes)
-  const dragGhost = draggingNodeId ? canvasReorder.dragGhostRef.current : null
+  const dragGhost = draggingNodeId ? canvasReorder.dragGhost : null
 
   // ── Keyboard shortcuts ────────────────────────────────────
 
@@ -511,7 +507,14 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   return (
     <div ref={containerRef} className="absolute inset-0">
       {/* Transition for sibling slot swaps during drag reorder */}
-      <style>{'.react-flow__node.reordering { transition: transform 140ms ease-out; }'}</style>
+      <style>{`
+        .react-flow__node.reordering { transition: transform 140ms ease-out; }
+        .react-flow__node.dragging > div {
+          transform: scale(1.04);
+          box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+      `}</style>
       <CanvasInteractionsContext.Provider value={interactionsContextValue}>
         <ReactFlow
           nodes={nodes}

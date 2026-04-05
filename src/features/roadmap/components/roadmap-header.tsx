@@ -18,8 +18,8 @@ export function RoadmapHeader() {
   return (
     <div className="space-y-4">
       {/* Title Row */}
-      <div className="pointer-events-auto flex items-start justify-between lg:drop-shadow-sm">
-        <div>
+      <div className="flex items-start justify-between lg:drop-shadow-sm">
+        <div className="pointer-events-auto">
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold">로드맵</h1>
             <VersionDropdown />
@@ -28,7 +28,7 @@ export function RoadmapHeader() {
             <RoadmapStatsSummary stats={stats} />
           </p>
         </div>
-        <CanvasToolbar className="hidden lg:flex">
+        <CanvasToolbar className="pointer-events-auto hidden lg:flex">
           <CanvasToolbar.Toggle
             active={isOpen && rightPanelTab === 'ai-chat'}
             icon={<Lightbulb className="h-5 w-5" />}

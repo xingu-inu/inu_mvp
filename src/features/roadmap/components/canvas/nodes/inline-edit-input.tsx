@@ -33,7 +33,17 @@ export const InlineEditInput = memo(function InlineEditInput({
   editContainerRef,
 }: InlineEditInputProps) {
   const committedRef = useRef(false)
+  const settledRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Delay focus to outlast Radix ContextMenu's focus restoration, then mark settled
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus()
+      settledRef.current = true
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Restore pending value (from a previous input instance after temp→real ID swap)
   useEffect(() => {
@@ -68,6 +78,10 @@ export const InlineEditInput = memo(function InlineEditInput({
       committedRef.current = false
       return
     }
+    // Skip spurious blur before focus is settled (e.g. Radix ContextMenu focus restore)
+    if (!settledRef.current) {
+      return
+    }
     // Skip commit when focus moves within the edit container (multi-field edit)
     if (
       editContainerRef?.current &&
@@ -76,13 +90,17 @@ export const InlineEditInput = memo(function InlineEditInput({
     ) {
       return
     }
+    // If value unchanged, cancel instead of committing a no-op
+    if (e.target.value === defaultValue) {
+      onCancel()
+      return
+    }
     onCommit(nodeType, nodeId, e.target.value)
   }
 
   return (
     <input
       ref={inputRef}
-      autoFocus
       defaultValue={defaultValue}
       className={`w-full bg-transparent outline-none ${className}`}
       onKeyDown={handleKeyDown}

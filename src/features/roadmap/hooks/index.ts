@@ -1,7 +1,6 @@
 export { useDeleteConfirm } from './use-delete-confirm'
 export { useGoalCompletion } from './use-goal-completion'
 export { useBrainDumpApply } from './use-brain-dump-apply'
-export { useApplyTemplate } from './use-apply-template'
 export { useCrossLinkedTasks } from './use-cross-linked-tasks'
 export type { CrossLinkedTask } from './use-cross-linked-tasks'
 export { useMoveTaskToGoal } from './use-move-task-to-goal'

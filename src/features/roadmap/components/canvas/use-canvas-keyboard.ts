@@ -17,6 +17,7 @@ interface UseCanvasKeyboardOptions {
   toggleNodeExpand: (nodeId: string) => void
   expandNode: (nodeId: string) => void
   collapseNode: (nodeId: string) => void
+  cancelDrag?: () => void
   onToggleFloatingPanel?: () => void
   onFitView?: () => void
 }
@@ -41,6 +42,7 @@ export function useCanvasKeyboard({
   toggleNodeExpand,
   expandNode,
   collapseNode,
+  cancelDrag,
   onToggleFloatingPanel,
   onFitView,
 }: UseCanvasKeyboardOptions) {
@@ -51,8 +53,9 @@ export function useCanvasKeyboard({
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if ((e.target as HTMLElement).isContentEditable) return
 
-      // Escape: clear selection
+      // Escape: cancel drag (if active) + clear selection
       if (e.key === 'Escape') {
+        cancelDrag?.()
         clearSelection()
         return
       }
@@ -175,6 +178,7 @@ export function useCanvasKeyboard({
     toggleNodeExpand,
     expandNode,
     collapseNode,
+    cancelDrag,
     onToggleFloatingPanel,
     onFitView,
   ])

@@ -210,7 +210,7 @@ export const GoalNode = memo(function GoalNode({
   return (
     <div
       className={cn(
-        'group/add group/why relative max-w-[300px] min-w-[220px]',
+        'group/add group/why relative max-w-[250px] min-w-[180px]',
         isDraft && 'rounded-xl border-2 border-dashed border-[var(--color-border)]',
         isDraft && '[&_[data-node-card]]:border-transparent',
         isDropTarget &&
@@ -233,7 +233,6 @@ export const GoalNode = memo(function GoalNode({
             'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
-            isDropTarget && 'ring-dashed scale-[1.02] ring-2 ring-[var(--color-primary-400)]/60',
             isGhost && [
               'border-dashed',
               'border-amber-300 dark:border-amber-600',

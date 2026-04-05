@@ -13,22 +13,23 @@ import type { WhyMapNode, WhyMapEdge } from './types'
 
 // Default dimensions for unmeasured nodes
 const DEFAULT_DIMENSIONS: Record<string, { width: number; height: number }> = {
-  direction: { width: 360, height: 120 },
-  area: { width: 240, height: 60 },
-  goal: { width: 260, height: 80 },
-  group: { width: 220, height: 60 },
-  task: { width: 200, height: 50 },
-  sticky: { width: 200, height: 120 },
+  direction: { width: 280, height: 90 },
+  area: { width: 200, height: 50 },
+  goal: { width: 220, height: 64 },
+  group: { width: 180, height: 48 },
+  task: { width: 160, height: 40 },
+  sticky: { width: 180, height: 100 },
 }
 
 function getLayoutedElements(
   nodes: WhyMapNode[],
   edges: WhyMapEdge[],
-  direction: 'TB' | 'LR'
+  direction: 'TB' | 'LR',
+  draggingNodeId?: string | null
 ): WhyMapNode[] {
   const g = new dagre.graphlib.Graph()
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: direction, nodesep: 60, ranksep: 80, edgesep: 20 })
+  g.setGraph({ rankdir: direction, nodesep: 24, ranksep: 48, edgesep: 10 })
 
   for (const node of nodes) {
     const defaults = DEFAULT_DIMENSIONS[node.type ?? 'goal']
@@ -47,7 +48,150 @@ function getLayoutedElements(
 
   dagre.layout(g)
 
+  // Post-process: enforce sort_order among siblings on spread axis.
+  // Dagre's barycenter heuristic can reorder siblings; we need spatial order = sort_order.
+  // When swapping sibling positions, shift their entire subtrees to keep the layout intact.
+  const spreadAxis = direction === 'TB' ? 'x' : 'y'
+  const childrenByParent = new Map<string, string[]>()
+  for (const edge of edges) {
+    if (edge.data?.edgeType === 'hierarchy') {
+      const children = childrenByParent.get(edge.source) ?? []
+      children.push(edge.target)
+      childrenByParent.set(edge.source, children)
+    }
+  }
+
+  function getDescendants(nodeId: string, visited = new Set<string>()): string[] {
+    const result: string[] = []
+    for (const child of childrenByParent.get(nodeId) ?? []) {
+      if (visited.has(child)) continue
+      visited.add(child)
+      result.push(child)
+      result.push(...getDescendants(child, visited))
+    }
+    return result
+  }
+
+  // BFS order: process parents root→leaf so upper shifts are finalized before lower ones
+  const parentQueue: string[] = []
+  const allTargets = new Set(
+    edges.filter((e) => e.data?.edgeType === 'hierarchy').map((e) => e.target)
+  )
+  for (const pid of childrenByParent.keys()) {
+    if (!allTargets.has(pid)) parentQueue.push(pid)
+  }
+  const queued = new Set<string>(parentQueue)
+  for (let i = 0; i < parentQueue.length; i++) {
+    for (const child of childrenByParent.get(parentQueue[i]) ?? []) {
+      if (childrenByParent.has(child) && !queued.has(child)) {
+        queued.add(child)
+        parentQueue.push(child)
+      }
+    }
+  }
+
+  const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+
+  for (const parentId of parentQueue) {
+    const childIds = childrenByParent.get(parentId)
+    if (!childIds || childIds.length <= 1) continue
+    const centerPositions = childIds.map((id) => g.node(id)[spreadAxis]).sort((a, b) => a - b)
+    const sortedIds = [...childIds].sort((a, b) => {
+      const aOrder = nodeMap.get(a)?.data?.treeNode?.meta?.sortOrder ?? ''
+      const bOrder = nodeMap.get(b)?.data?.treeNode?.meta?.sortOrder ?? ''
+      return aOrder.localeCompare(bOrder)
+    })
+    for (let i = 0; i < sortedIds.length; i++) {
+      const id = sortedIds[i]
+      const dagreNode = g.node(id)
+      const delta = centerPositions[i] - dagreNode[spreadAxis]
+      if (delta === 0) continue
+      dagreNode[spreadAxis] = centerPositions[i]
+      for (const descId of getDescendants(id)) {
+        const desc = g.node(descId)
+        if (desc) desc[spreadAxis] += delta
+      }
+    }
+  }
+
+  // Post-process: ensure minimum gap between area subtrees to prevent region overlap.
+  // Area regions render with PADDING around child bounds; without this step, adjacent
+  // area regions can visually overlap when dagre packs subtrees tightly.
+  const AREA_REGION_PADDING = 24
+  const AREA_GAP = 16
+  const areaNodes = nodes.filter((n) => n.type === 'area')
+
+  if (areaNodes.length > 1) {
+    interface AreaBounds {
+      areaId: string
+      min: number
+      max: number
+    }
+    const areaBounds: AreaBounds[] = []
+
+    for (const areaNode of areaNodes) {
+      const subtreeIds = [areaNode.id, ...getDescendants(areaNode.id)]
+      let min = Infinity
+      let max = -Infinity
+
+      for (const id of subtreeIds) {
+        const dn = g.node(id)
+        if (!dn) continue
+        const n = nodeMap.get(id)
+        const defaults = DEFAULT_DIMENSIONS[n?.type ?? 'goal']
+        const size =
+          spreadAxis === 'y'
+            ? (n?.measured?.height ?? defaults.height)
+            : (n?.measured?.width ?? defaults.width)
+        const center = dn[spreadAxis]
+        min = Math.min(min, center - size / 2)
+        max = Math.max(max, center + size / 2)
+      }
+
+      if (min !== Infinity) {
+        areaBounds.push({ areaId: areaNode.id, min, max })
+      }
+    }
+
+    // Sort by position on spread axis
+    areaBounds.sort((a, b) => a.min - b.min)
+
+    // Iteratively check adjacent pairs and shift until no overlaps remain.
+    // Single-pass can miss cascading overlaps with 3+ areas.
+    const requiredGap = AREA_REGION_PADDING * 2 + AREA_GAP
+    let hasOverlap = true
+    let iterations = 0
+    const MAX_ITERATIONS = 10
+
+    while (hasOverlap && iterations < MAX_ITERATIONS) {
+      hasOverlap = false
+      iterations++
+      for (let i = 1; i < areaBounds.length; i++) {
+        const prev = areaBounds[i - 1]
+        const curr = areaBounds[i]
+        const actualGap = curr.min - prev.max
+
+        if (actualGap < requiredGap) {
+          hasOverlap = true
+          const shift = requiredGap - actualGap
+          for (let j = i; j < areaBounds.length; j++) {
+            const subtreeIds = [areaBounds[j].areaId, ...getDescendants(areaBounds[j].areaId)]
+            for (const id of subtreeIds) {
+              const dn = g.node(id)
+              if (dn) dn[spreadAxis] += shift
+            }
+            areaBounds[j].min += shift
+            areaBounds[j].max += shift
+          }
+        }
+      }
+    }
+  }
+
   return nodes.map((node) => {
+    // Never override position of a node currently being dragged
+    if (draggingNodeId && node.id === draggingNodeId) return node
+
     const dagreNode = g.node(node.id)
     const defaults = DEFAULT_DIMENSIONS[node.type ?? 'goal']
     const w = node.measured?.width ?? defaults.width
@@ -68,7 +212,8 @@ function getLayoutedElements(
 export function useDagreLayout(
   initialNodes: WhyMapNode[],
   initialEdges: WhyMapEdge[],
-  direction: 'TB' | 'LR'
+  direction: 'TB' | 'LR',
+  draggingNodeId?: string | null
 ): {
   nodes: WhyMapNode[]
   edges: WhyMapEdge[]
@@ -84,8 +229,13 @@ export function useDagreLayout(
   const needsLayoutRef = useRef(true)
   const [layoutVersion, setLayoutVersion] = useState(0)
   const edgesRef = useRef(initialEdges)
+  const draggingNodeIdRef = useRef(draggingNodeId)
   const isFirstLayoutRef = useRef(true)
   const { fitView } = useReactFlow()
+
+  useEffect(() => {
+    draggingNodeIdRef.current = draggingNodeId
+  }, [draggingNodeId])
 
   // Track the previous initialNodes/initialEdges identity to detect data changes
   const prevInitialRef = useRef({ nodes: initialNodes, edges: initialEdges })
@@ -155,7 +305,12 @@ export function useDagreLayout(
         if (hasUnmeasured) return currentNodes
 
         needsLayoutRef.current = false
-        const layouted = getLayoutedElements(currentNodes, edgesRef.current, direction)
+        const layouted = getLayoutedElements(
+          currentNodes,
+          edgesRef.current,
+          direction,
+          draggingNodeIdRef.current
+        )
 
         // Only fitView on initial layout; subsequent relayouts keep viewport stable
         if (isFirstLayoutRef.current) {

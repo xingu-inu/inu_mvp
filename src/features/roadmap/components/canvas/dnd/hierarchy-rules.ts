@@ -23,16 +23,18 @@ export function canDropOnParent(dragType: NodeType, targetType: NodeType): boole
 // ── Cycle prevention ──────────────────────────────────────────
 
 /**
- * Is `potentialAncestorId` an ancestor of `nodeId` in the hierarchy?
+ * Does `nodeId` have `potentialAncestorId` as an ancestor in the hierarchy?
  * Walks hierarchy edges upward from `nodeId`. Returns true if
  * `potentialAncestorId` is found along the chain, preventing
  * dropping a node onto its own descendant.
+ *
+ * Accepts pre-filtered hierarchy edges to avoid redundant filtering.
  */
-export function isAncestor(nodeId: string, potentialAncestorId: string, edges: Edge[]): boolean {
-  const hierarchyEdges = edges.filter(
-    (e) => (e.data as Record<string, unknown>)?.edgeType === 'hierarchy'
-  )
-
+export function hasAncestor(
+  nodeId: string,
+  potentialAncestorId: string,
+  hierarchyEdges: Edge[]
+): boolean {
   let current = nodeId
   const visited = new Set<string>()
 
@@ -61,10 +63,13 @@ export function getValidDropTargets(dragNode: Node, allNodes: Node[], edges: Edg
   const dragType = dragNode.type as NodeType
   if (!dragType) return []
 
-  // Find current parent
-  const parentEdge = edges.find(
-    (e) => e.target === dragNode.id && (e.data as Record<string, unknown>)?.edgeType === 'hierarchy'
+  // Pre-filter hierarchy edges once for all checks
+  const hierarchyEdges = edges.filter(
+    (e) => (e.data as Record<string, unknown>)?.edgeType === 'hierarchy'
   )
+
+  // Find current parent
+  const parentEdge = hierarchyEdges.find((e) => e.target === dragNode.id)
   const currentParentId = parentEdge?.source ?? null
 
   return allNodes.filter((target) => {
@@ -81,7 +86,7 @@ export function getValidDropTargets(dragNode: Node, allNodes: Node[], edges: Edg
     if (!canDropOnParent(dragType, targetType)) return false
 
     // Cycle prevention: can't drop onto own descendant
-    if (isAncestor(target.id, dragNode.id, edges)) return false
+    if (hasAncestor(target.id, dragNode.id, hierarchyEdges)) return false
 
     return true
   })

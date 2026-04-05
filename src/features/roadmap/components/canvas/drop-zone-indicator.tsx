@@ -12,6 +12,7 @@ export interface DropZoneIndicatorProps {
 const LINE_LENGTH = 60
 const DOT_RADIUS = 4
 const COLOR = 'var(--color-primary-400)'
+const DEFAULT_SLOT_GAP = 40
 
 export function DropZoneIndicator({
   slotPositions,
@@ -30,11 +31,11 @@ export function DropZoneIndicator({
     const first = slotPositions[0]
     const second = slotPositions.length > 1 ? slotPositions[1] : null
     if (direction === 'TB') {
-      const gap = second ? (second.x - first.x) / 2 : 40
+      const gap = second ? (second.x - first.x) / 2 : DEFAULT_SLOT_GAP
       mx = first.x - gap
       my = first.y
     } else {
-      const gap = second ? (second.y - first.y) / 2 : 40
+      const gap = second ? (second.y - first.y) / 2 : DEFAULT_SLOT_GAP
       mx = first.x
       my = first.y - gap
     }
@@ -43,11 +44,11 @@ export function DropZoneIndicator({
     const last = slotPositions[slotPositions.length - 1]
     const prev = slotPositions.length > 1 ? slotPositions[slotPositions.length - 2] : null
     if (direction === 'TB') {
-      const gap = prev ? (last.x - prev.x) / 2 : 40
+      const gap = prev ? (last.x - prev.x) / 2 : DEFAULT_SLOT_GAP
       mx = last.x + gap
       my = last.y
     } else {
-      const gap = prev ? (last.y - prev.y) / 2 : 40
+      const gap = prev ? (last.y - prev.y) / 2 : DEFAULT_SLOT_GAP
       mx = last.x
       my = last.y + gap
     }
@@ -74,8 +75,8 @@ export function DropZoneIndicator({
           position: 'absolute',
           top: 0,
           left: 0,
-          width: '100%',
-          height: '100%',
+          width: 1,
+          height: 1,
           pointerEvents: 'none',
           overflow: 'visible',
           opacity: visible ? 0.8 : 0,

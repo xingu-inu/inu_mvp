@@ -251,20 +251,70 @@ export function buildVisualTreeData(
     areaColorMap.set(area.id, area.color)
   }
 
-  // Build area nodes (all active areas, even without goals)
-  const areaNodes: VisualTreeNode[] = areas.map((area) => {
-    const areaGoals = goalsByArea.get(area.id) || []
+  // Build area nodes (only areas that have goals after filtering)
+  const areaNodes: VisualTreeNode[] = areas
+    .filter((area) => (goalsByArea.get(area.id) || []).length > 0)
+    .map((area) => {
+      const areaGoals = goalsByArea.get(area.id) || []
 
-    // Build goal nodes
-    const goalNodes: VisualTreeNode[] = areaGoals.map((goal) => {
-      const groups = goal.groups || []
-      const tasks = goal.tasks || []
+      // Build goal nodes
+      const goalNodes: VisualTreeNode[] = areaGoals.map((goal) => {
+        const groups = goal.groups || []
+        const tasks = goal.tasks || []
 
-      // Build group nodes
-      const groupNodes: VisualTreeNode[] = groups.map((group) => {
-        const groupTasks = tasks.filter((t) => t.group_id === group.id)
+        // Build group nodes
+        const groupNodes: VisualTreeNode[] = groups.map((group) => {
+          const groupTasks = tasks.filter((t) => t.group_id === group.id)
 
-        const taskNodes: VisualTreeNode[] = groupTasks.map((task) => {
+          const taskNodes: VisualTreeNode[] = groupTasks.map((task) => {
+            // Collect cross-links
+            if (task.related_goal_ids?.length) {
+              for (const relatedGoalId of task.related_goal_ids) {
+                const targetGroupId = task.cross_link_group_map?.[relatedGoalId]
+                crossLinks.push({
+                  sourceTaskId: task.id,
+                  targetGoalId: relatedGoalId,
+                  targetNodeId: targetGroupId ?? relatedGoalId,
+                  areaColor: area.color ?? '#8a8078',
+                })
+              }
+            }
+            return {
+              type: 'task' as const,
+              id: task.id,
+              name: task.name,
+              why: task.why,
+              meta: {
+                streak: task.streak_count,
+                isDone: task.check_ins?.some((c) => c.date === today && c.status === 'done'),
+                isPaused: task.status === 'paused',
+                isCompletedTask: task.status === 'completed',
+                repeatType: task.repeat_type,
+                hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
+                sortOrder: task.sort_order,
+                startDate: task.start_date ?? undefined,
+                endDate: task.end_date ?? undefined,
+              },
+            }
+          })
+
+          return {
+            type: 'group' as const,
+            id: group.id,
+            name: group.name,
+            why: group.why,
+            meta: {
+              count: groupTasks.length || undefined,
+              isCompleted: group.is_completed,
+              sortOrder: group.sort_order,
+            },
+            children: taskNodes.length > 0 ? taskNodes : undefined,
+          }
+        })
+
+        // Tasks directly under goal (no group)
+        const directTasks = tasks.filter((t) => !t.group_id)
+        const directTaskNodes: VisualTreeNode[] = directTasks.map((task) => {
           // Collect cross-links
           if (task.related_goal_ids?.length) {
             for (const relatedGoalId of task.related_goal_ids) {
@@ -296,115 +346,71 @@ export function buildVisualTreeData(
           }
         })
 
-        return {
-          type: 'group' as const,
-          id: group.id,
-          name: group.name,
-          why: group.why,
-          meta: {
-            count: groupTasks.length || undefined,
-            isCompleted: group.is_completed,
-            sortOrder: group.sort_order,
-          },
-          children: taskNodes.length > 0 ? taskNodes : undefined,
-        }
-      })
+        const allChildren = [...groupNodes, ...directTaskNodes].sort((a, b) => {
+          const aOrder = a.meta?.sortOrder ?? ''
+          const bOrder = b.meta?.sortOrder ?? ''
+          return aOrder.localeCompare(bOrder)
+        })
+        const totalStreak = tasks.reduce((sum, t) => sum + t.streak_count, 0)
+        const activeTasks = tasks.filter((t) => t.status !== 'paused' && t.status !== 'completed')
+        const doneCount = activeTasks.filter((t) =>
+          t.check_ins?.some((c) => c.date === today && c.status === 'done')
+        ).length
+        const totalCount = activeTasks.length
 
-      // Tasks directly under goal (no group)
-      const directTasks = tasks.filter((t) => !t.group_id)
-      const directTaskNodes: VisualTreeNode[] = directTasks.map((task) => {
-        // Collect cross-links
-        if (task.related_goal_ids?.length) {
-          for (const relatedGoalId of task.related_goal_ids) {
-            const targetGroupId = task.cross_link_group_map?.[relatedGoalId]
+        // Collect goal-level cross-links for impact areas
+        if (goal.impact_area_ids?.length) {
+          for (const impactAreaId of goal.impact_area_ids) {
+            if (impactAreaId === goal.area_id) continue
             crossLinks.push({
-              sourceTaskId: task.id,
-              targetGoalId: relatedGoalId,
-              targetNodeId: targetGroupId ?? relatedGoalId,
-              areaColor: area.color ?? '#8a8078',
+              sourceGoalId: goal.id,
+              targetNodeId: impactAreaId,
+              areaColor: areaColorMap.get(impactAreaId) ?? '#8a8078',
             })
           }
         }
+
+        // Derive impactAreaColors for gradient bar in tree node card
+        const impactAreaColors: string[] | undefined = goal.impact_area_ids?.length
+          ? goal.impact_area_ids
+              .map((id) => areaColorMap.get(id))
+              .filter((c): c is string => c !== undefined)
+          : undefined
+
         return {
-          type: 'task' as const,
-          id: task.id,
-          name: task.name,
-          why: task.why,
+          type: 'goal' as const,
+          id: goal.id,
+          name: goal.name,
+          why: goal.why,
+          status: goal.status,
+          areaColor: area.color,
+          vibe: goalVibes?.[goal.id],
           meta: {
-            streak: task.streak_count,
-            isDone: task.check_ins?.some((c) => c.date === today && c.status === 'done'),
-            isPaused: task.status === 'paused',
-            isCompletedTask: task.status === 'completed',
-            repeatType: task.repeat_type,
-            hasCrossLinks: (task.related_goal_ids?.length ?? 0) > 0,
-            sortOrder: task.sort_order,
-            startDate: task.start_date ?? undefined,
-            endDate: task.end_date ?? undefined,
+            count: tasks.length || undefined,
+            doneCount,
+            totalCount,
+            totalStreak: totalStreak || undefined,
+            targetDate: goal.target_date ?? undefined,
+            startDate: goal.start_date ?? undefined,
+            endDate: goal.target_date ?? undefined, // Goal has no end_date; target_date is the deadline
+            sortOrder: goal.sort_order,
+            impactAreaColors: impactAreaColors?.length ? impactAreaColors : undefined,
           },
+          children: allChildren.length > 0 ? allChildren : undefined,
         }
       })
 
-      const allChildren = [...groupNodes, ...directTaskNodes]
-      const totalStreak = tasks.reduce((sum, t) => sum + t.streak_count, 0)
-      const activeTasks = tasks.filter((t) => t.status !== 'paused' && t.status !== 'completed')
-      const doneCount = activeTasks.filter((t) =>
-        t.check_ins?.some((c) => c.date === today && c.status === 'done')
-      ).length
-      const totalCount = activeTasks.length
-
-      // Collect goal-level cross-links for impact areas
-      if (goal.impact_area_ids?.length) {
-        for (const impactAreaId of goal.impact_area_ids) {
-          if (impactAreaId === goal.area_id) continue
-          crossLinks.push({
-            sourceGoalId: goal.id,
-            targetNodeId: impactAreaId,
-            areaColor: areaColorMap.get(impactAreaId) ?? '#8a8078',
-          })
-        }
-      }
-
-      // Derive impactAreaColors for gradient bar in tree node card
-      const impactAreaColors: string[] | undefined = goal.impact_area_ids?.length
-        ? goal.impact_area_ids
-            .map((id) => areaColorMap.get(id))
-            .filter((c): c is string => c !== undefined)
-        : undefined
-
       return {
-        type: 'goal' as const,
-        id: goal.id,
-        name: goal.name,
-        why: goal.why,
-        status: goal.status,
-        areaColor: area.color,
-        vibe: goalVibes?.[goal.id],
-        meta: {
-          count: tasks.length || undefined,
-          doneCount,
-          totalCount,
-          totalStreak: totalStreak || undefined,
-          targetDate: goal.target_date ?? undefined,
-          startDate: goal.start_date ?? undefined,
-          endDate: goal.target_date ?? undefined, // Goal has no end_date; target_date is the deadline
-          sortOrder: goal.sort_order,
-          impactAreaColors: impactAreaColors?.length ? impactAreaColors : undefined,
-        },
-        children: allChildren.length > 0 ? allChildren : undefined,
+        type: 'area' as const,
+        id: area.id,
+        name: area.name,
+        emoji: area.emoji,
+        color: area.color,
+        why: area.why,
+        meta: { count: areaGoals.length, sortOrder: area.sort_order },
+        children: goalNodes.length > 0 ? goalNodes : undefined,
       }
     })
-
-    return {
-      type: 'area' as const,
-      id: area.id,
-      name: area.name,
-      emoji: area.emoji,
-      color: area.color,
-      why: area.why,
-      meta: { count: areaGoals.length, sortOrder: area.sort_order },
-      children: goalNodes.length > 0 ? goalNodes : undefined,
-    }
-  })
 
   // Root: Direction
   const tree: VisualTreeNode = {

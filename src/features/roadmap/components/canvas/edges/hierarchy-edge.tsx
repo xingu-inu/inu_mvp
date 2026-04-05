@@ -28,7 +28,7 @@ export const HierarchyEdge = memo(function HierarchyEdge({
   // Deeper hierarchy levels get thinner, subtler edges
   const depth = data?.depth ?? 0
   const strokeWidth = depth >= 2 ? 1 : 1.5
-  const opacity = depth >= 2 ? 0.6 : 1
+  const opacity = depth >= 2 ? 0.5 : 0.85
 
   return (
     <BaseEdge

@@ -43,7 +43,7 @@ export const DirectionNode = memo(function DirectionNode({
           {/* Main card */}
           <div
             className={cn(
-              'relative flex max-w-[400px] min-w-[280px] cursor-pointer items-center gap-3 rounded-2xl px-5 py-4 shadow-lg transition-all hover:shadow-xl hover:brightness-105',
+              'relative flex max-w-[320px] min-w-[220px] cursor-pointer items-center gap-3 rounded-2xl px-5 py-4 shadow-lg transition-all hover:shadow-xl hover:brightness-105',
               'bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-600)]',
               isSelected &&
                 'ring-2 ring-white/60 ring-offset-2 ring-offset-[var(--color-primary-500)]',
