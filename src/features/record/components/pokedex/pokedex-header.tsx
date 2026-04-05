@@ -12,24 +12,18 @@ function getMilestoneLabel(count: number): string {
 
 interface PokedexHeaderProps {
   traitCount: number
-  nickname: string | null
   avatarPreset: string | null
   onAvatarChange: (preset: string) => void
 }
 
-export function PokedexHeader({
-  traitCount,
-  nickname,
-  avatarPreset,
-  onAvatarChange,
-}: PokedexHeaderProps) {
+export function PokedexHeader({ traitCount, avatarPreset, onAvatarChange }: PokedexHeaderProps) {
   const dexNumber = String(traitCount).padStart(3, '0')
   const milestone = getMilestoneLabel(traitCount)
 
   return (
     <div className="p-3">
       {/* Hero row: avatar + info */}
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         {/* Avatar */}
         <PokedexAvatarPicker selected={avatarPreset} onSelect={onAvatarChange}>
           <button
@@ -44,12 +38,9 @@ export function PokedexHeader({
           </button>
         </PokedexAvatarPicker>
 
-        {/* Name + dex number */}
-        <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between">
-            <h2 className="truncate text-base font-bold text-[var(--color-text-primary)]">
-              {nickname ?? '나에 대한 데이터'}
-            </h2>
+        {/* Dex number + milestone */}
+        <div className="flex min-w-0 flex-1 flex-col justify-center">
+          <div className="flex items-center gap-2">
             <div
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-[var(--color-primary-200)]"
               style={{
@@ -64,16 +55,14 @@ export function PokedexHeader({
                 #{dexNumber}
               </span>
             </div>
-          </div>
-
-          {/* Milestone badge + count */}
-          <div className="mt-1.5 flex items-center gap-1.5">
-            <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)]">
-              항목 {traitCount}개
-            </span>
-            {milestone && (
-              <span className="text-[10px] text-[var(--color-text-tertiary)]">{milestone}</span>
-            )}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium tracking-wider text-[var(--color-text-tertiary)]">
+                항목 {traitCount}개
+              </span>
+              {milestone && (
+                <span className="text-[10px] text-[var(--color-text-tertiary)]">{milestone}</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
