@@ -34,6 +34,7 @@ export async function getUserOverview(supabase: TypedSupabaseClient, userId: str
     timezone: profile?.timezone ?? 'Asia/Seoul',
     direction: direction ? { statement: direction.statement, why: direction.why } : null,
     areas: areas.map((a) => ({
+      id: a.id,
       name: a.name,
       emoji: a.emoji,
       type: a.type,

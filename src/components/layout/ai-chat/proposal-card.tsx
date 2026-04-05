@@ -346,25 +346,35 @@ function Checkbox({
   const iconSize = size === 'sm' ? 'h-2.5 w-2.5' : 'h-3 w-3'
 
   return (
-    <button
+    <span
       role="checkbox"
       aria-checked={checked}
-      disabled={disabled}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : 0}
       onClick={(e) => {
+        if (disabled) return
         e.stopPropagation()
         onChange(e)
       }}
+      onKeyDown={(e) => {
+        if (disabled) return
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault()
+          e.stopPropagation()
+          onChange(e as unknown as React.MouseEvent)
+        }
+      }}
       className={cn(
-        'flex flex-shrink-0 items-center justify-center rounded border transition-colors',
+        'flex flex-shrink-0 cursor-pointer items-center justify-center rounded border transition-colors',
         sizeClass,
         checked
           ? 'border-[var(--color-primary-500)] bg-[var(--color-primary-500)] text-white'
           : 'border-[var(--color-border)] bg-[var(--color-bg-primary)]',
-        disabled && 'opacity-50'
+        disabled && 'pointer-events-none opacity-50'
       )}
     >
       {checked && <Check className={iconSize} />}
-    </button>
+    </span>
   )
 }
 

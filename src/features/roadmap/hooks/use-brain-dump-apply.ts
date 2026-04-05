@@ -7,6 +7,7 @@ import { createArea } from '@/actions/area.actions'
 import { createGoal } from '@/actions/goal.actions'
 import { createTask } from '@/actions/task.actions'
 import { queryKeys } from '@/lib/query/keys'
+import { useAreas } from '@/queries/use-areas'
 import type { AreaType, TimeSlot, RepeatType } from '@/types/entities'
 
 export interface BrainDumpReviewTask {
@@ -47,6 +48,7 @@ export interface ApplyProgress {
 
 export function useBrainDumpApply() {
   const queryClient = useQueryClient()
+  const { data: existingAreas } = useAreas()
   const [isApplying, setIsApplying] = useState(false)
   const [progress, setProgress] = useState<ApplyProgress>({ total: 0, completed: 0, failed: 0 })
 
@@ -75,7 +77,12 @@ export function useBrainDumpApply() {
       for (const area of areas) {
         if (!area._checked) continue
 
+        // Resolve area ID: use provided ID, or fallback to name match
         let areaId = area.existingAreaId
+        if (area.isExisting && !areaId && existingAreas) {
+          const match = existingAreas.find((a) => a.name === area.name)
+          if (match) areaId = match.id
+        }
 
         // Create new area if needed
         if (!area.isExisting) {
@@ -174,7 +181,7 @@ export function useBrainDumpApply() {
 
       return failed === 0
     },
-    [queryClient]
+    [queryClient, existingAreas]
   )
 
   return { apply, isApplying, progress }
