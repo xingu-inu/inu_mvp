@@ -3,18 +3,21 @@
 import { useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Map, BookOpen } from 'lucide-react'
+import { Map, BookOpen, MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
+import { useNotificationCount } from '@/queries/use-notifications'
 
 const navItems = [
   { href: '/roadmap', icon: Map, label: '로드맵' },
   { href: '/record', icon: BookOpen, label: '기록' },
+  { href: '/more', icon: MoreHorizontal, label: '더보기' },
 ]
 
 export function BottomNav() {
   const pathname = usePathname()
   const lastTapRef = useRef<{ href: string; time: number } | null>(null)
+  const badgeCount = useNotificationCount()
 
   const handleClick = (e: React.MouseEvent, href: string) => {
     // 햅틱 피드백 (모바일 지원 시)
@@ -66,10 +69,17 @@ export function BottomNav() {
                   : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
               )}
             >
-              <Icon
-                className={cn('h-6 w-6 transition-all', isActive && 'stroke-[2.5]')}
-                fill={isActive ? 'var(--color-primary-100)' : 'none'}
-              />
+              <div className="relative">
+                <Icon
+                  className={cn('h-6 w-6 transition-all', isActive && 'stroke-[2.5]')}
+                  fill={isActive ? 'var(--color-primary-100)' : 'none'}
+                />
+                {href === '/more' && badgeCount > 0 && (
+                  <span className="absolute -top-1 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-streak)] text-[9px] font-bold text-white">
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </span>
+                )}
+              </div>
               <span className={cn('text-xs', isActive ? 'font-semibold' : 'font-medium')}>
                 {label}
               </span>

@@ -14,6 +14,7 @@ export type ModalView = 'main' | 'companion' | 'notifications' | 'privacy' | 'fe
 interface ProfileModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  initialView?: ModalView
 }
 
 function SubViewWrapper({ onBack, children }: { onBack: () => void; children: React.ReactNode }) {
@@ -31,11 +32,12 @@ function SubViewWrapper({ onBack, children }: { onBack: () => void; children: Re
   )
 }
 
-export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
-  const [view, setView] = useState<ModalView>('main')
+export function ProfileModal({ open, onOpenChange, initialView = 'main' }: ProfileModalProps) {
+  const [view, setView] = useState<ModalView>(initialView)
 
-  const handleClose = (nextOpen: boolean) => {
-    if (!nextOpen) setView('main')
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) setView(initialView)
+    else setView('main')
     onOpenChange(nextOpen)
   }
 
@@ -48,9 +50,9 @@ export function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
   }
 
   return (
-    <ResponsiveModal open={open} onOpenChange={handleClose} title={viewTitles[view]}>
+    <ResponsiveModal open={open} onOpenChange={handleOpenChange} title={viewTitles[view]}>
       {view === 'main' ? (
-        <ProfileMainView onNavigate={setView} onClose={() => handleClose(false)} />
+        <ProfileMainView onNavigate={setView} onClose={() => handleOpenChange(false)} />
       ) : (
         <SubViewWrapper onBack={() => setView('main')}>
           {view === 'companion' && <CompanionSettingsView />}

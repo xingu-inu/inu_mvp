@@ -1,5 +1,4 @@
 import {
-  TopBar,
   BottomNav,
   DesktopTopBar,
   AuthGuard,
@@ -16,13 +15,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         {/* Desktop: Top bar with segment control */}
         <DesktopTopBar />
 
-        {/* Mobile: TopBar */}
-        <div className="lg:hidden">
-          <TopBar />
-        </div>
-
         {/* Content area */}
-        <div className="min-h-0 flex-1 pb-20 lg:flex lg:pb-0">
+        <div className="min-h-0 flex-1 pt-[env(safe-area-inset-top)] pb-20 lg:flex lg:pt-0 lg:pb-0">
           {/* Main content */}
           <div className="min-w-0 flex-1 lg:overflow-y-auto">{children}</div>
 
