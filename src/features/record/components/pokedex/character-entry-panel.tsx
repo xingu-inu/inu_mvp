@@ -1,111 +1,18 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   useProfileTraits,
   useUpdateProfileTrait,
   useDeleteProfileTrait,
 } from '@/queries/use-profile-traits'
-import type { ProfileTrait, TraitCategory } from '@/types/entities'
-import { PokedexHero } from './pokedex-hero'
-import { PokedexStatBars } from './pokedex-stat-bars'
-import { PokedexInterests } from './pokedex-interests'
-import { PokedexDescription } from './pokedex-description'
-import { PokedexHabits } from './pokedex-habits'
-import { PokedexInfoList } from './pokedex-info-list'
-
+import type { TraitCategory } from '@/types/entities'
+import { PokedexHeader } from './pokedex-header'
+import { PokedexTraitList } from './pokedex-trait-list'
+import { PokedexAiInsights } from './pokedex-ai-insights'
 import { PokedexAddTrait } from './pokedex-add-trait'
-import { PokedexRadarChart } from './pokedex-radar-chart'
-import { Plus, Check, X } from 'lucide-react'
-import { Input, Textarea } from '@/components/ui'
-
-function InlineEditForm({
-  trait,
-  onSave,
-  onCancel,
-  isPending,
-}: {
-  trait: ProfileTrait
-  onSave: (id: string, label: string, value: string, category: TraitCategory) => void
-  onCancel: () => void
-  isPending: boolean
-}) {
-  const [label, setLabel] = useState(trait.label)
-  const [value, setValue] = useState(trait.value)
-  const [category, setCategory] = useState<TraitCategory>(trait.category ?? 'general')
-  const canSubmit = label.trim().length > 0 && value.trim().length > 0 && !isPending
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && e.metaKey && canSubmit)
-      onSave(trait.id, label.trim(), value.trim(), category)
-    if (e.key === 'Escape') onCancel()
-  }
-
-  const CATEGORY_OPTIONS: { value: TraitCategory; label: string }[] = [
-    { value: 'identity', label: '🧬 성격' },
-    { value: 'stats', label: '💪 능력' },
-    { value: 'interests', label: '🎯 관심사' },
-    { value: 'description', label: '💭 소개' },
-    { value: 'habits', label: '🔄 습관' },
-    { value: 'general', label: '📝 기타' },
-  ]
-
-  return (
-    <div className="space-y-2 rounded-xl border border-[var(--color-primary-200)] bg-[var(--color-primary-50)] p-3">
-      <div className="flex flex-wrap gap-1">
-        {CATEGORY_OPTIONS.map((opt) => (
-          <button
-            key={opt.value}
-            type="button"
-            onClick={() => setCategory(opt.value)}
-            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
-              category === opt.value
-                ? 'bg-[var(--color-primary-500)] text-white'
-                : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-canvas)]'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-      <Input
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
-        onKeyDown={handleKeyDown}
-        maxLength={50}
-        placeholder="항목 이름"
-        autoFocus
-      />
-      <Textarea
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        maxLength={500}
-        className="min-h-[60px]"
-        placeholder="내용"
-      />
-      <div className="flex justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isPending}
-          className="rounded-lg px-3 py-1.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"
-        >
-          <X className="inline h-3.5 w-3.5" /> 취소
-        </button>
-        <button
-          type="button"
-          onClick={() => canSubmit && onSave(trait.id, label.trim(), value.trim(), category)}
-          disabled={!canSubmit}
-          className="rounded-lg bg-[var(--color-primary-500)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--color-primary-600)] disabled:opacity-50"
-        >
-          <Check className="inline h-3.5 w-3.5" /> 수정
-        </button>
-      </div>
-    </div>
-  )
-}
+import { Plus } from 'lucide-react'
 
 export function CharacterEntryPanel() {
   const { data: traits = [], isLoading } = useProfileTraits()
@@ -113,38 +20,11 @@ export function CharacterEntryPanel() {
   const deleteTrait = useDeleteProfileTrait()
 
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [addingState, setAddingState] = useState<{
-    open: boolean
-    category?: TraitCategory
-    label?: string
-  }>({ open: false })
+  const [addingOpen, setAddingOpen] = useState(false)
 
-  const grouped = useMemo(() => {
-    const groups: Record<TraitCategory, ProfileTrait[]> = {
-      identity: [],
-      stats: [],
-      interests: [],
-      description: [],
-      habits: [],
-      general: [],
-    }
-    for (const trait of traits) {
-      const cat = trait.category ?? 'general'
-      groups[cat].push(trait)
-    }
-    return groups
-  }, [traits])
+  const handleEditStart = useCallback((trait: { id: string }) => setEditingId(trait.id), [])
 
-  const handleEdit = useCallback((trait: ProfileTrait) => {
-    setEditingId(trait.id)
-  }, [])
-
-  const handleDelete = useCallback(
-    (id: string) => {
-      deleteTrait.mutate(id)
-    },
-    [deleteTrait]
-  )
+  const handleDelete = useCallback((id: string) => deleteTrait.mutate(id), [deleteTrait])
 
   const handleUpdate = useCallback(
     (id: string, label: string, value: string, category: TraitCategory) => {
@@ -155,14 +35,6 @@ export function CharacterEntryPanel() {
     },
     [updateTrait]
   )
-
-  const handleAddTrait = useCallback((category: TraitCategory, suggestedLabel?: string) => {
-    setAddingState({ open: true, category, label: suggestedLabel })
-  }, [])
-
-  const handleCloseAdd = useCallback(() => {
-    setAddingState({ open: false })
-  }, [])
 
   if (isLoading) {
     return (
@@ -177,48 +49,8 @@ export function CharacterEntryPanel() {
     )
   }
 
-  // Render a zone's traits with inline editing support
-  const renderEditableZone = (
-    category: TraitCategory,
-    zoneTraits: ProfileTrait[],
-    ZoneComponent: React.ComponentType<{
-      traits: ProfileTrait[]
-      onEditTrait: (trait: ProfileTrait) => void
-      onDeleteTrait: (id: string) => void
-    }>
-  ) => {
-    const editingTrait = zoneTraits.find((t) => t.id === editingId)
-    if (editingTrait) {
-      return (
-        <div key={category}>
-          {/* Show non-editing traits in the zone */}
-          <ZoneComponent
-            traits={zoneTraits.filter((t) => t.id !== editingId)}
-            onEditTrait={handleEdit}
-            onDeleteTrait={handleDelete}
-          />
-          <InlineEditForm
-            trait={editingTrait}
-            onSave={handleUpdate}
-            onCancel={() => setEditingId(null)}
-            isPending={updateTrait.isPending}
-          />
-        </div>
-      )
-    }
-    return (
-      <ZoneComponent
-        key={category}
-        traits={zoneTraits}
-        onEditTrait={handleEdit}
-        onDeleteTrait={handleDelete}
-      />
-    )
-  }
-
   return (
     <div className="space-y-2">
-      {/* Unified card */}
       <div
         className="overflow-hidden rounded-2xl border border-[var(--color-border)]"
         style={{
@@ -227,48 +59,39 @@ export function CharacterEntryPanel() {
           boxShadow: 'var(--shadow-card)',
         }}
       >
-        {/* Hero */}
-        <PokedexHero
+        {/* Header: avatar + nickname + dex number + gauge */}
+        <PokedexHeader
+          traitCount={traits.length}
+          nickname={null}
+          avatarPreset={null}
+          onAvatarChange={() => {}}
+        />
+
+        {/* Flat trait list */}
+        <PokedexTraitList
           traits={traits}
-          identityTraits={grouped.identity}
-          onEditTrait={handleEdit}
+          onEditTrait={handleUpdate}
           onDeleteTrait={handleDelete}
+          editingId={editingId}
+          onEditStart={handleEditStart}
+          onEditCancel={() => setEditingId(null)}
+          isPending={updateTrait.isPending}
         />
 
-        {/* General info list */}
-        {renderEditableZone('general', grouped.general, PokedexInfoList)}
-
-        {/* Stat bars */}
-        {renderEditableZone('stats', grouped.stats, PokedexStatBars)}
-
-        {/* Interests grid */}
-        <PokedexInterests
-          traits={grouped.interests}
-          onEditTrait={handleEdit}
-          onDeleteTrait={handleDelete}
-          onAddTrait={handleAddTrait}
-        />
-
-        {/* Description quotes */}
-        {renderEditableZone('description', grouped.description, PokedexDescription)}
-
-        {/* Habits chips */}
-        {renderEditableZone('habits', grouped.habits, PokedexHabits)}
+        {/* AI Insights */}
+        <PokedexAiInsights />
       </div>
-
-      {/* Radar chart */}
-      <PokedexRadarChart traits={traits} />
 
       {/* Add button / form */}
       <AnimatePresence mode="wait">
-        {addingState.open ? (
+        {addingOpen ? (
           <motion.div
             key="add-form"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
-            <PokedexAddTrait onClose={handleCloseAdd} initialLabel={addingState.label} />
+            <PokedexAddTrait onClose={() => setAddingOpen(false)} />
           </motion.div>
         ) : (
           <motion.button
@@ -277,7 +100,7 @@ export function CharacterEntryPanel() {
             animate={{ opacity: 1 }}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => setAddingState({ open: true })}
+            onClick={() => setAddingOpen(true)}
             className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl border border-dashed border-[var(--color-primary-200)] py-3 text-sm font-medium text-[var(--color-primary-500)] transition-all hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)] hover:shadow-sm"
           >
             <motion.div
