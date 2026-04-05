@@ -74,6 +74,7 @@ export interface ProfileTrait extends BaseEntity {
   category: TraitCategory
   sort_order: string
   history: TraitHistoryEntry[]
+  deleted_at: string | null
 }
 
 export interface Direction extends BaseEntity {

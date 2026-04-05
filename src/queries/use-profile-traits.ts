@@ -62,6 +62,7 @@ export function useCreateProfileTrait() {
         category: input.category ?? 'general',
         sort_order: generateKeyBetween(lastSortOrder, null),
         history: [],
+        deleted_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }

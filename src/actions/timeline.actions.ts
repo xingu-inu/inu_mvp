@@ -196,6 +196,24 @@ export const getTimelineEvents = authAction(
           toStatus: nextValue,
         })
       }
+
+      // Deleted event (soft delete)
+      if (trait.deleted_at) {
+        events.push({
+          id: `trait-deleted-${trait.id}`,
+          type: 'profile_trait',
+          timestamp: trait.deleted_at,
+          title: '프로필 항목 삭제',
+          description: trait.value,
+          areaId: null,
+          areaName: null,
+          areaEmoji: null,
+          entityId: trait.id,
+          entityName: trait.label,
+          fromStatus: trait.value,
+          toStatus: null,
+        })
+      }
     }
 
     for (const row of dirHistory) {
