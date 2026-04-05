@@ -11,6 +11,7 @@ import { StatusFilter } from './status-filter'
 
 export function RoadmapHeader() {
   const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
+  const rightPanelTab = useRoadmapStore((s) => s.rightPanelTab)
   const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
   const stats = useGoalStats()
 
@@ -29,9 +30,14 @@ export function RoadmapHeader() {
         </div>
         <CanvasToolbar className="hidden lg:flex">
           <CanvasToolbar.Toggle
-            active={false}
+            active={isOpen && rightPanelTab === 'ai-chat'}
             icon={<Lightbulb className="h-5 w-5" />}
-            onClick={() => useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })}
+            onClick={() => {
+              useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
+              const store = useRoadmapStore.getState()
+              store.setRightPanelTab('ai-chat')
+              store.setFloatingPanelOpen(true)
+            }}
             aria-label="쏟아내기"
             title="생각 쏟아내기"
           />
