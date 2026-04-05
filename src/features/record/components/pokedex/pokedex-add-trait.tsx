@@ -89,8 +89,7 @@ export function PokedexAddTrait({ onClose, initialCategory, initialLabel }: Poke
     }
   }, [step])
 
-  const valuePresets =
-    TRAIT_PRESETS[selectedCategory.category].find((p) => p.label === label)?.values ?? []
+  const valuePresets = TRAIT_PRESETS.find((p) => p.label === label)?.values ?? []
   const canSubmit = label.trim().length > 0 && value.trim().length > 0 && !createTrait.isPending
 
   const handleSelectCategory = (option: CategoryOption) => {
@@ -167,7 +166,7 @@ export function PokedexAddTrait({ onClose, initialCategory, initialLabel }: Poke
             </div>
             <div className="space-y-1.5">
               <SampleChips
-                items={TRAIT_PRESETS[selectedCategory.category].map((p) => p.label)}
+                items={TRAIT_PRESETS.map((p) => p.label)}
                 selectedValue={label}
                 onToggle={(val) => setLabel((prev) => (prev === val ? '' : val))}
                 preventBlur

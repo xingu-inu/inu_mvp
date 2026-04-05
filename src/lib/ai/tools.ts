@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import type { TypedSupabaseClient } from '@/repositories/base.repository'
+import { aiInsightRepository } from '@/repositories'
 import * as chatContext from './chat-context'
 
 const MAX_TOOL_RESULT_LENGTH = 4000
@@ -127,6 +128,45 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
       }),
       execute: async ({ traits }) => {
         return sanitizeToolResult({ type: 'suggest_profile_traits', traits })
+      },
+    }),
+
+    suggest_responses: tool({
+      description:
+        '대화의 다음 단계로 사용자가 선택할 수 있는 응답 옵션을 제안합니다. 모든 응답 끝에 호출하세요.',
+      inputSchema: z.object({
+        chips: z
+          .array(
+            z.object({
+              label: z.string().max(20).describe('칩에 표시할 짧은 텍스트'),
+              message: z.string().max(200).describe('칩 클릭 시 전송될 메시지'),
+            })
+          )
+          .min(2)
+          .max(4),
+      }),
+      execute: async ({ chips }) => {
+        return sanitizeToolResult({ type: 'suggest_responses', chips })
+      },
+    }),
+
+    save_ai_insight: tool({
+      description:
+        '대화 중 발견한 사용자에 대한 인사이트를 저장합니다. ' +
+        '사용자의 패턴, 성향, 성장 포인트 등 의미 있는 발견을 기록할 때 사용합니다.',
+      inputSchema: z.object({
+        title: z.string().max(100).describe('인사이트 제목 (예: 완벽주의 성향, 아침형 인간)'),
+        description: z.string().max(1000).describe('인사이트 상세 설명'),
+      }),
+      execute: async ({ title, description }) => {
+        const insight = await aiInsightRepository.create(supabase, userId, {
+          title,
+          description,
+        })
+        return sanitizeToolResult({
+          type: 'save_ai_insight',
+          insight: { id: insight.id, title: insight.title, description: insight.description },
+        })
       },
     }),
 
