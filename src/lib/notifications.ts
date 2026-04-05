@@ -56,6 +56,7 @@ function computeMilestones(
       priority: 4,
       relatedGoalId: goal.id,
       autoResolve: false,
+      timestamp: goal.completed_at ?? undefined,
     }))
 
   const groupMilestones: AppNotification[] = recentGroups
@@ -69,6 +70,7 @@ function computeMilestones(
       priority: 3,
       relatedGoalId: group.goal_id,
       autoResolve: false,
+      timestamp: group.completed_at ?? undefined,
     }))
 
   return [...goalMilestones, ...groupMilestones]
@@ -82,6 +84,27 @@ function computeDeadlines(goals: NotificationGoal[], today: Date): AppNotificati
   for (const goal of goals) {
     if (!goal.target_date) continue
     const daysUntil = differenceInDays(parseISO(goal.target_date), today)
+
+    // D+1~D+3: overdue (부드러운 톤, no guilt)
+    if (daysUntil >= -3 && daysUntil < 0) {
+      const daysOverdue = Math.abs(daysUntil)
+      results.push({
+        id: `deadline-${goal.id}`,
+        type: 'deadline' as const,
+        title: `${goal.name} D+${daysOverdue}`,
+        message:
+          daysOverdue === 1
+            ? '어제가 마감이었어요. 한번 확인해볼까요?'
+            : `마감일이 ${daysOverdue}일 지났어요. 괜찮아요, 확인해봐요!`,
+        icon: 'AlertTriangle',
+        priority: 4,
+        relatedGoalId: goal.id,
+        autoResolve: false,
+        timestamp: goal.target_date,
+      })
+      continue
+    }
+
     if (daysUntil < 0 || daysUntil > 7) continue
 
     results.push({
@@ -93,6 +116,7 @@ function computeDeadlines(goals: NotificationGoal[], today: Date): AppNotificati
       priority: daysUntil <= 2 ? 5 : 3,
       relatedGoalId: goal.id,
       autoResolve: false,
+      timestamp: goal.target_date,
     })
   }
 
@@ -120,6 +144,7 @@ function computeInsights(goals: NotificationGoal[], today: Date): AppNotificatio
           priority: 2,
           relatedGoalId: goal.id,
           autoResolve: true,
+          timestamp: goal.updated_at,
         })
       }
     }

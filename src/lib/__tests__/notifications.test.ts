@@ -85,9 +85,20 @@ describe('computeDeadlines', () => {
     expect(result.filter((n) => n.type === 'deadline')).toHaveLength(0)
   })
 
-  it('does NOT generate for past deadlines', () => {
-    const pastDate = format(addDays(TODAY, -1), 'yyyy-MM-dd')
-    const goals = [makeGoal({ target_date: pastDate })]
+  it('generates overdue notifications for D+1 to D+3', () => {
+    const yesterday = format(addDays(TODAY, -1), 'yyyy-MM-dd')
+    const goals = [makeGoal({ target_date: yesterday })]
+    const result = computeNotifications(goals, [], [], TODAY)
+
+    const deadlines = result.filter((n) => n.type === 'deadline')
+    expect(deadlines).toHaveLength(1)
+    expect(deadlines[0].title).toContain('D+1')
+    expect(deadlines[0].priority).toBe(4)
+  })
+
+  it('does NOT generate for deadlines older than D+3', () => {
+    const oldDate = format(addDays(TODAY, -4), 'yyyy-MM-dd')
+    const goals = [makeGoal({ target_date: oldDate })]
     const result = computeNotifications(goals, [], [], TODAY)
 
     expect(result.filter((n) => n.type === 'deadline')).toHaveLength(0)

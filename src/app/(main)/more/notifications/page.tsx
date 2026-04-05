@@ -1,38 +1,16 @@
 'use client'
 
-import { useCallback } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, CircleCheck } from 'lucide-react'
-import { queryKeys } from '@/lib/query/keys'
-import { useRoadmapStore } from '@/stores/roadmap.store'
-import { useNotifications, dismissNotification } from '@/queries/use-notifications'
+import { useNotificationActions } from '@/queries/use-notification-actions'
 import { NotificationItem } from '@/components/layout/notification-item'
-import type { AppNotification } from '@/types/entities'
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const pathname = usePathname()
-  const queryClient = useQueryClient()
-  const { data: notifications = [], isLoading } = useNotifications()
-  const select = useRoadmapStore((s) => s.select)
+  const { notifications, isLoading, readSet, handleClick, handleDismiss, handleMarkAllRead } =
+    useNotificationActions()
 
-  const handleClick = (notification: AppNotification) => {
-    if (notification.relatedGoalId) {
-      select({ type: 'goal', id: notification.relatedGoalId })
-      if (!pathname.startsWith('/roadmap')) {
-        router.push('/roadmap')
-      }
-    }
-  }
-
-  const handleDismiss = useCallback(
-    (notification: AppNotification) => {
-      dismissNotification(notification.id)
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.today() })
-    },
-    [queryClient]
-  )
+  const hasUnread = notifications.some((n) => !readSet.has(n.id))
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -45,6 +23,15 @@ export default function NotificationsPage() {
           <ChevronLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-semibold">알림</h1>
+        {hasUnread && (
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            className="ml-auto text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
+          >
+            모두 읽음
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -54,7 +41,7 @@ export default function NotificationsPage() {
       ) : notifications.length === 0 ? (
         <div className="px-4 py-20 text-center">
           <CircleCheck className="mx-auto h-8 w-8 text-green-500" />
-          <p className="mt-3 text-sm text-[var(--color-text-tertiary)]">모든 알림을 확인했어요</p>
+          <p className="mt-3 text-sm text-[var(--color-text-tertiary)]">새로운 알림이 없어요</p>
         </div>
       ) : (
         <div>
@@ -62,6 +49,7 @@ export default function NotificationsPage() {
             <NotificationItem
               key={n.id}
               notification={n}
+              isRead={readSet.has(n.id)}
               onClick={() => handleClick(n)}
               onDismiss={() => handleDismiss(n)}
             />
