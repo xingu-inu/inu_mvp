@@ -44,16 +44,16 @@ export function PokedexTraitRow({ trait, index, onEdit, onDelete, isNew }: Poked
         <span className="truncate text-sm text-[var(--color-text-primary)]">{trait.value}</span>
         <PokedexTraitHistory currentValue={trait.value} history={trait.history} />
       </div>
-      <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex gap-0.5 transition-opacity lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover:opacity-100">
         <button
           onClick={() => onEdit(trait)}
-          className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)]"
+          className="rounded-lg p-2 text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-tertiary)] hover:text-[var(--color-text-secondary)] lg:p-1"
         >
           <Pencil className="h-3 w-3" />
         </button>
         <button
           onClick={() => onDelete(trait.id)}
-          className="rounded-lg p-1 text-[var(--color-text-tertiary)] hover:bg-[var(--color-danger-hover-bg)] hover:text-[var(--color-miss)]"
+          className="rounded-lg p-2 text-[var(--color-text-tertiary)] hover:bg-[var(--color-danger-hover-bg)] hover:text-[var(--color-miss)] lg:p-1"
         >
           <Trash2 className="h-3 w-3" />
         </button>

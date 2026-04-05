@@ -18,7 +18,7 @@ export function FilterChips({ selectedAreaId, onSelect }: FilterChipsProps) {
         type="button"
         onClick={() => onSelect(undefined)}
         className={cn(
-          'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+          'min-h-[44px] shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors lg:min-h-0',
           selectedAreaId === undefined
             ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
             : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'
@@ -34,7 +34,7 @@ export function FilterChips({ selectedAreaId, onSelect }: FilterChipsProps) {
           type="button"
           onClick={() => onSelect(area.id)}
           className={cn(
-            'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+            'min-h-[44px] shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors lg:min-h-0',
             selectedAreaId === area.id
               ? 'bg-[var(--color-text-primary)] text-[var(--color-bg-primary)]'
               : 'bg-[var(--color-bg-tertiary)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-hover)]'

@@ -94,7 +94,7 @@ export function TimelineEventCard({ event, onHide }: TimelineEventCardProps) {
           type="button"
           onClick={() => onHide(event.id, event.type)}
           aria-label="이 항목 숨기기"
-          className="absolute top-7 right-0 shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover/hide:opacity-100 hover:bg-[var(--color-bg-tertiary)]"
+          className="absolute top-7 right-0 shrink-0 rounded p-2 transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:p-0.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/hide:opacity-100"
         >
           <X className="h-3 w-3 text-[var(--color-text-tertiary)]" />
         </button>

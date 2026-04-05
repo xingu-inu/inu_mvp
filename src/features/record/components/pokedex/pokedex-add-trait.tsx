@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Check, Plus } from 'lucide-react'
 import { Input } from '@/components/ui'
 import {
   Select,
@@ -19,15 +19,18 @@ const CUSTOM_LABEL_KEY = '__custom__'
 
 interface PokedexAddTraitProps {
   onClose: () => void
+  onTraitAdded?: () => void
 }
 
-export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
+export function PokedexAddTrait({ onClose, onTraitAdded }: PokedexAddTraitProps) {
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [customLabel, setCustomLabel] = useState('')
   const [value, setValue] = useState('')
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const customLabelRef = useRef<HTMLInputElement>(null)
   const valueRef = useRef<HTMLInputElement>(null)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout>>(null)
   const createTrait = useCreateProfileTrait()
 
   const isCustomMode = selectedPreset === CUSTOM_LABEL_KEY
@@ -42,26 +45,38 @@ export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
     }
   }, [isCustomMode])
 
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    }
+  }, [])
+
   const handlePresetChange = (val: string) => {
     setSelectedPreset(val)
     setValue('')
     if (val !== CUSTOM_LABEL_KEY) {
-      // Focus value input after selecting a preset
       setTimeout(() => valueRef.current?.focus(), 0)
     }
   }
 
+  const flashSuccess = useCallback(() => {
+    setShowSuccess(true)
+    if (successTimerRef.current) clearTimeout(successTimerRef.current)
+    successTimerRef.current = setTimeout(() => setShowSuccess(false), 600)
+  }, [])
+
   const handleSubmit = () => {
     if (!canSubmit) return
-    createTrait.mutate(
-      { label: resolvedLabel, value: value.trim(), category: 'general' },
-      { onSuccess: () => onClose() }
-    )
+    createTrait.mutate({ label: resolvedLabel, value: value.trim(), category: 'general' })
+    // Reset form immediately (optimistic update handles the UI)
+    setValue('')
+    flashSuccess()
+    onTraitAdded?.()
+    setTimeout(() => valueRef.current?.focus(), 0)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      // Only submit from Input elements, not from Select internals
       if (e.target === valueRef.current || e.target === customLabelRef.current) {
         e.preventDefault()
         handleSubmit()
@@ -72,9 +87,8 @@ export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
 
   return (
     <div className="space-y-2 px-3 pb-3">
-      {/* Inline row: label select/input + value input + add button */}
-      <div className="flex items-center gap-2">
-        {/* Label: dropdown or custom input */}
+      {/* Mobile: 2 rows. Desktop: single row */}
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
         {isCustomMode ? (
           <Input
             ref={customLabelRef}
@@ -83,11 +97,11 @@ export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
             onKeyDown={handleKeyDown}
             maxLength={50}
             placeholder="항목 이름"
-            className="h-9 w-28 shrink-0 text-xs"
+            className="h-9 text-xs lg:w-28 lg:shrink-0"
           />
         ) : (
           <Select value={selectedPreset} onValueChange={handlePresetChange}>
-            <SelectTrigger className="h-9 w-28 shrink-0 text-xs">
+            <SelectTrigger className="h-9 text-xs lg:w-28 lg:shrink-0">
               <SelectValue placeholder="항목 선택" />
             </SelectTrigger>
             <SelectContent>
@@ -108,25 +122,24 @@ export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
           </Select>
         )}
 
-        {/* Value input */}
-        <Input
-          ref={valueRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={500}
-          placeholder="내용"
-          className="h-9 min-w-0 flex-1 text-xs"
-        />
-
-        {/* Add button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-500)] text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-40"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Input
+            ref={valueRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            maxLength={500}
+            placeholder="내용"
+            className={`h-9 min-w-0 flex-1 text-xs transition-[border-color,box-shadow] duration-300 ${showSuccess ? 'border-emerald-400 shadow-[0_0_0_1px_theme(colors.emerald.400)]' : ''}`}
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition-colors ${showSuccess ? 'bg-emerald-500' : 'bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]'} disabled:opacity-40`}
+          >
+            {showSuccess ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Value presets (if selected preset has predefined values) */}
@@ -139,18 +152,28 @@ export function PokedexAddTrait({ onClose }: PokedexAddTraitProps) {
         />
       )}
 
-      {/* Custom mode: back to preset select */}
-      {isCustomMode && (
+      {/* Bottom row: back to presets (custom mode) + done button */}
+      <div className="flex items-center justify-between">
+        {isCustomMode ? (
+          <button
+            onClick={() => {
+              setSelectedPreset('')
+              setCustomLabel('')
+            }}
+            className="min-h-[44px] text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
+          >
+            프리셋에서 선택하기
+          </button>
+        ) : (
+          <span />
+        )}
         <button
-          onClick={() => {
-            setSelectedPreset('')
-            setCustomLabel('')
-          }}
-          className="min-h-[44px] text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
+          onClick={onClose}
+          className="min-h-[44px] text-[10px] font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]"
         >
-          프리셋에서 선택하기
+          완료
         </button>
-      )}
+      </div>
     </div>
   )
 }

@@ -95,7 +95,7 @@ export function TimelineAiCard({ node, onHide }: TimelineAiCardProps) {
                         type="button"
                         onClick={handleStartEdit}
                         aria-label="답변 수정"
-                        className="shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--color-bg-tertiary)]"
+                        className="shrink-0 rounded p-2 transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:p-0.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover:opacity-100"
                       >
                         <Pencil className="h-2.5 w-2.5 text-[var(--color-text-tertiary)]" />
                       </button>
@@ -147,7 +147,7 @@ export function TimelineAiCard({ node, onHide }: TimelineAiCardProps) {
                   type="button"
                   onClick={() => onHide(`ai-${node.id}`)}
                   aria-label="이 항목 숨기기"
-                  className="rounded p-0.5 opacity-0 transition-opacity group-hover/ai-hide:opacity-100 hover:bg-[var(--color-bg-tertiary)]"
+                  className="rounded p-2 transition-opacity hover:bg-[var(--color-bg-tertiary)] lg:p-0.5 lg:[@media(hover:hover)]:opacity-0 lg:[@media(hover:hover)]:group-hover/ai-hide:opacity-100"
                 >
                   <X className="h-3 w-3 text-[var(--color-text-tertiary)]" />
                 </button>

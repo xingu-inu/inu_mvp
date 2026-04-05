@@ -20,7 +20,7 @@ function formatDate(isoStr: string): string {
 export function PokedexTraitHistory({ currentValue, history }: PokedexTraitHistoryProps) {
   const [open, setOpen] = useState(false)
 
-  if (history.length === 0) return null
+  if (!history || history.length === 0) return null
 
   // oldest first
   const sorted = [...history].sort(
