@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { Check, X } from 'lucide-react'
 import type { ProfileTrait, TraitCategory } from '@/types/entities'
 import { Input, Textarea } from '@/components/ui'
@@ -14,6 +15,7 @@ interface PokedexTraitListProps {
   onEditStart: (trait: ProfileTrait) => void
   onEditCancel: () => void
   isPending?: boolean
+  highlightLastTrait?: boolean
 }
 
 function InlineEditForm({
@@ -86,13 +88,14 @@ export function PokedexTraitList({
   onEditStart,
   onEditCancel,
   isPending = false,
+  highlightLastTrait,
 }: PokedexTraitListProps) {
   const editingTrait = editingId ? traits.find((t) => t.id === editingId) : null
 
   return (
     <div className="px-3 py-2">
       {traits.length > 0 ? (
-        <div>
+        <AnimatePresence initial={false}>
           {traits.map((trait, i) =>
             trait.id === editingId && editingTrait ? (
               <InlineEditForm
@@ -109,10 +112,11 @@ export function PokedexTraitList({
                 index={i}
                 onEdit={onEditStart}
                 onDelete={onDeleteTrait}
+                isNew={highlightLastTrait && i === traits.length - 1}
               />
             )
           )}
-        </div>
+        </AnimatePresence>
       ) : (
         <div className="flex cursor-default items-center rounded-md px-2 py-1.5 text-[var(--color-text-disabled)]">
           <span className="w-20 shrink-0 text-xs font-medium">???</span>

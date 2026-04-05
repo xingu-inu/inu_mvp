@@ -154,13 +154,17 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
                 {idx === 0 && showAiSkeleton && <AiObservationSkeleton />}
               </>
             ) : (
-              <div className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4">
+              <motion.div
+                className="relative ml-3.5 border-l border-dashed border-blue-500/30 py-2 pl-4"
+                exit={{ opacity: 0, x: -16, height: 0, paddingTop: 0, paddingBottom: 0 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+              >
                 {/* Sparkle icon on timeline line */}
                 <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
                   <Sparkles className="h-3 w-3 text-blue-500" />
                 </div>
                 <TimelineAiCard node={item.data} onHide={handleHideAiNode} />
-              </div>
+              </motion.div>
             )}
           </div>
         ))}

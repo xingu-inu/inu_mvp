@@ -21,6 +21,24 @@ export const profileTraitRepository = {
       .from('profile_traits')
       .select('*')
       .eq('user_id', userId)
+      .is('deleted_at', null)
+      .order('sort_order', { ascending: true })
+
+    if (error) handleSupabaseError(error)
+    return (data ?? []) as unknown as ProfileTrait[]
+  },
+
+  /**
+   * 삭제된 항목 포함 전체 조회 (타임라인용)
+   */
+  async getAllIncludingDeleted(
+    supabase: TypedSupabaseClient,
+    userId: string
+  ): Promise<ProfileTrait[]> {
+    const { data, error } = await supabase
+      .from('profile_traits')
+      .select('*')
+      .eq('user_id', userId)
       .order('sort_order', { ascending: true })
 
     if (error) handleSupabaseError(error)
@@ -110,10 +128,13 @@ export const profileTraitRepository = {
   },
 
   /**
-   * 프로필 항목 삭제
+   * 프로필 항목 삭제 (soft delete — 타임라인 기록 보존)
    */
   async delete(supabase: TypedSupabaseClient, id: string): Promise<void> {
-    const { error } = await supabase.from('profile_traits').delete().eq('id', id)
+    const { error } = await supabase
+      .from('profile_traits')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
 
     if (error) handleSupabaseError(error)
   },

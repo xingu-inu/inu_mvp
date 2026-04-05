@@ -69,7 +69,8 @@ export function TimelineAiCard({ node, onHide }: TimelineAiCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      exit={{ opacity: 0, x: -16, height: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
     >
       <div className="group/ai-hide rounded-xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 p-px">
         <div className="rounded-xl bg-[var(--color-bg-secondary)] px-3 py-2">

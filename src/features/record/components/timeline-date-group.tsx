@@ -1,5 +1,6 @@
 'use client'
 
+import { AnimatePresence, motion } from 'framer-motion'
 import type {
   TimelineDateGroup as TimelineDateGroupType,
   TimelineEventType,
@@ -33,13 +34,29 @@ export function TimelineDateGroup({ group, onHideEvent }: TimelineDateGroupProps
 
       {/* Events with timeline line */}
       <div className="relative ml-3.5 border-l border-[var(--color-border)] pl-4">
-        {group.events.map((event) => (
-          <div key={event.id} className="relative">
-            {/* Dot on timeline */}
-            <div className="absolute top-4 -left-[calc(1rem+4.5px)] h-2 w-2 rounded-full border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)]" />
-            <TimelineEventCard event={event} onHide={onHideEvent} />
-          </div>
-        ))}
+        <AnimatePresence initial={false}>
+          {group.events.map((event) => (
+            <motion.div
+              key={event.id}
+              className="relative"
+              initial={{ opacity: 1, height: 'auto' }}
+              exit={{
+                opacity: 0,
+                x: -16,
+                height: 0,
+                marginTop: 0,
+                marginBottom: 0,
+                paddingTop: 0,
+                paddingBottom: 0,
+              }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+            >
+              {/* Dot on timeline */}
+              <div className="absolute top-4 -left-[calc(1rem+4.5px)] h-2 w-2 rounded-full border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)]" />
+              <TimelineEventCard event={event} onHide={onHideEvent} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   )

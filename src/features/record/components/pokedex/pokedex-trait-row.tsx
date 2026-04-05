@@ -10,15 +10,32 @@ interface PokedexTraitRowProps {
   index: number
   onEdit: (trait: ProfileTrait) => void
   onDelete: (id: string) => void
+  isNew?: boolean
 }
 
-export function PokedexTraitRow({ trait, index, onEdit, onDelete }: PokedexTraitRowProps) {
+export function PokedexTraitRow({ trait, index, onEdit, onDelete, isNew }: PokedexTraitRowProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -6 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.18 }}
-      className={`group flex items-center px-2 py-2 ${index % 2 === 1 ? 'rounded-md bg-[var(--color-bg-tertiary)]' : ''}`}
+      initial={{
+        opacity: 0,
+        x: -6,
+        backgroundColor: isNew ? 'var(--color-primary-50)' : 'transparent',
+      }}
+      animate={{ opacity: 1, x: 0, backgroundColor: 'transparent' }}
+      exit={{
+        opacity: 0,
+        x: -16,
+        height: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+        transition: { duration: 0.25, ease: 'easeOut' },
+      }}
+      transition={{
+        delay: index * 0.04,
+        duration: 0.18,
+        backgroundColor: isNew ? { duration: 1, ease: 'easeOut', delay: 0.2 } : undefined,
+      }}
+      className={`group flex items-center rounded-md px-2 py-2 ${index % 2 === 1 ? 'bg-[var(--color-bg-tertiary)]' : ''}`}
     >
       <span className="w-20 shrink-0 truncate text-xs font-medium text-[var(--color-text-tertiary)]">
         {trait.label}

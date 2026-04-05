@@ -135,7 +135,7 @@ export const getTimelineEvents = authAction(
       await Promise.all([
         statusHistoryRepository.getAllGoalHistory(supabase, user.id),
         statusHistoryRepository.getAllTaskHistory(supabase, user.id),
-        profileTraitRepository.getByUser(supabase, user.id),
+        profileTraitRepository.getAllIncludingDeleted(supabase, user.id),
         directionHistoryRepository.getAllHistory(supabase, user.id),
         goalRepository.getAll(supabase, user.id, directionId),
         taskRepository.getAll(supabase, user.id),
