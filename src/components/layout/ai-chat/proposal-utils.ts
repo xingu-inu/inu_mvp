@@ -24,9 +24,6 @@ export interface ProposeStructureArea {
     tasks: {
       name: string
       why?: string
-      repeat_type: string
-      duration_minutes: number
-      time_slot: string
     }[]
   }[]
 }
@@ -56,9 +53,6 @@ export function toReviewAreas(output: ProposeStructureOutput): BrainDumpReviewAr
             _checked: true,
             name: task.name || '(이름 없음)',
             why: task.why,
-            repeat_type: task.repeat_type || 'daily',
-            duration_minutes: task.duration_minutes || 15,
-            time_slot: task.time_slot || 'anytime',
           })
         ),
       })

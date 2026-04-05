@@ -203,13 +203,6 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
                   z.object({
                     name: z.string().describe('할 일 이름'),
                     why: z.string().optional().describe('이 할 일을 하는 이유'),
-                    repeat_type: z
-                      .enum(['once', 'daily', 'weekdays', 'weekends', 'weekly', 'custom'])
-                      .describe('반복 타입'),
-                    duration_minutes: z.number().describe('소요 시간(분)'),
-                    time_slot: z
-                      .enum(['morning', 'afternoon', 'evening', 'anytime'])
-                      .describe('시간대'),
                   })
                 ),
               })

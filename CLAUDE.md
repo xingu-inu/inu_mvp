@@ -45,10 +45,16 @@ npm run dev / build / lint / lint:fix / format / type-check / test / test:e2e / 
 ## Data Model
 
 Direction → Area → Goal → Group (optional) → Task
-Core entities: CheckIn (done/skip/miss) for daily task tracking
 Goal statuses: Active / Backlog / Completed / Maintenance / Paused / Archive
 
 Details: @docs/plan/core/data-model.md
+
+## AI 채팅 (쏟아내기)
+
+- 쏟아내기 모드: 사용자가 아이디어를 말하면 즉시 예시 구조(Area/Goal/Task)를 propose_structure 도구로 제안. "충분히 듣기" 아닌 "바로 보여주고 함께 수정" 방식
+- 응답 칩: 모든 AI 응답 끝에 suggest_responses 도구로 2-4개 클릭형 칩 제공 (필수)
+- Task 제안 시 repeat_type, duration_minutes, time_slot 필드 사용하지 않음 — 이름+이유만
+- propose_structure 호출 시 텍스트로 구조 내용을 반복하지 않음 (카드가 보여줌)
 
 ## Notion 연동
 

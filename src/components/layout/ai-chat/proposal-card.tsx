@@ -274,9 +274,6 @@ function ProposalCardInner({ data }: { data: ProposeStructureOutput }) {
                             >
                               {task.name}
                             </span>
-                            <span className="flex-shrink-0 rounded-full bg-[var(--color-bg-tertiary)] px-1.5 py-0.5 text-[9px] text-[var(--color-text-quaternary)]">
-                              {formatRepeatType(task.repeat_type)} · {task.duration_minutes}분
-                            </span>
                           </div>
                         ))}
                       </div>
@@ -390,23 +387,4 @@ function countCheckedItems(areas: BrainDumpReviewArea[]): number {
     }
   }
   return count
-}
-
-function formatRepeatType(type: string): string {
-  switch (type) {
-    case 'once':
-      return '1회'
-    case 'daily':
-      return '매일'
-    case 'weekdays':
-      return '평일'
-    case 'weekends':
-      return '주말'
-    case 'weekly':
-      return '매주'
-    case 'custom':
-      return '커스텀'
-    default:
-      return type
-  }
 }

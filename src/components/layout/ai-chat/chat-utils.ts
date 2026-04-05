@@ -98,6 +98,25 @@ export function isTraitSuggestionPart(part: unknown): part is TraitSuggestionToo
   return false
 }
 
+/** Narrowed shape for suggest_responses tool parts */
+export interface ResponseChipsPart {
+  type: string
+  toolName?: string
+  toolCallId: string
+  state: string
+  output?: { type: 'suggest_responses'; chips: { label: string; message: string }[] }
+}
+
+/** Check if a UIMessage part is a suggest_responses tool invocation */
+export function isResponseChipsPart(part: unknown): part is ResponseChipsPart {
+  if (typeof part !== 'object' || part === null) return false
+  const p = part as Record<string, unknown>
+  if (typeof p.toolCallId !== 'string' || typeof p.state !== 'string') return false
+  if (p.type === 'dynamic-tool' && p.toolName === 'suggest_responses') return true
+  if (p.type === 'tool-suggest_responses') return true
+  return false
+}
+
 export const BRAIN_DUMP_QUICK_ACTIONS = [
   { label: '마음 정리', prompt: '요즘 머릿속이 복잡해. 있는 그대로 꺼내볼게, 같이 정리해줘: ' },
   { label: '삶의 시즌 정리', prompt: '지금 내 삶의 시즌이 어떤 상태인지 같이 정리하고 싶어' },

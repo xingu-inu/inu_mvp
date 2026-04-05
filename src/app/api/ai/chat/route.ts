@@ -224,9 +224,10 @@ export const POST = authRoute(
     systemPrompt += `\n\n[구조 제안 기능]
 사용자가 "하고 싶은 것들이 많아", "정리가 필요해", "새로운 목표를 세우고 싶어",
 "요즘 이것저것 해보고 싶은 게 많은데" 등 구조 정리가 필요한 의도를 보이면:
-1. 먼저 충분히 이야기를 들으세요
-2. get_user_overview 도구로 기존 구조를 확인하세요
-3. propose_structure 도구를 사용해 구조를 제안하세요
+1. get_user_overview 도구로 기존 구조를 확인하세요
+2. propose_structure 도구를 사용해 바로 구조를 제안하세요
+3. 완벽하지 않아도 괜찮아요 — 대화의 출발점으로 먼저 보여주세요
+4. 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요
 명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
 
     const { context } = parsed.data
@@ -235,18 +236,20 @@ export const POST = authRoute(
         systemPrompt += `\n\n[대화 맥락 — 쏟아내기 모드]
 사용자가 "쏟아내기" 모드로 대화를 시작했습니다.
 
-역할: 사용자가 하고 싶은 것들, 목표, 아이디어를 자유롭게 이야기하면 이를 체계적으로 정리해주세요.
+역할: 사용자가 아이디어를 말하면 즉시 구체적인 예시 구조를 보여주고, 대화하면서 함께 다듬어가세요.
 
 진행 방식:
-1. 사용자의 이야기를 충분히 들으세요. "더 있어요?" "다른 영역은요?" 등으로 더 끌어내세요.
-2. 충분히 모이면 get_user_overview 도구로 기존 구조를 확인하세요.
-3. 기존 Area에 맞는 것은 기존 Area에, 새로운 영역은 새 Area로 propose_structure 도구를 호출하세요.
-4. 사용자가 수정을 요청하면 반영해서 다시 propose_structure를 호출하세요.
+1. 사용자가 관심사/목표를 언급하면 get_user_overview로 기존 구조를 빠르게 확인하세요.
+2. 바로 propose_structure를 호출해 구체적인 예시 구조를 보여주세요.
+   - "운동하고 싶어" → 즉시 운동 관련 Area/Goal/Task 예시 제안
+   - 완벽하지 않아도 괜찮아요. 대화의 출발점이니까요.
+3. "이런 느낌은 어때?" 라는 톤으로 짧게 말하고, 수정 요청이 오면 반영해서 다시 호출하세요.
+4. 사용자가 여러 주제를 쏟아내면 한 번에 모아서 제안하세요.
 
 중요:
-- 처음부터 구조화하지 마세요. 먼저 자유롭게 이야기하게 하세요.
-- 한 번에 너무 많이 만들지 마세요. 핵심부터 시작.
-- 기존 Area/Goal과 중복되지 않게 확인하세요.`
+- propose_structure를 호출할 때, 텍스트로 구조 내용을 반복하지 마세요. 카드가 보여주니까요. 텍스트는 짧은 한마디만 ("이런 느낌은 어때?", "이걸로 시작해볼까?") 하세요.
+- 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요. get_user_overview 결과의 areas[].id를 사용하세요. 새 Area를 만들지 마세요 — 기존 Area가 있으면 무조건 그곳에 넣으세요.
+- 구조가 너무 크면 핵심부터 시작하세요.`
       } else if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
@@ -264,6 +267,14 @@ export const POST = authRoute(
         systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
       }
     }
+
+    // 응답 칩 가이드 — 모든 컨텍스트 뒤에 배치 (최신성 편향 활용)
+    systemPrompt += `\n\n[필수 — 응답 칩]
+매 응답의 마지막에 반드시 suggest_responses 도구를 호출하세요. 이것은 선택이 아닌 필수입니다.
+- 2~4개의 칩을 맥락에 맞게 제안하세요
+- 구조 제안 후 → ["이대로 반영할게", "운동 종류 바꿔줘", "더 가볍게 해줘", "다른 영역도 추가"]
+- 일반 대화 → ["더 이야기해볼게", "정리해줘", "다른 주제로", "프로필에 추가해줘"]
+- 질문할 때 → 예상 답변을 칩으로 제공 (예: "매일", "주 3회", "주말만")`
 
     // V-02 FIX: Check ALL user messages for injection, not just the last one
     const uiMessages = parsed.data.messages as unknown as UIMessage[]
@@ -312,7 +323,7 @@ export const POST = authRoute(
       system: systemPrompt,
       messages: sanitizedMessages,
       tools,
-      stopWhen: stepCountIs(3),
+      stopWhen: stepCountIs(4),
       maxOutputTokens: 2048,
       temperature: 0.7,
       onFinish: ({ text }) => {

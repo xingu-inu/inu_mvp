@@ -5,8 +5,14 @@ import type { UIMessage } from 'ai'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Loader2 } from 'lucide-react'
-import { getMessageText, isProposalPart, isTraitSuggestionPart } from './chat-utils'
+import {
+  getMessageText,
+  isProposalPart,
+  isTraitSuggestionPart,
+  isResponseChipsPart,
+} from './chat-utils'
 import { ProposalCard } from './proposal-card'
+import { ResponseChips } from './response-chips'
 import { TraitSuggestionCard } from './trait-suggestion-card'
 
 const markdownComponents = {
@@ -43,9 +49,13 @@ const markdownComponents = {
 export const StreamingBubble = memo(function StreamingBubble({
   message,
   isLastStreaming,
+  isLastMessage,
+  onSendMessage,
 }: {
   message: UIMessage
   isLastStreaming?: boolean
+  isLastMessage?: boolean
+  onSendMessage?: (text: string) => void
 }) {
   const isUser = message.role === 'user'
 
@@ -63,7 +73,9 @@ export const StreamingBubble = memo(function StreamingBubble({
 
   // Assistant messages: iterate parts to detect tool invocations
   const parts = message.parts ?? []
-  const hasToolCard = parts.some((p) => isProposalPart(p) || isTraitSuggestionPart(p))
+  const hasToolCard = parts.some(
+    (p) => isProposalPart(p) || isTraitSuggestionPart(p) || isResponseChipsPart(p)
+  )
 
   // If no tool card parts, render the simple way (text only)
   if (!hasToolCard) {
@@ -134,6 +146,25 @@ export const StreamingBubble = memo(function StreamingBubble({
                 <span>프로필을 정리하는 중...</span>
               </div>
             )
+          }
+
+          // Response chips tool parts
+          if (isResponseChipsPart(part)) {
+            if (part.state === 'output-available' && part.output != null && onSendMessage) {
+              const out = part.output as Record<string, unknown>
+              const chips = Array.isArray(out.chips) ? out.chips : null
+              if (chips && chips.length > 0) {
+                return (
+                  <ResponseChips
+                    key={part.toolCallId}
+                    chips={chips as { label: string; message: string }[]}
+                    onSend={onSendMessage}
+                    disabled={!isLastMessage || isLastStreaming}
+                  />
+                )
+              }
+            }
+            return null
           }
 
           return null

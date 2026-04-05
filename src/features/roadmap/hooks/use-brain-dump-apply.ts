@@ -8,16 +8,13 @@ import { createGoal } from '@/actions/goal.actions'
 import { createTask } from '@/actions/task.actions'
 import { queryKeys } from '@/lib/query/keys'
 import { useAreas } from '@/queries/use-areas'
-import type { AreaType, TimeSlot, RepeatType } from '@/types/entities'
+import type { AreaType } from '@/types/entities'
 
 export interface BrainDumpReviewTask {
   _id: string
   _checked: boolean
   name: string
   why?: string
-  repeat_type: string
-  duration_minutes: number
-  time_slot: string
 }
 
 export interface BrainDumpReviewGoal {
@@ -141,9 +138,7 @@ export function useBrainDumpApply() {
                 goal_id: goalResult.data.id,
                 name: task.name,
                 why: task.why,
-                repeat_type: task.repeat_type as RepeatType,
-                duration_minutes: task.duration_minutes,
-                time_slot: task.time_slot as TimeSlot,
+                repeat_type: 'daily',
               })
 
               if (taskResult.success) {
