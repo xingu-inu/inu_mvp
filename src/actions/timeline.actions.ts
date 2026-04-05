@@ -8,6 +8,7 @@ import {
   goalRepository,
   taskRepository,
   areaRepository,
+  hiddenTimelineRepository,
 } from '@/repositories'
 import { getActiveDirectionId } from '@/repositories/base.repository'
 import { successResponse } from '@/lib/api'
@@ -130,15 +131,17 @@ export const getTimelineEvents = authAction(
     const directionId = await getActiveDirectionId(supabase, user.id)
 
     // Fetch all data sources in parallel
-    const [goalHistory, taskHistory, traits, dirHistory, goals, tasks, areas] = await Promise.all([
-      statusHistoryRepository.getAllGoalHistory(supabase, user.id),
-      statusHistoryRepository.getAllTaskHistory(supabase, user.id),
-      profileTraitRepository.getByUser(supabase, user.id),
-      directionHistoryRepository.getAllHistory(supabase, user.id),
-      goalRepository.getAll(supabase, user.id, directionId),
-      taskRepository.getAll(supabase, user.id),
-      areaRepository.getAll(supabase, user.id),
-    ])
+    const [goalHistory, taskHistory, traits, dirHistory, goals, tasks, areas, hiddenSet] =
+      await Promise.all([
+        statusHistoryRepository.getAllGoalHistory(supabase, user.id),
+        statusHistoryRepository.getAllTaskHistory(supabase, user.id),
+        profileTraitRepository.getByUser(supabase, user.id),
+        directionHistoryRepository.getAllHistory(supabase, user.id),
+        goalRepository.getAll(supabase, user.id, directionId),
+        taskRepository.getAll(supabase, user.id),
+        areaRepository.getAll(supabase, user.id),
+        hiddenTimelineRepository.getByUser(supabase, user.id),
+      ])
 
     // Build lookup maps
     const areaMap = new Map<string, Area>(areas.map((a) => [a.id, a]))
@@ -202,6 +205,9 @@ export const getTimelineEvents = authAction(
     // Sort by timestamp descending
     events.sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 
-    return successResponse(events)
+    // Filter out hidden events
+    const visibleEvents = events.filter((e) => !hiddenSet.has(e.id))
+
+    return successResponse(visibleEvents)
   }
 )

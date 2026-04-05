@@ -769,6 +769,30 @@ export type Database = {
           },
         ]
       }
+      hidden_timeline_events: {
+        Row: {
+          event_id: string
+          event_type: string
+          hidden_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          event_type: string
+          hidden_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          event_type?: string
+          hidden_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       monthly_reflections: {
         Row: {
           challenge: string | null

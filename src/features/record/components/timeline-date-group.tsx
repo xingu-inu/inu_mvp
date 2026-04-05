@@ -1,6 +1,9 @@
 'use client'
 
-import type { TimelineDateGroup as TimelineDateGroupType } from '@/types/timeline'
+import type {
+  TimelineDateGroup as TimelineDateGroupType,
+  TimelineEventType,
+} from '@/types/timeline'
 import { TimelineEventCard } from './timeline-event-card'
 
 function formatDate(dateStr: string): string {
@@ -15,9 +18,10 @@ function formatDate(dateStr: string): string {
 
 interface TimelineDateGroupProps {
   group: TimelineDateGroupType
+  onHideEvent?: (eventId: string, eventType: TimelineEventType) => void
 }
 
-export function TimelineDateGroup({ group }: TimelineDateGroupProps) {
+export function TimelineDateGroup({ group, onHideEvent }: TimelineDateGroupProps) {
   return (
     <div>
       {/* Date header */}
@@ -33,7 +37,7 @@ export function TimelineDateGroup({ group }: TimelineDateGroupProps) {
           <div key={event.id} className="relative">
             {/* Dot on timeline */}
             <div className="absolute top-4 -left-[calc(1rem+4.5px)] h-2 w-2 rounded-full border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)]" />
-            <TimelineEventCard event={event} />
+            <TimelineEventCard event={event} onHide={onHideEvent} />
           </div>
         ))}
       </div>

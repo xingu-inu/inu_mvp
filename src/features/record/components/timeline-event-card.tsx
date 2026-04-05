@@ -1,6 +1,6 @@
 'use client'
 
-import { Target, Footprints, User, Compass } from 'lucide-react'
+import { Target, Footprints, User, Compass, X } from 'lucide-react'
 import type { TimelineEvent, TimelineEventType } from '@/types/timeline'
 
 const EVENT_ICONS: Record<TimelineEventType, typeof Target> = {
@@ -24,13 +24,14 @@ function formatTime(timestamp: string): string {
 
 interface TimelineEventCardProps {
   event: TimelineEvent
+  onHide?: (eventId: string, eventType: TimelineEventType) => void
 }
 
-export function TimelineEventCard({ event }: TimelineEventCardProps) {
+export function TimelineEventCard({ event, onHide }: TimelineEventCardProps) {
   const Icon = EVENT_ICONS[event.type]
 
   return (
-    <div className="flex gap-3 py-2.5">
+    <div className="group/hide relative flex gap-3 py-2.5">
       {/* Icon */}
       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-tertiary)]">
         <Icon className="h-3.5 w-3.5 text-[var(--color-text-secondary)]" />
@@ -86,6 +87,18 @@ export function TimelineEventCard({ event }: TimelineEventCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Hide button — visible on hover */}
+      {onHide && (
+        <button
+          type="button"
+          onClick={() => onHide(event.id, event.type)}
+          aria-label="이 항목 숨기기"
+          className="absolute top-7 right-0 shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover/hide:opacity-100 hover:bg-[var(--color-bg-tertiary)]"
+        >
+          <X className="h-3 w-3 text-[var(--color-text-tertiary)]" />
+        </button>
+      )}
     </div>
   )
 }

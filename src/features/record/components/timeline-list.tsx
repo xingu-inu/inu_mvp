@@ -1,15 +1,17 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Clock, Sparkles } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useTimelineEvents } from '@/queries/use-timeline'
 import { useTimelineObservations } from '@/queries/use-timeline-observations'
+import { useHideTimelineEvent } from '@/queries/use-hide-timeline-event'
 import { TimelineDateGroup } from './timeline-date-group'
 import { TimelineAiCard } from './timeline-ai-card'
 import type {
   TimelineDateGroup as TimelineDateGroupType,
   TimelineAiNode,
+  TimelineEventType,
   TimelineItem,
 } from '@/types/timeline'
 
@@ -71,6 +73,21 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
     isLoading: isObservationsLoading,
     isPlaceholderData,
   } = useTimelineObservations()
+  const hideEvent = useHideTimelineEvent()
+
+  const handleHideEvent = useCallback(
+    (eventId: string, eventType: TimelineEventType) => {
+      hideEvent.mutate({ eventId, eventType })
+    },
+    [hideEvent]
+  )
+
+  const handleHideAiNode = useCallback(
+    (eventId: string) => {
+      hideEvent.mutate({ eventId, eventType: 'ai_observation' })
+    },
+    [hideEvent]
+  )
 
   const mergedItems = useMemo(
     () => mergeTimelineItems(groups ?? [], observationsData?.nodes, selectedAreaId),
@@ -132,7 +149,7 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
           <div key={item.kind === 'date-group' ? item.data.date : item.data.id}>
             {item.kind === 'date-group' ? (
               <>
-                <TimelineDateGroup group={item.data} />
+                <TimelineDateGroup group={item.data} onHideEvent={handleHideEvent} />
                 {/* Show AI skeleton after first date group on cold start */}
                 {idx === 0 && showAiSkeleton && <AiObservationSkeleton />}
               </>
@@ -142,7 +159,7 @@ export function TimelineList({ selectedAreaId }: TimelineListProps) {
                 <div className="absolute top-4 -left-[calc(1rem+4.5px)] flex h-2 w-2 items-center justify-center">
                   <Sparkles className="h-3 w-3 text-blue-500" />
                 </div>
-                <TimelineAiCard node={item.data} />
+                <TimelineAiCard node={item.data} onHide={handleHideAiNode} />
               </div>
             )}
           </div>

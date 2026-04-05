@@ -2,16 +2,17 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Sparkles, Pencil, MessageCircle, PenLine } from 'lucide-react'
+import { Sparkles, Pencil, MessageCircle, PenLine, X } from 'lucide-react'
 import { useAiChatStore } from '@/stores/ai-chat.store'
 import { useUpsertTimelineNote } from '@/queries/use-timeline-note'
 import type { TimelineAiNode } from '@/types/timeline'
 
 interface TimelineAiCardProps {
   node: TimelineAiNode
+  onHide?: (eventId: string) => void
 }
 
-export function TimelineAiCard({ node }: TimelineAiCardProps) {
+export function TimelineAiCard({ node, onHide }: TimelineAiCardProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -70,7 +71,7 @@ export function TimelineAiCard({ node }: TimelineAiCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <div className="rounded-xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 p-px">
+      <div className="group/ai-hide rounded-xl bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 p-px">
         <div className="rounded-xl bg-[var(--color-bg-secondary)] px-3 py-2">
           {/* Message with inline header */}
           <div className="flex items-start gap-2">
@@ -131,14 +132,26 @@ export function TimelineAiCard({ node }: TimelineAiCardProps) {
               )}
             </div>
 
-            {/* Chat link — inline right */}
-            <button
-              type="button"
-              onClick={handleChatLink}
-              className="mt-0.5 shrink-0 text-[11px] text-blue-500/70 transition-colors hover:text-blue-600"
-            >
-              대화 →
-            </button>
+            {/* Chat link + hide — inline right */}
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={handleChatLink}
+                className="mt-0.5 text-[11px] text-blue-500/70 transition-colors hover:text-blue-600"
+              >
+                대화 →
+              </button>
+              {onHide && (
+                <button
+                  type="button"
+                  onClick={() => onHide(`ai-${node.id}`)}
+                  aria-label="이 항목 숨기기"
+                  className="rounded p-0.5 opacity-0 transition-opacity group-hover/ai-hide:opacity-100 hover:bg-[var(--color-bg-tertiary)]"
+                >
+                  <X className="h-3 w-3 text-[var(--color-text-tertiary)]" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

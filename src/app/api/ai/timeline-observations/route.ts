@@ -7,6 +7,7 @@ import { profileRepository } from '@/repositories/profile.repository'
 import { profileTraitRepository } from '@/repositories/profile-trait.repository'
 import { timelineNoteRepository } from '@/repositories/timeline-note.repository'
 import { aiObservationRepository } from '@/repositories/ai-observation.repository'
+import { hiddenTimelineRepository } from '@/repositories/hidden-timeline.repository'
 import { DEFAULT_MODEL, type AiModelId } from '@/lib/ai/provider'
 import { CORE_PRINCIPLES, SECURITY_PRINCIPLES } from '@/lib/ai/constants'
 import {
@@ -414,11 +415,12 @@ export const POST = authRoute(
   'ai.timeline-observations',
   async (ctx): Promise<NextResponse> => {
     try {
-      // Fetch cached observations + notes + profile in parallel
-      const [cached, existingNotes, profile] = await Promise.all([
+      // Fetch cached observations + notes + profile + hidden set in parallel
+      const [cached, existingNotes, profile, hiddenSet] = await Promise.all([
         aiObservationRepository.getByUser(ctx.supabase, ctx.user.id),
         timelineNoteRepository.getByUser(ctx.supabase, ctx.user.id),
         profileRepository.get(ctx.supabase, ctx.user.id),
+        hiddenTimelineRepository.getByUser(ctx.supabase, ctx.user.id),
       ])
 
       const accountAgeDays = profile?.created_at
@@ -430,7 +432,9 @@ export const POST = authRoute(
         const cachedNodes = cached.nodes as ObservationNode[]
 
         // Always re-enrich with latest note responses (user may have responded since cache)
-        const enrichedNodes = enrichCachedNodes(cachedNodes, existingNotes)
+        const enrichedNodes = enrichCachedNodes(cachedNodes, existingNotes).filter(
+          (node) => !hiddenSet.has(`ai-${node.id}`)
+        )
 
         // Schedule background refresh via after() — keeps serverless runtime alive (C1 fix)
         after(async () => {
@@ -503,10 +507,12 @@ export const POST = authRoute(
         accountAgeDays,
       })
 
+      const visibleNodes = enrichedNodes.filter((node) => !hiddenSet.has(`ai-${node.id}`))
+
       return NextResponse.json({
         success: true,
         data: {
-          nodes: enrichedNodes,
+          nodes: visibleNodes,
           generated_at: new Date().toISOString(),
         },
       })
