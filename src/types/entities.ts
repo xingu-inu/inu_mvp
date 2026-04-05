@@ -306,6 +306,26 @@ export interface UpdateProfileInput {
   ai_model?: string
 }
 
+// ============================================
+// AI Insights
+// ============================================
+export interface AiInsight extends BaseEntity {
+  user_id: string
+  title: string
+  description: string
+  sort_order: string
+}
+
+export interface CreateAiInsightInput {
+  title: string
+  description: string
+}
+
+export interface UpdateAiInsightInput {
+  title?: string
+  description?: string
+}
+
 export interface CreateProfileTraitInput {
   label: string
   value: string

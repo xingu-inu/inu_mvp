@@ -60,6 +60,13 @@ export {
 } from './profile-trait.actions'
 
 export {
+  getAiInsights,
+  createAiInsight,
+  updateAiInsight,
+  deleteAiInsight,
+} from './ai-insight.actions'
+
+export {
   getAllMessages,
   getUnreadMessages,
   getUnreadCount,

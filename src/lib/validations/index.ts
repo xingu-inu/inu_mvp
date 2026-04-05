@@ -272,6 +272,22 @@ export type CreateProfileTraitSchema = z.infer<typeof createProfileTraitSchema>
 export type UpdateProfileTraitSchema = z.infer<typeof updateProfileTraitSchema>
 
 // ============================================
+// AI Insight Schemas
+// ============================================
+export const createAiInsightSchema = z.object({
+  title: z.string().trim().min(1, '제목을 입력해주세요').max(100, '최대 100자'),
+  description: z.string().trim().min(1, '내용을 입력해주세요').max(2000, '최대 2000자'),
+})
+
+export const updateAiInsightSchema = z.object({
+  title: z.string().trim().min(1).max(100).optional(),
+  description: z.string().trim().min(1).max(2000).optional(),
+})
+
+export type CreateAiInsightSchema = z.infer<typeof createAiInsightSchema>
+export type UpdateAiInsightSchema = z.infer<typeof updateAiInsightSchema>
+
+// ============================================
 // Auth Schemas
 // ============================================
 export const loginSchema = z.object({

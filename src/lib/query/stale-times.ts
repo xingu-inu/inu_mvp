@@ -11,6 +11,7 @@ export const STALE_TIMES = {
   AREA: 10 * 60 * 1000, // 인생 영역 - 거의 안 바뀜
   PROFILE: 10 * 60 * 1000, // 프로필 - 거의 안 바뀜
   PROFILE_TRAITS: 10 * 60 * 1000, // 프로필 항목 - 거의 안 바뀜, mutation이 invalidate
+  AI_INSIGHTS: 10 * 60 * 1000, // AI 인사이트 - 거의 안 바뀜, mutation이 invalidate
 
   // ═══════════════════════════════════════════════════
   // 가끔 변경 (3분) - 주 1-2회 수정

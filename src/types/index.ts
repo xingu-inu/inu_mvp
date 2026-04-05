@@ -34,6 +34,9 @@ export type {
   ProfileTrait,
   CreateProfileTraitInput,
   UpdateProfileTraitInput,
+  AiInsight,
+  CreateAiInsightInput,
+  UpdateAiInsightInput,
   // Roadmap Versioning
   CreateRoadmapVersionInput,
   RoadmapVersionResult,
