@@ -94,18 +94,19 @@ export function CharacterEntryPanel() {
           {addingOpen ? (
             <motion.div
               key="add-form"
-              initial={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, height: 0, overflow: 'hidden' }}
               animate={{
                 opacity: 1,
                 height: 'auto',
+                overflow: 'visible',
                 transition: { type: 'spring', stiffness: 300, damping: 28 },
               }}
               exit={{
                 opacity: 0,
                 height: 0,
+                overflow: 'hidden',
                 transition: { duration: 0.2, ease: 'easeOut' },
               }}
-              className="overflow-hidden"
             >
               <PokedexAddTrait
                 onClose={() => setAddingOpen(false)}
