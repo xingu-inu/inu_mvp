@@ -1,5 +1,7 @@
 export { CharacterEntryPanel } from './character-entry-panel'
 export { PokedexHero } from './pokedex-hero'
+export { PokedexHeader } from './pokedex-header'
+export { PokedexAvatarPicker } from './pokedex-avatar-picker'
 export { PokedexStatBars } from './pokedex-stat-bars'
 export { PokedexInterests } from './pokedex-interests'
 export { PokedexDescription } from './pokedex-description'

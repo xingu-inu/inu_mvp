@@ -240,6 +240,7 @@ export const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   timezone: z.string().optional(),
   ai_model: z.enum(['gemini-2.5-flash', 'gpt-4.1', 'gpt-5.1']).optional(),
+  avatar_preset: z.string().max(50).nullable().optional(),
 })
 
 export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>

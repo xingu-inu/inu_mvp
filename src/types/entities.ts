@@ -47,6 +47,7 @@ export interface Profile extends BaseEntity {
   email: string
   name: string | null
   avatar_url: string | null
+  avatar_preset: string | null
   timezone: string
   onboarding_completed: boolean
   is_admin: boolean
@@ -304,6 +305,7 @@ export interface UpdateProfileInput {
   name?: string
   timezone?: string
   ai_model?: string
+  avatar_preset?: string | null
 }
 
 // ============================================
