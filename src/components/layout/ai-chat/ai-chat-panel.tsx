@@ -74,9 +74,16 @@ interface AiChatPanelProps {
   fullscreen?: boolean
   /** Called when fullscreen panel requests close */
   onClose?: () => void
+  /** When false, hides all brain-dump entry points (default: true) */
+  allowBrainDump?: boolean
 }
 
-export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: AiChatPanelProps) {
+export function AiChatPanel({
+  embedded = false,
+  fullscreen = false,
+  onClose,
+  allowBrainDump = true,
+}: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -84,6 +91,8 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
   const startNewConversation = useAiChatStore((s) => s.startNewConversation)
   const context = useAiChatStore((s) => s.context)
   const clearContext = useAiChatStore((s) => s.clearContext)
+
+  const isBrainDump = allowBrainDump && context?.type === 'brain-dump'
 
   const [input, setInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
@@ -167,10 +176,10 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  // Focus input on conversation change
+  // Focus input on conversation or context change
   useEffect(() => {
     inputRef.current?.focus()
-  }, [activeConversationId])
+  }, [activeConversationId, context])
 
   const handleSend = async (text: string) => {
     if (!text.trim() || isStreaming || isSendingRef.current) return
@@ -262,7 +271,14 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
   const chatContent = (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-4 py-2">
+      <div
+        className={cn(
+          'flex min-h-[45px] items-center justify-between border-b px-4 py-2 transition-colors',
+          isBrainDump
+            ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
+            : 'border-[var(--color-border)]'
+        )}
+      >
         <div className="flex items-center gap-2">
           <button
             onClick={toggleSidebar}
@@ -275,8 +291,35 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
               <PanelLeftOpen className="h-4 w-4" />
             )}
           </button>
-          <span className="text-base">🐾</span>
-          <h3 className="text-sm font-semibold">동행 이누</h3>
+          {isBrainDump ? (
+            <>
+              <Lightbulb className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">쏟아내기</h3>
+              <button
+                onClick={clearContext}
+                className="rounded-full p-0.5 text-amber-400 transition-colors hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/40"
+                title="쏟아내기 모드 해제"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-base">🐾</span>
+              <h3 className="text-sm font-semibold">동행 이누</h3>
+              {allowBrainDump && (
+                <button
+                  onClick={() =>
+                    useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
+                  }
+                  className="rounded-full p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-amber-100 hover:text-amber-500 dark:hover:bg-amber-900/40 dark:hover:text-amber-400"
+                  title="쏟아내기 모드 켜기"
+                >
+                  <Lightbulb className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </>
+          )}
           {/* Goal/Task/Observation context badge */}
           {context && context.type !== 'brain-dump' && (
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
@@ -314,18 +357,30 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div
+        className={cn(
+          'flex-1 overflow-y-auto px-4 py-3 transition-colors',
+          isBrainDump && 'bg-amber-50/30 dark:bg-amber-950/20'
+        )}
+      >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <Mascot mood="happy" size="md" />
-            <p className="text-center text-sm text-[var(--color-text-secondary)]">
-              {context?.type === 'brain-dump'
+            <p
+              className={cn(
+                'text-center text-sm',
+                isBrainDump
+                  ? 'text-amber-700 dark:text-amber-300'
+                  : 'text-[var(--color-text-secondary)]'
+              )}
+            >
+              {isBrainDump
                 ? '머릿속 이야기부터 그대로 꺼내주세요. 이누가 같이 정리할게요'
                 : '방향이 흐릴 때도, 마음이 복잡할 때도 편하게 이야기해보세요'}
             </p>
 
-            {/* Brain dump promotion card — only when no context */}
-            {!context && (
+            {/* Brain dump promotion card — only when no context and allowed */}
+            {allowBrainDump && !context && (
               <button
                 onClick={() =>
                   useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
@@ -356,7 +411,12 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
                 <button
                   key={label}
                   onClick={() => handleSend(prompt)}
-                  className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  className={cn(
+                    'rounded-full border px-3 py-1.5 text-xs transition-colors',
+                    isBrainDump
+                      ? 'border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40'
+                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]'
+                  )}
                 >
                   {label}
                 </button>
@@ -372,6 +432,10 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
                 isLastStreaming={
                   isStreaming && msg.role === 'assistant' && i === messages.length - 1
                 }
+                {...(msg.role === 'assistant' && {
+                  isLastMessage: i === messages.length - 1,
+                  onSendMessage: handleSend,
+                })}
               />
             ))}
             {isStreaming && messages[messages.length - 1]?.role === 'user' && (
@@ -387,7 +451,12 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
       </div>
 
       {/* Input */}
-      <div className="border-t border-[var(--color-border)] px-4 py-3">
+      <div
+        className={cn(
+          'border-t px-4 py-3 transition-colors',
+          isBrainDump ? 'border-amber-200 dark:border-amber-800' : 'border-[var(--color-border)]'
+        )}
+      >
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -400,7 +469,9 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
             onKeyDown={handleKeyDown}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
-            placeholder="지금 떠오르는 생각을 적어보세요..."
+            placeholder={
+              isBrainDump ? '머릿속 이야기를 자유롭게...' : '지금 떠오르는 생각을 적어보세요...'
+            }
             disabled={isStreaming}
             rows={1}
             className="flex-1 resize-none overflow-y-auto bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
@@ -418,7 +489,12 @@ export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: A
             <button
               onClick={() => handleSend(input)}
               disabled={!input.trim()}
-              className="rounded-lg bg-[var(--color-primary-500)] p-2 text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-40"
+              className={cn(
+                'rounded-lg p-2 text-white transition-colors disabled:opacity-40',
+                isBrainDump
+                  ? 'bg-amber-500 hover:bg-amber-600'
+                  : 'bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]'
+              )}
             >
               <Send className="h-4 w-4" />
             </button>

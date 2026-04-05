@@ -38,7 +38,7 @@ export function FloatingAIButton() {
   return (
     <>
       {/* Chat Panel */}
-      <AnimatePresence>{isOpen && <AiChatPanel />}</AnimatePresence>
+      <AnimatePresence>{isOpen && <AiChatPanel allowBrainDump={false} />}</AnimatePresence>
 
       {/* Floating Button */}
       <motion.button
