@@ -61,7 +61,7 @@ export function AdminSidebar() {
       {/* Back to App */}
       <div className="border-t border-[var(--color-border)] p-3">
         <Link
-          href="/roadmap"
+          href="/"
           className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-hover)] hover:text-[var(--color-text-primary)]"
         >
           <ArrowLeft className="h-5 w-5 shrink-0" />

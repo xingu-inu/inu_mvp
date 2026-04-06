@@ -11,7 +11,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !profile?.is_admin) {
-      router.replace('/roadmap')
+      router.replace('/')
     }
   }, [profile, isLoading, router])
 

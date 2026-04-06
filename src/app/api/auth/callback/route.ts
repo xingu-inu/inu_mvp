@@ -5,7 +5,7 @@ import { publicRoute } from '@/lib/security'
  * Allowed path prefixes for post-auth redirect.
  * Only these top-level routes are permitted targets.
  */
-const ALLOWED_REDIRECT_PREFIXES = ['/onboarding', '/roadmap', '/record', '/profile', '/admin']
+const ALLOWED_REDIRECT_PREFIXES = ['/roadmap', '/record', '/profile', '/admin']
 
 /**
  * Sanitize redirect path to prevent open redirect attacks.
@@ -21,21 +21,23 @@ function sanitizeRedirectPath(path: string): string {
       if (next === decoded) break
       decoded = next
     } catch {
-      return '/roadmap'
+      return '/'
     }
   }
 
   if (!decoded.startsWith('/') || decoded.startsWith('//') || decoded.includes('://')) {
-    return '/roadmap'
+    return '/'
   }
 
-  // Whitelist check: path must start with one of the allowed prefixes
-  const isAllowed = ALLOWED_REDIRECT_PREFIXES.some(
-    (prefix) =>
-      decoded === prefix || decoded.startsWith(`${prefix}/`) || decoded.startsWith(`${prefix}?`)
-  )
+  // Whitelist check: root path or allowed prefixes
+  const isAllowed =
+    decoded === '/' ||
+    ALLOWED_REDIRECT_PREFIXES.some(
+      (prefix) =>
+        decoded === prefix || decoded.startsWith(`${prefix}/`) || decoded.startsWith(`${prefix}?`)
+    )
 
-  return isAllowed ? decoded : '/roadmap'
+  return isAllowed ? decoded : '/'
 }
 
 export const GET = publicRoute(
@@ -43,7 +45,7 @@ export const GET = publicRoute(
   async (ctx): Promise<NextResponse> => {
     const { searchParams, origin } = new URL(ctx.request.url)
     const code = searchParams.get('code')
-    const next = sanitizeRedirectPath(searchParams.get('next') ?? '/roadmap')
+    const next = sanitizeRedirectPath(searchParams.get('next') ?? '/')
 
     if (code) {
       const { error } = await ctx.supabase.auth.exchangeCodeForSession(code)
@@ -61,9 +63,9 @@ export const GET = publicRoute(
             .eq('id', user.id)
             .single()
 
-          // Redirect to onboarding if not completed
+          // Redirect to roadmap (onboarding modal shows there if not completed)
           if (!profile?.onboarding_completed) {
-            return NextResponse.redirect(`${origin}/onboarding`)
+            return NextResponse.redirect(`${origin}/`)
           }
         }
 

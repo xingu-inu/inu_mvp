@@ -42,8 +42,8 @@ export function useNotificationActions(onNavigate?: () => void) {
 
       if (notification.relatedGoalId) {
         select({ type: 'goal', id: notification.relatedGoalId })
-        if (!pathname.startsWith('/roadmap')) {
-          router.push('/roadmap')
+        if (pathname !== '/') {
+          router.push('/')
         }
         onNavigate?.()
       }

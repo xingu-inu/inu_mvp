@@ -9,10 +9,14 @@ import { trackEvent, ANALYTICS_EVENTS } from '@/lib/analytics'
 import { useNotificationCount } from '@/queries/use-notifications'
 
 const navItems = [
-  { href: '/roadmap', icon: Map, label: '로드맵' },
+  { href: '/', icon: Map, label: '로드맵' },
   { href: '/record', icon: BookOpen, label: '기록' },
   { href: '/more', icon: MoreHorizontal, label: '더보기' },
 ]
+
+function isNavActive(pathname: string, href: string): boolean {
+  return href === '/' ? pathname === '/' : pathname.startsWith(href)
+}
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -30,12 +34,12 @@ export function BottomNav() {
     const now = Date.now()
     const lastTap = lastTapRef.current
 
-    if (lastTap?.href === href && now - lastTap.time < 300 && pathname.startsWith(href)) {
+    if (lastTap?.href === href && now - lastTap.time < 300 && isNavActive(pathname, href)) {
       e.preventDefault()
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
 
-    if (!pathname.startsWith(href)) {
+    if (!isNavActive(pathname, href)) {
       trackEvent(ANALYTICS_EVENTS.TAB_SWITCHED, { from: pathname, to: href })
     }
 
@@ -53,7 +57,7 @@ export function BottomNav() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         {navItems.map(({ href, icon: Icon, label }) => {
-          const isActive = pathname.startsWith(href)
+          const isActive = isNavActive(pathname, href)
 
           return (
             <Link

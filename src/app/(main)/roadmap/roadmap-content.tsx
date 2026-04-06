@@ -42,6 +42,10 @@ const DeleteVersionDialog = dynamic(
     })),
   { ssr: false }
 )
+const OnboardingModal = dynamic(
+  () => import('@/features/onboarding').then((m) => ({ default: m.OnboardingModal })),
+  { ssr: false }
+)
 
 export default function RoadmapContent() {
   return (
@@ -79,6 +83,9 @@ export default function RoadmapContent() {
       <VersionHistoryPanel />
       <RestoreConfirmDialog />
       <DeleteVersionDialog />
+
+      {/* Onboarding Modal — shows for new users */}
+      <OnboardingModal />
     </>
   )
 }

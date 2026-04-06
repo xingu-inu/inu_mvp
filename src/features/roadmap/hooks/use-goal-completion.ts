@@ -36,7 +36,7 @@ export function useGoalCompletion({
   const handleConfirm = useCallback(() => {
     onComplete(selected, note.trim() || undefined)
     if (selected === 'next-level') {
-      router.push('/roadmap')
+      router.push('/')
     }
     if (resetAfterConfirm) {
       reset()

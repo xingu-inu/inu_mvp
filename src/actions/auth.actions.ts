@@ -57,25 +57,8 @@ export const signInWithEmail = publicAction(
       throw error
     }
 
-    // 온보딩 상태 확인
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (user) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('onboarding_completed')
-        .eq('id', user.id)
-        .single()
-
-      const redirectTo = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
-      revalidatePath('/', 'layout')
-      return successResponse({ redirectTo })
-    }
-
     revalidatePath('/', 'layout')
-    return successResponse({ redirectTo: '/roadmap' })
+    return successResponse({ redirectTo: '/' })
   },
   { rateLimit: { limit: 5 } }
 )

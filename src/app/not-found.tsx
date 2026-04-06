@@ -9,7 +9,7 @@ export default function NotFound() {
         요청하신 페이지가 존재하지 않거나 이동되었어요.
       </p>
       <Link
-        href="/roadmap"
+        href="/"
         className="inline-flex h-11 items-center justify-center rounded-lg bg-[var(--color-primary-500)] px-4 text-base font-semibold text-white transition-all hover:bg-[var(--color-primary-600)]"
       >
         메인으로 돌아가기

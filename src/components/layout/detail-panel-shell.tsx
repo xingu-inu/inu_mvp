@@ -21,7 +21,7 @@ export function DetailPanelShell({
   variant = 'default',
 }: DetailPanelShellProps) {
   const pathname = usePathname()
-  if (pathname.startsWith('/roadmap') || pathname.startsWith('/record')) return null
+  if (pathname === '/' || pathname.startsWith('/record')) return null
 
   return (
     <aside

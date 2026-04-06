@@ -506,6 +506,103 @@ export const BRAIN_DUMP_POPULAR_CHIPS: Array<{
   { id: 'new-hobby', label: '새 취미 시작', emoji: '🎨', areaType: 'hobbies' },
 ]
 
+// ============================================
+// V6 Onboarding — "일상에서 방향 발견하기"
+// ============================================
+
+export interface FeelingChip {
+  id: string
+  label: string
+  emoji: string
+  areaType: AreaType
+}
+
+export const FEELING_CHIPS: FeelingChip[] = [
+  { id: 'exercise', label: '운동할 때', emoji: '💪', areaType: 'health' },
+  { id: 'learning', label: '배울 때', emoji: '📚', areaType: 'learning' },
+  { id: 'people', label: '사람 만날 때', emoji: '❤️', areaType: 'relationships' },
+  { id: 'money', label: '돈 벌 때', emoji: '💰', areaType: 'finance' },
+  { id: 'creating', label: '만들 때', emoji: '🎨', areaType: 'hobbies' },
+  { id: 'resting', label: '쉴 때', emoji: '🧘', areaType: 'mental' },
+]
+
+export interface WhyChip {
+  id: string
+  label: string
+  why: string
+}
+
+export const WHY_CHIPS: WhyChip[] = [
+  { id: 'healthy', label: '건강해지니까', why: '건강해지니까' },
+  { id: 'growth', label: '성장하는 느낌', why: '성장하는 느낌이 좋으니까' },
+  { id: 'freedom', label: '자유로워지니까', why: '자유로워지니까' },
+  { id: 'warmth', label: '따뜻해서', why: '사람들과 함께해서 따뜻하니까' },
+  { id: 'fun', label: '재밌어서', why: '재밌으니까' },
+  { id: 'peace', label: '편해져서', why: '마음이 편해지니까' },
+]
+
+const DIRECTION_STATEMENT_MAP: Record<string, Record<string, string>> = {
+  exercise: {
+    healthy: '건강하고 활력 있는 삶',
+    growth: '몸과 마음이 함께 성장하는 삶',
+    freedom: '자유롭고 건강한 삶',
+    warmth: '건강하게 함께하는 삶',
+    fun: '즐겁게 움직이는 삶',
+    peace: '건강하고 평온한 삶',
+  },
+  learning: {
+    healthy: '배움으로 단단해지는 삶',
+    growth: '끊임없이 성장하는 삶',
+    freedom: '배움으로 자유로워지는 삶',
+    warmth: '함께 배우며 성장하는 삶',
+    fun: '알아가는 즐거움이 있는 삶',
+    peace: '배움으로 마음이 넓어지는 삶',
+  },
+  people: {
+    healthy: '건강한 관계 속에서 사는 삶',
+    growth: '사람들과 함께 성장하는 삶',
+    freedom: '자유롭고 따뜻한 관계의 삶',
+    warmth: '사람들과 따뜻하게 연결된 삶',
+    fun: '함께여서 즐거운 삶',
+    peace: '편안한 관계 속에서 사는 삶',
+  },
+  money: {
+    healthy: '안정적이고 건강한 삶',
+    growth: '경제적으로 성장하는 삶',
+    freedom: '경제적으로 자유로운 삶',
+    warmth: '소중한 사람들을 지킬 수 있는 삶',
+    fun: '하고 싶은 것을 할 수 있는 삶',
+    peace: '경제적으로 편안한 삶',
+  },
+  creating: {
+    healthy: '만드는 에너지로 살아가는 삶',
+    growth: '창작으로 성장하는 삶',
+    freedom: '자유롭게 만드는 삶',
+    warmth: '함께 만들어가는 삶',
+    fun: '만드는 즐거움이 있는 삶',
+    peace: '창작으로 평온을 찾는 삶',
+  },
+  resting: {
+    healthy: '건강하게 쉬며 사는 삶',
+    growth: '쉼 속에서 성장하는 삶',
+    freedom: '자유롭고 여유로운 삶',
+    warmth: '편안하고 따뜻한 삶',
+    fun: '즐겁게 쉬는 삶',
+    peace: '내면이 평화로운 삶',
+  },
+}
+
+export function composeDirectionStatement(feelingId: string, whyId: string): string {
+  return DIRECTION_STATEMENT_MAP[feelingId]?.[whyId] ?? '나답게 살아가는 삶'
+}
+
+export function getFeelingArea(feelingId: string): DefaultAreaOption {
+  const chip = FEELING_CHIPS.find((c) => c.id === feelingId)
+  if (!chip) return { name: '나의 영역', type: 'custom', emoji: '✨', color: DEFAULT_AREA_COLOR }
+  const preset = AREA_PRESETS_EXTENDED.find((a) => a.type === chip.areaType)
+  return preset ?? { name: '나의 영역', type: 'custom', emoji: '✨', color: DEFAULT_AREA_COLOR }
+}
+
 export const DIRECTION_CHIP_OPTIONS: DirectionChipOption[] = [
   {
     id: 'health-vitality',

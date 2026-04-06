@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 // Cmd/Ctrl + Key 단축키
 const SHORTCUTS: Record<string, string> = {
-  r: '/roadmap', // Roadmap
+  r: '/', // Roadmap
 }
 
 export function useKeyboardNavigation() {

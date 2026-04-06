@@ -27,7 +27,7 @@ export default function GoalDetailPage({ params }: GoalDetailPageProps) {
   }, [goalId, select, clearSelection])
 
   const handleBack = () => {
-    router.push('/roadmap')
+    router.push('/')
   }
 
   // Render based on panel mode

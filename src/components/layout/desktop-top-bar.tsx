@@ -6,7 +6,7 @@ import { SegmentControl } from './segment-control'
 import { TopBarActions } from './top-bar-actions'
 
 const navItems = [
-  { href: '/roadmap', label: '로드맵' },
+  { href: '/', label: '로드맵' },
   { href: '/record', label: '기록' },
 ]
 
@@ -14,7 +14,7 @@ export function DesktopTopBar() {
   return (
     <header className="glass-3 sticky top-0 z-20 hidden h-14 items-center px-6 shadow-sm lg:flex">
       {/* Left: Logo */}
-      <Link href="/roadmap" className="mr-8 flex items-center">
+      <Link href="/" className="mr-8 flex items-center">
         <Image src="/logo.png" alt="inu" width={28} height={28} />
       </Link>
 

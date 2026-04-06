@@ -2,10 +2,11 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // Protected routes - require authentication
+// NOTE: '/' is checked separately (exact match) because startsWith('/') matches everything
 const protectedPaths = ['/roadmap', '/record', '/profile', '/ai-hub', '/admin']
 
 // Routes that require onboarding completion
-const requiresOnboardingPaths = ['/roadmap', '/record', '/ai-hub']
+const requiresOnboardingPaths = ['/record', '/ai-hub']
 
 // API routes that should be public
 const publicApiPaths = ['/api/health', '/api/auth/callback']
@@ -60,8 +61,8 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
-  const isOnboardingPath = pathname.startsWith('/onboarding')
+  const isProtectedPath =
+    pathname === '/' || protectedPaths.some((path) => pathname.startsWith(path))
   const requiresOnboarding = requiresOnboardingPaths.some((path) => pathname.startsWith(path))
   const isAuthPath = pathname === '/login' || pathname === '/signup'
 
@@ -69,22 +70,15 @@ export async function proxy(request: NextRequest) {
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    url.searchParams.set('redirectTo', pathname)
-    return NextResponse.redirect(url)
-  }
-
-  // Not logged in + trying to access onboarding → redirect to login
-  if (!user && isOnboardingPath) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
+    if (pathname !== '/') {
+      url.searchParams.set('redirectTo', pathname)
+    }
     return NextResponse.redirect(url)
   }
 
   // ── Single profile query for all logged-in branches ──
   const isAdminPath = pathname.startsWith('/admin')
-  const needsProfile =
-    user &&
-    (isAdminPath || isAuthPath || requiresOnboarding || isOnboardingPath || pathname === '/')
+  const needsProfile = user && (isAdminPath || isAuthPath || requiresOnboarding)
 
   let profile: { onboarding_completed: boolean; is_admin: boolean } | null = null
   if (needsProfile) {
@@ -100,41 +94,25 @@ export async function proxy(request: NextRequest) {
   if (user && isAdminPath) {
     if (!profile?.is_admin) {
       const url = request.nextUrl.clone()
-      url.pathname = '/roadmap'
+      url.pathname = '/'
       return NextResponse.redirect(url)
     }
   }
 
-  // Logged in + on auth pages → redirect to today (or onboarding if not completed)
+  // Logged in + on auth pages → redirect to home
   if (user && isAuthPath) {
     const url = request.nextUrl.clone()
-    url.pathname = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
-  // Logged in + on protected route that requires onboarding → check onboarding status
+  // Logged in + on protected route that requires onboarding → redirect to home
   if (user && requiresOnboarding) {
     if (!profile?.onboarding_completed) {
       const url = request.nextUrl.clone()
-      url.pathname = '/onboarding'
+      url.pathname = '/'
       return NextResponse.redirect(url)
     }
-  }
-
-  // Logged in + onboarding completed + on onboarding page → redirect to today
-  if (user && isOnboardingPath) {
-    if (profile?.onboarding_completed) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/roadmap'
-      return NextResponse.redirect(url)
-    }
-  }
-
-  // Root path redirect (logged-in users only; unauthenticated users see landing page)
-  if (pathname === '/' && user) {
-    const url = request.nextUrl.clone()
-    url.pathname = profile?.onboarding_completed ? '/roadmap' : '/onboarding'
-    return NextResponse.redirect(url)
   }
 
   return supabaseResponse

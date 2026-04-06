@@ -1,5 +1,5 @@
-import RoadmapContent from './roadmap-content'
+import { redirect } from 'next/navigation'
 
-export default function RoadmapPage() {
-  return <RoadmapContent />
+export default function RoadmapRedirect() {
+  redirect('/')
 }
