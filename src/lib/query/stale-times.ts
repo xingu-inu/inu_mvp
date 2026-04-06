@@ -62,7 +62,7 @@ export const STALE_TIMES = {
   // Chat (AI Coach)
   // ═══════════════════════════════════════════════════
   CHAT_CONVERSATIONS: 60 * 1000, // 대화 목록 - 전환 시 갱신
-  CHAT_MESSAGES: 0, // 대화 메시지 - 항상 최신
+  CHAT_MESSAGES: 5 * 60 * 1000, // 대화 메시지 - mutation이 invalidate로 즉시 갱신, 5분 캐시
 
   // ═══════════════════════════════════════════════════
   // Admin Dashboard

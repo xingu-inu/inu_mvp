@@ -160,14 +160,25 @@ export function AiChatPanel({
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
-  // Sync DB → useChat only when conversation changes (not during streaming)
+  // Sync DB → useChat exactly once per conversation change (never during streaming)
   const prevConvRef = useRef<string | null | undefined>(undefined)
+  const hasSyncedRef = useRef(false)
+
   useEffect(() => {
-    if (prevConvRef.current !== activeConversationId && !isStreaming) {
-      if (activeConversationId === null || dbMessages !== undefined) {
-        prevConvRef.current = activeConversationId
-        setMessages(dbMessages ? toUIMessages(dbMessages) : [])
-      }
+    if (prevConvRef.current !== activeConversationId) {
+      hasSyncedRef.current = false
+      prevConvRef.current = activeConversationId
+    }
+  }, [activeConversationId])
+
+  useEffect(() => {
+    if (hasSyncedRef.current || isStreaming) return
+    if (activeConversationId === null) {
+      hasSyncedRef.current = true
+      setMessages([])
+    } else if (dbMessages !== undefined) {
+      hasSyncedRef.current = true
+      setMessages(toUIMessages(dbMessages))
     }
   }, [activeConversationId, dbMessages, setMessages, isStreaming])
 
@@ -206,12 +217,12 @@ export function AiChatPanel({
         setActiveConversation(conv.id)
       }
 
-      await saveChatMessage.mutateAsync({
-        conversationId: convId,
-        role: 'user',
-        content: trimmed,
-      })
       sendMessage({ text: trimmed })
+      // Fire-and-forget: errors handled by mutation's onError callback below
+      saveChatMessage.mutate(
+        { conversationId: convId, role: 'user', content: trimmed },
+        { onError: () => toast.error('메시지 저장에 실패했어요.') }
+      )
     } catch {
       toast.error('대화를 시작하지 못했어요.')
       setInput(trimmed)
@@ -230,7 +241,8 @@ export function AiChatPanel({
   const handleNewChat = () => {
     startNewConversation()
     setMessages([])
-    prevConvRef.current = undefined
+    prevConvRef.current = null
+    hasSyncedRef.current = false
     inputRef.current?.focus()
   }
 
