@@ -56,12 +56,6 @@ Details: @docs/plan/core/data-model.md
 - Task 제안 시 repeat_type, duration_minutes, time_slot 필드 사용하지 않음 — 이름+이유만
 - propose_structure 호출 시 텍스트로 구조 내용을 반복하지 않음 (카드가 보여줌)
 
-## Notion 연동
-
-- 기능 명세서 DB: `331ff360838e80c3b9aec2983cac67d1` (data_source: `331ff360-838e-8089-b7ba-000bf0e15691`, view: `331ff360838e80a59d06000c9fdb629c`)
-- 기능 명세 작업 시 이 Notion DB를 조회/업데이트하여 사용할 것
-- MCP 도구: `mcp__notion__API-*` 시리즈 사용
-
 ## Docs
 
 - Screen specs + wireframes: @docs/plan/screens/
