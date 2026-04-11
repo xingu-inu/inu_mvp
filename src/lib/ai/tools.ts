@@ -41,15 +41,6 @@ function sanitizeToolResult(data: unknown): string {
 
 export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
   return {
-    get_user_overview: tool({
-      description: '사용자의 기본 정보, 방향(Direction), 영역(Area) 목록을 조회합니다.',
-      inputSchema: z.object({}),
-      execute: async () => {
-        const result = await chatContext.getUserOverview(supabase, userId)
-        return sanitizeToolResult(result)
-      },
-    }),
-
     get_active_goals: tool({
       description:
         '사용자의 활성(Active) 목표 목록을 조회합니다. 각 목표의 이름, 이유, 영역, 진행 상황을 포함합니다.',

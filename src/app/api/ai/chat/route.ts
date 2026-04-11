@@ -7,8 +7,10 @@ import { createChatTools } from '@/lib/ai/tools'
 import { CORE_PRINCIPLES, SECURITY_PRINCIPLES } from '@/lib/ai/constants'
 import { profileRepository } from '@/repositories/profile.repository'
 import { profileTraitRepository } from '@/repositories/profile-trait.repository'
+import { directionRepository } from '@/repositories/direction.repository'
+import { areaRepository } from '@/repositories/area.repository'
 import { sanitizeUserText, getInjectionSeverity, validateAiOutput } from '@/lib/ai/sanitize'
-import type { ProfileTrait } from '@/types/entities'
+import type { ProfileTrait, Area, Direction } from '@/types/entities'
 
 /**
  * Create a transform stream that monitors AI output for sensitive data leakage.
@@ -105,6 +107,49 @@ ${sections}
   · "나에 대해 정리해줘" 요청 시 대화 내용을 분석해 3-7개.
   · 이미 있는 프로필 항목과 같은 내용이면 existing_trait_id를 포함해 업데이트 제안.
   · 확실하지 않은 정보는 제안하지 않기. 너무 자주 제안하지 않기.`
+}
+
+/** Area가 너무 많아 프롬프트가 부풀어오르는 것을 막는 안전 캡. */
+const MAX_ROADMAP_AREAS = 20
+const MAX_ROADMAP_WHY_LEN = 80
+
+/** 유저가 입력한 why/statement를 프롬프트에 넣기 전에 길이 제한 + 태그 이스케이프. */
+function clipForPrompt(text: string | null | undefined, max: number): string | null {
+  if (!text) return null
+  const sanitized = sanitizeUserText(text).replace(/\s+/g, ' ').trim()
+  if (!sanitized) return null
+  return sanitized.length > max ? `${sanitized.slice(0, max)}…` : sanitized
+}
+
+/**
+ * 현재 유저의 Direction + Area 목록을 시스템 프롬프트에 주입 가능한 형태로 포맷.
+ * propose_structure에서 isExisting/existingAreaId를 정확히 채우려면 Area ID가 필수.
+ * 로드맵 컨텍스트를 선주입해 별도 조회 도구 round-trip을 제거하는 것이 목적.
+ * 유저 입력 필드(statement/why/name/emoji)는 모두 sanitizeUserText로 이스케이프.
+ */
+function buildRoadmapBlock(direction: Direction | null, areas: Area[]): string {
+  const statement = clipForPrompt(direction?.statement, 120)
+  const directionWhy = clipForPrompt(direction?.why, MAX_ROADMAP_WHY_LEN)
+  const directionLine = statement
+    ? `방향: ${statement}${directionWhy ? ` (${directionWhy})` : ''}`
+    : '방향: (아직 설정 안 됨)'
+
+  const activeAreas = areas.filter((a) => a.is_active).slice(0, MAX_ROADMAP_AREAS)
+  const areaLines =
+    activeAreas.length === 0
+      ? '영역: (아직 없음 — 새 구조 제안 시 isExisting는 항상 false)'
+      : `영역 (id는 propose_structure의 existingAreaId로 그대로 사용):\n${activeAreas
+          .map((a) => {
+            const emoji = clipForPrompt(a.emoji, 8) ?? ''
+            const name = clipForPrompt(a.name, 40) ?? '(이름 없음)'
+            const why = clipForPrompt(a.why, MAX_ROADMAP_WHY_LEN)
+            const parts = [`- ${emoji} ${name}`.trim(), `id=${a.id}`, `type=${a.type}`]
+            if (why) parts.push(`why=${why}`)
+            return parts.join(' · ')
+          })
+          .join('\n')}`
+
+  return `[현재 로드맵]\n${directionLine}\n${areaLines}`
 }
 
 function buildSystemPrompt(traits: ProfileTrait[], userName: string, todayDate: string): string {
@@ -209,10 +254,13 @@ export const POST = authRoute(
       )
     }
 
-    const [profile, traits] = await Promise.all([
+    // Direction은 먼저 받아서 areaRepository.getAll에 넘겨야 내부 getActiveDirectionId() 중복 쿼리가 사라짐.
+    const [profile, traits, direction] = await Promise.all([
       profileRepository.get(ctx.supabase, ctx.user.id),
       profileTraitRepository.getByUser(ctx.supabase, ctx.user.id),
+      directionRepository.get(ctx.supabase, ctx.user.id),
     ])
+    const areas = await areaRepository.getAll(ctx.supabase, ctx.user.id, direction?.id ?? null)
     const userName = profile?.name ?? '사용자'
     const todayDate = new Date().toISOString().split('T')[0]
     const modelId = (profile?.ai_model as AiModelId) ?? DEFAULT_MODEL
@@ -220,37 +268,77 @@ export const POST = authRoute(
     // Build system prompt with optional context hint
     let systemPrompt = buildSystemPrompt(traits, userName, todayDate)
 
-    // 구조 제안 기능 — 일반 대화에서도 적용
-    systemPrompt += `\n\n[구조 제안 기능]
-사용자가 "하고 싶은 것들이 많아", "정리가 필요해", "새로운 목표를 세우고 싶어",
-"요즘 이것저것 해보고 싶은 게 많은데" 등 구조 정리가 필요한 의도를 보이면:
-1. get_user_overview 도구로 기존 구조를 확인하세요
-2. propose_structure 도구를 사용해 바로 구조를 제안하세요
-3. 완벽하지 않아도 괜찮아요 — 대화의 출발점으로 먼저 보여주세요
-4. 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요
-명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
+    // 로드맵 스냅샷 선주입 — 모델이 propose_structure 호출 시 바로 existingAreaId를 쓸 수 있음.
+    systemPrompt += `\n\n${buildRoadmapBlock(direction, areas)}`
 
     const { context } = parsed.data
+
+    // 구조 제안 기능 — goal/task 컨텍스트(특정 엔티티 범위)에서는 제외.
+    // goal 화면에서 기존 목표를 얘기하는데 새 구조를 제안하면 안 되니까.
+    const allowStructureProposal =
+      !context || context.type === 'brain-dump' || context.type === 'observation'
+    if (allowStructureProposal) {
+      systemPrompt += `\n\n[구조 제안 기능]
+사용자가 "하고 싶은 것들이 많아", "정리가 필요해", "새로운 목표를 세우고 싶어",
+"요즘 이것저것 해보고 싶은 게 많은데" 등 구조 정리가 필요한 의도를 보이면:
+1. 위 [현재 로드맵]에서 기존 Area를 확인하세요 (도구 호출 불필요)
+2. propose_structure 도구로 바로 구조를 제안하세요
+3. 완벽하지 않아도 괜찮아요 — 대화의 출발점으로 먼저 보여주세요
+4. 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요 (위 id 사용)
+5. 카드 내용을 텍스트로 반복하지 마세요 — 짧은 안내 한 문장만 ("이런 느낌은 어때요?")
+명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
+    }
+
     if (context) {
       if (context.type === 'brain-dump') {
         systemPrompt += `\n\n[대화 맥락 — 쏟아내기 모드]
-사용자가 "쏟아내기" 모드로 대화를 시작했습니다.
+사용자가 "쏟아내기" 모드로 대화를 시작했습니다. 목표는 **최대한 빨리 초안을 카드로 보여주는 것**.
 
-역할: 사용자가 아이디어를 말하면 즉시 구체적인 예시 구조를 보여주고, 대화하면서 함께 다듬어가세요.
+## 규칙 1 (최우선): 첫 턴에 즉시 propose_structure 호출
+사용자가 하고 싶은 것/관심사를 조금이라도 언급하면 **바로 propose_structure**를 호출하세요.
+- 긴 서론, 공감 문구, 확인 질문 금지.
+- "운동하고 싶어" → 즉시 운동 Area/Goal/Task 제안
+- "운동이랑 자기계발" → 즉시 두 영역 동시에 제안 (follow-up 질문 없이)
+- "요즘 뭐 해볼까" → 즉시 프로필 trait 기반으로 2-3개 후보 제안
+- 완벽하지 않아도 됨. 대화의 출발점이니까요. 사용자가 수정하면서 다듬습니다.
+- 예외: 주제가 전혀 없는 인사만 했을 때(예: "안녕") — 그때만 가벼운 한 문장 물어보기.
 
-진행 방식:
-1. 사용자가 관심사/목표를 언급하면 get_user_overview로 기존 구조를 빠르게 확인하세요.
-2. 바로 propose_structure를 호출해 구체적인 예시 구조를 보여주세요.
-   - "운동하고 싶어" → 즉시 운동 관련 Area/Goal/Task 예시 제안
-   - 완벽하지 않아도 괜찮아요. 대화의 출발점이니까요.
-3. "이런 느낌은 어때?" 라는 톤으로 짧게 말하고, 수정 요청이 오면 반영해서 다시 호출하세요.
-4. 사용자가 여러 주제를 쏟아내면 한 번에 모아서 제안하세요.
+## 규칙 2 (절대 금지): 카드 내용을 텍스트로 반복하지 말 것
+propose_structure가 호출되면 카드가 Area/Goal/Task를 전부 보여줍니다.
+텍스트는 **딱 한 문장**, 카드를 소개하는 용도로만 쓰세요.
 
-중요:
-- propose_structure를 호출할 때, 텍스트로 구조 내용을 반복하지 마세요. 카드가 보여주니까요. 텍스트는 짧은 한마디만 ("이런 느낌은 어때?", "이걸로 시작해볼까?") 하세요.
-- 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요. get_user_overview 결과의 areas[].id를 사용하세요. 새 Area를 만들지 마세요 — 기존 Area가 있으면 무조건 그곳에 넣으세요.
-- 구조가 너무 크면 핵심부터 시작하세요.
-- 사용자가 여러 주제를 한 번에 쏟아내면, 바로 propose_structure를 호출하지 말고 follow-up 질문 1회(예: "둘 다 그렇구나. 그중에서 제일 부담스러운 건?")를 먼저 던지고, 그 다음 propose_structure를 호출하세요.`
+좋은 예 (카드 옆에 붙이는 텍스트):
+- "이런 느낌은 어때요?"
+- "우선 초안이에요, 바꾸고 싶은 거 있으면 말해줘요."
+- "이걸로 시작해볼까요?"
+
+나쁜 예 (절대 이렇게 하지 말 것):
+\`\`\`
+사용자님을 위한 로드맵 초안을 만들어 봤어요! '건강'과 '성장'이라는 두 가지 영역으로 나누어 보았답니다.
+
+💪 건강 영역
+• 목표: 규칙적인 운동 습관 만들기
+  • 이유: 체력 증진과 활력 유지를 위해
+  • 할 일: 주 3회 30분 유산소 운동
+\`\`\`
+↑ 이렇게 카드 내용을 텍스트로 풀어서 적으면 사용자가 **같은 내용을 두 번 읽게 됩니다.** 카드만으로 충분해요. 텍스트는 한 문장.
+
+## 규칙 3: 기존 Area 재사용
+${
+  areas.filter((a) => a.is_active).length > 0
+    ? `위 [현재 로드맵]의 영역 목록을 확인하고, 사용자의 주제에 매칭되는 Area가 있으면 반드시:
+- isExisting: true
+- existingAreaId: 위 id를 그대로 복사
+새 Area를 만들지 말고 기존 Area에 Goal/Task를 추가하세요.`
+    : `아직 활성 Area가 없으므로 모든 Area는 isExisting: false로 새로 제안하세요.`
+}
+
+## 규칙 4: 수정 요청 시
+"여기서 X 빼줘", "Y 추가해줘" 같은 요청이 오면 propose_structure를 **다시 호출**해 반영된 버전을 보여주세요. 이때도 카드 내용을 텍스트로 반복 금지. 한 문장 안내만.
+
+## 도구 사용
+- 로드맵 조회 도구는 없습니다. 위 [현재 로드맵]이 이미 전부 담고 있어요.
+- 첫 턴에서 호출해야 하는 도구는 propose_structure 하나뿐. 다른 도구 부르지 말 것.`
       } else if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
@@ -258,7 +346,7 @@ export const POST = authRoute(
 
 이 관찰에 대해 자연스럽게 대화를 이어가세요.
 - 관찰 내용을 반복하지 말고, 사용자가 이 주제에 대해 더 이야기하고 싶어한다고 가정하세요.
-- 필요하면 get_user_overview, get_active_goals 등의 도구로 관련 데이터를 확인하세요.${context.relatedGoalId ? `\n- 관련 목표가 있습니다. get_goal_detail 도구를 goal_id="${context.relatedGoalId}"로 호출할 수 있습니다.` : ''}`
+- 필요하면 get_active_goals 등의 도구로 관련 데이터를 확인하세요 (로드맵/영역 정보는 위 [현재 로드맵] 참조).${context.relatedGoalId ? `\n- 관련 목표가 있습니다. get_goal_detail 도구를 goal_id="${context.relatedGoalId}"로 호출할 수 있습니다.` : ''}`
       } else {
         const entity =
           context.type === 'goal'
