@@ -16,7 +16,7 @@ export function OnboardingStepWhy({ onNext, onBack }: OnboardingStepWhyProps) {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">그게 왜 좋아요?</h2>
+        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">그게 왜 좋아요?</h2>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">하나만 골라보세요</p>
       </div>
 
@@ -36,7 +36,7 @@ export function OnboardingStepWhy({ onNext, onBack }: OnboardingStepWhyProps) {
         <button
           type="button"
           onClick={onBack}
-          className="flex min-h-[44px] items-center justify-center rounded-2xl border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+          className="flex min-h-[44px] items-center justify-center rounded-2xl border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-hover)] hover:bg-[var(--color-bg-tertiary)]"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -44,7 +44,7 @@ export function OnboardingStepWhy({ onNext, onBack }: OnboardingStepWhyProps) {
           type="button"
           onClick={() => selected && onNext(selected)}
           disabled={!selected}
-          className="flex-1 rounded-2xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-30"
+          className="flex-1 rounded-2xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--color-primary-600)] active:scale-[0.98] disabled:opacity-40 disabled:shadow-none disabled:hover:bg-[var(--color-primary)]"
         >
           다음
         </button>

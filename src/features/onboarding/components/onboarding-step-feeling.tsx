@@ -38,7 +38,7 @@ export function OnboardingStepFeeling({ onNext }: OnboardingStepFeelingProps) {
   return (
     <div className="flex flex-col items-center gap-6">
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-[var(--color-text-primary)]">
+        <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">
           요즘 뭐 하면 기분이 좋아요?
         </h2>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">거창한 거 아니어도 돼요</p>
@@ -78,7 +78,7 @@ export function OnboardingStepFeeling({ onNext }: OnboardingStepFeelingProps) {
         type="button"
         onClick={handleNext}
         disabled={!canProceed}
-        className="w-full max-w-xs rounded-2xl bg-[var(--color-primary)] py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-30"
+        className="w-full max-w-xs rounded-2xl bg-[var(--color-primary)] py-3.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[var(--color-primary-600)] active:scale-[0.98] disabled:opacity-40 disabled:shadow-none disabled:hover:bg-[var(--color-primary)]"
       >
         다음
       </button>

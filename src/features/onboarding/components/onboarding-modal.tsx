@@ -130,12 +130,12 @@ export function OnboardingModal() {
         {[1, 2, 3].map((s) => (
           <div
             key={s}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
+            className={`h-2 rounded-full transition-all duration-300 ${
               s === step
-                ? 'w-6 bg-[var(--color-primary)]'
+                ? 'w-8 bg-[var(--color-primary)]'
                 : s < step
-                  ? 'w-1.5 bg-[var(--color-primary)]/40'
-                  : 'w-1.5 bg-[var(--color-border)]'
+                  ? 'w-2 bg-[var(--color-primary-300)]'
+                  : 'w-2 bg-[var(--color-border)]'
             }`}
           />
         ))}

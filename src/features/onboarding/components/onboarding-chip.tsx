@@ -19,11 +19,11 @@ export function OnboardingChip({ emoji, label, selected, onClick }: OnboardingCh
       className={cn(
         'flex min-h-[44px] items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-medium transition-colors',
         selected
-          ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
-          : 'border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:border-[var(--color-primary)]/40'
+          ? 'border-[var(--color-primary)] bg-[var(--color-primary-50)] text-[var(--color-primary-700)] ring-1 ring-[var(--color-primary)]/20'
+          : 'border-[var(--color-border)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]'
       )}
     >
-      {emoji && <span className="text-base">{emoji}</span>}
+      {emoji && <span className="text-lg">{emoji}</span>}
       <span>{label}</span>
     </motion.button>
   )

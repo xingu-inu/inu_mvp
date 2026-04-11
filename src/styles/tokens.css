@@ -5,6 +5,7 @@
   /* ========== Colors (OKLCH) ========== */
 
   /* Primary - Terra Cotta */
+  --color-primary: oklch(56% 0.16 35);
   --color-primary-50: oklch(97% 0.02 35);
   --color-primary-100: oklch(94% 0.04 35);
   --color-primary-200: oklch(88% 0.09 35);
@@ -247,10 +248,16 @@
   --shadow-card: 0 4px 16px rgba(30, 20, 10, 0.25);
   --shadow-card-hover: 0 8px 24px rgba(30, 20, 10, 0.35);
 
-  /* Primary scale overrides for dark mode */
+  /* Primary scale overrides for dark mode
+   * Note: dark mode inverts the lightness direction — higher numbers become
+   * *lighter* (e.g. 700: 42%→78%). Hover states (600) must be lighter than
+   * base (68%) so interactions don't feel "darker on hover". */
+  --color-primary: oklch(68% 0.17 35);
   --color-primary-50: oklch(20% 0.04 35);
   --color-primary-100: oklch(24% 0.06 35);
   --color-primary-200: oklch(28% 0.08 35);
+  --color-primary-300: oklch(40% 0.1 35);
+  --color-primary-600: oklch(78% 0.17 35);
   --color-primary-700: oklch(78% 0.13 35);
 
   /* Auth Theme - Dark Mode */
