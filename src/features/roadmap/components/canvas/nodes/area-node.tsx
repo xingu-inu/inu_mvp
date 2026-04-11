@@ -32,6 +32,7 @@ export const AreaNode = memo(function AreaNode({
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
   const isDropTarget = data.isDropTarget === true
+  const isInvalidHover = data.isInvalidHover === true
   const {
     handleNodeSelect,
     handleDeleteNode,
@@ -41,7 +42,6 @@ export const AreaNode = memo(function AreaNode({
     getQuickAddContent,
     editingNodeId,
     pendingEditValueRef,
-    directionId,
     handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,
@@ -98,9 +98,6 @@ export const AreaNode = memo(function AreaNode({
                 onCommit={handleRenameCommit}
                 onCancel={handleCancelEdit}
                 pendingValueRef={pendingEditValueRef}
-                onChainEnter={
-                  directionId ? () => handleQuickCreate('direction', directionId) : undefined
-                }
                 onChainTab={() => handleQuickCreate('area', id)}
               />
             </div>
@@ -109,7 +106,7 @@ export const AreaNode = memo(function AreaNode({
       ) : isGhost ? (
         <div
           className={cn(
-            'relative max-w-[230px] min-w-[170px] cursor-pointer overflow-hidden rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
+            'relative max-w-[230px] min-w-[170px] cursor-default overflow-hidden rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
             isGhostPulsing && 'animate-pulse'
@@ -159,10 +156,13 @@ export const AreaNode = memo(function AreaNode({
         >
           <div
             className={cn(
-              'relative max-w-[230px] min-w-[170px] cursor-pointer overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
+              'relative max-w-[230px] min-w-[170px] cursor-grab overflow-hidden rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg-primary)] shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
               isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
               isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
-              isDropTarget && 'ring-dashed scale-[1.02] ring-2 ring-[var(--color-primary-400)]/60'
+              isDropTarget && 'ring-dashed ring-2 ring-[var(--color-primary-400)]/60',
+              isInvalidHover &&
+                !isDropTarget &&
+                'ring-2 ring-red-400/70 ring-offset-1 ring-offset-[var(--color-bg-primary)]'
             )}
             onClick={onSelect}
           >

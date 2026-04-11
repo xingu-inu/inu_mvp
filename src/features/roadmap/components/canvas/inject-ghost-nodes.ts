@@ -1,4 +1,5 @@
 import type { ProposeStructureOutput } from '@/components/layout/ai-chat/proposal-utils'
+import { DEFAULT_DIMENSIONS } from './tree-to-elk'
 import type { WhyMapNode, WhyMapEdge, AreaNodeData, GoalNodeData, HierarchyEdgeData } from './types'
 
 /**
@@ -42,6 +43,9 @@ export function injectGhostNodes(
         id: `ghost-${areaId}`,
         type: 'area',
         position: { x: 0, y: 0 },
+        // Seed measured dims so ELK has a size to lay out; the real DOM measurement
+        // from React Flow will overwrite once the ghost renders.
+        measured: DEFAULT_DIMENSIONS.area,
         data: {
           treeNode: {
             id: `ghost-${areaId}`,
@@ -84,6 +88,8 @@ export function injectGhostNodes(
         id: `ghost-${goalId}`,
         type: 'goal',
         position: { x: 0, y: 0 },
+        // Seed measured dims; real DOM measurement overwrites on first render.
+        measured: DEFAULT_DIMENSIONS.goal,
         data: {
           treeNode: {
             id: `ghost-${goalId}`,

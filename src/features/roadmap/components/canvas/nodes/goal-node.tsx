@@ -105,6 +105,7 @@ export const GoalNode = memo(function GoalNode({
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
   const isDropTarget = data.isDropTarget === true
+  const isInvalidHover = data.isInvalidHover === true
 
   const {
     handleNodeSelect,
@@ -213,8 +214,13 @@ export const GoalNode = memo(function GoalNode({
         'group/add group/why relative max-w-[250px] min-w-[180px]',
         isDraft && 'rounded-xl border-2 border-dashed border-[var(--color-border)]',
         isDraft && '[&_[data-node-card]]:border-transparent',
-        isDropTarget &&
-          'ring-dashed scale-[1.02] rounded-lg ring-2 ring-[var(--color-primary-400)]/60 transition-transform'
+        isDropTarget && 'ring-dashed rounded-lg ring-2 ring-[var(--color-primary-400)]/60',
+        // Suppress invalid-hover ring on draft goals — their dashed border
+        // already outlines the wrapper and stacking both is visually noisy.
+        !isDraft &&
+          isInvalidHover &&
+          !isDropTarget &&
+          'rounded-lg ring-2 ring-red-400/70 ring-offset-1'
       )}
     >
       {isFull && ancestorWhys && ancestorWhys.length > 0 && (
@@ -230,7 +236,7 @@ export const GoalNode = memo(function GoalNode({
         /* Compact zoom: name-only simplified box */
         <div
           className={cn(
-            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
+            'cursor-grab rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
             isGhost && [
@@ -280,11 +286,6 @@ export const GoalNode = memo(function GoalNode({
                       onCancel={handleCancelEdit}
                       pendingValueRef={pendingEditValueRef}
                       editContainerRef={editContainerRef}
-                      onChainEnter={
-                        data.parentAreaId
-                          ? () => handleQuickCreate('area', data.parentAreaId!)
-                          : undefined
-                      }
                       onChainTab={() => handleQuickCreate('goal', id)}
                     />
                   </div>
@@ -322,7 +323,7 @@ export const GoalNode = memo(function GoalNode({
           ) : isGhost ? (
             <div
               className={cn(
-                'cursor-pointer overflow-hidden rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-3 py-2 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
+                'cursor-default overflow-hidden rounded-lg border border-dashed border-amber-300 bg-amber-50/50 px-3 py-2 shadow-sm transition-all dark:border-amber-600 dark:bg-amber-900/20',
                 isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
                 isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]',
                 isGhostPulsing && 'animate-pulse'

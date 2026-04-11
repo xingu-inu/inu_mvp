@@ -9,9 +9,10 @@ export interface DropZoneIndicatorProps {
   visible: boolean
 }
 
-const LINE_LENGTH = 60
-const DOT_RADIUS = 4
-const COLOR = 'var(--color-primary-400)'
+const LINE_LENGTH = 80
+const DOT_RADIUS = 5
+const COLOR = 'var(--color-primary-500)'
+const GLOW_COLOR = 'var(--color-primary-300)'
 const DEFAULT_SLOT_GAP = 40
 
 export function DropZoneIndicator({
@@ -79,13 +80,45 @@ export function DropZoneIndicator({
           height: 1,
           pointerEvents: 'none',
           overflow: 'visible',
-          opacity: visible ? 0.8 : 0,
-          transition: 'opacity 0.15s ease',
+          opacity: visible ? 1 : 0,
+          transition: 'opacity 0.12s ease',
         }}
       >
-        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={COLOR} strokeWidth={2} />
-        <circle cx={x1} cy={y1} r={DOT_RADIUS} fill={COLOR} />
-        <circle cx={x2} cy={y2} r={DOT_RADIUS} fill={COLOR} />
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke={GLOW_COLOR}
+          strokeWidth={8}
+          strokeLinecap="round"
+          opacity={0.35}
+        />
+        <line
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke={COLOR}
+          strokeWidth={3}
+          strokeLinecap="round"
+        />
+        <circle cx={x1} cy={y1} r={DOT_RADIUS} fill={COLOR} stroke="#fff" strokeWidth={1.5}>
+          <animate
+            attributeName="r"
+            values={`${DOT_RADIUS};${DOT_RADIUS * 1.25};${DOT_RADIUS}`}
+            dur="1.6s"
+            repeatCount="indefinite"
+          />
+        </circle>
+        <circle cx={x2} cy={y2} r={DOT_RADIUS} fill={COLOR} stroke="#fff" strokeWidth={1.5}>
+          <animate
+            attributeName="r"
+            values={`${DOT_RADIUS};${DOT_RADIUS * 1.25};${DOT_RADIUS}`}
+            dur="1.6s"
+            repeatCount="indefinite"
+          />
+        </circle>
       </svg>
     </ViewportPortal>
   )

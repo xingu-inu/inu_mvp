@@ -10,8 +10,6 @@ interface InlineEditInputProps {
   className?: string
   onCommit: (nodeType: SelectedNodeType, nodeId: string, newName: string) => void
   onCancel: () => void
-  /** Called after commit on Enter — create sibling */
-  onChainEnter?: () => void
   /** Called after commit on Tab — create child */
   onChainTab?: () => void
   /** Shared ref to preserve typed text across node ID swaps (temp → real) */
@@ -27,7 +25,6 @@ export const InlineEditInput = memo(function InlineEditInput({
   className = '',
   onCommit,
   onCancel,
-  onChainEnter,
   onChainTab,
   pendingValueRef,
   editContainerRef,
@@ -58,7 +55,6 @@ export const InlineEditInput = memo(function InlineEditInput({
       e.preventDefault()
       committedRef.current = true
       onCommit(nodeType, nodeId, e.currentTarget.value)
-      onChainEnter?.()
     }
     if (e.key === 'Escape') {
       e.preventDefault()

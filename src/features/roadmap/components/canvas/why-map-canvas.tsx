@@ -22,18 +22,18 @@ import {
   type Connection,
   type Edge,
 } from '@xyflow/react'
-import { ArrowRight, ArrowDown, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { CanvasToolbar } from './canvas-toolbar'
 import { useRoadmapStore } from '@/stores/roadmap.store'
 import type { VisualTreeNode } from '../visual-tree/tree-node-card'
 import type { CrossLink } from '../cross-link-overlay'
 import type { Area, Goal } from '@/types/entities'
-import type { TreeLayoutDirection, SelectedNodeType } from '@/stores/roadmap.store'
+import type { SelectedNodeType } from '@/stores/roadmap.store'
 import type { WhyMapNode, WhyMapEdge, DependencyEdgeData } from './types'
 import { ZOOM_THRESHOLD_COMPACT, ZOOM_THRESHOLD_FULL } from './types'
 
 import { treeToFlowElements } from './tree-to-flow'
-import { useDagreLayout } from './use-dagre-layout'
+import { useElkLayout } from './use-elk-layout'
 import { useCanvasInteractions } from './use-canvas-interactions'
 import { CanvasInteractionsContext } from './canvas-interactions-context'
 import { nodeTypes } from './nodes'
@@ -45,6 +45,7 @@ import { DropZoneIndicator } from './drop-zone-indicator'
 import { useAutoPan } from './dnd/use-auto-pan'
 import { useBrainDumpPreviewStore } from '@/stores/brain-dump-preview.store'
 import { injectGhostNodes } from './inject-ghost-nodes'
+import { cn } from '@/lib/utils'
 
 // ── Public ref API ─────────────────────────────────────────
 
@@ -61,7 +62,6 @@ interface WhyMapCanvasProps {
   crossLinks: CrossLink[]
   goals: Goal[]
   areas: Area[]
-  treeLayout: TreeLayoutDirection
   searchQuery: string
   searchMatchedIds: Set<string>
 }
@@ -100,7 +100,7 @@ export const WhyMapCanvas = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(
 // ── Inner component (uses ReactFlow hooks) ─────────────────
 
 const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(function WhyMapCanvasInner(
-  { treeData, crossLinks, goals, areas, treeLayout, searchQuery, searchMatchedIds },
+  { treeData, crossLinks, goals, areas, searchQuery, searchMatchedIds },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -112,10 +112,12 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     rawZoom < ZOOM_THRESHOLD_COMPACT ? 0 : rawZoom > ZOOM_THRESHOLD_FULL ? 2 : 1
   const [isMinimapVisible, setIsMinimapVisible] = useState(false)
 
-  // Drag reorder state — lifted here to feed both dagre guard and enrichedNodes
+  // Drag reorder state — lifted here to feed both the ELK layout lock and enrichedNodes
   const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
   // Cross-parent drop target highlight
   const [dropTargetId, setDropTargetId] = useState<string | null>(null)
+  // Negative-feedback target: drag hovered an invalid node (hierarchy rules forbid)
+  const [invalidHoverId, setInvalidHoverId] = useState<string | null>(null)
 
   // Ghost node preview state
   const ghostProposal = useBrainDumpPreviewStore((s) => s.proposal)
@@ -205,7 +207,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     })
   }, [])
 
-  // Dependency edges (user-created Goal↔Goal relations, not in dagre layout)
+  // Dependency edges (user-created Goal↔Goal relations, not in the ELK layout)
   const [dependencyEdges, setDependencyEdges] = useState<WhyMapEdge[]>([])
 
   const interactionsContextValue = useMemo(
@@ -213,7 +215,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     [interactions, toggleGoalExpand, toggleGroupExpand]
   )
 
-  // ── Data pipeline: tree → flow elements → ghost inject → enrich → dagre ──
+  // ── Data pipeline: tree → flow elements → ghost inject → enrich → ELK ──
 
   const { nodes: treeNodes, edges: treeEdges } = useMemo(
     () => treeToFlowElements(treeData, crossLinks, expandedGoalIds, expandedGroupIds),
@@ -233,6 +235,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
       const isSelected = node.id === selectedNodeId
       const isSearchMatch = searchMatchedIds.has(node.id)
       const isDropTargetNode = dropTargetId === node.id
+      const isInvalidHoverNode = invalidHoverId === node.id
 
       // Focus/dim logic
       let style: CSSProperties | undefined
@@ -267,7 +270,13 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           zoomLevel: zoomBand,
           isGhostPulsing: isGhost ? isGhostPulsing : undefined,
           isDropTarget: isDropTargetNode || undefined,
+          isInvalidHover: isInvalidHoverNode || undefined,
         },
+        // Add a class so a global CSS rule can swap the cursor to
+        // `not-allowed` on the node wrapper (React Flow's .dragging class
+        // uses the same trick for `grabbing`). `node.className` is part of
+        // the React Flow Node type and accepts a plain string.
+        className: cn(node.className, isInvalidHoverNode && 'invalid-hover'),
         style,
         selected: isSelected,
         draggable: node.type !== 'direction' && !isGhost,
@@ -282,6 +291,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     zoomBand,
     draggingNodeId,
     dropTargetId,
+    invalidHoverId,
     isGhostPulsing,
   ])
 
@@ -335,13 +345,10 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     })
   }, [allEdges, focusedIds, draggingNodeId, dropTargetId])
 
-  const direction = treeLayout === 'horizontal' ? 'LR' : 'TB'
-  const { nodes, edges, setNodes, onNodesChange, onEdgesChange, relayout } = useDagreLayout(
-    enrichedNodes as WhyMapNode[],
-    enrichedEdges,
-    direction,
-    draggingNodeId
-  )
+  // Layout direction is hardcoded to horizontal; the direction toggle was removed.
+  const direction = 'LR' as const
+  const { nodes, edges, setNodes, onNodesChange, onEdgesChange, relayout, hasLaidOut } =
+    useElkLayout(enrichedNodes as WhyMapNode[], enrichedEdges, direction, draggingNodeId)
 
   // ── Drag reorder ───────────────────────────────────────────
 
@@ -352,6 +359,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     setNodes,
     setDraggingNodeId,
     setDropTargetId,
+    setInvalidHoverId,
     editingNodeId: interactions.editingNodeId,
     relayout,
   })
@@ -455,7 +463,7 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
         const groupId = parentGroupMap.get(nodeId)
         if (groupId) expandGroup(groupId)
 
-        // Wait for dagre layout recalculation + node positioning
+        // Wait for ELK layout recalculation + node positioning
         setTimeout(() => {
           fitView({ nodes: [{ id: nodeId }], padding: 0.5, duration: 300 })
         }, 400)
@@ -505,15 +513,43 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
   // ── Render ─────────────────────────────────────────────────
 
   return (
-    <div ref={containerRef} className="absolute inset-0">
-      {/* Transition for sibling slot swaps during drag reorder */}
+    <div
+      ref={containerRef}
+      className="absolute inset-0"
+      style={{
+        opacity: hasLaidOut ? 1 : 0,
+        transition: 'opacity 0.2s ease-out',
+      }}
+    >
+      {/* Smooth `transform` transitions on every node so ELK re-layouts
+          (expand/collapse, filter changes) glide into place instead of
+          teleporting — otherwise siblings appear to "jump around" when the
+          area compound recalculates its internal spacing.
+          The `.dragging` override below kills the transition during active
+          drag so drag latency stays zero. */}
       <style>{`
+        .react-flow__node {
+          transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease-out;
+        }
+        .react-flow__node.dragging { transition: none; }
         .react-flow__node.reordering { transition: transform 140ms ease-out; }
         .react-flow__node.dragging > div {
           transform: scale(1.04);
           box-shadow: 0 12px 40px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08);
           transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
+        /* React Flow v12 marks actively dragged nodes with .dragging —
+           this forces the grabbing cursor on the node wrapper, overriding
+           any Tailwind cursor-grab utility on the card. Scoped to the
+           direct child wrapper so interactive descendants (buttons,
+           inputs, inline-edit textareas) keep their own cursors. */
+        .react-flow__node.dragging,
+        .react-flow__node.dragging > div { cursor: grabbing !important; }
+        /* Invalid-hover negative feedback: drop not allowed by hierarchy
+           rules. Red ring is applied via per-node Tailwind classes; this
+           just guarantees the cursor swap on the wrapper. */
+        .react-flow__node.invalid-hover,
+        .react-flow__node.invalid-hover > div { cursor: not-allowed !important; }
       `}</style>
       <CanvasInteractionsContext.Provider value={interactionsContextValue}>
         <ReactFlow
@@ -536,8 +572,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           zoomOnScroll
           panOnDrag={[1, 2]}
           nodesDraggable
-          snapToGrid
-          snapGrid={[20, 20]}
           minZoom={0.15}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
@@ -633,24 +667,6 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
                 onClick={() => fitView({ padding: 0.15, duration: 300 })}
                 title="전체 보기 (⌘0)"
               />
-              <CanvasToolbar.Divider className="mx-1 h-5" />
-              <CanvasToolbar.Button
-                className="rounded-lg px-3 py-2.5 text-sm"
-                icon={
-                  direction === 'LR' ? (
-                    <ArrowRight className="h-5 w-5" />
-                  ) : (
-                    <ArrowDown className="h-5 w-5" />
-                  )
-                }
-                onClick={() => {
-                  const next = treeLayout === 'horizontal' ? 'vertical' : 'horizontal'
-                  useRoadmapStore.getState().setTreeLayout(next)
-                }}
-                title="레이아웃 전환 (L)"
-              >
-                {direction === 'LR' ? '가로' : '세로'}
-              </CanvasToolbar.Button>
             </CanvasToolbar>
           </Panel>
         </ReactFlow>

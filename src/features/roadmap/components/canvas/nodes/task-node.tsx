@@ -19,6 +19,7 @@ export const TaskNode = memo(function TaskNode({
   const isCompact = zoomLevel <= ZOOM_COMPACT
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
+  const isInvalidHover = data.isInvalidHover === true
 
   const {
     handleNodeSelect,
@@ -26,7 +27,6 @@ export const TaskNode = memo(function TaskNode({
     handleStartEdit,
     editingNodeId,
     pendingEditValueRef,
-    handleQuickCreate,
     handleRenameCommit,
     handleCancelEdit,
   } = useCanvasInteractionsContext()
@@ -46,10 +46,15 @@ export const TaskNode = memo(function TaskNode({
     <div
       className={cn(
         'group/add group/why max-w-[240px] min-w-[160px]',
+        !isGhost && 'cursor-grab',
         isGhost && [
-          'rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
+          'cursor-default rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
         ],
-        isGhostPulsing && 'animate-pulse'
+        isGhostPulsing && 'animate-pulse',
+        // Tasks themselves are never valid drop targets, but the drag
+        // intersection can still land on one — surface the same red ring as
+        // goal/group/area so the feedback is consistent across node types.
+        isInvalidHover && 'rounded-lg ring-2 ring-red-400/70 ring-offset-1'
       )}
     >
       <Handle type="target" position={targetPosition ?? Position.Top} />
@@ -57,7 +62,7 @@ export const TaskNode = memo(function TaskNode({
       {isCompact ? (
         <div
           className={cn(
-            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
+            'cursor-grab rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}
@@ -80,11 +85,6 @@ export const TaskNode = memo(function TaskNode({
                 onCommit={handleRenameCommit}
                 onCancel={handleCancelEdit}
                 pendingValueRef={pendingEditValueRef}
-                onChainEnter={() => {
-                  const parentId = data.parentGroupId || data.parentGoalId
-                  const parentType = data.parentGroupId ? ('group' as const) : ('goal' as const)
-                  handleQuickCreate(parentType, parentId)
-                }}
               />
             </div>
           </div>

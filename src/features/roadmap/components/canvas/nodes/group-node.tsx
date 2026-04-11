@@ -30,6 +30,7 @@ export const GroupNode = memo(function GroupNode({
   const isGhost = data.isGhost === true
   const isGhostPulsing = data.isGhostPulsing === true
   const isDropTarget = data.isDropTarget === true
+  const isInvalidHover = data.isInvalidHover === true
 
   const {
     handleNodeSelect,
@@ -66,12 +67,13 @@ export const GroupNode = memo(function GroupNode({
     <div
       className={cn(
         'group/add group/why relative max-w-[260px] min-w-[180px]',
+        !isGhost && 'cursor-grab',
         isGhost && [
-          'rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
+          'cursor-default rounded-lg border-2 border-dashed border-amber-300 bg-amber-50/50 dark:border-amber-600 dark:bg-amber-900/20',
         ],
         isGhostPulsing && 'animate-pulse',
-        isDropTarget &&
-          'ring-dashed scale-[1.02] rounded-lg ring-2 ring-[var(--color-primary-400)]/60 transition-transform'
+        isDropTarget && 'ring-dashed rounded-lg ring-2 ring-[var(--color-primary-400)]/60',
+        isInvalidHover && !isDropTarget && 'rounded-lg ring-2 ring-red-400/70 ring-offset-1'
       )}
     >
       <Handle type="target" position={targetPosition ?? Position.Top} />
@@ -79,7 +81,7 @@ export const GroupNode = memo(function GroupNode({
       {isCompact ? (
         <div
           className={cn(
-            'cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
+            'cursor-grab rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-1.5 shadow-sm transition-all hover:border-[var(--color-border-secondary)] hover:shadow-md',
             isSelected && 'ring-2 ring-[var(--color-primary-400)] ring-offset-1',
             isSearchMatch && 'ring-2 ring-[var(--color-warning-400)]'
           )}

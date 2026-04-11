@@ -1,23 +1,43 @@
 import type { Node, Edge } from '@xyflow/react'
 import type { NodeType } from '@/actions/tree.actions'
 
-// ── Drop rules ────────────────────────────────────────────────
+// ── Hierarchy rules ───────────────────────────────────────────
 
-/** Which parent types each draggable node type can be dropped onto */
-const DROP_RULES: Partial<Record<NodeType, readonly NodeType[]>> = {
+/**
+ * Full parent map for every NodeType in the hierarchy.
+ * Documents the entire Direction → Area → Goal → Group → Task chain
+ * explicitly so there are no "quietly undefined" entries.
+ *
+ * Note: `area` lists `direction` as a valid parent, but area is not
+ * yet in `DRAGGABLE_TYPES` — the rest of the codebase isn't ready to
+ * support moving areas. This is future work.
+ */
+export const VALID_PARENTS: Record<NodeType, readonly NodeType[]> = {
+  direction: [],
+  area: ['direction'],
   goal: ['area'],
   group: ['goal'],
   task: ['goal', 'group'],
 }
 
 /**
+ * Node types that can currently be picked up and dropped.
+ * `direction` and `area` are intentionally excluded until the rest of
+ * the canvas + store layers are ready to move them.
+ */
+export const DRAGGABLE_TYPES: readonly NodeType[] = ['goal', 'group', 'task']
+
+/**
  * Can a node of `dragType` be dropped onto a node of `targetType`?
- * direction and area are immovable — always returns false for them.
+ *
+ * Returns false for `direction` and `area` because they are not in
+ * `DRAGGABLE_TYPES` — even though `VALID_PARENTS` lists parents for
+ * `area`, the draggability gate blocks the move until the rest of
+ * the stack is ready.
  */
 export function canDropOnParent(dragType: NodeType, targetType: NodeType): boolean {
-  const allowed = DROP_RULES[dragType]
-  if (!allowed) return false
-  return allowed.includes(targetType)
+  if (!DRAGGABLE_TYPES.includes(dragType)) return false
+  return VALID_PARENTS[dragType].includes(targetType)
 }
 
 // ── Cycle prevention ──────────────────────────────────────────

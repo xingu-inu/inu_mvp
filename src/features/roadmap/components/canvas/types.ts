@@ -28,6 +28,11 @@ interface InteractionState {
   isGhostPulsing?: boolean
   /** Node is a valid drop target during cross-parent drag */
   isDropTarget?: boolean
+  /**
+   * Drag hovered this node but it's not a valid drop target (hierarchy rules
+   * forbid it). UI renders a red ring + `cursor: not-allowed`.
+   */
+  isInvalidHover?: boolean
 }
 
 /** Ancestor why entry for Why Chain tooltip */
