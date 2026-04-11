@@ -8,6 +8,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: Database['public']['Enums']['activity_action_type']
+          area_id: string | null
+          created_at: string
+          entity_id: string
+          entity_name: string | null
+          entity_type: Database['public']['Enums']['activity_entity_type']
+          goal_id: string | null
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          action: Database['public']['Enums']['activity_action_type']
+          area_id?: string | null
+          created_at?: string
+          entity_id: string
+          entity_name?: string | null
+          entity_type: Database['public']['Enums']['activity_entity_type']
+          goal_id?: string | null
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          action?: Database['public']['Enums']['activity_action_type']
+          area_id?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_name?: string | null
+          entity_type?: Database['public']['Enums']['activity_entity_type']
+          goal_id?: string | null
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_insights: {
         Row: {
           created_at: string | null
@@ -1324,6 +1363,8 @@ export type Database = {
       }
     }
     Enums: {
+      activity_action_type: 'created' | 'renamed' | 'why_updated' | 'moved' | 'deleted'
+      activity_entity_type: 'area' | 'goal' | 'group' | 'task'
       area_type:
         | 'health'
         | 'career'
@@ -1467,6 +1508,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_action_type: ['created', 'renamed', 'why_updated', 'moved', 'deleted'],
+      activity_entity_type: ['area', 'goal', 'group', 'task'],
       area_type: [
         'health',
         'career',

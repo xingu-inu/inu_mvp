@@ -180,6 +180,7 @@ export function useCreateTask() {
     onSettled: (_data, _err, input) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
       if (input.goal_id) {
         queryClient.invalidateQueries({ queryKey: queryKeys.tasks.byGoal(input.goal_id) })
       }
@@ -252,7 +253,10 @@ export function useUpdateTask() {
       if (Object.keys(variables.input).some((k) => structuralKeys.includes(k))) {
         queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
       }
-      if (variables.input.status) {
+      // sort_order만 바뀌는 DnD 재정렬은 타임라인에 안 찍히므로 invalidate도 생략
+      const keys = Object.keys(variables.input)
+      const isSortOnly = keys.length > 0 && keys.every((k) => k === 'sort_order')
+      if (!isSortOnly) {
         queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
       }
     },
@@ -303,6 +307,7 @@ export function useDeleteTask() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('할 일이 삭제되었습니다.')

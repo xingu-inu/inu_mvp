@@ -24,3 +24,9 @@ export { statusHistoryRepository } from './status-history.repository'
 export { directionHistoryRepository } from './direction-history.repository'
 export { timelineNoteRepository } from './timeline-note.repository'
 export { hiddenTimelineRepository } from './hidden-timeline.repository'
+export { activityLogRepository } from './activity-log.repository'
+export type {
+  ActivityLogRow,
+  ActivityEntityType,
+  ActivityActionType,
+} from './activity-log.repository'

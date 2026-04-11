@@ -13,6 +13,7 @@ const hideSchema = z.object({
     'task_status',
     'profile_trait',
     'direction_change',
+    'entity_activity',
     'ai_observation',
   ]),
 })

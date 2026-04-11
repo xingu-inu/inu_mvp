@@ -1,13 +1,14 @@
 'use client'
 
-import { Target, Footprints, User, Compass, X } from 'lucide-react'
-import type { TimelineEvent, TimelineEventType } from '@/types/timeline'
+import { Target, Footprints, User, Compass, X, Layers, FolderOpen, Sparkles } from 'lucide-react'
+import type { TimelineEvent, TimelineEventType, ActivityEntityKind } from '@/types/timeline'
 
 const EVENT_ICONS: Record<TimelineEventType, typeof Target> = {
   goal_status: Target,
   task_status: Footprints,
   profile_trait: User,
   direction_change: Compass,
+  entity_activity: Sparkles,
 }
 
 const EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
@@ -15,6 +16,21 @@ const EVENT_TYPE_LABELS: Record<TimelineEventType, string> = {
   task_status: '태스크',
   profile_trait: '프로필',
   direction_change: '방향',
+  entity_activity: '활동',
+}
+
+const ACTIVITY_ENTITY_ICONS: Record<ActivityEntityKind, typeof Target> = {
+  area: Layers,
+  goal: Target,
+  group: FolderOpen,
+  task: Footprints,
+}
+
+const ACTIVITY_ENTITY_LABELS: Record<ActivityEntityKind, string> = {
+  area: '영역',
+  goal: '목표',
+  group: '그룹',
+  task: '할일',
 }
 
 function formatTime(timestamp: string): string {
@@ -28,7 +44,15 @@ interface TimelineEventCardProps {
 }
 
 export function TimelineEventCard({ event, onHide }: TimelineEventCardProps) {
-  const Icon = EVENT_ICONS[event.type]
+  const Icon =
+    event.type === 'entity_activity' && event.activity
+      ? ACTIVITY_ENTITY_ICONS[event.activity.entityType]
+      : EVENT_ICONS[event.type]
+
+  const typeLabel =
+    event.type === 'entity_activity' && event.activity
+      ? ACTIVITY_ENTITY_LABELS[event.activity.entityType]
+      : EVENT_TYPE_LABELS[event.type]
 
   return (
     <div className="group/hide relative flex gap-3 py-2.5">
@@ -43,9 +67,7 @@ export function TimelineEventCard({ event, onHide }: TimelineEventCardProps) {
           <div className="min-w-0">
             {/* Type + Entity name */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--color-text-tertiary)]">
-                {EVENT_TYPE_LABELS[event.type]}
-              </span>
+              <span className="text-xs text-[var(--color-text-tertiary)]">{typeLabel}</span>
               {event.entityName && (
                 <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
                   {event.entityName}

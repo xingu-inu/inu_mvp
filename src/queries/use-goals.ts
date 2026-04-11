@@ -176,6 +176,7 @@ export function useCreateGoal() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: (_data, input) => {
       trackEvent(ANALYTICS_EVENTS.GOAL_CREATED, { area_id: input.area_id, status: input.status })
@@ -290,6 +291,7 @@ export function useDeleteGoal() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('목표가 삭제되었습니다.')

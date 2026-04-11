@@ -6,7 +6,13 @@ import type { TimelineEvent } from '@/types/timeline'
 
 interface HideTimelineEventInput {
   eventId: string
-  eventType: 'goal_status' | 'task_status' | 'profile_trait' | 'direction_change' | 'ai_observation'
+  eventType:
+    | 'goal_status'
+    | 'task_status'
+    | 'profile_trait'
+    | 'direction_change'
+    | 'entity_activity'
+    | 'ai_observation'
 }
 
 interface TimelineObservationsResponse {

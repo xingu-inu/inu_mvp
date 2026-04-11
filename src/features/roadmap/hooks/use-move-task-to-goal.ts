@@ -131,6 +131,7 @@ export function useMoveTaskToGoal() {
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       queryClient.invalidateQueries({ queryKey: ['tasks', 'home'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
   })
 }

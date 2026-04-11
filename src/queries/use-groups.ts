@@ -104,6 +104,7 @@ export function useCreateGroup() {
     onSettled: (_data, _err, input) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.byGoal(input.goal_id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('그룹이 추가되었습니다.')
@@ -145,6 +146,7 @@ export function useUpdateGroup() {
     onSettled: (_data, _err, { goalId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.byGoal(goalId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('그룹이 수정되었습니다.')
@@ -230,6 +232,7 @@ export function useDeleteGroup() {
     onSettled: (_data, _err, { goalId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.groups.byGoal(goalId) })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('그룹이 삭제되었습니다.')

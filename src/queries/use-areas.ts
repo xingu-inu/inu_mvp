@@ -105,6 +105,7 @@ export function useCreateArea() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.areas.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('영역이 추가되었습니다.')
@@ -150,6 +151,7 @@ export function useUpdateArea() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.areas.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('영역이 수정되었습니다.')
@@ -207,6 +209,7 @@ export function useDeleteArea() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.areas.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
     },
     onSuccess: () => {
       toast.success('영역이 삭제되었습니다.')

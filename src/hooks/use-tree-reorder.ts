@@ -6,6 +6,7 @@ import { useDebouncedCallback } from 'use-debounce'
 import { toast } from 'sonner'
 import { getNewOrder } from '@/lib/fractional-index'
 import { moveNode, type NodeType, type MoveNodeInput } from '@/actions/tree.actions'
+import { queryKeys } from '@/lib/query/keys'
 
 interface UseTreeReorderOptions {
   nodeType: NodeType
@@ -36,9 +37,13 @@ export function useTreeReorder<T extends ReorderableItem>({
       }
       toast.error('이동에 실패했어요. 다시 시도해주세요.')
     },
-    onSettled: () => {
+    onSettled: (_data, _err, variables) => {
       // Sync with server
       queryClient.invalidateQueries({ queryKey })
+      // Cross-parent 이동만 타임라인에 기록되므로 해당 경우에만 invalidate
+      if (variables?.newParentId !== undefined) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.timeline.all })
+      }
     },
   })
 

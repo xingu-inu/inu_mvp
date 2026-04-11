@@ -1,7 +1,7 @@
 'use server'
 
 import { authAction, validate } from '@/lib/security'
-import { taskRepository, statusHistoryRepository } from '@/repositories'
+import { taskRepository, statusHistoryRepository, activityLogRepository } from '@/repositories'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
 import { createTaskSchema, updateTaskSchema } from '@/lib/validations'
@@ -125,6 +125,15 @@ export const createTask = authAction(
 
     const task = await taskRepository.create(supabase, user.id, v.data)
 
+    await activityLogRepository.log(supabase, user.id, {
+      entityType: 'task',
+      entityId: task.id,
+      action: 'created',
+      entityName: task.name,
+      areaId: task.area_id ?? task.goal?.area_id ?? null,
+      goalId: task.goal_id ?? null,
+    })
+
     // Google Calendar sync (fire-and-forget)
     syncTaskToGoogleCreate(supabase, user.id, task).catch(() => {})
 
@@ -141,23 +150,57 @@ export const updateTask = authAction(
     const v = validate(updateTaskSchema, input)
     if (!v.success) return v.response
 
-    // 상태 변경 시 히스토리 기록
-    if (v.data.status) {
-      const current = await taskRepository.getById(supabase, id, user.id)
-      if (current && current.status !== v.data.status) {
-        await statusHistoryRepository.insertTaskHistory(
-          supabase,
-          user.id,
-          id,
-          current.status,
-          v.data.status,
-          v.data.status_change_reason,
-          v.data.status_change_note
-        )
-      }
+    // 상태 변경 / 이름 / why diff을 위해 before 조회 (해당 중 하나라도 필요한 경우에만)
+    const wantsIdentityDiff = v.data.name !== undefined || v.data.why !== undefined
+    const needsStatusHistory = !!v.data.status
+    const before =
+      wantsIdentityDiff || needsStatusHistory
+        ? await taskRepository.getById(supabase, id, user.id)
+        : null
+
+    // 상태 변경 시 히스토리 기록 (기존 로직 유지)
+    if (before && v.data.status && before.status !== v.data.status) {
+      await statusHistoryRepository.insertTaskHistory(
+        supabase,
+        user.id,
+        id,
+        before.status,
+        v.data.status,
+        v.data.status_change_reason,
+        v.data.status_change_note
+      )
     }
 
     const task = await taskRepository.update(supabase, id, user.id, v.data)
+
+    if (before) {
+      const nameChanged = v.data.name !== undefined && v.data.name !== before.name
+      const whyChanged = v.data.why !== undefined && (v.data.why ?? '') !== (before.why ?? '')
+
+      if (nameChanged) {
+        await activityLogRepository.log(supabase, user.id, {
+          entityType: 'task',
+          entityId: task.id,
+          action: 'renamed',
+          entityName: task.name,
+          areaId: task.area_id ?? task.goal?.area_id ?? null,
+          goalId: task.goal_id ?? null,
+          metadata: { from: before.name, to: task.name },
+        })
+      }
+
+      if (whyChanged) {
+        await activityLogRepository.log(supabase, user.id, {
+          entityType: 'task',
+          entityId: task.id,
+          action: 'why_updated',
+          entityName: task.name,
+          areaId: task.area_id ?? task.goal?.area_id ?? null,
+          goalId: task.goal_id ?? null,
+          metadata: { from: before.why ?? null, to: task.why ?? null },
+        })
+      }
+    }
 
     // Google Calendar sync (fire-and-forget)
     syncTaskToGoogleUpdate(supabase, user.id, task).catch(() => {})
@@ -184,17 +227,31 @@ export const reorderTasks = authAction(
 export const deleteTask = authAction(
   'deleteTask',
   async ({ supabase, user }, id: string): Promise<ApiResponse<void>> => {
+    // 삭제 전에 스냅샷을 받아 활동 로그 + Google Calendar 정리에 재사용
+    const before = await taskRepository.getById(supabase, id, user.id)
+
     // Delete Google Calendar event before removing task
-    try {
-      const task = await taskRepository.getById(supabase, id, user.id)
-      if (task?.google_event_id) {
-        await deleteGoogleEvent(supabase, user.id, task.google_event_id)
+    if (before?.google_event_id) {
+      try {
+        await deleteGoogleEvent(supabase, user.id, before.google_event_id)
+      } catch {
+        // Google sync is best-effort
       }
-    } catch {
-      // Google sync is best-effort
     }
 
     await taskRepository.delete(supabase, id, user.id)
+
+    if (before) {
+      await activityLogRepository.log(supabase, user.id, {
+        entityType: 'task',
+        entityId: id,
+        action: 'deleted',
+        entityName: before.name,
+        areaId: before.area_id ?? before.goal?.area_id ?? null,
+        goalId: before.goal_id ?? null,
+      })
+    }
+
     return successResponse(undefined)
   },
   { errorMap: NOT_FOUND_ERROR_MAP }

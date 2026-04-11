@@ -1,7 +1,7 @@
 'use server'
 
 import { authAction, validate } from '@/lib/security'
-import { goalRepository, statusHistoryRepository } from '@/repositories'
+import { goalRepository, statusHistoryRepository, activityLogRepository } from '@/repositories'
 import { getActiveDirectionId } from '@/repositories/base.repository'
 import { successResponse, listResponse } from '@/lib/api'
 import { ErrorCode } from '@/lib/api/errors'
@@ -113,6 +113,16 @@ export const createGoal = authAction(
     if (!v.success) return v.response
 
     const goal = await goalRepository.create(supabase, user.id, v.data)
+
+    await activityLogRepository.log(supabase, user.id, {
+      entityType: 'goal',
+      entityId: goal.id,
+      action: 'created',
+      entityName: goal.name,
+      areaId: goal.area_id,
+      goalId: goal.id,
+    })
+
     return successResponse(goal)
   }
 )
@@ -126,23 +136,59 @@ export const updateGoal = authAction(
     const v = validate(updateGoalSchema, input)
     if (!v.success) return v.response
 
-    // 상태 변경 시 히스토리 기록
-    if (v.data.status) {
-      const current = await goalRepository.getById(supabase, id, user.id)
-      if (current && current.status !== v.data.status) {
-        await statusHistoryRepository.insertGoalHistory(
-          supabase,
-          user.id,
-          id,
-          current.status,
-          v.data.status,
-          input.status_change_reason,
-          input.status_change_note
-        )
-      }
+    // 활동 로그를 위해 before 스냅샷이 필요한 경우 (name / why 변경 감지) 또는
+    // 기존 상태 히스토리 로직을 위해 상태가 바뀌는 경우 before를 한 번만 조회
+    const wantsIdentityDiff = v.data.name !== undefined || v.data.why !== undefined
+    const needsStatusHistory = !!v.data.status
+    const before =
+      wantsIdentityDiff || needsStatusHistory
+        ? await goalRepository.getById(supabase, id, user.id)
+        : null
+
+    // 상태 변경 시 히스토리 기록 (기존 로직 유지)
+    if (before && v.data.status && before.status !== v.data.status) {
+      await statusHistoryRepository.insertGoalHistory(
+        supabase,
+        user.id,
+        id,
+        before.status,
+        v.data.status,
+        input.status_change_reason,
+        input.status_change_note
+      )
     }
 
     const goal = await goalRepository.update(supabase, id, user.id, v.data)
+
+    if (before) {
+      const nameChanged = v.data.name !== undefined && v.data.name !== before.name
+      const whyChanged = v.data.why !== undefined && (v.data.why ?? '') !== (before.why ?? '')
+
+      if (nameChanged) {
+        await activityLogRepository.log(supabase, user.id, {
+          entityType: 'goal',
+          entityId: goal.id,
+          action: 'renamed',
+          entityName: goal.name,
+          areaId: goal.area_id,
+          goalId: goal.id,
+          metadata: { from: before.name, to: goal.name },
+        })
+      }
+
+      if (whyChanged) {
+        await activityLogRepository.log(supabase, user.id, {
+          entityType: 'goal',
+          entityId: goal.id,
+          action: 'why_updated',
+          entityName: goal.name,
+          areaId: goal.area_id,
+          goalId: goal.id,
+          metadata: { from: before.why ?? null, to: goal.why ?? null },
+        })
+      }
+    }
+
     return successResponse(goal)
   },
   { errorMap: NOT_FOUND_ERROR_MAP }
@@ -180,7 +226,22 @@ export const updateGoalStatus = authAction(
 export const deleteGoal = authAction(
   'deleteGoal',
   async ({ supabase, user }, id: string): Promise<ApiResponse<void>> => {
+    const before = await goalRepository.getById(supabase, id, user.id)
+
     await goalRepository.delete(supabase, id, user.id)
+
+    if (before) {
+      await activityLogRepository.log(supabase, user.id, {
+        entityType: 'goal',
+        entityId: id,
+        action: 'deleted',
+        entityName: before.name,
+        areaId: before.area_id,
+        goalId: id,
+        metadata: { cascade: true },
+      })
+    }
+
     return successResponse(undefined)
   },
   { errorMap: NOT_FOUND_ERROR_MAP }

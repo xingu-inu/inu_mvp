@@ -1,6 +1,14 @@
 // Timeline types for 나의 흐름 (My Flow)
 
-export type TimelineEventType = 'goal_status' | 'task_status' | 'profile_trait' | 'direction_change'
+export type TimelineEventType =
+  | 'goal_status'
+  | 'task_status'
+  | 'profile_trait'
+  | 'direction_change'
+  | 'entity_activity'
+
+export type ActivityEntityKind = 'area' | 'goal' | 'group' | 'task'
+export type ActivityKind = 'created' | 'renamed' | 'why_updated' | 'moved' | 'deleted'
 
 export interface TimelineEvent {
   id: string
@@ -15,6 +23,14 @@ export interface TimelineEvent {
   entityName: string | null
   fromStatus: string | null
   toStatus: string | null
+  /**
+   * Present only when type === 'entity_activity'.
+   * Shape lets the UI decide how to render CRUD events (rename, move, delete, ...).
+   */
+  activity?: {
+    entityType: ActivityEntityKind
+    action: ActivityKind
+  }
 }
 
 export interface TimelineDateGroup {
