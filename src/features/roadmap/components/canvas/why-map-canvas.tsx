@@ -64,6 +64,11 @@ interface WhyMapCanvasProps {
   areas: Area[]
   searchQuery: string
   searchMatchedIds: Set<string>
+  /**
+   * View-only mode for mobile: enables touch pan/pinch zoom, disables DnD and
+   * inline editing, routes Goal taps to the existing Vaul bottom sheet.
+   */
+  isMobile?: boolean
 }
 
 // ── MiniMap node color ──────────────────────────────────────
@@ -100,7 +105,7 @@ export const WhyMapCanvas = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(
 // ── Inner component (uses ReactFlow hooks) ─────────────────
 
 const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(function WhyMapCanvasInner(
-  { treeData, crossLinks, goals, areas, searchQuery, searchMatchedIds },
+  { treeData, crossLinks, goals, areas, searchQuery, searchMatchedIds, isMobile = false },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -437,10 +442,23 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
 
   const handleNodeDoubleClick = useCallback(
     (_event: React.MouseEvent, node: WhyMapNode) => {
+      // Mobile is view-only: no inline edit on double-tap.
+      if (isMobile) return
       if (node.type === 'direction') return
       handleStartEdit(node.type as SelectedNodeType, node.id)
     },
-    [handleStartEdit]
+    [handleStartEdit, isMobile]
+  )
+
+  // Mobile-only: tap a Goal node to open the existing Vaul bottom sheet,
+  // mirroring `MobileRoadmapView`'s tap-to-detail flow.
+  const handleNodeClick = useCallback(
+    (_event: React.MouseEvent, node: WhyMapNode) => {
+      if (!isMobile) return
+      if (node.type !== 'goal') return
+      useRoadmapStore.getState().openMobileDrawer(node.id)
+    },
+    [isMobile]
   )
 
   // ── Imperative ref for parent ──────────────────────────────
@@ -559,20 +577,31 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
-          onConnect={handleConnect}
+          onConnect={isMobile ? undefined : handleConnect}
           onPaneClick={handlePaneClick}
+          onNodeClick={handleNodeClick}
           onNodeDoubleClick={handleNodeDoubleClick}
-          onNodeDragStart={canvasReorder.onNodeDragStart}
-          onNodeDrag={(event, node) => {
-            canvasReorder.onNodeDrag(event, node)
-            autoPan.updateMousePosition(event.clientX, event.clientY)
-          }}
-          onNodeDragStop={canvasReorder.onNodeDragStop}
-          panOnScroll
-          zoomOnScroll
-          panOnDrag={[1, 2]}
-          nodesDraggable
-          minZoom={0.15}
+          onNodeDragStart={isMobile ? undefined : canvasReorder.onNodeDragStart}
+          onNodeDrag={
+            isMobile
+              ? undefined
+              : (event, node) => {
+                  canvasReorder.onNodeDrag(event, node)
+                  autoPan.updateMousePosition(event.clientX, event.clientY)
+                }
+          }
+          onNodeDragStop={isMobile ? undefined : canvasReorder.onNodeDragStop}
+          // Touch devices: `panOnDrag={true}` enables single-finger pan.
+          // Desktop keeps the existing middle/right mouse button behavior.
+          panOnDrag={isMobile ? true : [1, 2]}
+          // Native browser scroll/zoom on touch — don't hijack.
+          panOnScroll={!isMobile}
+          zoomOnScroll={!isMobile}
+          zoomOnPinch
+          zoomOnDoubleClick={!isMobile}
+          nodesDraggable={!isMobile}
+          nodesConnectable={!isMobile}
+          minZoom={isMobile ? 0.1 : 0.15}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}
         >

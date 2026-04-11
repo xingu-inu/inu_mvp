@@ -1,6 +1,8 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { Lightbulb, PanelRight } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useRoadmapStore, selectIsFloatingPanelOpen } from '@/stores/roadmap.store'
 import { useAiChatStore } from '@/stores/ai-chat.store'
 import { useGoalStats } from '../hooks/use-goal-stats'
@@ -9,7 +11,16 @@ import { RoadmapStatsSummary } from './roadmap-stats-summary'
 import { VersionDropdown } from './version/version-dropdown'
 import { StatusFilter } from './status-filter'
 
-export function RoadmapHeader() {
+interface RoadmapHeaderProps {
+  /**
+   * Optional trailing slot rendered on the filter row, aligned to the right.
+   * Used on mobile to place the list/canvas toggle next to the status filter
+   * without introducing a mobile-specific layout inside this shared header.
+   */
+  filterRowSlot?: ReactNode
+}
+
+export function RoadmapHeader({ filterRowSlot }: RoadmapHeaderProps = {}) {
   const isOpen = useRoadmapStore(selectIsFloatingPanelOpen)
   const rightPanelTab = useRoadmapStore((s) => s.rightPanelTab)
   const toggle = useRoadmapStore((s) => s.toggleFloatingPanel)
@@ -51,9 +62,17 @@ export function RoadmapHeader() {
         </CanvasToolbar>
       </div>
 
-      {/* Filter Row */}
-      <div className="pointer-events-auto w-fit">
+      {/* Filter Row — shrinks to content by default; if a slot is provided
+          (mobile list/canvas toggle), stretch to full width and push the slot
+          to the right edge. */}
+      <div
+        className={cn(
+          'pointer-events-auto flex items-center gap-3',
+          filterRowSlot ? 'justify-between' : 'w-fit'
+        )}
+      >
         <StatusFilter />
+        {filterRowSlot}
       </div>
     </div>
   )

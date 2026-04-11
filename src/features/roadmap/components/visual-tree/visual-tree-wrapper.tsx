@@ -13,10 +13,16 @@ import { useTreeSearch } from '../../hooks/use-tree-search'
 import { CommandPalette, buildRoadmapCommands } from './command-palette'
 import { WhyMapCanvas, type WhyMapCanvasRef } from '../canvas/why-map-canvas'
 
-export function VisualTreeWrapper() {
+interface VisualTreeWrapperProps {
+  /**
+   * View-only mode for mobile: disables DnD, hides hover/keyboard-only UI,
+   * routes Goal taps to the existing Vaul bottom sheet.
+   */
+  isMobile?: boolean
+}
+
+export function VisualTreeWrapper({ isMobile = false }: VisualTreeWrapperProps) {
   const clearSelection = useRoadmapStore((s) => s.clearSelection)
-  const treeLayout = useRoadmapStore((s) => s.treeLayout)
-  const setTreeLayout = useRoadmapStore((s) => s.setTreeLayout)
   const statusFilter = useRoadmapStore(selectStatusFilter)
   const setStatusFilter = useRoadmapStore((s) => s.setStatusFilter)
   const selection = useRoadmapStore((s) => s.selection)
@@ -53,11 +59,6 @@ export function VisualTreeWrapper() {
     setIsSearchOpen(false)
     setSearchQuery('')
   }, [])
-
-  const toggleLayout = useCallback(
-    () => setTreeLayout(treeLayout === 'vertical' ? 'horizontal' : 'vertical'),
-    [treeLayout, setTreeLayout]
-  )
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -97,12 +98,6 @@ export function VisualTreeWrapper() {
         return
       }
 
-      if (e.key === 'l' || e.key === 'L') {
-        e.preventDefault()
-        toggleLayout()
-        return
-      }
-
       if ((e.metaKey || e.ctrlKey) && e.key === '0') {
         e.preventDefault()
         canvasRef.current?.fitView()
@@ -111,7 +106,7 @@ export function VisualTreeWrapper() {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [isSearchOpen, isCommandPaletteOpen, handleSearchClose, clearSelection, toggleLayout])
+  }, [isSearchOpen, isCommandPaletteOpen, handleSearchClose, clearSelection])
 
   // Command palette commands
   // eslint-disable-next-line react-hooks/refs
@@ -119,7 +114,6 @@ export function VisualTreeWrapper() {
     onOpenSearch: () => setIsSearchOpen(true),
     onZoomToFit: () => canvasRef.current?.fitView(),
     onToggleMinimap: () => canvasRef.current?.toggleMinimap(),
-    onToggleLayout: toggleLayout,
     onFilterStatus: () => {
       const statuses = [
         'all',
@@ -146,26 +140,29 @@ export function VisualTreeWrapper() {
 
   return (
     <div className="relative min-h-0 flex-1">
-      {/* Search bar — floating above canvas */}
-      <TreeSearchBar
-        isOpen={isSearchOpen}
-        onClose={handleSearchClose}
-        query={searchQuery}
-        onQueryChange={setSearchQuery}
-        currentIndex={searchResult.currentIndex}
-        total={searchResult.total}
-        onNext={searchResult.goNext}
-        onPrev={searchResult.goPrev}
-        onNavigate={handleSearchNavigate}
-        orderedMatches={searchResult.orderedMatches}
-      />
-
-      {/* Command palette — floating overlay */}
-      <CommandPalette
-        isOpen={isCommandPaletteOpen}
-        onClose={() => setIsCommandPaletteOpen(false)}
-        commands={commands}
-      />
+      {/* Search bar + command palette are keyboard-only, so they never trigger
+          on touch devices. Skip rendering on mobile to keep the DOM lean. */}
+      {!isMobile && (
+        <>
+          <TreeSearchBar
+            isOpen={isSearchOpen}
+            onClose={handleSearchClose}
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            currentIndex={searchResult.currentIndex}
+            total={searchResult.total}
+            onNext={searchResult.goNext}
+            onPrev={searchResult.goPrev}
+            onNavigate={handleSearchNavigate}
+            orderedMatches={searchResult.orderedMatches}
+          />
+          <CommandPalette
+            isOpen={isCommandPaletteOpen}
+            onClose={() => setIsCommandPaletteOpen(false)}
+            commands={commands}
+          />
+        </>
+      )}
 
       {/* ReactFlow canvas */}
       <WhyMapCanvas
@@ -174,9 +171,9 @@ export function VisualTreeWrapper() {
         crossLinks={crossLinks}
         goals={goals}
         areas={activeAreas}
-        treeLayout={treeLayout}
         searchQuery={searchQuery}
         searchMatchedIds={searchResult.matchedIds}
+        isMobile={isMobile}
       />
     </div>
   )
