@@ -16,9 +16,6 @@ importers:
       '@ai-sdk/react':
         specifier: ^3.0.99
         version: 3.0.99(react@19.2.3)(zod@4.3.6)
-      '@dagrejs/dagre':
-        specifier: ^3.0.0
-        version: 3.0.0
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -100,6 +97,9 @@ importers:
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
+      elkjs:
+        specifier: ^0.11.1
+        version: 0.11.1
       fractional-indexing:
         specifier: ^3.2.0
         version: 3.2.0
@@ -525,18 +525,6 @@ packages:
         integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==,
       }
     engines: { node: '>=18' }
-
-  '@dagrejs/dagre@3.0.0':
-    resolution:
-      {
-        integrity: sha512-ZzhnTy1rfuoew9Ez3EIw4L2znPGnYYhfn8vc9c4oB8iw6QAsszbiU0vRhlxWPFnmmNSFAkrYeF1PhM5m4lAN0Q==,
-      }
-
-  '@dagrejs/graphlib@4.0.1':
-    resolution:
-      {
-        integrity: sha512-IvcV6FduIIAmLwnH+yun+QtV36SC7mERqa86aClNqmMN09WhmPPYU8ckHrZBozErf+UvHPWOTJYaGYiIcs0DgA==,
-      }
 
   '@date-fns/tz@1.4.1':
     resolution:
@@ -3990,6 +3978,12 @@ packages:
     resolution:
       {
         integrity: sha512-9tfDXhJ4RKFNerfjdCcZfufu49vg620741MNs26a9+bhLThdB+plgMeou98CAaHu/WATj2iHOOHTp1hWtABj2A==,
+      }
+
+  elkjs@0.11.1:
+    resolution:
+      {
+        integrity: sha512-zxxR9k+rx5ktMwT/FwyLdPCrq7xN6e4VGGHH8hA01vVYKjTFik7nHOxBnAYtrgYUB1RpAiLvA1/U2YraWxyKKg==,
       }
 
   emoji-regex@10.6.0:
@@ -7747,12 +7741,6 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@dagrejs/dagre@3.0.0':
-    dependencies:
-      '@dagrejs/graphlib': 4.0.1
-
-  '@dagrejs/graphlib@4.0.1': {}
-
   '@date-fns/tz@1.4.1': {}
 
   '@dnd-kit/accessibility@3.1.1(react@19.2.3)':
@@ -9762,6 +9750,8 @@ snapshots:
       safe-buffer: 5.2.1
 
   electron-to-chromium@1.5.286: {}
+
+  elkjs@0.11.1: {}
 
   emoji-regex@10.6.0: {}
 
