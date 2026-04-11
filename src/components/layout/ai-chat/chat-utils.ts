@@ -3,12 +3,14 @@ import type { ChatMessage } from '@/types/entities'
 
 /** Convert DB ChatMessage[] to UIMessage[] */
 export function toUIMessages(dbMessages: ChatMessage[]): UIMessage[] {
-  return dbMessages.map((m) => ({
-    id: m.id,
-    role: m.role as 'user' | 'assistant',
-    parts: [{ type: 'text' as const, text: m.content }],
-    createdAt: new Date(m.created_at),
-  }))
+  return dbMessages
+    .filter((m) => !(m.role === 'user' && m.content === ''))
+    .map((m) => ({
+      id: m.id,
+      role: m.role as 'user' | 'assistant',
+      parts: [{ type: 'text' as const, text: m.content }],
+      createdAt: new Date(m.created_at),
+    }))
 }
 
 /** Extract text from UIMessage parts */
@@ -104,7 +106,11 @@ export interface ResponseChipsPart {
   toolName?: string
   toolCallId: string
   state: string
-  output?: { type: 'suggest_responses'; chips: { label: string; message: string }[] }
+  output?: {
+    type: 'suggest_responses'
+    chips: { label: string; message: string }[]
+    multi?: boolean
+  }
 }
 
 /** Check if a UIMessage part is a suggest_responses tool invocation */
@@ -117,8 +123,50 @@ export function isResponseChipsPart(part: unknown): part is ResponseChipsPart {
   return false
 }
 
-export const BRAIN_DUMP_QUICK_ACTIONS = [
-  { label: '마음 정리', prompt: '요즘 머릿속이 복잡해. 있는 그대로 꺼내볼게, 같이 정리해줘: ' },
-  { label: '삶의 시즌 정리', prompt: '지금 내 삶의 시즌이 어떤 상태인지 같이 정리하고 싶어' },
-  { label: '중요한 것 찾기', prompt: '나는 요즘 무엇을 더 중요하게 살아야 하는지 같이 찾고 싶어' },
-]
+/**
+ * 오프닝 모드에서 AI 첫 멘트가 도착하기 전 즉시 렌더되는 폴백 상황 칩.
+ * 빈 화면 체감을 0ms로 만들기 위한 용도.
+ */
+export const FALLBACK_SITUATION_CHIPS = [
+  { label: '요즘 운동 안 함', message: '요즘 운동 손 놨는데, 다시 붙일 방법 같이 정리해줘' },
+  { label: '이직 고민 중', message: '이직 고민 중이야. 어떤 기준으로 정리해야 할지 같이 봐줘' },
+  { label: '관계가 피곤해', message: '요즘 사람 관계가 피곤해. 뭘 줄이고 뭘 지킬지 같이 정리해줘' },
+  { label: '돈 걱정', message: '돈 걱정이 계속 머리에 있어. 뭐부터 잡아야 할지 같이 봐줘' },
+  { label: '잠이 불규칙', message: '요즘 잠이 완전 불규칙해. 리듬 되찾는 법 같이 찾자' },
+  { label: '공부 손 놓음', message: '공부 손 놓은 지 오래야. 다시 붙일 작은 방법 같이 찾자' },
+  {
+    label: '할 게 너무 많음',
+    message: '머릿속에 할 게 너무 많아서 시작을 못 해. 같이 꺼내서 정리해줘',
+  },
+  {
+    label: '아무것도 하기 싫음',
+    message: '요즘 아무것도 하기 싫어. 부담 주지 말고 같이 꺼내서 봐줘',
+  },
+] as const
+
+/** Narrowed shape for suggest_opening tool parts */
+export interface OpeningToolPart {
+  type: string
+  toolName?: string
+  toolCallId: string
+  state: string
+  output?: {
+    type: 'suggest_opening'
+    greeting: string
+    categories: {
+      continuing: { label: string; chips: { label: string; message: string }[] }
+      fresh: { label: string; chips: { label: string; message: string }[] }
+      free: { label: string; hint: string }
+    }
+  }
+}
+
+/** Check if a UIMessage part is a suggest_opening tool invocation */
+export function isOpeningPart(part: unknown): part is OpeningToolPart {
+  if (typeof part !== 'object' || part === null) return false
+  const p = part as Record<string, unknown>
+  if (typeof p.toolCallId !== 'string' || typeof p.state !== 'string') return false
+  if (p.type === 'dynamic-tool' && p.toolName === 'suggest_opening') return true
+  if (p.type === 'tool-suggest_opening') return true
+  return false
+}

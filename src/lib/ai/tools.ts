@@ -133,7 +133,7 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
 
     suggest_responses: tool({
       description:
-        '대화의 다음 단계로 사용자가 선택할 수 있는 응답 옵션을 제안합니다. 모든 응답 끝에 호출하세요.',
+        '대화의 다음 단계로 사용자가 선택할 수 있는 응답 옵션을 제안합니다. 모든 응답 끝에 호출하세요. multi=true면 멀티 선택 + 합쳐서 보내기.',
       inputSchema: z.object({
         chips: z
           .array(
@@ -144,10 +144,70 @@ export function createChatTools(supabase: TypedSupabaseClient, userId: string) {
           )
           .min(2)
           .max(4),
+        multi: z
+          .boolean()
+          .optional()
+          .describe(
+            'true면 사용자가 여러 칩을 합쳐서 보낼 수 있음. 사용자가 여러 주제를 동시에 꺼낼 법할 때만 true. 결정/전환 칩은 false.'
+          ),
       }),
-      execute: async ({ chips }) => {
-        return sanitizeToolResult({ type: 'suggest_responses', chips })
+      execute: async ({ chips, multi }) => {
+        return sanitizeToolResult({
+          type: 'suggest_responses',
+          chips,
+          multi: multi ?? false,
+        })
       },
+    }),
+
+    suggest_opening: tool({
+      description:
+        '오프닝 모드에서 1회만 호출. 사용자가 쏟아내기를 방금 열었고 아직 말하지 않았을 때 사용. 첫 인사 + 상위 3개 카테고리 칩 + 각 카테고리의 하위 칩 세트를 한 번에 전달.',
+      inputSchema: z.object({
+        greeting: z
+          .string()
+          .max(200)
+          .describe(
+            '1-2문장의 가벼운 인사. 최근 맥락 1개 정도 가볍게 언급 가능. 코치 톤 금지, 동행자 톤.'
+          ),
+        categories: z.object({
+          continuing: z.object({
+            label: z.string().describe('상위 칩 라벨. 예: "이어가던 이야기"'),
+            chips: z
+              .array(
+                z.object({
+                  label: z.string(),
+                  message: z.string(),
+                })
+              )
+              .min(2)
+              .max(5)
+              .describe('최근 대화 키워드 + 활동 적은 Goal을 섞어서 2-5개'),
+          }),
+          fresh: z.object({
+            label: z.string().describe('예: "새로운 주제"'),
+            chips: z
+              .array(
+                z.object({
+                  label: z
+                    .string()
+                    .describe('영역-상황 하이브리드. 예: "일 · 이직 고민", "건강 · 운동 안 함"'),
+                  message: z.string(),
+                })
+              )
+              .min(4)
+              .max(8),
+          }),
+          free: z.object({
+            label: z.string().describe('예: "편하게 이야기할게"'),
+            hint: z
+              .string()
+              .max(80)
+              .describe('입력창 안내 문구. 예: "천천히 꺼내봐. 순서 신경 쓰지 말고."'),
+          }),
+        }),
+      }),
+      execute: async (input) => sanitizeToolResult({ type: 'suggest_opening', ...input }),
     }),
 
     save_ai_insight: tool({
