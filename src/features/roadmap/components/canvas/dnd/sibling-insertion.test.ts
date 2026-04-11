@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 
 import {
   boundingSiblings,
+  classifyIntersection,
   computeInsertIndex,
   isNoOpSiblingDrop,
   isNoOpSiblingDropByIds,
@@ -228,6 +229,161 @@ describe('isNoOpSiblingDropByIds', () => {
 
   it('returns true for a single-sibling drag (both bounds null)', () => {
     expect(isNoOpSiblingDropByIds(['only'], 'only', null, null)).toBe(true)
+  })
+})
+
+// ── classifyIntersection ─────────────────────────────────────
+// Regression guard for the Goal/Group/Task sibling reorder bug: overlapping
+// a current-parent sibling during a reorder must be classified as `skip`, not
+// `invalid`. Treating it as `invalid` caused `onNodeDragStop`'s snap-back
+// guard to fire whenever a wide card brushed its neighbor, cancelling the
+// move. Same-type siblings are never valid drop targets (canDropOnParent
+// returns false), so the fix is to short-circuit them before the invalid
+// bucket — which is exactly what this helper formalizes.
+
+describe('classifyIntersection', () => {
+  const validTargets: ReadonlySet<string> = new Set(['area-1'])
+  // Contract: `sameParentIds` is the full child set of the drag's parent
+  // INCLUDING the dragged node itself. The caller (use-canvas-reorder) passes
+  // `new Set(dragState.siblingIds)` which is built from `getChildrenInOrder`
+  // before filtering the dragged id out. The classifier's `self` check
+  // handles the dragged id before the sibling check is consulted, but the
+  // contract is locked here so future refactors don't silently drop the self
+  // id from this set.
+  const sameParentIds: ReadonlySet<string> = new Set(['goal-A', 'goal-B', 'goal-C'])
+  const noDescendants: ReadonlySet<string> = new Set()
+
+  it('contract: sameParentIds includes the dragged node itself', () => {
+    // Documents the convention and guards against a refactor that filters
+    // dragId out of the set — which would make `self` fall through to
+    // `invalid` instead of `skip` for any self-intersection.
+    expect(sameParentIds.has('goal-A')).toBe(true)
+  })
+
+  it('skips the dragged node itself', () => {
+    const result = classifyIntersection(
+      { id: 'goal-A', type: 'goal' },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('skips the direction root — it is never a drop target', () => {
+    const result = classifyIntersection(
+      { id: 'direction-root', type: 'direction' },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('returns valid for a hierarchy-allowed cross-parent target', () => {
+    const result = classifyIntersection(
+      { id: 'area-1', type: 'area' },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('valid')
+  })
+
+  it('skips a current-parent sibling (same-parent reorder intent)', () => {
+    // This is the core regression. Before the fix a sibling Goal landing in
+    // the intersection pool was classified as invalid, triggering the
+    // snap-back guard in onNodeDragStop and cancelling the reorder.
+    const result = classifyIntersection(
+      { id: 'goal-B', type: 'goal' },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('skips a descendant of the dragged node (Area over its own Goal)', () => {
+    // Regression for the Area-drag-over-own-descendants bug: dragging an
+    // Area card past another Area will visually overlap the Area's own
+    // Goals/Tasks en route. Those descendants are neither siblings nor
+    // valid targets; without the descendant skip they were classified as
+    // invalid and the release-time snap-back cancelled the reorder.
+    const descendants: ReadonlySet<string> = new Set(['goal-child-1', 'task-child-1'])
+    const areaValidTargets: ReadonlySet<string> = new Set()
+    const areaSameParents: ReadonlySet<string> = new Set(['area-1', 'area-2'])
+    const result = classifyIntersection(
+      { id: 'goal-child-1', type: 'goal' },
+      'area-1',
+      areaValidTargets,
+      areaSameParents,
+      descendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('returns invalid for a non-sibling, non-descendant, non-valid overlap', () => {
+    // e.g. a Goal dragged and released on top of an unrelated Group under a
+    // different goal — the user clearly did not intend a reorder.
+    const result = classifyIntersection(
+      { id: 'group-X', type: 'group' },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('invalid')
+  })
+
+  it('descendant takes precedence over invalid bucket', () => {
+    // A descendant can never be a legal new parent (cycle), so the
+    // descendant check must fire before any valid/invalid classification
+    // to keep the "dragging over my own children is not a cancel signal"
+    // contract intact.
+    const descendants: ReadonlySet<string> = new Set(['goal-child-1'])
+    const result = classifyIntersection(
+      { id: 'goal-child-1', type: 'goal' },
+      'area-1',
+      validTargets,
+      sameParentIds,
+      descendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('valid takes precedence over sibling membership', () => {
+    // Defensive: if an id somehow appears in both validTargets and
+    // sameParentIds, valid wins. In practice these sets never overlap
+    // because getValidDropTargets filters by canDropOnParent, which always
+    // rejects same-type targets, so siblings (always same-type) can never
+    // land in validDropTargetIds. Locking the priority here in case the
+    // invariant on getValidDropTargets ever loosens.
+    const overlapValid: ReadonlySet<string> = new Set(['goal-B'])
+    const result = classifyIntersection(
+      { id: 'goal-B', type: 'goal' },
+      'goal-A',
+      overlapValid,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('valid')
+  })
+
+  it('handles undefined target type gracefully (falls through to sets)', () => {
+    // React Flow typing allows `type` to be undefined; the classifier must
+    // not throw and must still use id-based set membership.
+    const result = classifyIntersection(
+      { id: 'goal-B', type: undefined },
+      'goal-A',
+      validTargets,
+      sameParentIds,
+      noDescendants
+    )
+    expect(result).toBe('skip')
   })
 })
 

@@ -10,6 +10,56 @@
  */
 
 /**
+ * Classify an intersecting node during a drag for the purpose of picking
+ * drop-feedback targets.
+ *
+ * - `skip` — not a candidate for either the valid-target or invalid-feedback
+ *   pool. Covers:
+ *     * the dragged node itself
+ *     * the direction root (never a drop target)
+ *     * any node in `sameParentIds` — these are the drag's siblings (**and
+ *       the drag itself**, since the caller passes the full child set of the
+ *       parent including the dragged id). Overlapping a sibling during a
+ *       same-parent reorder is the user's natural reorder motion, not an
+ *       attempt to reparent. Treating siblings as `invalid` caused the
+ *       Goal/Group/Task sibling reorders to snap back whenever the dragged
+ *       card overlapped a neighbor.
+ *     * any node in `descendantIds` — dragging a parent card (e.g. an Area)
+ *       past its own children will always overlap them en route. A
+ *       descendant can never be a legal new parent (cycle) and is not a
+ *       user-intent cancel signal, so it must not contribute to the invalid
+ *       pool.
+ * - `valid` — a hierarchy-allowed new parent (cross-parent move candidate).
+ * - `invalid` — physically overlapping, not a sibling or descendant, and not
+ *   a hierarchy-allowed new parent. Drives the red-ring negative feedback
+ *   and the release-time snap-back.
+ *
+ * Priority (by first matching check):
+ *   self → direction → descendant → valid → sibling → invalid
+ *
+ * `valid` wins over `sibling` as a belt-and-suspenders contract: in practice
+ * `getValidDropTargets` filters via `canDropOnParent`, which always rejects
+ * same-type targets, so siblings can never land in `validDropTargetIds`. If
+ * that invariant is ever loosened the classifier still does the sensible
+ * thing. `descendant` is checked BEFORE `valid` because a descendant is
+ * never a valid parent (and the `valid` check would be wasted work).
+ */
+export function classifyIntersection(
+  target: { id: string; type: string | undefined },
+  dragId: string,
+  validDropTargetIds: ReadonlySet<string>,
+  sameParentIds: ReadonlySet<string>,
+  descendantIds: ReadonlySet<string>
+): 'skip' | 'valid' | 'invalid' {
+  if (target.id === dragId) return 'skip'
+  if (target.type === 'direction') return 'skip'
+  if (descendantIds.has(target.id)) return 'skip'
+  if (validDropTargetIds.has(target.id)) return 'valid'
+  if (sameParentIds.has(target.id)) return 'skip'
+  return 'invalid'
+}
+
+/**
  * Compute the target insertion index for a dragged node among siblings on a
  * given axis.
  *

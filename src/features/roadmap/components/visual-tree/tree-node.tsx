@@ -7,7 +7,9 @@ import * as Popover from '@radix-ui/react-popover'
 import { cn } from '@/lib/utils'
 import { TreeNodeCard, type VisualTreeNode } from './tree-node-card'
 import { TreeContextMenu } from './tree-context-menu'
-import type { SelectedNodeType, TreeLayoutDirection } from '@/stores/roadmap.store'
+import type { SelectedNodeType } from '@/stores/roadmap.store'
+
+type TreeLayoutDirection = 'vertical' | 'horizontal'
 
 interface TreeNodeProps {
   node: VisualTreeNode

@@ -7,10 +7,6 @@ import type { NodeType } from '@/actions/tree.actions'
  * Full parent map for every NodeType in the hierarchy.
  * Documents the entire Direction → Area → Goal → Group → Task chain
  * explicitly so there are no "quietly undefined" entries.
- *
- * Note: `area` lists `direction` as a valid parent, but area is not
- * yet in `DRAGGABLE_TYPES` — the rest of the codebase isn't ready to
- * support moving areas. This is future work.
  */
 export const VALID_PARENTS: Record<NodeType, readonly NodeType[]> = {
   direction: [],
@@ -21,19 +17,23 @@ export const VALID_PARENTS: Record<NodeType, readonly NodeType[]> = {
 }
 
 /**
- * Node types that can currently be picked up and dropped.
- * `direction` and `area` are intentionally excluded until the rest of
- * the canvas + store layers are ready to move them.
+ * Node types that can be picked up and dropped.
+ * `direction` is the only root and is intentionally excluded.
+ *
+ * Note: Area's only valid parent is `direction` and there is a single
+ * direction node, so Area drags can only be sibling reorders — there is
+ * no cross-parent case for Area in `resolveDropTarget`.
  */
-export const DRAGGABLE_TYPES: readonly NodeType[] = ['goal', 'group', 'task']
+export const DRAGGABLE_TYPES: readonly NodeType[] = ['area', 'goal', 'group', 'task']
 
 /**
- * Can a node of `dragType` be dropped onto a node of `targetType`?
+ * Can a node of `dragType` be dropped onto a node of `targetType`
+ * as a new parent (cross-parent move)?
  *
- * Returns false for `direction` and `area` because they are not in
- * `DRAGGABLE_TYPES` — even though `VALID_PARENTS` lists parents for
- * `area`, the draggability gate blocks the move until the rest of
- * the stack is ready.
+ * Same-type siblings always return false (e.g. goal onto goal) because
+ * a node can't be reparented onto another node of the same type — that
+ * scenario is sibling reorder, handled separately by the caller via
+ * the `siblingIds` set rather than `canDropOnParent`.
  */
 export function canDropOnParent(dragType: NodeType, targetType: NodeType): boolean {
   if (!DRAGGABLE_TYPES.includes(dragType)) return false

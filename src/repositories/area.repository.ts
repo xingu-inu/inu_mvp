@@ -7,7 +7,6 @@ import {
   isNotFoundError,
   now,
   getActiveDirectionId,
-  batchReorder,
   isValidFractionalKey,
 } from './base.repository'
 import { generateKeyBetween } from 'fractional-indexing'
@@ -170,16 +169,5 @@ export const areaRepository = {
     const { error } = await supabase.from('areas').delete().eq('id', id).eq('user_id', userId)
 
     if (error) handleSupabaseError(error)
-  },
-
-  /**
-   * Area 순서 변경 (배치)
-   */
-  async reorder(
-    supabase: TypedSupabaseClient,
-    userId: string,
-    orderedIds: string[]
-  ): Promise<void> {
-    await batchReorder(supabase, 'areas', orderedIds)
   },
 }

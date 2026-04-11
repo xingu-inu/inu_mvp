@@ -2,16 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import {
-  Target,
-  CheckCircle,
-  Search,
-  Maximize,
-  Map,
-  LayoutGrid,
-  Filter,
-  type LucideIcon,
-} from 'lucide-react'
+import { Target, CheckCircle, Search, Maximize, Map, Filter, type LucideIcon } from 'lucide-react'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -281,7 +272,6 @@ export function buildRoadmapCommands(handlers: {
   onOpenSearch: () => void
   onZoomToFit: () => void
   onToggleMinimap: () => void
-  onToggleLayout: () => void
   onFilterStatus: () => void
   onAddGoal: () => void
   onAddTask: () => void
@@ -328,14 +318,6 @@ export function buildRoadmapCommands(handlers: {
       shortcut: 'M',
       category: 'navigate',
       action: handlers.onToggleMinimap,
-    },
-    {
-      id: 'toggle-layout',
-      label: 'Toggle Layout',
-      icon: LayoutGrid,
-      shortcut: 'L',
-      category: 'view',
-      action: handlers.onToggleLayout,
     },
     {
       id: 'filter-status',

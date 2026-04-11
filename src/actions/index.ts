@@ -8,14 +8,7 @@ export {
   getArchivedRoadmap,
 } from './roadmap-version.actions'
 
-export {
-  getAreas,
-  getActiveAreas,
-  createArea,
-  updateArea,
-  deleteArea,
-  reorderAreas,
-} from './area.actions'
+export { getAreas, getActiveAreas, createArea, updateArea, deleteArea } from './area.actions'
 
 export {
   getGoals,

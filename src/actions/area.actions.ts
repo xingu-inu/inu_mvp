@@ -144,14 +144,3 @@ export const deleteArea = authAction(
   },
   { errorMap: NOT_FOUND_ERROR_MAP }
 )
-
-/**
- * Area 순서 변경
- */
-export const reorderAreas = authAction(
-  'reorderAreas',
-  async ({ supabase, user }, orderedIds: string[]): Promise<ApiResponse<void>> => {
-    await areaRepository.reorder(supabase, user.id, orderedIds)
-    return successResponse(undefined)
-  }
-)

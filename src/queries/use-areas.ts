@@ -8,7 +8,6 @@ import {
   createArea as createAreaAction,
   updateArea as updateAreaAction,
   deleteArea as deleteAreaAction,
-  reorderAreas as reorderAreasAction,
 } from '@/actions/area.actions'
 import type { Area, Goal, CreateAreaInput, UpdateAreaInput } from '@/types/entities'
 
@@ -213,46 +212,6 @@ export function useDeleteArea() {
     },
     onSuccess: () => {
       toast.success('영역이 삭제되었습니다.')
-    },
-  })
-}
-
-/**
- * Area 순서 변경 hook (Optimistic Update)
- */
-export function useReorderAreas() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async (ids: string[]) => {
-      const response = await reorderAreasAction(ids)
-      if (!response.success) {
-        throw new Error(response.error.message)
-      }
-    },
-    onMutate: async (newOrder) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.areas.all })
-      const previous = queryClient.getQueryData<Area[]>(queryKeys.areas.all)
-
-      // Optimistic reorder
-      if (previous) {
-        queryClient.setQueryData<Area[]>(
-          queryKeys.areas.all,
-          newOrder.map((id) => previous.find((a) => a.id === id)!).filter(Boolean)
-        )
-      }
-
-      return { previous }
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(queryKeys.areas.all, context.previous)
-      }
-      toast.error('순서 변경에 실패했습니다.')
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.areas.all })
-      queryClient.invalidateQueries({ queryKey: queryKeys.goals.all })
     },
   })
 }

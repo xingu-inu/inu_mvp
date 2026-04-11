@@ -14,6 +14,7 @@ import { getValidDropTargets } from './dnd/hierarchy-rules'
 import {
   computeInsertIndex,
   boundingSiblings,
+  classifyIntersection,
   isNoOpSiblingDrop,
   isNoOpSiblingDropByIds,
 } from './dnd/sibling-insertion'
@@ -57,6 +58,22 @@ interface DragState {
   siblings: SiblingSlot[]
   /** Full siblingIds array (including dragged) preserved in sort_order. */
   siblingIds: string[]
+  /**
+   * Set view of `siblingIds` (including dragged) for O(1) lookup while
+   * classifying intersections. Overlapping a current-parent sibling during a
+   * drag is sibling-reorder intent, not an invalid drop — the snap-back guard
+   * in `onNodeDragStop` must skip these so Goal/Group/Task/Area reorders
+   * don't get cancelled when the dragged card brushes a neighbor.
+   */
+  siblingIdSet: ReadonlySet<string>
+  /**
+   * Set of all descendant ids of the dragged node at drag start. An Area
+   * dragged past its own Goals will visually overlap those Goals — without
+   * this skip set, the invalid-overlap guard snaps the Area back. Also
+   * future-proofs Goal/Group drags over their own descendants in cases
+   * where a valid cross-parent target does not intercept first.
+   */
+  descendantIdSet: ReadonlySet<string>
   /** The dragged node's starting position so cancel can snap back. */
   startPosition: { x: number; y: number }
   /** Ghost (frozen silhouette at original position). */
@@ -215,6 +232,28 @@ function getChildrenInOrder(
   return children
 }
 
+/**
+ * Collect every descendant id of `rootId` via BFS over hierarchy edges.
+ * The returned set does NOT include `rootId` itself. Used at drag start
+ * to seed the `descendantIdSet` guard that prevents the snap-back gate
+ * from firing when a dragged parent card overlaps its own children.
+ */
+function collectDescendantIds(rootId: string, edges: WhyMapEdge[]): Set<string> {
+  const descendants = new Set<string>()
+  const queue: string[] = [rootId]
+  while (queue.length > 0) {
+    const current = queue.shift()!
+    for (const e of edges) {
+      if (e.data?.edgeType !== 'hierarchy') continue
+      if (e.source !== current) continue
+      if (descendants.has(e.target)) continue
+      descendants.add(e.target)
+      queue.push(e.target)
+    }
+  }
+  return descendants
+}
+
 // ── Hook ─────────────────────────────────────────────────────
 
 export function useCanvasReorder({
@@ -301,6 +340,8 @@ export function useCanvasReorder({
         parentId,
         siblings,
         siblingIds,
+        siblingIdSet: new Set(siblingIds),
+        descendantIdSet: collectDescendantIds(node.id, curEdges),
         startPosition: { x: node.position.x, y: node.position.y },
         ghost,
         dropTargetId: null,
@@ -346,7 +387,9 @@ export function useCanvasReorder({
       let bestOverlap = 0
       // Track the best INVALID target in parallel — node types that the drag
       // physically overlaps but the hierarchy rules forbid. This drives the
-      // red-ring + not-allowed negative feedback.
+      // red-ring + not-allowed negative feedback. Current-parent siblings are
+      // explicitly NOT invalid — overlapping a sibling during a reorder is
+      // normal user motion. See `classifyIntersection` for the rationale.
       let bestInvalidId: string | null = null
       let bestInvalidOverlap = 0
       for (const t of intersections) {
@@ -357,14 +400,19 @@ export function useCanvasReorder({
           width: tSize.width,
           height: tSize.height,
         })
-        if (s.validDropTargetIds.has(t.id)) {
+        const classification = classifyIntersection(
+          { id: t.id, type: t.type },
+          s.nodeId,
+          s.validDropTargetIds,
+          s.siblingIdSet,
+          s.descendantIdSet
+        )
+        if (classification === 'valid') {
           if (area > bestOverlap) {
             bestOverlap = area
             bestTargetId = t.id
           }
-        } else if (t.type !== 'direction' && t.id !== s.nodeId) {
-          // Exclude self and the un-droppable direction root from the
-          // negative-feedback pool.
+        } else if (classification === 'invalid') {
           if (area > bestInvalidOverlap) {
             bestInvalidOverlap = area
             bestInvalidId = t.id
@@ -479,7 +527,6 @@ export function useCanvasReorder({
         let finalBestTargetId: string | null = null
         let finalBestOverlap = 0
         for (const t of finalIntersections) {
-          if (t.id === s.nodeId || t.type === 'direction') continue
           const tSize = getNodeSize(t)
           const area = overlapArea(finalDragRect, {
             x: t.position.x,
@@ -487,13 +534,22 @@ export function useCanvasReorder({
             width: tSize.width,
             height: tSize.height,
           })
-          if (s.validDropTargetIds.has(t.id)) {
+          const classification = classifyIntersection(
+            { id: t.id, type: t.type },
+            s.nodeId,
+            s.validDropTargetIds,
+            s.siblingIdSet,
+            s.descendantIdSet
+          )
+          if (classification === 'valid') {
             if (area > finalBestOverlap) {
               finalBestOverlap = area
               finalBestTargetId = t.id
             }
-          } else if (area > finalInvalidOverlap) {
-            finalInvalidOverlap = area
+          } else if (classification === 'invalid') {
+            if (area > finalInvalidOverlap) {
+              finalInvalidOverlap = area
+            }
           }
         }
         s.dropTargetId = finalBestTargetId

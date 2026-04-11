@@ -25,11 +25,9 @@ export type StatusFilter = GoalStatus | 'all'
 
 export type SelectedNodeType = 'direction' | 'area' | 'goal' | 'group' | 'task'
 
-export type TreeLayoutDirection = 'vertical' | 'horizontal'
-
 export type RightPanelTab = 'roadmap' | 'ai-chat'
 
-// ── Core slice (statusFilter, expandedAreas, treeLayout, rightPanelTab, mobile drawer) ──
+// ── Core slice (statusFilter, expandedAreas, rightPanelTab, mobile drawer) ──
 
 interface CoreSlice {
   statusFilter: StatusFilter
@@ -39,8 +37,6 @@ interface CoreSlice {
   setAllAreasExpanded: (areaIds: string[]) => void
   rightPanelTab: RightPanelTab
   setRightPanelTab: (tab: RightPanelTab) => void
-  treeLayout: TreeLayoutDirection
-  setTreeLayout: (layout: TreeLayoutDirection) => void
   mobileDrawerGoalId: string | null
   openMobileDrawer: (goalId: string) => void
   closeMobileDrawer: () => void
@@ -51,7 +47,6 @@ const coreInitialState = {
   statusFilter: 'all' as StatusFilter,
   expandedAreas: [] as string[],
   rightPanelTab: 'roadmap' as RightPanelTab,
-  treeLayout: 'horizontal' as TreeLayoutDirection,
   mobileDrawerGoalId: null as string | null,
 }
 
@@ -98,8 +93,6 @@ export const useRoadmapStore = create<RoadmapState>()(
 
         setRightPanelTab: (tab: RightPanelTab) => set({ rightPanelTab: tab }),
 
-        setTreeLayout: (layout: TreeLayoutDirection) => set({ treeLayout: layout }),
-
         openMobileDrawer: (goalId: string) => set({ mobileDrawerGoalId: goalId }),
         closeMobileDrawer: () => set({ mobileDrawerGoalId: null }),
 
@@ -111,7 +104,6 @@ export const useRoadmapStore = create<RoadmapState>()(
       partialize: (state) => ({
         statusFilter: state.statusFilter,
         expandedAreas: state.expandedAreas,
-        treeLayout: state.treeLayout,
       }),
     }
   )

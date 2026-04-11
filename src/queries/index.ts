@@ -5,14 +5,7 @@ export { useProfile, useUpdateProfile, useUpdateAvatar } from './use-profile'
 export { useDirection, useCreateDirection, useUpdateDirection } from './use-direction'
 
 // Areas
-export {
-  useAreas,
-  useActiveAreas,
-  useCreateArea,
-  useUpdateArea,
-  useDeleteArea,
-  useReorderAreas,
-} from './use-areas'
+export { useAreas, useActiveAreas, useCreateArea, useUpdateArea, useDeleteArea } from './use-areas'
 
 // Goals
 export {

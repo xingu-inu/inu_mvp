@@ -13,7 +13,7 @@ import { CrossLinkOverlay, type CrossLink } from '../cross-link-overlay'
 import type { VisualTreeNode } from './tree-node-card'
 import type { Area, Goal } from '@/types/entities'
 import type { AreaType } from '@/types/entities'
-import type { TreeLayoutDirection } from '@/stores/roadmap.store'
+type TreeLayoutDirection = 'vertical' | 'horizontal'
 import type { GoalVibe } from '@/stores/goal-vibe.store'
 import { useFocusBranch } from '../../hooks/use-focus-branch'
 import { useDeleteArea } from '@/queries/use-areas'
@@ -251,11 +251,18 @@ export function buildVisualTreeData(
     areaColorMap.set(area.id, area.color)
   }
 
-  // Build area nodes (only areas that have goals after filtering)
+  // Build area nodes — include all areas even if they have no goals, so empty
+  // Areas still appear on the canvas (user can add Goals to them in place).
+  // Sort by sort_order so drag-reorder results persist visually across re-renders:
+  // the canvas's tree-to-elk layer also re-sorts for ELK input, but keeping the
+  // VisualTreeNode tree in sort_order keeps the HTML tree view consistent too.
   const areaNodes: VisualTreeNode[] = areas
-    .filter((area) => (goalsByArea.get(area.id) || []).length > 0)
+    .slice()
+    .sort((a, b) => a.sort_order.localeCompare(b.sort_order))
     .map((area) => {
-      const areaGoals = goalsByArea.get(area.id) || []
+      const areaGoals = (goalsByArea.get(area.id) || [])
+        .slice()
+        .sort((a, b) => a.sort_order.localeCompare(b.sort_order))
 
       // Build goal nodes
       const goalNodes: VisualTreeNode[] = areaGoals.map((goal) => {
@@ -264,7 +271,10 @@ export function buildVisualTreeData(
 
         // Build group nodes
         const groupNodes: VisualTreeNode[] = groups.map((group) => {
-          const groupTasks = tasks.filter((t) => t.group_id === group.id)
+          const groupTasks = tasks
+            .filter((t) => t.group_id === group.id)
+            .slice()
+            .sort((a, b) => a.sort_order.localeCompare(b.sort_order))
 
           const taskNodes: VisualTreeNode[] = groupTasks.map((task) => {
             // Collect cross-links
