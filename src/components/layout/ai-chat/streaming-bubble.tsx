@@ -10,9 +10,7 @@ import {
   isProposalPart,
   isTraitSuggestionPart,
   isResponseChipsPart,
-  isOpeningPart,
 } from './chat-utils'
-import { OpeningChips } from './opening-chips'
 import { ProposalCard } from './proposal-card'
 import { ResponseChips } from './response-chips'
 import { TraitSuggestionCard } from './trait-suggestion-card'
@@ -53,13 +51,11 @@ export const StreamingBubble = memo(function StreamingBubble({
   isLastStreaming,
   isLastMessage,
   onSendMessage,
-  onFocusInput,
 }: {
   message: UIMessage
   isLastStreaming?: boolean
   isLastMessage?: boolean
   onSendMessage?: (text: string) => void
-  onFocusInput?: (hint: string) => void
 }) {
   const isUser = message.role === 'user'
 
@@ -78,8 +74,7 @@ export const StreamingBubble = memo(function StreamingBubble({
   // Assistant messages: iterate parts to detect tool invocations
   const parts = message.parts ?? []
   const hasToolCard = parts.some(
-    (p) =>
-      isProposalPart(p) || isTraitSuggestionPart(p) || isResponseChipsPart(p) || isOpeningPart(p)
+    (p) => isProposalPart(p) || isTraitSuggestionPart(p) || isResponseChipsPart(p)
   )
 
   // If no tool card parts, render the simple way (text only)
@@ -172,31 +167,6 @@ export const StreamingBubble = memo(function StreamingBubble({
               }
             }
             return null
-          }
-
-          // Opening chips tool parts (오프닝 모드 첫 멘트)
-          if (isOpeningPart(part)) {
-            if (part.state !== 'output-available' || part.output == null) {
-              return (
-                <div
-                  key={part.toolCallId}
-                  className="flex items-center gap-2 rounded-2xl rounded-bl-md bg-[var(--color-bg-secondary)] px-3.5 py-2.5 text-sm text-[var(--color-text-secondary)]"
-                >
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>첫 멘트를 고르는 중...</span>
-                </div>
-              )
-            }
-            if (!onSendMessage || !onFocusInput) return null
-            return (
-              <OpeningChips
-                key={part.toolCallId}
-                data={part.output}
-                onSend={onSendMessage}
-                onFocusInput={onFocusInput}
-                disabled={!isLastMessage || isLastStreaming}
-              />
-            )
           }
 
           return null

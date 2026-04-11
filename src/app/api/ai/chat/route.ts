@@ -197,24 +197,6 @@ const chatSchema = z.object({
   context: contextSchema.optional(),
 })
 
-/**
- * 주어진 UI 메시지 배열에서 마지막 user 메시지의 text 파츠가
- * 비어 있는지(공백만) 확인. 오프닝 모드 감지에 사용.
- */
-function isLastUserMessageEmpty(messages: UIMessage[]): boolean {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const msg = messages[i]
-    if (msg?.role !== 'user') continue
-    const text =
-      msg.parts
-        ?.filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map((p) => p.text)
-        .join('') ?? ''
-    return text.trim().length === 0
-  }
-  return false
-}
-
 export const POST = authRoute(
   'ai.chat',
   async (ctx): Promise<NextResponse> => {
@@ -249,9 +231,6 @@ export const POST = authRoute(
 명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
 
     const { context } = parsed.data
-    const isOpeningMode =
-      context?.type === 'brain-dump' &&
-      isLastUserMessageEmpty(parsed.data.messages as unknown as UIMessage[])
     if (context) {
       if (context.type === 'brain-dump') {
         systemPrompt += `\n\n[대화 맥락 — 쏟아내기 모드]
@@ -272,41 +251,6 @@ export const POST = authRoute(
 - 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요. get_user_overview 결과의 areas[].id를 사용하세요. 새 Area를 만들지 마세요 — 기존 Area가 있으면 무조건 그곳에 넣으세요.
 - 구조가 너무 크면 핵심부터 시작하세요.
 - 사용자가 여러 주제를 한 번에 쏟아내면, 바로 propose_structure를 호출하지 말고 follow-up 질문 1회(예: "둘 다 그렇구나. 그중에서 제일 부담스러운 건?")를 먼저 던지고, 그 다음 propose_structure를 호출하세요.`
-
-        if (isOpeningMode) {
-          systemPrompt += `\n\n[오프닝 모드 - 사용자가 막 쏟아내기를 열었고 아직 아무 말도 하지 않았음]
-
-필수 진행 순서:
-1. get_user_overview를 **먼저** 호출해 현재 로드맵/Direction/Area/Goal 상태를 확인하세요.
-2. (프로필 trait은 이미 시스템 프롬프트에 주입되어 있음)
-3. 최근 대화 맥락이 있으면 가볍게 언급 — 없으면 무리해서 지어내지 말 것.
-4. suggest_opening 툴을 **반드시 1회** 호출해 greeting + categories(continuing/fresh/free)를 모두 채우세요.
-
-톤:
-- 코치 아님, 동행자. "오늘 하루 어떠셨어요?"류 금지.
-- 최근에 사용자가 한 말이 있으면 1개 정도 가볍게 언급 ("저번에 운동 얘기 꺼냈던 거 기억나, 오늘은 뭐 꺼내볼까?")
-- 강요 아님: "새로운 이야기여도 좋아"
-- 1-2문장. 길지 말 것.
-
-continuing 칩 생성 규칙:
-- 최근 대화에서 나온 키워드 1-2개 + 최근 활동 적은 Goal 1-2개를 섞어 2-5개
-- 칩 라벨은 짧고 구체적: "운동 다시 붙이기", "저번 이직 이야기"
-- message 필드는 그 칩을 눌렀을 때 AI에게 전달될 자연어 시드 문장
-
-fresh 칩 생성 규칙:
-- 영역-상황 하이브리드 형태 4-8개. "일 · 이직 고민", "건강 · 운동 안 함"처럼
-- 사용자 프로필과 기존 영역을 고려해 덜 중복되는 주제 위주
-
-free hint 규칙:
-- 1문장, 80자 이내, 부담 제거하는 톤
-
-없으면 continuing을 생략하지 말고 빈 배열 대신 프로필 trait 기반으로라도 2개 이상 채워라.
-
-오프닝 모드 절대 규칙:
-- suggest_opening을 정확히 1회만 호출하세요.
-- 같은 응답 안에서 propose_structure, suggest_responses, save_ai_insight, suggest_profile_traits, propose_task를 절대 호출하지 마세요.
-- 이 규칙들은 앞의 쏟아내기/응답 칩 지시보다 우선합니다.`
-        }
       } else if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
@@ -326,9 +270,7 @@ free hint 규칙:
     }
 
     // 응답 칩 가이드 — 모든 컨텍스트 뒤에 배치 (최신성 편향 활용)
-    // 오프닝 모드에서는 suggest_opening만 써야 하므로 응답 칩 가이드를 넣지 않는다.
-    if (!isOpeningMode) {
-      systemPrompt += `\n\n[필수 — 응답 칩]
+    systemPrompt += `\n\n[필수 — 응답 칩]
 매 응답 끝에 반드시 suggest_responses 도구 호출.
 
 multi 필드:
@@ -343,7 +285,6 @@ multi 필드:
 
 모두 수정형("더 가볍게", "다른 종류로")으로만 채우지 말 것.
 대화를 계속/확장할 수 있는 칩이 최소 1개는 있어야 함.`
-    }
 
     // V-02 FIX: Check ALL user messages for injection, not just the last one
     const uiMessages = parsed.data.messages as unknown as UIMessage[]
@@ -383,26 +324,6 @@ multi 필드:
       }
       return msg
     })
-
-    // 오프닝 모드에서 마지막 user 메시지가 빈 문자열이면 프로바이더가 400을 뱉을 수 있으므로
-    // 명시적 sentinel로 치환한다. 사용자에게는 보이지 않는 내부 트리거.
-    if (isOpeningMode) {
-      const OPENING_SENTINEL =
-        '<internal_trigger>자동 오프닝 모드. suggest_opening 툴을 호출해 인사와 칩을 준비하세요.</internal_trigger>'
-      for (let i = sanitizedMessages.length - 1; i >= 0; i--) {
-        const msg = sanitizedMessages[i]
-        if (msg.role !== 'user') continue
-        if (typeof msg.content === 'string') {
-          sanitizedMessages[i] = { ...msg, content: OPENING_SENTINEL }
-        } else if (Array.isArray(msg.content)) {
-          sanitizedMessages[i] = {
-            ...msg,
-            content: [{ type: 'text', text: OPENING_SENTINEL }],
-          }
-        }
-        break
-      }
-    }
 
     const model = getModel(modelId)
     const tools = createChatTools(ctx.supabase, ctx.user.id)

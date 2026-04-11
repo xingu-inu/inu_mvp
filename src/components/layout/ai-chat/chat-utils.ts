@@ -123,50 +123,45 @@ export function isResponseChipsPart(part: unknown): part is ResponseChipsPart {
   return false
 }
 
+/** 쏟아내기 진입 시 즉시 노출되는 고정 greeting 문구. */
+export const BRAIN_DUMP_OPENING_GREETING = '머릿속에 있는 거 편하게 꺼내줘. 이누가 같이 정리할게'
+
 /**
- * 오프닝 모드에서 AI 첫 멘트가 도착하기 전 즉시 렌더되는 폴백 상황 칩.
- * 빈 화면 체감을 0ms로 만들기 위한 용도.
+ * 쏟아내기 정적 오프닝 칩. 사용자가 쏟아내기 모드에 진입하는 순간
+ * 아무 대기 없이 즉시 렌더되는 진입 칩.
+ * 호기심/성장/가벼운 정리 톤으로 — "안 되는 중" 프레임은 피한다.
  */
-export const FALLBACK_SITUATION_CHIPS = [
-  { label: '요즘 운동 안 함', message: '요즘 운동 손 놨는데, 다시 붙일 방법 같이 정리해줘' },
-  { label: '이직 고민 중', message: '이직 고민 중이야. 어떤 기준으로 정리해야 할지 같이 봐줘' },
-  { label: '관계가 피곤해', message: '요즘 사람 관계가 피곤해. 뭘 줄이고 뭘 지킬지 같이 정리해줘' },
-  { label: '돈 걱정', message: '돈 걱정이 계속 머리에 있어. 뭐부터 잡아야 할지 같이 봐줘' },
-  { label: '잠이 불규칙', message: '요즘 잠이 완전 불규칙해. 리듬 되찾는 법 같이 찾자' },
-  { label: '공부 손 놓음', message: '공부 손 놓은 지 오래야. 다시 붙일 작은 방법 같이 찾자' },
+export const BRAIN_DUMP_OPENING_CHIPS = [
   {
-    label: '할 게 너무 많음',
-    message: '머릿속에 할 게 너무 많아서 시작을 못 해. 같이 꺼내서 정리해줘',
+    label: '요즘 꽂힌 거 있음',
+    message: '요즘 내가 꽂혀 있는 게 있는데 같이 얘기해보고 싶어',
   },
   {
-    label: '아무것도 하기 싫음',
-    message: '요즘 아무것도 하기 싫어. 부담 주지 말고 같이 꺼내서 봐줘',
+    label: '새로 시작하고 싶은 거',
+    message: '새로 시작해보고 싶은 게 있는데 같이 꺼내서 정리해줘',
+  },
+  {
+    label: '재밌는 아이디어 떠오름',
+    message: '재밌는 아이디어가 떠올랐는데 같이 풀어보고 싶어',
+  },
+  {
+    label: '다음 한 걸음 같이 보기',
+    message: '지금 내 상황에서 다음 한 걸음이 뭐면 좋을지 같이 봐줘',
+  },
+  {
+    label: '방향 다시 짚어보기',
+    message: '요즘 방향이 맞는지 같이 한번 짚어보고 싶어',
+  },
+  {
+    label: '머리 복잡해 정리하고파',
+    message: '머릿속이 좀 복잡해서 같이 꺼내서 정리해보고 싶어',
+  },
+  {
+    label: '할 게 많아서 뭐부터',
+    message: '할 게 여러 개 있는데 뭐부터 잡으면 좋을지 같이 봐줘',
+  },
+  {
+    label: '살짝 힘 빼고 싶어',
+    message: '요즘 조금 지쳐 있어서 힘 빼고 가볍게 가는 방법 같이 찾자',
   },
 ] as const
-
-/** Narrowed shape for suggest_opening tool parts */
-export interface OpeningToolPart {
-  type: string
-  toolName?: string
-  toolCallId: string
-  state: string
-  output?: {
-    type: 'suggest_opening'
-    greeting: string
-    categories: {
-      continuing: { label: string; chips: { label: string; message: string }[] }
-      fresh: { label: string; chips: { label: string; message: string }[] }
-      free: { label: string; hint: string }
-    }
-  }
-}
-
-/** Check if a UIMessage part is a suggest_opening tool invocation */
-export function isOpeningPart(part: unknown): part is OpeningToolPart {
-  if (typeof part !== 'object' || part === null) return false
-  const p = part as Record<string, unknown>
-  if (typeof p.toolCallId !== 'string' || typeof p.state !== 'string') return false
-  if (p.type === 'dynamic-tool' && p.toolName === 'suggest_opening') return true
-  if (p.type === 'tool-suggest_opening') return true
-  return false
-}

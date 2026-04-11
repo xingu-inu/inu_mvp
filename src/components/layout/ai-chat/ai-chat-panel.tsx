@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import {
@@ -25,7 +25,8 @@ import {
   DEFAULT_QUICK_ACTIONS,
   GOAL_QUICK_ACTIONS,
   TASK_QUICK_ACTIONS,
-  FALLBACK_SITUATION_CHIPS,
+  BRAIN_DUMP_OPENING_CHIPS,
+  BRAIN_DUMP_OPENING_GREETING,
 } from './chat-utils'
 import { ConversationList } from './conversation-list'
 import { StreamingBubble } from './streaming-bubble'
@@ -96,7 +97,6 @@ export function AiChatPanel({
 
   const [input, setInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
-  const [inputHint, setInputHint] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const isSendingRef = useRef(false)
@@ -161,33 +161,16 @@ export function AiChatPanel({
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
-  // 쏟아내기에서 AI가 아직 아무 파츠도 내려주지 않은 동안 즉시 폴백 칩 노출
-  const hasAnyAssistantPart = useMemo(
-    () => messages.some((m) => m.role === 'assistant' && (m.parts?.length ?? 0) > 0),
-    [messages]
-  )
-
-  const [isAutoStarting, setIsAutoStarting] = useState(false)
-
-  const showFallbackChips =
-    isBrainDump && !hasAnyAssistantPart && !isAutoStarting && messages.length === 0
+  // 쏟아내기 진입 시 즉시 정적 오프닝 UI 노출. 대화가 비어 있을 때만.
+  const showBrainDumpOpening = isBrainDump && messages.length === 0
 
   // Sync DB → useChat exactly once per conversation change (never during streaming)
   const prevConvRef = useRef<string | null | undefined>(undefined)
   const hasSyncedRef = useRef(false)
-  const hasAutoStartedRef = useRef(false)
-
-  // Stable refs for mutation hooks so they don't retrigger the auto-start effect
-  const createConversationRef = useRef(createConversation)
-  createConversationRef.current = createConversation
-  const saveChatMessageRef = useRef(saveChatMessage)
-  saveChatMessageRef.current = saveChatMessage
 
   useEffect(() => {
     if (prevConvRef.current !== activeConversationId) {
       hasSyncedRef.current = false
-      hasAutoStartedRef.current = false
-      setIsAutoStarting(false)
       prevConvRef.current = activeConversationId
     }
   }, [activeConversationId])
@@ -213,60 +196,11 @@ export function AiChatPanel({
     inputRef.current?.focus()
   }, [activeConversationId, context])
 
-  // 쏟아내기 자동 시동: 빈 대화에서 AI가 먼저 말 걸기
-  // 일반 채팅(goal/task/observation)에는 적용 금지
-  useEffect(() => {
-    if (!isBrainDump) return
-    if (hasAutoStartedRef.current) return
-    if (isStreaming) return
-    if (!hasSyncedRef.current) return
-    if (messages.length > 0) return
-
-    hasAutoStartedRef.current = true
-    setIsAutoStarting(true)
-
-    // 대화가 아직 없으면 먼저 만들고, 그다음에 빈 메시지로 오프닝 트리거
-    const triggerAutoStart = async () => {
-      try {
-        let convId = activeConversationId
-        if (!convId) {
-          const conv = await createConversationRef.current.mutateAsync({})
-          convId = conv.id
-          prevConvRef.current = conv.id
-          setActiveConversation(conv.id)
-        }
-        // fire-and-forget: 자동 시동 marker user 메시지 DB 저장
-        // (새로고침 시 assistant-first 히스토리 방지 + 같은 세션 중복 시동 차단)
-        if (convId) {
-          saveChatMessageRef.current.mutate({
-            conversationId: convId,
-            role: 'user',
-            content: '',
-          })
-        }
-        sendMessage({ text: '' })
-      } catch {
-        // 오프닝 실패는 조용히 — 폴백 상황 칩이 이미 보이므로 사용자는 모름
-        // 재시도 금지: hasAutoStartedRef는 true로 유지해 무한 루프 차단
-      } finally {
-        setIsAutoStarting(false)
-      }
-    }
-    triggerAutoStart()
-  }, [isBrainDump, isStreaming, messages, sendMessage, activeConversationId, setActiveConversation])
-
-  // OpeningChips의 "편하게 이야기할게" 경로에서 입력창 포커스 + 안내 힌트 노출
-  const handleFocusInput = useCallback((hint: string) => {
-    setInputHint(hint)
-    inputRef.current?.focus()
-  }, [])
-
   const handleSend = async (text: string) => {
     if (!text.trim() || isStreaming || isSendingRef.current) return
     isSendingRef.current = true
     const trimmed = text.trim()
     setInput('')
-    setInputHint(null)
     // Reset textarea height after clearing
     if (inputRef.current) inputRef.current.style.height = 'auto'
 
@@ -445,18 +379,18 @@ export function AiChatPanel({
           isBrainDump && 'bg-amber-50/30 dark:bg-amber-950/20'
         )}
       >
-        {showFallbackChips ? (
+        {showBrainDumpOpening ? (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <Mascot mood="happy" size="md" />
             <p className="text-center text-sm text-amber-700 dark:text-amber-300">
-              머릿속 이야기부터 그대로 꺼내주세요. 이누가 같이 정리할게요
+              {BRAIN_DUMP_OPENING_GREETING}
             </p>
             <div className="flex w-full max-w-sm flex-col gap-3 px-4">
               <p className="text-sm text-[var(--color-text-secondary)]">
                 어떤 이야기부터 꺼내볼까?
               </p>
               <div className="flex flex-wrap gap-1.5">
-                {FALLBACK_SITUATION_CHIPS.map((chip) => (
+                {BRAIN_DUMP_OPENING_CHIPS.map((chip) => (
                   <button
                     key={chip.label}
                     type="button"
@@ -525,7 +459,6 @@ export function AiChatPanel({
                 {...(msg.role === 'assistant' && {
                   isLastMessage: i === messages.length - 1,
                   onSendMessage: handleSend,
-                  onFocusInput: handleFocusInput,
                 })}
               />
             ))}
@@ -548,16 +481,12 @@ export function AiChatPanel({
           isBrainDump ? 'border-amber-200 dark:border-amber-800' : 'border-[var(--color-border)]'
         )}
       >
-        {inputHint && (
-          <p className="mb-1.5 text-xs text-[var(--color-text-tertiary)] italic">{inputHint}</p>
-        )}
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
             value={input}
             onChange={(e) => {
               setInput(e.target.value)
-              if (inputHint) setInputHint(null)
               e.target.style.height = 'auto'
               e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
             }}
