@@ -220,11 +220,6 @@ const entityContextSchema = z.object({
   areaName: z.string().optional(),
 })
 
-const brainDumpContextSchema = z.object({
-  type: z.literal('brain-dump'),
-  source: z.literal('onboarding').optional(),
-})
-
 const observationContextSchema = z.object({
   type: z.literal('observation'),
   message: z.string().max(500),
@@ -232,11 +227,7 @@ const observationContextSchema = z.object({
   relatedGoalId: z.string().optional(),
 })
 
-const contextSchema = z.discriminatedUnion('type', [
-  entityContextSchema,
-  brainDumpContextSchema,
-  observationContextSchema,
-])
+const contextSchema = z.discriminatedUnion('type', [entityContextSchema, observationContextSchema])
 
 const chatSchema = z.object({
   messages: z.array(z.record(z.string(), z.unknown())).max(50),
@@ -274,81 +265,51 @@ export const POST = authRoute(
 
     const { context } = parsed.data
 
-    // 구조 제안 기능 — goal/task 컨텍스트(특정 엔티티 범위)에서는 제외.
-    // goal 화면에서 기존 목표를 얘기하는데 새 구조를 제안하면 안 되니까.
-    const allowStructureProposal =
-      !context || context.type === 'brain-dump' || context.type === 'observation'
-    if (allowStructureProposal) {
-      systemPrompt += `\n\n[구조 제안 기능]
-사용자가 "하고 싶은 것들이 많아", "정리가 필요해", "새로운 목표를 세우고 싶어",
-"요즘 이것저것 해보고 싶은 게 많은데" 등 구조 정리가 필요한 의도를 보이면:
-1. 위 [현재 로드맵]에서 기존 Area를 확인하세요 (도구 호출 불필요)
-2. propose_structure 도구로 바로 구조를 제안하세요
-3. 완벽하지 않아도 괜찮아요 — 대화의 출발점으로 먼저 보여주세요
-4. 기존 Area에 맞는 목표는 반드시 isExisting: true와 existingAreaId를 설정하세요 (위 id 사용)
-5. 카드 내용을 텍스트로 반복하지 마세요 — 짧은 안내 한 문장만 ("이런 느낌은 어때요?")
-명시적 쏟아내기 모드가 아니어도 자연스럽게 사용 가능합니다.`
+    // 통합 행동 규칙 — observation / 컨텍스트 없음일 때만 적용.
+    // goal/task 컨텍스트는 특정 엔티티에 집중해야 하므로 별도 지시로 처리.
+    if (!context || context.type === 'observation') {
+      systemPrompt += `\n\n[행동 규칙 — 맥락 자동 감지]
+사용자 발화에 따라 적절한 도구를 자동 선택:
+
+1. 아이디어/계획/하고 싶은 것 → propose_structure 즉시 호출
+   - "운동하고 싶어", "정리가 필요해", "새 목표를 세우고 싶어" 등
+   - 완벽하지 않아도 됨 — 대화의 출발점으로 먼저 보여주세요
+   - 기존 Area 매칭 시 isExisting: true + existingAreaId (위 [현재 로드맵] id 사용)
+2. 감정/고민/일상 이야기 → 공감 대화 + suggest_profile_traits
+   - 구조 제안 없이 충분히 들어주세요
+3. 기존 목표 질문 → 데이터 조회 (get_active_goals 등)
+4. 수정 요청 ("X 빼줘", "Y 추가해줘") → propose_structure 재호출
+5. 방향/가치관 이야기 → Direction 업데이트 제안
+
+[구조 제안 규칙 — propose_structure 사용 시]
+- 카드가 Area/Goal/Task를 전부 보여주므로 텍스트로 내용 반복 금지 — 한 문장만 ("이런 느낌은 어때요?")
+- Task 제안 시 이름+이유만 (repeat_type, duration_minutes, time_slot 사용하지 않음)
+- ${
+        areas.filter((a) => a.is_active).length > 0
+          ? `기존 Area 재사용: [현재 로드맵]의 영역과 매칭되면 반드시 isExisting: true + existingAreaId 설정`
+          : `아직 활성 Area가 없으므로 모든 Area는 isExisting: false로 새로 제안`
+      }`
+    }
+
+    // 온보딩 직후 추론: 컨텍스트 없음 + 활성 Area 1개 + Goal 0개
+    const activeAreas = areas.filter((a) => a.is_active)
+    let isPostOnboarding = false
+    if (!context && activeAreas.length === 1) {
+      const { count } = await ctx.supabase
+        .from('goals')
+        .select('id', { count: 'exact', head: true })
+        .eq('area_id', activeAreas[0].id)
+      isPostOnboarding = (count ?? 0) === 0
+    }
+    if (isPostOnboarding) {
+      systemPrompt += `\n\n[대화 맥락 — 온보딩 직후]
+사용자가 온보딩을 방금 완료했습니다. 위 [현재 로드맵]의 Area에 Goal/Task를 제안해주세요.
+기존 Area를 재사용하세요 (isExisting: true + existingAreaId).
+첫 발화에 propose_structure를 즉시 호출하세요.`
     }
 
     if (context) {
-      if (context.type === 'brain-dump') {
-        systemPrompt += `\n\n[대화 맥락 — 쏟아내기 모드]
-사용자가 "쏟아내기" 모드로 대화를 시작했습니다. 목표는 **최대한 빨리 초안을 카드로 보여주는 것**.
-
-## 규칙 1 (최우선): 첫 턴에 즉시 propose_structure 호출
-사용자가 하고 싶은 것/관심사를 조금이라도 언급하면 **바로 propose_structure**를 호출하세요.
-- 긴 서론, 공감 문구, 확인 질문 금지.
-- "운동하고 싶어" → 즉시 운동 Area/Goal/Task 제안
-- "운동이랑 자기계발" → 즉시 두 영역 동시에 제안 (follow-up 질문 없이)
-- "요즘 뭐 해볼까" → 즉시 프로필 trait 기반으로 2-3개 후보 제안
-- 완벽하지 않아도 됨. 대화의 출발점이니까요. 사용자가 수정하면서 다듬습니다.
-- 예외: 주제가 전혀 없는 인사만 했을 때(예: "안녕") — 그때만 가벼운 한 문장 물어보기.
-
-## 규칙 2 (절대 금지): 카드 내용을 텍스트로 반복하지 말 것
-propose_structure가 호출되면 카드가 Area/Goal/Task를 전부 보여줍니다.
-텍스트는 **딱 한 문장**, 카드를 소개하는 용도로만 쓰세요.
-
-좋은 예 (카드 옆에 붙이는 텍스트):
-- "이런 느낌은 어때요?"
-- "우선 초안이에요, 바꾸고 싶은 거 있으면 말해줘요."
-- "이걸로 시작해볼까요?"
-
-나쁜 예 (절대 이렇게 하지 말 것):
-\`\`\`
-사용자님을 위한 로드맵 초안을 만들어 봤어요! '건강'과 '성장'이라는 두 가지 영역으로 나누어 보았답니다.
-
-💪 건강 영역
-• 목표: 규칙적인 운동 습관 만들기
-  • 이유: 체력 증진과 활력 유지를 위해
-  • 할 일: 주 3회 30분 유산소 운동
-\`\`\`
-↑ 이렇게 카드 내용을 텍스트로 풀어서 적으면 사용자가 **같은 내용을 두 번 읽게 됩니다.** 카드만으로 충분해요. 텍스트는 한 문장.
-
-## 규칙 3: 기존 Area 재사용
-${
-  areas.filter((a) => a.is_active).length > 0
-    ? `위 [현재 로드맵]의 영역 목록을 확인하고, 사용자의 주제에 매칭되는 Area가 있으면 반드시:
-- isExisting: true
-- existingAreaId: 위 id를 그대로 복사
-새 Area를 만들지 말고 기존 Area에 Goal/Task를 추가하세요.`
-    : `아직 활성 Area가 없으므로 모든 Area는 isExisting: false로 새로 제안하세요.`
-}
-
-## 규칙 4: 수정 요청 시
-"여기서 X 빼줘", "Y 추가해줘" 같은 요청이 오면 propose_structure를 **다시 호출**해 반영된 버전을 보여주세요. 이때도 카드 내용을 텍스트로 반복 금지. 한 문장 안내만.
-
-## 도구 사용
-- 로드맵 조회 도구는 없습니다. 위 [현재 로드맵]이 이미 전부 담고 있어요.
-- 첫 턴에서 호출해야 하는 도구는 propose_structure 하나뿐. 다른 도구 부르지 말 것.`
-
-        if (context.source === 'onboarding') {
-          systemPrompt += `\n\n## 특별 지시: 온보딩 직후
-사용자가 방금 Direction과 첫 Area를 만들고 바로 이 채팅에 진입했습니다. 위 [현재 로드맵]의 맨 아래에 방금 생성된 Area가 있습니다.
-- 사용자가 어떤 주제든 언급하는 즉시 propose_structure를 호출하세요. 추가 질문 금지.
-- **반드시 기존 Area 재사용**: 방금 만든 Area(위 [현재 로드맵]에 있음)에 Goal/Task 2-3개를 제안하세요. isExisting: true, existingAreaId는 위 id를 그대로 복사. 새 Area를 만들지 말 것.
-- 인삿말은 한 문장만 ("방향 잡혔네요, 여기에 이런 것부터 시작해볼까요?" 류). 카드가 구조를 보여주므로 텍스트로 내용 반복 금지.`
-        }
-      } else if (context.type === 'observation') {
+      if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:
 "${sanitizeUserText(context.message)}"
@@ -356,13 +317,13 @@ ${
 이 관찰에 대해 자연스럽게 대화를 이어가세요.
 - 관찰 내용을 반복하지 말고, 사용자가 이 주제에 대해 더 이야기하고 싶어한다고 가정하세요.
 - 필요하면 get_active_goals 등의 도구로 관련 데이터를 확인하세요 (로드맵/영역 정보는 위 [현재 로드맵] 참조).${context.relatedGoalId ? `\n- 관련 목표가 있습니다. get_goal_detail 도구를 goal_id="${context.relatedGoalId}"로 호출할 수 있습니다.` : ''}`
-      } else {
+      } else if (context.type === 'goal' || context.type === 'task') {
         const entity =
           context.type === 'goal'
-            ? `"${context.goalName}" 목표`
-            : `"${context.taskName}" 할 일 (목표: "${context.goalName}")`
-        const areaHint = context.areaName ? ` (영역: ${context.areaName})` : ''
-        systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
+            ? `"${sanitizeUserText(context.goalName)}" 목표`
+            : `"${sanitizeUserText(context.taskName ?? '')}" 할 일 (목표: "${sanitizeUserText(context.goalName)}")`
+        const areaHint = context.areaName ? ` (영역: ${sanitizeUserText(context.areaName)})` : ''
+        systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.\n구조 제안은 사용자가 명시적으로 요청할 때만 사용하세요.`
       }
     }
 
