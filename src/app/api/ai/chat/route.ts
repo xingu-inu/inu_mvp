@@ -265,10 +265,9 @@ export const POST = authRoute(
 
     const { context } = parsed.data
 
-    // 통합 행동 규칙 — observation / 컨텍스트 없음일 때만 적용.
-    // goal/task 컨텍스트는 특정 엔티티에 집중해야 하므로 별도 지시로 처리.
-    if (!context || context.type === 'observation') {
-      systemPrompt += `\n\n[행동 규칙 — 맥락 자동 감지]
+    // 통합 행동 규칙 — 모든 컨텍스트에 항상 적용.
+    // AI가 사용자 발화에 따라 자동으로 적절한 도구를 선택한다.
+    systemPrompt += `\n\n[행동 규칙 — 맥락 자동 감지]
 사용자 발화에 따라 적절한 도구를 자동 선택:
 
 1. 아이디어/계획/하고 싶은 것 → propose_structure 즉시 호출
@@ -285,11 +284,10 @@ export const POST = authRoute(
 - 카드가 Area/Goal/Task를 전부 보여주므로 텍스트로 내용 반복 금지 — 한 문장만 ("이런 느낌은 어때요?")
 - Task 제안 시 이름+이유만 (repeat_type, duration_minutes, time_slot 사용하지 않음)
 - ${
-        areas.filter((a) => a.is_active).length > 0
-          ? `기존 Area 재사용: [현재 로드맵]의 영역과 매칭되면 반드시 isExisting: true + existingAreaId 설정`
-          : `아직 활성 Area가 없으므로 모든 Area는 isExisting: false로 새로 제안`
-      }`
-    }
+      areas.filter((a) => a.is_active).length > 0
+        ? `기존 Area 재사용: [현재 로드맵]의 영역과 매칭되면 반드시 isExisting: true + existingAreaId 설정`
+        : `아직 활성 Area가 없으므로 모든 Area는 isExisting: false로 새로 제안`
+    }`
 
     // 온보딩 직후 추론: 컨텍스트 없음 + 활성 Area 1개 + Goal 0개
     const activeAreas = areas.filter((a) => a.is_active)
@@ -323,7 +321,7 @@ export const POST = authRoute(
             ? `"${sanitizeUserText(context.goalName)}" 목표`
             : `"${sanitizeUserText(context.taskName ?? '')}" 할 일 (목표: "${sanitizeUserText(context.goalName)}")`
         const areaHint = context.areaName ? ` (영역: ${sanitizeUserText(context.areaName)})` : ''
-        systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.\n구조 제안은 사용자가 명시적으로 요청할 때만 사용하세요.`
+        systemPrompt += `\n\n[대화 맥락]\n사용자가 ${entity}${areaHint} 화면에서 이 대화를 시작했습니다.\n이 주제에 대해 이야기하려는 것이니, 필요하면 get_goal_detail 도구를 goal_id="${context.goalId}"로 호출하세요.`
       }
     }
 
