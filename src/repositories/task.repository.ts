@@ -2,7 +2,13 @@
 
 import { generateKeyBetween } from 'fractional-indexing'
 import type { TypedSupabaseClient } from './base.repository'
-import { handleSupabaseError, isNotFoundError, now, batchReorder } from './base.repository'
+import {
+  handleSupabaseError,
+  isNotFoundError,
+  isValidFractionalKey,
+  now,
+  batchReorder,
+} from './base.repository'
 import type { Task, CreateTaskInput, UpdateTaskInput } from '@/types/entities'
 
 export const taskRepository = {
@@ -100,15 +106,39 @@ export const taskRepository = {
 
   /**
    * Task 생성
+   * 같은 goal/group 스코프 내 마지막 sort_order 뒤에 이어붙여 충돌 없이 생성한다.
+   * 스코프: goal_id + (group_id OR group_id IS NULL).
    */
   async create(
     supabase: TypedSupabaseClient,
     userId: string,
     input: CreateTaskInput
   ): Promise<Task> {
-    // sort_order collision on rapid concurrent creates is intentional
-    // — self-heals via batchReorder RPC on next explicit sort
-    const newSortOrder = generateKeyBetween(null, null)
+    // 마지막 sort_order 조회 (같은 goal + group 스코프)
+    let lastQuery = supabase
+      .from('tasks')
+      .select('sort_order')
+      .eq('user_id', userId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+
+    if (input.goal_id) {
+      lastQuery = lastQuery.eq('goal_id', input.goal_id)
+    } else {
+      lastQuery = lastQuery.is('goal_id', null)
+    }
+
+    if (input.group_id) {
+      lastQuery = lastQuery.eq('group_id', input.group_id)
+    } else {
+      lastQuery = lastQuery.is('group_id', null)
+    }
+
+    const { data: lastTask } = await lastQuery.maybeSingle()
+
+    const lastKey =
+      lastTask?.sort_order && isValidFractionalKey(lastTask.sort_order) ? lastTask.sort_order : null
+    const newSortOrder = generateKeyBetween(lastKey, null)
 
     const { data, error } = await supabase
       .from('tasks')

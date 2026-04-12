@@ -5,6 +5,7 @@ import type { TypedSupabaseClient } from './base.repository'
 import {
   handleSupabaseError,
   isNotFoundError,
+  isValidFractionalKey,
   now,
   getActiveDirectionId,
   batchReorder,
@@ -236,15 +237,26 @@ export const goalRepository = {
 
   /**
    * Goal 생성
-   * sort_order collision on rapid concurrent creates is intentional
-   * — self-heals via batchReorder RPC on next explicit sort
+   * 같은 area 내 마지막 sort_order 뒤에 이어붙여 충돌 없이 생성한다.
    */
   async create(
     supabase: TypedSupabaseClient,
     userId: string,
     input: CreateGoalInput
   ): Promise<Goal> {
-    const newSortOrder = generateKeyBetween(null, null)
+    // 마지막 sort_order 조회 (같은 area 스코프)
+    const { data: lastGoal } = await supabase
+      .from('goals')
+      .select('sort_order')
+      .eq('user_id', userId)
+      .eq('area_id', input.area_id)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const lastKey =
+      lastGoal?.sort_order && isValidFractionalKey(lastGoal.sort_order) ? lastGoal.sort_order : null
+    const newSortOrder = generateKeyBetween(lastKey, null)
 
     const { data, error } = await supabase
       .from('goals')
