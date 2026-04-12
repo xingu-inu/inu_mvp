@@ -7,30 +7,37 @@ import { toast } from 'sonner'
 import { ResponsiveModal } from '@/components/ui/responsive-modal'
 import { useProfile } from '@/queries'
 import { queryKeys } from '@/lib/query/keys'
-import { WHY_CHIPS, composeDirectionStatement, getFeelingArea } from '@/lib/constants/onboarding'
+import { IDENTITY_CHIP_GROUPS } from '@/lib/constants/onboarding'
 import { completeOnboarding } from '@/actions/onboarding.actions'
+import { unwrapResponse } from '@/lib/api/unwrap'
 import { useAiChatStore } from '@/stores/ai-chat.store'
-import { OnboardingStepFeeling } from './onboarding-step-feeling'
-import { OnboardingStepWhy } from './onboarding-step-why'
-import { OnboardingStepConfirm } from './onboarding-step-confirm'
+import { useRoadmapStore } from '@/stores/roadmap.store'
+import { useIsMobile } from '@/hooks/use-is-mobile'
+import { OnboardingStepIdentity } from './onboarding-step-identity'
+import { OnboardingStepValues } from './onboarding-step-values'
+import { OnboardingStepInterests } from './onboarding-step-interests'
 
 type Step = 1 | 2 | 3
 
 const STEP_TITLES: Record<Step, string> = {
-  1: '방향 찾기',
-  2: '방향 찾기',
-  3: '나의 방향',
+  1: '나를 알아가기',
+  2: '나의 방향',
+  3: '관심 영역',
 }
 
 export function OnboardingModal() {
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
   const openChat = useAiChatStore((s) => s.openChat)
+  const openInuFullscreen = useAiChatStore((s) => s.openInuFullscreen)
+  const setRightPanelTab = useRoadmapStore((s) => s.setRightPanelTab)
+  const isMobile = useIsMobile()
   const mountedRef = useRef(true)
 
   const [step, setStep] = useState<Step>(1)
-  const [feelingId, setFeelingId] = useState<string | null>(null)
-  const [whyId, setWhyId] = useState<string | null>(null)
+  const [identityIds, setIdentityIds] = useState<string[]>([])
+  const [customIdentities, setCustomIdentities] = useState<string[]>([])
+  const [valueIds, setValueIds] = useState<string[]>([])
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return true
     return sessionStorage.getItem('onboarding-dismissed') === 'true'
@@ -44,7 +51,6 @@ export function OnboardingModal() {
     }
   }, [])
 
-  // Show modal: onboarding not completed AND not dismissed this session
   const shouldShow = profile?.onboarding_completed === false && !dismissed
 
   const handleDismiss = useCallback(() => {
@@ -52,48 +58,67 @@ export function OnboardingModal() {
     setDismissed(true)
   }, [])
 
-  const handleFeelingSelect = useCallback((id: string) => {
-    setFeelingId(id)
+  // Step 1 → 2
+  const handleIdentityNext = useCallback((selectedIds: string[], customInputs: string[]) => {
+    setIdentityIds(selectedIds)
+    setCustomIdentities(customInputs)
     setStep(2)
   }, [])
 
-  const handleWhySelect = useCallback((id: string) => {
-    setWhyId(id)
+  // Step 2 → 3
+  const handleValuesNext = useCallback((selectedIds: string[]) => {
+    setValueIds(selectedIds)
     setStep(3)
   }, [])
 
-  const handleConfirm = useCallback(
-    async (editedStatement: string) => {
-      if (!feelingId || !whyId || isSubmitting) return
+  // Step 3 → 제출
+  const handleInterestsNext = useCallback(
+    async (selectedInterestIds: string[]) => {
+      if (isSubmitting) return
       setIsSubmitting(true)
 
       try {
-        const whyChip = WHY_CHIPS.find((c) => c.id === whyId)
-        const whyText = whyChip?.why ?? ''
-        const area = getFeelingArea(feelingId)
+        // identity 칩 ID → { label: groupLabel, value: chipLabel } 변환
+        const identityTraits: { label: string; value: string }[] = []
 
-        // 단일 트랜잭셔널 서버 액션: Direction + Area + onboarding_completed
-        await completeOnboarding({
-          direction: { statement: editedStatement, why: whyText },
-          area: {
-            name: area.name,
-            type: area.type,
-            emoji: area.emoji,
-            color: area.color,
-            why: whyText,
-          },
-        })
+        for (const chipId of identityIds) {
+          for (const group of IDENTITY_CHIP_GROUPS) {
+            const chip = group.chips.find((c) => c.id === chipId)
+            if (chip) {
+              identityTraits.push({ label: group.groupLabel, value: chip.label })
+              break
+            }
+          }
+        }
 
-        // 캐시 무효화
+        // 커스텀 입력 추가
+        for (const custom of customIdentities) {
+          identityTraits.push({ label: '기타', value: custom })
+        }
+
+        unwrapResponse(
+          await completeOnboarding({
+            identityTraits,
+            values: valueIds,
+            interests: selectedInterestIds,
+          })
+        )
+
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: queryKeys.profile.me }),
           queryClient.invalidateQueries({ queryKey: queryKeys.direction.all }),
           queryClient.invalidateQueries({ queryKey: queryKeys.areas.all }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.profileTraits.all }),
         ])
 
         if (mountedRef.current) {
           setDismissed(true)
-          openChat()
+          if (isMobile) {
+            openInuFullscreen()
+          } else {
+            setRightPanelTab('inu')
+            openChat()
+          }
         }
       } catch {
         if (mountedRef.current) {
@@ -103,23 +128,28 @@ export function OnboardingModal() {
         if (mountedRef.current) setIsSubmitting(false)
       }
     },
-    [feelingId, whyId, isSubmitting, queryClient, openChat]
+    [
+      identityIds,
+      customIdentities,
+      valueIds,
+      isSubmitting,
+      queryClient,
+      openChat,
+      openInuFullscreen,
+      setRightPanelTab,
+      isMobile,
+    ]
   )
 
-  // Step 3 → step 2 (feeling 유지), step 2 → step 1
   const handleBack = useCallback(() => {
     if (step === 3) {
-      setWhyId(null)
       setStep(2)
-    } else {
-      setFeelingId(null)
+    } else if (step === 2) {
       setStep(1)
     }
   }, [step])
 
   if (!shouldShow) return null
-
-  const statement = feelingId && whyId ? composeDirectionStatement(feelingId, whyId) : ''
 
   return (
     <ResponsiveModal
@@ -128,7 +158,7 @@ export function OnboardingModal() {
         if (!open) handleDismiss()
       }}
       title={STEP_TITLES[step]}
-      description="일상에서 나의 방향을 찾아보세요"
+      description="나에 대해 알아가는 시간이에요"
     >
       {/* Progress dots */}
       <div className="mb-6 flex items-center justify-center gap-2">
@@ -154,13 +184,23 @@ export function OnboardingModal() {
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.2, ease: 'easeInOut' }}
         >
-          {step === 1 && <OnboardingStepFeeling onNext={handleFeelingSelect} />}
-          {step === 2 && <OnboardingStepWhy onNext={handleWhySelect} onBack={handleBack} />}
-          {step === 3 && feelingId && whyId && (
-            <OnboardingStepConfirm
-              statement={statement}
-              whyId={whyId}
-              onConfirm={handleConfirm}
+          {step === 1 && (
+            <OnboardingStepIdentity
+              onNext={handleIdentityNext}
+              initialSelected={identityIds}
+              initialCustom={customIdentities}
+            />
+          )}
+          {step === 2 && (
+            <OnboardingStepValues
+              onNext={handleValuesNext}
+              onBack={handleBack}
+              initialSelected={valueIds}
+            />
+          )}
+          {step === 3 && (
+            <OnboardingStepInterests
+              onNext={handleInterestsNext}
               onBack={handleBack}
               isSubmitting={isSubmitting}
             />
@@ -168,18 +208,16 @@ export function OnboardingModal() {
         </motion.div>
       </AnimatePresence>
 
-      {/* Skip button */}
-      {step < 3 && (
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            onClick={handleDismiss}
-            className="text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)]"
-          >
-            건너뛰기
-          </button>
-        </div>
-      )}
+      {/* Skip button — available on all steps */}
+      <div className="mt-6 text-center">
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-xs text-[var(--color-text-tertiary)] transition-colors hover:text-[var(--color-text-secondary)]"
+        >
+          건너뛰기
+        </button>
+      </div>
     </ResponsiveModal>
   )
 }
