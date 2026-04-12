@@ -97,6 +97,34 @@ describe('computeInsertIndex', () => {
     expect(index).toBe(1)
   })
 
+  // ── Regression: ELK may produce non-ascending centers ─────────
+  // When ELK's considerModelOrder doesn't perfectly match sort_order
+  // (edge crossings, uneven node sizes), sibling centers can be
+  // non-monotonic. The loop must still find the correct slot.
+
+  it('handles non-ascending centers: [100, 300, 200]', () => {
+    // siblings a,b,c with centers 100,300,200 — ELK swapped b and c
+    // dragging to 250: 2 siblings have center ≤ 250 (a=100, c=200)
+    const index = computeInsertIndex(250, [100, 300, 200], 'z', ['a', 'b', 'c'])
+    expect(index).toBe(2)
+  })
+
+  it('handles fully reversed centers: [300, 200, 100]', () => {
+    // dragging to 150: 1 sibling has center ≤ 150 (c=100)
+    const index = computeInsertIndex(150, [300, 200, 100], 'z', ['a', 'b', 'c'])
+    expect(index).toBe(1)
+  })
+
+  it('places at end when drag exceeds all non-ascending centers', () => {
+    const index = computeInsertIndex(400, [100, 300, 200], 'z', ['a', 'b', 'c'])
+    expect(index).toBe(3)
+  })
+
+  it('places at start when drag is before all non-ascending centers', () => {
+    const index = computeInsertIndex(50, [300, 200, 100], 'z', ['a', 'b', 'c'])
+    expect(index).toBe(0)
+  })
+
   it('accepts others-space arrays (frozen siblings excluding dragged)', () => {
     // use-canvas-reorder passes s.siblings (already excludes dragged) directly.
     // Verify that passing a list without the dragged id yields the same result.
@@ -322,6 +350,22 @@ describe('classifyIntersection', () => {
       areaValidTargets,
       areaSameParents,
       descendants
+    )
+    expect(result).toBe('skip')
+  })
+
+  it('skips the current parent (goal drifts onto its own area during drag)', () => {
+    // The current parent is excluded from validDropTargetIds by getValidDropTargets
+    // (same parent = sibling reorder, not cross-parent). Without this guard the
+    // parent falls through to 'invalid', causing onNodeDragStop to snap back
+    // whenever the dragged card drifts the ~60px onto its parent's bounding box.
+    const result = classifyIntersection(
+      { id: 'area-parent', type: 'area' },
+      'goal-A',
+      new Set(), // parent NOT in valid targets (excluded by getValidDropTargets)
+      sameParentIds,
+      noDescendants,
+      'area-parent' // currentParentId
     )
     expect(result).toBe('skip')
   })

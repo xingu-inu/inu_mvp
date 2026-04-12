@@ -91,7 +91,7 @@ export const groupRepository = {
       .eq('goal_id', input.goal_id)
       .order('sort_order', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const lastKey =
       lastGroup?.sort_order && isValidFractionalKey(lastGroup.sort_order)
@@ -181,13 +181,28 @@ export const groupRepository = {
     goalId: string,
     groupName: string = '그룹 1'
   ): Promise<Group> {
+    // 마지막 sort_order 조회 (같은 goal 스코프) — create()와 동일 패턴
+    const { data: lastGroup } = await supabase
+      .from('groups')
+      .select('sort_order')
+      .eq('goal_id', goalId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const lastKey =
+      lastGroup?.sort_order && isValidFractionalKey(lastGroup.sort_order)
+        ? lastGroup.sort_order
+        : null
+    const newSortOrder = generateKeyBetween(lastKey, null)
+
     // 1. Group 생성
     const { data: group, error: createError } = await supabase
       .from('groups')
       .insert({
         goal_id: goalId,
         name: groupName,
-        sort_order: generateKeyBetween(null, null),
+        sort_order: newSortOrder,
       })
       .select()
       .single()

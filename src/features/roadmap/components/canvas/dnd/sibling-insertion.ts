@@ -49,10 +49,16 @@ export function classifyIntersection(
   dragId: string,
   validDropTargetIds: ReadonlySet<string>,
   sameParentIds: ReadonlySet<string>,
-  descendantIds: ReadonlySet<string>
+  descendantIds: ReadonlySet<string>,
+  currentParentId: string | null = null
 ): 'skip' | 'valid' | 'invalid' {
   if (target.id === dragId) return 'skip'
   if (target.type === 'direction') return 'skip'
+  // The current parent is excluded from validDropTargetIds (same-parent = sibling
+  // reorder) but is also not a sibling, so without this guard it falls through to
+  // 'invalid'. A dragged goal that drifts slightly toward its own area during a
+  // vertical reorder would then trigger the snap-back guard in onNodeDragStop.
+  if (target.id === currentParentId) return 'skip'
   if (descendantIds.has(target.id)) return 'skip'
   if (validDropTargetIds.has(target.id)) return 'valid'
   if (sameParentIds.has(target.id)) return 'skip'
@@ -94,12 +100,14 @@ export function computeInsertIndex(
     return 0
   }
 
+  // Count how many siblings have their center at or before the drag position.
+  // Using a count (not `index = i + 1`) ensures correct results even when
+  // sibling centers are non-ascending — e.g. when ELK's considerModelOrder
+  // produces positions that don't perfectly match sort_order.
   let index = 0
-  for (let i = 0; i < others.length; i++) {
-    if (draggedCenter >= others[i].center) {
-      index = i + 1
-    } else {
-      break
+  for (const other of others) {
+    if (draggedCenter >= other.center) {
+      index++
     }
   }
   return index

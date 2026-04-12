@@ -327,6 +327,19 @@ export function useCanvasReorder({
           sortOrder: s.data?.treeNode?.meta?.sortOrder ?? null,
         }))
 
+      // Dev diagnostic: warn when ELK positions don't match sort_order
+      if (process.env.NODE_ENV === 'development' && siblings.length > 1) {
+        const diagAxis = directionRef.current === 'TB' ? 'x' : 'y'
+        const centers = siblings.map((s) => s.center[diagAxis])
+        const isSorted = centers.every((c, i) => i === 0 || c >= centers[i - 1])
+        if (!isSorted) {
+          console.warn(
+            '[DnD] sibling centers not in ascending order — ELK layout diverges from sort_order',
+            { siblingIds: siblings.map((s) => s.id), centers }
+          )
+        }
+      }
+
       const validTargets = getValidDropTargets(node, curNodes, curEdges)
       const validDropTargetIds = new Set(validTargets.map((n) => n.id))
 
@@ -405,7 +418,8 @@ export function useCanvasReorder({
           s.nodeId,
           s.validDropTargetIds,
           s.siblingIdSet,
-          s.descendantIdSet
+          s.descendantIdSet,
+          s.parentId
         )
         if (classification === 'valid') {
           if (area > bestOverlap) {
@@ -539,7 +553,8 @@ export function useCanvasReorder({
             s.nodeId,
             s.validDropTargetIds,
             s.siblingIdSet,
-            s.descendantIdSet
+            s.descendantIdSet,
+            s.parentId
           )
           if (classification === 'valid') {
             if (area > finalBestOverlap) {
@@ -665,6 +680,21 @@ export function useCanvasReorder({
       const rightOrder = rightId
         ? (s.siblings.find((sib) => sib.id === rightId)?.sortOrder ?? null)
         : null
+
+      // Dev diagnostic: warn when bounding siblings have duplicate/inverted sort_orders
+      if (
+        process.env.NODE_ENV === 'development' &&
+        leftOrder !== null &&
+        rightOrder !== null &&
+        leftOrder >= rightOrder
+      ) {
+        console.warn('[DnD] duplicate/inverted sort_orders among bounding siblings', {
+          leftId,
+          leftOrder,
+          rightId,
+          rightOrder,
+        })
+      }
 
       // No-op detection: preferred path uses sort_order comparison — if the
       // dragged node's current sort_order is still strictly between the
