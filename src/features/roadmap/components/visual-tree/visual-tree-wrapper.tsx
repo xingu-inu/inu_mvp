@@ -30,11 +30,19 @@ export function VisualTreeWrapper({ isMobile = false }: VisualTreeWrapperProps) 
   const goalVibes = useGoalVibeStore((s) => s.goalVibes)
   const canvasRef = useRef<WhyMapCanvasRef>(null)
 
-  const { data: direction } = useDirection()
+  // All three queries must be awaited before rendering the canvas.
+  // Previously `direction` was not part of the loading gate, so on cold loads
+  // where direction resolved AFTER goals/areas the canvas first rendered with
+  // `direction=undefined` (root id = 'direction-root'), then re-rendered once
+  // direction arrived (root id = actual UUID). That id change flipped the
+  // `layoutSignature` in useElkLayout, triggering a second ELK pass right
+  // after the first one — which the user saw as "rendering finished, then
+  // it animated again".
+  const { data: direction, isLoading: directionLoading } = useDirection()
   const { data: goals = [], isLoading: goalsLoading } = useGoals()
   const { data: areas = [], isLoading: areasLoading } = useAreas()
 
-  const isLoading = goalsLoading || areasLoading
+  const isLoading = goalsLoading || areasLoading || directionLoading
   const activeAreas = useMemo(() => areas.filter((area) => area.is_active), [areas])
 
   // Search state

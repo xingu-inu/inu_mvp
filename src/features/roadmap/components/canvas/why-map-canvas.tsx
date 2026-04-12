@@ -534,20 +534,37 @@ const WhyMapCanvasInner = forwardRef<WhyMapCanvasRef, WhyMapCanvasProps>(functio
     <div
       ref={containerRef}
       className="absolute inset-0"
-      style={{
-        opacity: hasLaidOut ? 1 : 0,
-        transition: 'opacity 0.2s ease-out',
-      }}
+      data-initial-layout={hasLaidOut ? 'false' : 'true'}
     >
       {/* Smooth `transform` transitions on every node so ELK re-layouts
           (expand/collapse, filter changes) glide into place instead of
           teleporting — otherwise siblings appear to "jump around" when the
           area compound recalculates its internal spacing.
+          First-layout exception: while `data-initial-layout="true"`, transform
+          transitions are disabled so nodes "appear" in place via the per-node
+          opacity fade-in (from use-elk-layout) instead of sliding from the
+          parent-provided origin (0,0) into their ELK positions — that slide
+          used to overlap with the fitView zoom and read as a "second animation"
+          right after the canvas was supposedly done rendering.
           The `.dragging` override below kills the transition during active
           drag so drag latency stays zero. */}
       <style>{`
-        .react-flow__node {
+        [data-initial-layout="true"] .react-flow__node {
+          transition: opacity 150ms ease-out;
+        }
+        [data-initial-layout="false"] .react-flow__node {
           transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 150ms ease-out;
+        }
+        /* A node that JUST received its first ELK position (initial load OR a
+           newly added Area/Goal/Group/Task) skips the transform transition for
+           one frame — otherwise it would visibly slide from the parent-provided
+           origin (0,0) into the ELK-computed spot on top of the opacity fade,
+           reading as "rendering finished, then it animated again". Siblings
+           that are only shifting to make room still animate normally.
+           !important so this wins against the data-initial-layout rules above
+           (equal specificity → source-order dependent without it). */
+        .react-flow__node.just-placed {
+          transition: opacity 150ms ease-out !important;
         }
         .react-flow__node.dragging { transition: none; }
         .react-flow__node.reordering { transition: transform 140ms ease-out; }

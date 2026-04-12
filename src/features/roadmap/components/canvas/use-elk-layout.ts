@@ -77,6 +77,17 @@ export function useElkLayout(
   const [isLayouting, setIsLayouting] = useState(false)
   const [hasLaidOut, setHasLaidOut] = useState(false)
   const [manualBump, setManualBump] = useState(0)
+  // Tracks node ids that have completed their first ELK-computed placement.
+  // Nodes getting their FIRST position (initial load OR newly-added Area/Goal/
+  // Group/Task via optimistic update) are tagged with `.just-placed` for one
+  // render tick so their transform transition is suppressed — otherwise they
+  // would visibly slide from the parent-provided origin (usually 0,0) into
+  // the ELK-computed spot, which reads as "the canvas renders and then
+  // animates again". After the commit, ids are moved into this set and the
+  // `.just-placed` class is dropped so any SUBSEQUENT re-layout (siblings
+  // making room, reorder, filter, expand/collapse) still animates transform
+  // smoothly as before.
+  const [laidOutIds, setLaidOutIds] = useState<Set<string>>(() => new Set())
 
   const { fitView } = useReactFlow()
   const nodesInitialized = useNodesInitialized()
@@ -110,6 +121,14 @@ export function useElkLayout(
       const style: CSSProperties = hasLaidOutPos
         ? (n.style ?? {})
         : { ...(n.style ?? {}), opacity: 0, pointerEvents: 'none' }
+      // Tag nodes receiving their FIRST ELK position with `.just-placed` so
+      // the CSS rule in why-map-canvas suppresses the transform transition
+      // on that paint. Existing nodes (already in `laidOutIds`) keep normal
+      // transitions so they still slide smoothly to make room for the newcomer.
+      const isFreshPlacement = hasLaidOutPos && !laidOutIds.has(n.id)
+      const className = isFreshPlacement
+        ? [n.className, 'just-placed'].filter(Boolean).join(' ')
+        : n.className
       return {
         ...n,
         position: pos ?? n.position,
@@ -117,9 +136,38 @@ export function useElkLayout(
         sourcePosition: direction === 'LR' ? Position.Right : Position.Bottom,
         targetPosition: direction === 'LR' ? Position.Left : Position.Top,
         style,
+        className,
       } as WhyMapNode
     })
-  }, [initialNodes, positions, measurements, direction])
+  }, [initialNodes, positions, measurements, direction, laidOutIds])
+
+  // After each render where `positions` gained new ids, commit them to
+  // `laidOutIds` so the `.just-placed` className drops on the next render —
+  // the browser has already painted the node at its ELK position with the
+  // transform transition suppressed, so removing the class is visually a
+  // no-op. Also prune ids that left `initialNodes` so if a node is deleted
+  // and re-added later it gets the fresh-placement treatment again.
+  useEffect(() => {
+    const currentIds = new Set(initialNodes.map((n) => n.id))
+    setLaidOutIds((prev) => {
+      let changed = false
+      const next = new Set<string>()
+      for (const id of prev) {
+        if (currentIds.has(id)) {
+          next.add(id)
+        } else {
+          changed = true
+        }
+      }
+      for (const id of positions.keys()) {
+        if (currentIds.has(id) && !next.has(id)) {
+          next.add(id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [initialNodes, positions])
 
   // Keep a ref so the `setNodes` shim can read the latest derived list.
   const displayedNodesRef = useRef(displayedNodes)
@@ -251,7 +299,11 @@ export function useElkLayout(
         if (isFirstLayoutRef.current) {
           isFirstLayoutRef.current = false
           requestAnimationFrame(() => {
-            fitView({ padding: 0.15, duration: 300 })
+            // Instant fit on first paint — the animated zoom used to overlap
+            // with node fade-in and read as a "second animation" right after
+            // the canvas was supposedly done rendering. Subsequent fitView
+            // calls (Cmd+0, command palette) still use their animated durations.
+            fitView({ padding: 0.15, duration: 0 })
           })
         }
       })

@@ -66,20 +66,35 @@ interface TreeToElkResult {
  * Structure:
  * - root
  *   - direction (leaf)
- *   - area-compound-1 (wraps area + descendants)
- *     - area-1 (leaf, the area card itself)
- *     - goal-1 (leaf)
- *     - goal-2 (leaf or compound when expanded goes into the same container)
- *     - ... groups/tasks when goals are expanded
+ *   - area-compound-1 (wraps area card + all its descendants as flat children)
+ *     - area-1 card
+ *     - goal-1, goal-2, goal-3            (all goals first, per-parent sort_order)
+ *     - group-2a, group-2b                (then groups, per-parent sort_order)
+ *     - task-2b1, task-2b2                (then tasks)
  *   - area-compound-2
  *     - ...
  *
  * The area compound wrapper ensures each area's subtree is spatially grouped
  * without overlap, replacing dagre's custom iterative overlap resolver.
  *
- * `sort_order` is respected because children arrays are sorted before being
- * passed to ELK, and `considerModelOrder.strategy: NODES_AND_EDGES` tells ELK
- * to preserve that order during crossing minimization.
+ * Critical ordering rule — "BFS by depth, then sort_order within depth":
+ * The flat children list is built layer-by-layer (area card → all goals →
+ * all groups → all tasks), NOT in tree-DFS order. This keeps the INDEX
+ * POSITIONS of sibling Goals / sibling Groups stable across expand/collapse.
+ *
+ * Why it matters: `considerModelOrder.strategy: NODES_AND_EDGES` uses a node's
+ * index in the compound children array as a within-layer ordering hint. DFS
+ * order [area, goal1, goal2, group2a, group2b, goal3] splits goal2 and goal3
+ * apart (goal3 jumps from index 3 to index 5 when goal2 is expanded), which
+ * destabilizes ELK's layer-order calculation and can visually swap siblings.
+ * BFS order [area, goal1, goal2, goal3, group2a, group2b] keeps goal indices
+ * consecutive regardless of which goal is expanded, so expanding one node
+ * only APPENDS its children to the end of the list and never perturbs
+ * sibling positions.
+ *
+ * `sort_order` is respected because children arrays are sorted (per parent)
+ * before being laid out into the BFS layers, and `considerModelOrder.strategy:
+ * NODES_AND_EDGES` tells ELK to preserve that order during crossing minimization.
  */
 export function treeToElkGraph(
   nodes: WhyMapNode[],
@@ -126,39 +141,51 @@ export function treeToElkGraph(
     }
   }
 
-  // Collect every descendant id of a subtree (area, used to flatten into area compound)
-  const collectDescendants = (rootId: string): string[] => {
-    const out: string[] = []
-    const visited = new Set<string>()
-    const walk = (id: string) => {
-      if (visited.has(id)) return
-      visited.add(id)
-      const kids = childrenByParent.get(id)
-      if (!kids) return
-      for (const k of kids) {
-        out.push(k)
-        walk(k)
+  /**
+   * Build a flat children list for an area compound, ordered breadth-first
+   * by depth. Also returns a set containing every visited id so callers can
+   * track "which ids this area consumed" without a second tree walk.
+   *
+   * Output shape: the root id at index 0, then every descendant at depth 1,
+   * then depth 2, and so on. Within each depth, nodes are emitted in parent
+   * order (inherited from the previous depth) and then by `sort_order` within
+   * each parent's block (because `childrenByParent` was pre-sorted above).
+   *
+   * Why BFS and not DFS: expand/collapse stability. ELK's
+   * `considerModelOrder.strategy: NODES_AND_EDGES` treats a node's index in
+   * its compound's children array as a within-layer ordering hint. DFS would
+   * split sibling Goals apart when one of them is expanded (its descendants
+   * get interleaved between it and the next sibling), bumping the next
+   * sibling's index and visually shuffling the goal column. BFS keeps every
+   * depth's sibling block contiguous, so expanding a node only appends ids
+   * to the tail and never perturbs earlier indices.
+   *
+   * The `visited` guard mirrors `collectDescendants` elsewhere and protects
+   * against two degenerate cases: (1) a cycle in the edge data (shouldn't
+   * exist by invariant, but a broken reorder action or manual DB edit could
+   * introduce one and would otherwise infinite-loop here), and (2) a
+   * duplicate hierarchy edge producing the same child id twice (ELK rejects
+   * duplicate ids in a compound with a non-obvious error).
+   */
+  const buildLayeredSubtreeIds = (rootId: string): { ids: string[]; visited: Set<string> } => {
+    const ids: string[] = [rootId]
+    const visited = new Set<string>([rootId])
+    let frontier: string[] = [rootId]
+    while (frontier.length > 0) {
+      const next: string[] = []
+      for (const parentId of frontier) {
+        const kids = childrenByParent.get(parentId)
+        if (!kids) continue
+        for (const k of kids) {
+          if (visited.has(k)) continue
+          visited.add(k)
+          ids.push(k)
+          next.push(k)
+        }
       }
+      frontier = next
     }
-    walk(rootId)
-    return out
-  }
-
-  // Helper: build children list ordered so that ancestors appear before descendants
-  // (area first, then goals sorted, then each goal's expanded subtree sorted, ...).
-  // This preserves considerModelOrder intent top-to-bottom.
-  const buildOrderedSubtreeIds = (rootId: string): string[] => {
-    const out: string[] = [rootId]
-    const walk = (parentId: string) => {
-      const kids = childrenByParent.get(parentId)
-      if (!kids) return
-      for (const k of kids) {
-        out.push(k)
-        walk(k)
-      }
-    }
-    walk(rootId)
-    return out
+    return { ids, visited }
   }
 
   // Find root-level children of direction (areas)
@@ -173,13 +200,15 @@ export function treeToElkGraph(
     rootChildren.push(toElkLeaf(directionNode.id))
   }
 
-  // 2. Each area becomes a compound wrapper containing the area card + all its descendants
+  // 2. Each area becomes a compound wrapper containing the area card + all
+  //    descendants laid out in BFS-by-depth order (see `buildLayeredSubtreeIds`).
+  //    `visited` is reused as `directionDescendants` so we don't walk the same
+  //    subtree twice just to compute the orphan-exclusion set below.
   const directionDescendants = new Set<string>()
   for (const areaId of directionChildren) {
-    directionDescendants.add(areaId)
-    for (const desc of collectDescendants(areaId)) directionDescendants.add(desc)
+    const { ids: areaSubtreeIds, visited: areaVisited } = buildLayeredSubtreeIds(areaId)
+    for (const id of areaVisited) directionDescendants.add(id)
 
-    const areaSubtreeIds = buildOrderedSubtreeIds(areaId)
     const areaChildren: ElkNode[] = areaSubtreeIds.map(toElkLeaf)
 
     rootChildren.push({
