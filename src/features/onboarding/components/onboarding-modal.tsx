@@ -9,6 +9,7 @@ import { useProfile } from '@/queries'
 import { queryKeys } from '@/lib/query/keys'
 import { WHY_CHIPS, composeDirectionStatement, getFeelingArea } from '@/lib/constants/onboarding'
 import { completeOnboarding } from '@/actions/onboarding.actions'
+import { useAiChatStore } from '@/stores/ai-chat.store'
 import { OnboardingStepFeeling } from './onboarding-step-feeling'
 import { OnboardingStepWhy } from './onboarding-step-why'
 import { OnboardingStepConfirm } from './onboarding-step-confirm'
@@ -24,6 +25,7 @@ const STEP_TITLES: Record<Step, string> = {
 export function OnboardingModal() {
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
+  const openChatWithContext = useAiChatStore((s) => s.openChatWithContext)
   const mountedRef = useRef(true)
 
   const [step, setStep] = useState<Step>(1)
@@ -89,7 +91,10 @@ export function OnboardingModal() {
           queryClient.invalidateQueries({ queryKey: queryKeys.areas.all }),
         ])
 
-        if (mountedRef.current) setDismissed(true)
+        if (mountedRef.current) {
+          setDismissed(true)
+          openChatWithContext({ type: 'brain-dump', source: 'onboarding' })
+        }
       } catch {
         if (mountedRef.current) {
           toast.error('설정에 실패했습니다. 다시 시도해주세요.')
@@ -98,7 +103,7 @@ export function OnboardingModal() {
         if (mountedRef.current) setIsSubmitting(false)
       }
     },
-    [feelingId, whyId, isSubmitting, queryClient]
+    [feelingId, whyId, isSubmitting, queryClient, openChatWithContext]
   )
 
   // Step 3 → step 2 (feeling 유지), step 2 → step 1

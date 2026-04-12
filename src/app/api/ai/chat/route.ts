@@ -222,6 +222,7 @@ const entityContextSchema = z.object({
 
 const brainDumpContextSchema = z.object({
   type: z.literal('brain-dump'),
+  source: z.literal('onboarding').optional(),
 })
 
 const observationContextSchema = z.object({
@@ -339,6 +340,14 @@ ${
 ## 도구 사용
 - 로드맵 조회 도구는 없습니다. 위 [현재 로드맵]이 이미 전부 담고 있어요.
 - 첫 턴에서 호출해야 하는 도구는 propose_structure 하나뿐. 다른 도구 부르지 말 것.`
+
+        if (context.source === 'onboarding') {
+          systemPrompt += `\n\n## 특별 지시: 온보딩 직후
+사용자가 방금 Direction과 첫 Area를 만들고 바로 이 채팅에 진입했습니다. 위 [현재 로드맵]의 맨 아래에 방금 생성된 Area가 있습니다.
+- 사용자가 어떤 주제든 언급하는 즉시 propose_structure를 호출하세요. 추가 질문 금지.
+- **반드시 기존 Area 재사용**: 방금 만든 Area(위 [현재 로드맵]에 있음)에 Goal/Task 2-3개를 제안하세요. isExisting: true, existingAreaId는 위 id를 그대로 복사. 새 Area를 만들지 말 것.
+- 인삿말은 한 문장만 ("방향 잡혔네요, 여기에 이런 것부터 시작해볼까요?" 류). 카드가 구조를 보여주므로 텍스트로 내용 반복 금지.`
+        }
       } else if (context.type === 'observation') {
         systemPrompt += `\n\n[대화 맥락 — 타임라인 관찰에서 시작]
 사용자가 타임라인에서 이누의 다음 관찰을 보고 대화를 시작했습니다:

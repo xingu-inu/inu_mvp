@@ -503,6 +503,8 @@ export interface ChatEntityContext {
 
 export interface ChatBrainDumpContext {
   type: 'brain-dump'
+  /** 특별 분기가 필요한 진입점 표시. 지정하지 않으면 기본 쏟아내기 동작. */
+  source?: 'onboarding'
 }
 
 export interface ChatObservationContext {

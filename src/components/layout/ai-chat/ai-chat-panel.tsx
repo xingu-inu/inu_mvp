@@ -94,6 +94,9 @@ export function AiChatPanel({
   const clearContext = useAiChatStore((s) => s.clearContext)
 
   const isBrainDump = allowBrainDump && context?.type === 'brain-dump'
+  // 온보딩 source는 allowBrainDump와 무관하게 문구/플레이스홀더를 우선 적용한다.
+  // (현재 유일한 진입 경로가 floating panel이지만 임베디드 리팩터 시에도 온보딩 UX를 보호)
+  const isOnboardingBrainDump = context?.type === 'brain-dump' && context.source === 'onboarding'
 
   const [input, setInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
@@ -110,7 +113,12 @@ export function AiChatPanel({
   const contextBody = useMemo(() => {
     if (!context) return {}
     if (context.type === 'brain-dump') {
-      return { context: { type: 'brain-dump' as const } }
+      return {
+        context: {
+          type: 'brain-dump' as const,
+          ...(context.source ? { source: context.source } : {}),
+        },
+      }
     }
     if (context.type === 'observation') {
       return {
@@ -383,7 +391,9 @@ export function AiChatPanel({
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <Mascot mood="happy" size="md" />
             <p className="text-center text-sm text-amber-700 dark:text-amber-300">
-              {BRAIN_DUMP_OPENING_GREETING}
+              {isOnboardingBrainDump
+                ? '방향 잡혔네요. 여기에 뭘 채울지 같이 생각해볼까요?'
+                : BRAIN_DUMP_OPENING_GREETING}
             </p>
             <div className="flex w-full max-w-sm flex-col gap-3 px-4">
               <p className="text-sm text-[var(--color-text-secondary)]">
@@ -494,7 +504,11 @@ export function AiChatPanel({
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
             placeholder={
-              isBrainDump ? '머릿속 이야기를 자유롭게...' : '지금 떠오르는 생각을 적어보세요...'
+              isOnboardingBrainDump
+                ? '이 방향으로 뭘 시작할지 편하게 적어봐'
+                : isBrainDump
+                  ? '머릿속 이야기를 자유롭게...'
+                  : '지금 떠오르는 생각을 적어보세요...'
             }
             disabled={isStreaming}
             rows={1}
