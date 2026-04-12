@@ -9,9 +9,9 @@ const AiChatPanel = dynamic(
   { ssr: false }
 )
 
-export function BrainDumpFullscreen() {
-  const isOpen = useAiChatStore((s) => s.isBrainDumpFullscreen)
-  const close = useAiChatStore((s) => s.closeBrainDumpFullscreen)
+export function InuFullscreen() {
+  const isOpen = useAiChatStore((s) => s.isInuFullscreen)
+  const close = useAiChatStore((s) => s.closeInuFullscreen)
 
   return (
     <AnimatePresence>

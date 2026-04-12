@@ -3,16 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import {
-  Send,
-  Square,
-  Plus,
-  PanelLeftClose,
-  PanelLeftOpen,
-  X,
-  Lightbulb,
-  ArrowLeft,
-} from 'lucide-react'
+import { Send, Square, Plus, PanelLeftClose, PanelLeftOpen, X, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -25,8 +16,8 @@ import {
   DEFAULT_QUICK_ACTIONS,
   GOAL_QUICK_ACTIONS,
   TASK_QUICK_ACTIONS,
-  BRAIN_DUMP_OPENING_CHIPS,
-  BRAIN_DUMP_OPENING_GREETING,
+  INU_WELCOME_CHIPS,
+  INU_WELCOME_GREETING,
 } from './chat-utils'
 import { ConversationList } from './conversation-list'
 import { StreamingBubble } from './streaming-bubble'
@@ -75,16 +66,9 @@ interface AiChatPanelProps {
   fullscreen?: boolean
   /** Called when fullscreen panel requests close */
   onClose?: () => void
-  /** When false, hides all brain-dump entry points (default: true) */
-  allowBrainDump?: boolean
 }
 
-export function AiChatPanel({
-  embedded = false,
-  fullscreen = false,
-  onClose,
-  allowBrainDump = true,
-}: AiChatPanelProps) {
+export function AiChatPanel({ embedded = false, fullscreen = false, onClose }: AiChatPanelProps) {
   const activeConversationId = useAiChatStore((s) => s.activeConversationId)
   const setActiveConversation = useAiChatStore((s) => s.setActiveConversation)
   const isSidebarOpen = useAiChatStore((s) => s.isSidebarOpen)
@@ -92,11 +76,6 @@ export function AiChatPanel({
   const startNewConversation = useAiChatStore((s) => s.startNewConversation)
   const context = useAiChatStore((s) => s.context)
   const clearContext = useAiChatStore((s) => s.clearContext)
-
-  const isBrainDump = allowBrainDump && context?.type === 'brain-dump'
-  // 온보딩 source는 allowBrainDump와 무관하게 문구/플레이스홀더를 우선 적용한다.
-  // (현재 유일한 진입 경로가 floating panel이지만 임베디드 리팩터 시에도 온보딩 UX를 보호)
-  const isOnboardingBrainDump = context?.type === 'brain-dump' && context.source === 'onboarding'
 
   const [input, setInput] = useState('')
   const [isComposing, setIsComposing] = useState(false)
@@ -112,14 +91,6 @@ export function AiChatPanel({
   // Context body for API requests (recreated only when context changes)
   const contextBody = useMemo(() => {
     if (!context) return {}
-    if (context.type === 'brain-dump') {
-      return {
-        context: {
-          type: 'brain-dump' as const,
-          ...(context.source ? { source: context.source } : {}),
-        },
-      }
-    }
     if (context.type === 'observation') {
       return {
         context: {
@@ -169,9 +140,6 @@ export function AiChatPanel({
 
   const isStreaming = status === 'streaming' || status === 'submitted'
 
-  // 쏟아내기 진입 시 즉시 정적 오프닝 UI 노출. 대화가 비어 있을 때만.
-  const showBrainDumpOpening = isBrainDump && messages.length === 0
-
   // Sync DB → useChat exactly once per conversation change (never during streaming)
   const prevConvRef = useRef<string | null | undefined>(undefined)
   const hasSyncedRef = useRef(false)
@@ -217,7 +185,7 @@ export function AiChatPanel({
       if (!convId) {
         const conv = await createConversation.mutateAsync({
           relatedGoalId:
-            context && context.type !== 'brain-dump' && context.type !== 'observation'
+            context && context.type !== 'observation'
               ? context.goalId
               : context?.type === 'observation'
                 ? context.relatedGoalId
@@ -295,14 +263,7 @@ export function AiChatPanel({
   const chatContent = (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Header */}
-      <div
-        className={cn(
-          'flex min-h-[45px] items-center justify-between border-b px-4 py-2 transition-colors',
-          isBrainDump
-            ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30'
-            : 'border-[var(--color-border)]'
-        )}
-      >
+      <div className="flex min-h-[45px] items-center justify-between border-b border-[var(--color-border)] px-4 py-2">
         <div className="flex items-center gap-2">
           <button
             onClick={toggleSidebar}
@@ -315,37 +276,10 @@ export function AiChatPanel({
               <PanelLeftOpen className="h-4 w-4" />
             )}
           </button>
-          {isBrainDump ? (
-            <>
-              <Lightbulb className="h-4 w-4 text-amber-500" />
-              <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">쏟아내기</h3>
-              <button
-                onClick={clearContext}
-                className="rounded-full p-0.5 text-amber-400 transition-colors hover:bg-amber-100 hover:text-amber-600 dark:hover:bg-amber-900/40"
-                title="쏟아내기 모드 해제"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </>
-          ) : (
-            <>
-              <span className="text-base">🐾</span>
-              <h3 className="text-sm font-semibold">동행 이누</h3>
-              {allowBrainDump && (
-                <button
-                  onClick={() =>
-                    useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
-                  }
-                  className="rounded-full p-1 text-[var(--color-text-tertiary)] transition-colors hover:bg-amber-100 hover:text-amber-500 dark:hover:bg-amber-900/40 dark:hover:text-amber-400"
-                  title="쏟아내기 모드 켜기"
-                >
-                  <Lightbulb className="h-3.5 w-3.5" />
-                </button>
-              )}
-            </>
-          )}
+          <span className="text-base">🐾</span>
+          <h3 className="text-sm font-semibold">동행 이누</h3>
           {/* Goal/Task/Observation context badge */}
-          {context && context.type !== 'brain-dump' && (
+          {context && (
             <div className="flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-xs text-[var(--color-primary-600)]">
               <span>
                 {context.type === 'observation' ? '✨' : context.type === 'goal' ? '🎯' : '✅'}
@@ -381,81 +315,49 @@ export function AiChatPanel({
       </div>
 
       {/* Messages */}
-      <div
-        className={cn(
-          'flex-1 overflow-y-auto px-4 py-3 transition-colors',
-          isBrainDump && 'bg-amber-50/30 dark:bg-amber-950/20'
-        )}
-      >
-        {showBrainDumpOpening ? (
-          <div className="flex h-full flex-col items-center justify-center gap-4">
-            <Mascot mood="happy" size="md" />
-            <p className="text-center text-sm text-amber-700 dark:text-amber-300">
-              {isOnboardingBrainDump
-                ? '방향 잡혔네요. 여기에 뭘 채울지 같이 생각해볼까요?'
-                : BRAIN_DUMP_OPENING_GREETING}
-            </p>
-            <div className="flex w-full max-w-sm flex-col gap-3 px-4">
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                어떤 이야기부터 꺼내볼까?
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {BRAIN_DUMP_OPENING_CHIPS.map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => handleSend(chip.message)}
-                    className="min-h-[44px] rounded-full border border-amber-200 bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-amber-700 transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-900/40"
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
+      <div className="flex-1 overflow-y-auto px-4 py-3">
+        {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-4">
             <Mascot mood="happy" size="md" />
             <p className="text-center text-sm text-[var(--color-text-secondary)]">
-              방향이 흐릴 때도, 마음이 복잡할 때도 편하게 이야기해보세요
+              {INU_WELCOME_GREETING}
             </p>
-
-            {/* Brain dump promotion card — only when no context and allowed */}
-            {allowBrainDump && !context && (
-              <button
-                onClick={() =>
-                  useAiChatStore.getState().openChatWithContext({ type: 'brain-dump' })
-                }
-                className="group w-full max-w-xs rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition-colors hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-900/50"
-              >
-                <div className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-amber-500" />
-                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    생각 쏟아내기
-                  </span>
-                </div>
-                <p className="mt-1.5 text-xs leading-relaxed text-amber-600/80 dark:text-amber-400/70">
-                  머릿속에 떠오르는 것들을 자유롭게 이야기하면 함께 정리해줄게
+            {context ? (
+              <div className="flex flex-wrap justify-center gap-2">
+                {(context.type === 'goal'
+                  ? GOAL_QUICK_ACTIONS
+                  : context.type === 'task'
+                    ? TASK_QUICK_ACTIONS
+                    : DEFAULT_QUICK_ACTIONS
+                ).map(({ label, prompt }) => (
+                  <button
+                    key={label}
+                    onClick={() => handleSend(prompt)}
+                    className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="flex w-full max-w-sm flex-col gap-3 px-4">
+                <p className="text-sm text-[var(--color-text-secondary)]">
+                  어떤 이야기부터 꺼내볼까?
                 </p>
-              </button>
+                <div className="flex flex-wrap gap-1.5">
+                  {INU_WELCOME_CHIPS.map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => handleSend(chip.message)}
+                      className="min-h-[44px] rounded-full border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3.5 py-2.5 text-sm text-[var(--color-text-primary)] transition-colors hover:border-[var(--color-primary-300)] hover:bg-[var(--color-bg-secondary)]"
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-
-            <div className="flex flex-wrap justify-center gap-2">
-              {(context?.type === 'goal'
-                ? GOAL_QUICK_ACTIONS
-                : context?.type === 'task'
-                  ? TASK_QUICK_ACTIONS
-                  : DEFAULT_QUICK_ACTIONS
-              ).map(({ label, prompt }) => (
-                <button
-                  key={label}
-                  onClick={() => handleSend(prompt)}
-                  className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-secondary)]"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -485,12 +387,7 @@ export function AiChatPanel({
       </div>
 
       {/* Input */}
-      <div
-        className={cn(
-          'border-t px-4 py-3 transition-colors',
-          isBrainDump ? 'border-amber-200 dark:border-amber-800' : 'border-[var(--color-border)]'
-        )}
-      >
+      <div className="border-t border-[var(--color-border)] px-4 py-3">
         <div className="flex items-end gap-2">
           <textarea
             ref={inputRef}
@@ -503,13 +400,7 @@ export function AiChatPanel({
             onKeyDown={handleKeyDown}
             onCompositionStart={() => setIsComposing(true)}
             onCompositionEnd={() => setIsComposing(false)}
-            placeholder={
-              isOnboardingBrainDump
-                ? '이 방향으로 뭘 시작할지 편하게 적어봐'
-                : isBrainDump
-                  ? '머릿속 이야기를 자유롭게...'
-                  : '지금 떠오르는 생각을 적어보세요...'
-            }
+            placeholder="지금 떠오르는 생각을 적어보세요..."
             disabled={isStreaming}
             rows={1}
             className="flex-1 resize-none overflow-y-auto bg-transparent text-sm outline-none placeholder:text-[var(--color-text-tertiary)] disabled:opacity-50"
@@ -527,12 +418,7 @@ export function AiChatPanel({
             <button
               onClick={() => handleSend(input)}
               disabled={!input.trim()}
-              className={cn(
-                'rounded-lg p-2 text-white transition-colors disabled:opacity-40',
-                isBrainDump
-                  ? 'bg-amber-500 hover:bg-amber-600'
-                  : 'bg-[var(--color-primary-500)] hover:bg-[var(--color-primary-600)]'
-              )}
+              className="rounded-lg bg-[var(--color-primary-500)] p-2 text-white transition-colors hover:bg-[var(--color-primary-600)] disabled:opacity-40"
             >
               <Send className="h-4 w-4" />
             </button>
@@ -542,7 +428,7 @@ export function AiChatPanel({
     </div>
   )
 
-  // ── Fullscreen mode: mobile brain-dump ──
+  // ── Fullscreen mode: mobile ──
 
   if (fullscreen) {
     return (
@@ -555,7 +441,7 @@ export function AiChatPanel({
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h2 className="text-sm font-semibold">쏟아내기</h2>
+          <h2 className="text-sm font-semibold">이누</h2>
           <button
             onClick={onClose}
             className="rounded-md p-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)]"

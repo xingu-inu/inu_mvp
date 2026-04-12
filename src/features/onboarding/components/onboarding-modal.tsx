@@ -25,7 +25,7 @@ const STEP_TITLES: Record<Step, string> = {
 export function OnboardingModal() {
   const { data: profile } = useProfile()
   const queryClient = useQueryClient()
-  const openChatWithContext = useAiChatStore((s) => s.openChatWithContext)
+  const openChat = useAiChatStore((s) => s.openChat)
   const mountedRef = useRef(true)
 
   const [step, setStep] = useState<Step>(1)
@@ -93,7 +93,7 @@ export function OnboardingModal() {
 
         if (mountedRef.current) {
           setDismissed(true)
-          openChatWithContext({ type: 'brain-dump', source: 'onboarding' })
+          openChat()
         }
       } catch {
         if (mountedRef.current) {
@@ -103,7 +103,7 @@ export function OnboardingModal() {
         if (mountedRef.current) setIsSubmitting(false)
       }
     },
-    [feelingId, whyId, isSubmitting, queryClient, openChatWithContext]
+    [feelingId, whyId, isSubmitting, queryClient, openChat]
   )
 
   // Step 3 → step 2 (feeling 유지), step 2 → step 1

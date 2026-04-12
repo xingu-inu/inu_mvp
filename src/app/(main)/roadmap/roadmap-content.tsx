@@ -11,7 +11,7 @@ import {
   VisualTreeSkeleton,
 } from '@/features/roadmap'
 import { MobileRoadmapFab } from '@/features/roadmap/components/mobile-roadmap-fab'
-import { BrainDumpFullscreen } from '@/features/roadmap/components/brain-dump-fullscreen'
+import { InuFullscreen } from '@/features/roadmap/components/inu-fullscreen'
 import { MobileRoadmapView } from '@/features/roadmap/components/mobile-roadmap-view'
 import { FloatingPanel } from '@/features/roadmap/components/floating-panel'
 
@@ -170,7 +170,7 @@ export default function RoadmapContent() {
 
       {/* Mobile: FAB for creating areas/goals + AI features (both modes) */}
       <MobileRoadmapFab />
-      <BrainDumpFullscreen />
+      <InuFullscreen />
 
       {/* Version Management Modals */}
       <NewVersionWizard />

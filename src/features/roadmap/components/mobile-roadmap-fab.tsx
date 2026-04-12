@@ -62,7 +62,7 @@ export function MobileRoadmapFab() {
         setIsGoalDrawerOpen(true)
         break
       case 'ai-chat':
-        useAiChatStore.getState().openBrainDumpFullscreen()
+        useAiChatStore.getState().openInuFullscreen()
         break
     }
   }, [])

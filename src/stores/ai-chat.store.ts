@@ -25,10 +25,10 @@ interface AiChatState {
   openChatWithContext: (context: ChatContext) => void
   clearContext: () => void
 
-  // 모바일 풀스크린 쏟아내기
-  isBrainDumpFullscreen: boolean
-  openBrainDumpFullscreen: () => void
-  closeBrainDumpFullscreen: () => void
+  // 모바일 풀스크린 이누
+  isInuFullscreen: boolean
+  openInuFullscreen: () => void
+  closeInuFullscreen: () => void
 }
 
 export const useAiChatStore = create<AiChatState>((set) => ({
@@ -50,12 +50,11 @@ export const useAiChatStore = create<AiChatState>((set) => ({
   openChatWithContext: (context) => set({ context, isOpen: true, activeConversationId: null }),
   clearContext: () => set({ context: null }),
 
-  isBrainDumpFullscreen: false,
-  openBrainDumpFullscreen: () =>
+  isInuFullscreen: false,
+  openInuFullscreen: () =>
     set({
-      isBrainDumpFullscreen: true,
-      context: { type: 'brain-dump' },
+      isInuFullscreen: true,
       activeConversationId: null,
     }),
-  closeBrainDumpFullscreen: () => set({ isBrainDumpFullscreen: false }),
+  closeInuFullscreen: () => set({ isInuFullscreen: false }),
 }))

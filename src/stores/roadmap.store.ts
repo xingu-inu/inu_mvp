@@ -25,7 +25,7 @@ export type StatusFilter = GoalStatus | 'all'
 
 export type SelectedNodeType = 'direction' | 'area' | 'goal' | 'group' | 'task'
 
-export type RightPanelTab = 'roadmap' | 'ai-chat'
+export type RightPanelTab = 'roadmap' | 'inu'
 
 // ── Core slice (statusFilter, expandedAreas, rightPanelTab, mobile drawer) ──
 
@@ -46,7 +46,7 @@ interface CoreSlice {
 const coreInitialState = {
   statusFilter: 'all' as StatusFilter,
   expandedAreas: [] as string[],
-  rightPanelTab: 'roadmap' as RightPanelTab,
+  rightPanelTab: 'inu' as RightPanelTab,
   mobileDrawerGoalId: null as string | null,
 }
 

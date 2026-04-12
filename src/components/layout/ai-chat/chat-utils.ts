@@ -123,15 +123,14 @@ export function isResponseChipsPart(part: unknown): part is ResponseChipsPart {
   return false
 }
 
-/** 쏟아내기 진입 시 즉시 노출되는 고정 greeting 문구. */
-export const BRAIN_DUMP_OPENING_GREETING = '머릿속에 있는 거 편하게 꺼내줘. 이누가 같이 정리할게'
+/** 이누 패널 빈 상태에서 노출되는 환영 문구. */
+export const INU_WELCOME_GREETING = '머릿속에 있는 거 편하게 꺼내줘. 이누가 같이 정리할게'
 
 /**
- * 쏟아내기 정적 오프닝 칩. 사용자가 쏟아내기 모드에 진입하는 순간
- * 아무 대기 없이 즉시 렌더되는 진입 칩.
+ * 이누 패널 빈 상태 가이드 칩. 대화가 없을 때 즉시 노출되는 대화 시작 칩.
  * 호기심/성장/가벼운 정리 톤으로 — "안 되는 중" 프레임은 피한다.
  */
-export const BRAIN_DUMP_OPENING_CHIPS = [
+export const INU_WELCOME_CHIPS = [
   {
     label: '요즘 꽂힌 거 있음',
     message: '요즘 내가 꽂혀 있는 게 있는데 같이 얘기해보고 싶어',

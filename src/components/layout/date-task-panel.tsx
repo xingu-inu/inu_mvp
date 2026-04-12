@@ -14,7 +14,7 @@ const EmbeddedAiChat = dynamic(
 
 const PANEL_TAB_OPTIONS = [
   { value: 'roadmap', label: '로드맵' },
-  { value: 'ai-chat', label: 'AI 채팅' },
+  { value: 'inu', label: '이누' },
 ]
 
 /** Roadmap right panel — routes by panelMode */
@@ -40,7 +40,7 @@ function RoadmapPanelWithToggle() {
       <div className="flex items-center border-b border-[var(--color-border)] px-4 py-2">
         <FormSegmentedControl
           value={rightPanelTab}
-          onChange={(v) => setRightPanelTab(v as 'roadmap' | 'ai-chat')}
+          onChange={(v) => setRightPanelTab(v as 'roadmap' | 'inu')}
           options={PANEL_TAB_OPTIONS}
           compact
           layoutId="right-panel-tab"
@@ -48,7 +48,7 @@ function RoadmapPanelWithToggle() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {rightPanelTab === 'ai-chat' ? <EmbeddedAiChat embedded /> : <RoadmapPanel />}
+        {rightPanelTab === 'inu' ? <EmbeddedAiChat embedded /> : <RoadmapPanel />}
       </div>
     </div>
   )
